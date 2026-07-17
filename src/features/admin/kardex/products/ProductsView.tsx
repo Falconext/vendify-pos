@@ -1,0 +1,711 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BarcodeScannerInput } from '@/components/BarcodeScannerInput';
+import { Icon } from '@iconify/react';
+import InputPro from '@/components/InputPro';
+import Select from '@/components/Select';
+import ModalProduct from '@/pages/admin/kardex/modal-productos';
+import ModalCategories from '@/pages/admin/kardex/modal-categorias';
+import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
+import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
+import ModalConfirm from '@/components/ModalConfirm';
+import Pagination from '@/components/Pagination';
+import CardRestaurante from '@/components/productos/CardRestaurante';
+import ListaBodega from '@/components/productos/ListaBodega';
+import TablaFerreteria from '@/components/productos/TablaFerreteria';
+import TableActionMenu from '@/components/TableActionMenu';
+import TableSkeleton from '@/components/Skeletons/table';
+import { useProductsViewModel } from './useProductsViewModel';
+import { get } from '@/utils/fetch';
+import useAlertStore from '@/zustand/alert';
+import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
+
+const ACCENT = '#7551FF';
+
+export default function ProductsView() {
+    const navigate = useNavigate();
+    const vm = useProductsViewModel();
+    const { actions } = vm;
+    const { alert } = useAlertStore();
+    const productsSource = Array.isArray(vm.products) ? vm.products : [];
+
+    // Editar ahora abre la página del formulario (no el modal), con el producto
+    // completo en el state de navegación para precargar todos los campos.
+    const goEditProduct = (p: any) => {
+        const prod = productsSource.find((x: any) => x.id === p.id) || p;
+        navigate(`/administrador/kardex/productos/editar/${p.id}`, { state: { product: prod } });
+    };
+
+    const [barcodeInput, setBarcodeInput] = useState('');
+    const [barcodeLoading, setBarcodeLoading] = useState(false);
+    const barcodeRef = useRef<HTMLInputElement>(null);
+
+    const handleBarcodeScan = async (codigo: string) => {
+        const trimmed = codigo.trim();
+        if (!trimmed) return;
+        setBarcodeLoading(true);
+        try {
+            const resp: any = await get(`productos/barcode/${encodeURIComponent(trimmed)}`);
+            if (resp.code === 1 && resp.data) {
+                // Vuelca la descripción en el buscador existente → el debounce filtra la lista
+                actions.setSearchClient({ target: { value: resp.data.descripcion } });
+                setBarcodeInput('');
+            } else {
+                alert(`Producto no encontrado: ${trimmed}`, 'error');
+                setBarcodeInput('');
+            }
+        } catch {
+            alert(`Código de barras no encontrado: ${trimmed}`, 'error');
+            setBarcodeInput('');
+        } finally {
+            setBarcodeLoading(false);
+            barcodeRef.current?.focus();
+        }
+    };
+
+    const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
+    const [isOpenModalPreviewCatalogo, setIsOpenModalPreviewCatalogo] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowOptionsDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const renderContent = () => {
+        if (vm.vistaActual === 'cards' && vm.loading) {
+            return (
+                <CardRestaurante
+                    loading
+                    skeletonCount={vm.itemsPerPage > 0 ? Math.min(vm.itemsPerPage, 12) : 8}
+                    products={[] as any}
+                    onEdit={() => { }}
+                    onDelete={() => { }}
+                    onToggleState={() => { }}
+                    onUploadImage={() => { }}
+                />
+            );
+        }
+
+        if (!vm.productsLoaded && productsSource.length === 0) return <TableSkeleton />;
+
+        // Palette for category badges — picked deterministically from the category name
+        const CAT_PALETTE = [
+            { bg: '#EEF2FF', text: '#6366F1' },
+            { bg: '#F0FDF4', text: '#16A34A' },
+            { bg: '#FFF7ED', text: '#EA580C' },
+            { bg: '#FDF4FF', text: '#A855F7' },
+            { bg: '#F0F9FF', text: '#0284C7' },
+            { bg: '#FFF1F2', text: '#E11D48' },
+            { bg: '#FEFCE8', text: '#CA8A04' },
+            { bg: '#F0FDFA', text: '#0D9488' },
+            { bg: '#F5F3FF', text: '#7C3AED' },
+            { bg: '#FFF8F1', text: '#C2410C' },
+        ];
+        const getCatColor = (name: string) => {
+            let h = 0;
+            for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+            return CAT_PALETTE[Math.abs(h) % CAT_PALETTE.length];
+        };
+
+        // Prepare table data for TablaFerreteria
+        const productsTable = productsSource.map((item) => {
+            const itemAny = item as any;
+            const unidadNombre =
+                item?.unidadMedida?.nombre ||
+                (typeof itemAny?.unidadMedidaNombre === 'string' ? itemAny.unidadMedidaNombre : '') ||
+                (typeof item?.unidadMedidaId !== 'undefined' ? 'Unidad' : '-') ||
+                '-';
+            const formatMoney = (value: number) => value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const costo = Number(item?.costoUnitario > 0 ? item?.costoUnitario : item?.costoPromedio || 0);
+            const precio = Number(item?.precioUnitario || 0);
+            const simbolo = String(itemAny?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
+            const stock = Number(item?.stock || 0);
+            const esServicio = String(itemAny?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+            const costoFijo = Number(itemAny?.costoFijo || 0);
+            const costoFijoUnitario = costo + costoFijo;
+            const valorInventario = stock * costo;
+            const costoTotalFijo = stock * costoFijoUnitario;
+            const margen = precio > 0 && costo > 0 ? ((precio - costo) / precio * 100) : 0;
+            const gananciaUnidad = precio - costo;
+            const imageSrc = (item as any)?.imagenUrlDisplay || (item as any)?.imagenUrl;
+
+            const allData: any = {
+                productoId: item?.id,
+                'Img': imageSrc ? (
+                    <div className="h-[43px] w-[43px] bg-white dark:bg-[#111c44]/60 border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden flex items-center justify-center p-1">
+                        <img
+                            key={imageSrc}
+                            src={imageSrc}
+                            alt={item?.descripcion}
+                            className="h-full w-full object-contain"
+                            onError={(e) => {
+                                const target = e.currentTarget;
+                                target.onerror = null; // Prevent infinite loop
+                                target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjOWNhM2FmIiBkPSJNMjEgMTlWMWMwLS41NS0uNDUtMS0xLTFIM2MtLjU1IDAtMSAuNDUtMSAxdjE4YzAgLjU1LjQ1IDEgMWgxN2MuNTUgMCAxLS40NSAxLTF6TTguNSAxMy41bDIuNSAzLjAxTDE0LjUgMTJsNC41IDZIM2w1LjUtNy41eiIvPjwvc3ZnPg==';
+                                target.className = "h-6 w-6 object-contain opacity-50";
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <div className="h-11 w-11 bg-gray-50 dark:bg-[#111c44]/60 border border-gray-100 dark:border-white/10 rounded-lg flex items-center justify-center text-gray-400 dark:text-slate-500">
+                        <Icon icon="solar:gallery-linear" width={24} height={24} />
+                    </div>
+                ),
+                'Código': item?.codigo?.toUpperCase(),
+                'Producto': (
+                    <div className="flex flex-col max-w-[260px] min-w-0">
+                        <span className="font-semibold text-gray-900 dark:text-white text-[13px] leading-tight uppercase truncate" title={item?.descripcion}>{item?.descripcion}</span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 uppercase">{item?.codigo}</span>
+                        {item?.codigoBarras && (
+                            <span className="text-[10px] text-violet-400 dark:text-violet-400 mt-0.5 font-mono tracking-wide">{item.codigoBarras}</span>
+                        )}
+                    </div>
+                ),
+                'Categoria': (() => {
+                    const nombre = item?.categoria?.nombre || 'Sin categoría';
+                    const c = getCatColor(nombre);
+                    return (
+                        <span
+                            style={{ backgroundColor: c.bg, color: c.text }}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap uppercase"
+                        >
+                            {nombre}
+                        </span>
+                    );
+                })(),
+                'Marca': ((item as any)?.marca?.nombre || 'Sin marca').toUpperCase(),
+                categoriaId: item?.categoriaId !== null ? "" : item?.categoria?.id,
+                unidadMedidaId: item?.unidadMedida?.id || item?.unidadMedidaId,
+                marcaId: (item as any)?.marca?.id || (item as any)?.marcaId || null,
+                marcaNombre: (item as any)?.marca?.nombre || "",
+                'Precio Venta': `${simbolo} ${precio.toFixed(2)}`,
+                'Costo': costo > 0 ? `${simbolo} ${costo.toFixed(2)}` : '-',
+                'Valor Inventario': esServicio ? '-' : valorInventario > 0 ? `${simbolo} ${formatMoney(valorInventario)}` : '-',
+                'Costo Total Fijo': !esServicio && costoTotalFijo > 0 ? (
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-gray-800 dark:text-gray-100">{simbolo} {formatMoney(costoTotalFijo)}</span>
+                        <span className="text-[10px] text-gray-400">Unit. {simbolo} {formatMoney(costoFijoUnitario)}</span>
+                    </div>
+                ) : '-',
+                'Margen': margen > 0 ? `${margen.toFixed(1)}%` : '-',
+                'Ganancia/Unidad': gananciaUnidad > 0 ? `${simbolo} ${gananciaUnidad.toFixed(2)}` : '-',
+                'Stock': (
+                    <span
+                        style={{
+                            backgroundColor: esServicio ? '#7C3AED' : stock <= 0 ? '#F43F5F' : stock <= 10 ? '#F49D0D' : '#0BB980',
+                            color: '#ffffff',
+                        }}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                    >
+                        {esServicio ? 'Servicio' : stock}
+                    </span>
+                ),
+                'Localización': item?.localizacion?.trim() ? item.localizacion.toUpperCase() : '-',
+                '% Venta': `${Number((item as any)?.porcentajeVenta ?? 100)}%`,
+                '% Provisión': `${Number((item as any)?.porcentajeProvision ?? 0)}%`,
+                'Stock minimo': esServicio ? '-' : item?.stockMinimo ?? 0,
+                'U.M': unidadNombre.toUpperCase(),
+                'Lotes': (() => {
+                    const lotes = Array.isArray(itemAny?.lotes) ? itemAny.lotes : [];
+                    if (esServicio || lotes.length === 0) return <span className="text-gray-400">—</span>;
+                    const prox = lotes[0];
+                    const venc = new Date(prox.fechaVencimiento);
+                    const dias = Math.ceil((venc.getTime() - Date.now()) / 86400000);
+                    const color = dias < 0
+                        ? { bg: '#FEE2E2', text: '#B91C1C' }
+                        : dias <= 60
+                            ? { bg: '#FEF3C7', text: '#B45309' }
+                            : { bg: '#DCFCE7', text: '#15803D' };
+                    const totalStock = lotes.reduce((s: number, l: any) => s + Number(l.stockActual || 0), 0);
+                    return (
+                        <div className="flex flex-col gap-0.5">
+                            <span style={{ backgroundColor: color.bg, color: color.text }} className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap">
+                                {dias < 0 ? 'Vencido' : `Vence ${venc.toLocaleDateString('es-PE')}`}
+                            </span>
+                            <span className="text-[10px] text-gray-400">{lotes.length} lote{lotes.length > 1 ? 's' : ''} · {totalStock} und</span>
+                        </div>
+                    );
+                })(),
+                'Sede': (() => {
+                    const cfg = (item as any).sedeStockConfig;
+                    if (!cfg) return '-';
+                    if (cfg.visibleEnSede === false) {
+                        return (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                                <Icon icon="mdi:eye-off-outline" width={12} /> Oculto
+                            </span>
+                        );
+                    }
+                    if (cfg.vendibleEnSede === false) {
+                        return (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+                                <Icon icon="mdi:archive-outline" width={12} /> Solo inventario
+                            </span>
+                        );
+                    }
+                    return (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
+                            <Icon icon="mdi:cash-register" width={12} /> Vendible
+                        </span>
+                    );
+                })(),
+                'Estado': item.estado,
+                'Tienda': (item as any).publicarEnTienda ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">
+                        <Icon icon="mdi:store" width={12} /> Sí
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-400">
+                        <Icon icon="mdi:store-off" width={12} /> No
+                    </span>
+                ),
+                _original: item
+            };
+
+            const acciones = (
+                <div
+                    className="relative inline-block"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        type="button"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (vm.openAccionesId === item.id) {
+                                actions.setOpenAccionesId(null);
+                                actions.setAnchorEl(null);
+                            } else {
+                                actions.setOpenAccionesId(item.id);
+                                actions.setAnchorEl(e.currentTarget);
+                            }
+                        }}
+                        className="h-8 w-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <Icon icon="mdi:dots-vertical" width={20} height={20} />
+                    </button>
+                </div>
+            );
+
+            return { ...allData, 'Acciones': acciones };
+        });
+
+        switch (vm.vistaActual) {
+            case 'cards':
+                return (
+                    <>
+                        <CardRestaurante
+                            loading={vm.loading}
+                            skeletonCount={vm.itemsPerPage > 0 ? Math.min(vm.itemsPerPage, 12) : 8}
+                            products={productsSource}
+                            onEdit={(p) => goEditProduct(p)}
+                            onDelete={(p) => actions.handleOpenDelete({ ...p, productoId: p.id })}
+                            onToggleState={(p) => actions.handleToggleClientState({ ...p, productoId: p.id })}
+                            onUploadImage={(p) => { actions.setUploadTarget({ id: p.id, tipo: 'principal' }); vm.uploadImageRef.current?.click(); }}
+                        />
+                        <Pagination
+                            data={productsSource}
+                            optionSelect
+                            currentPage={vm.currentPage}
+                            indexOfFirstItem={vm.indexOfFirstItem}
+                            indexOfLastItem={vm.indexOfLastItem}
+                            setcurrentPage={actions.setcurrentPage}
+                            setitemsPerPage={actions.setitemsPerPage}
+                            pages={vm.pages}
+                            total={vm.totalProducts}
+                        />
+                    </>
+                );
+            case 'lista':
+                return (
+                    <>
+                        <ListaBodega
+                            products={productsSource}
+                            onEdit={(p) => goEditProduct(p)}
+                            onDelete={(p) => actions.handleOpenDelete({ ...p, productoId: p.id })}
+                            onToggleState={(p) => actions.handleToggleClientState({ ...p, productoId: p.id })}
+                        />
+                        <Pagination
+                            data={productsSource}
+                            optionSelect
+                            currentPage={vm.currentPage}
+                            indexOfFirstItem={vm.indexOfFirstItem}
+                            indexOfLastItem={vm.indexOfLastItem}
+                            setcurrentPage={actions.setcurrentPage}
+                            setitemsPerPage={actions.setitemsPerPage}
+                            pages={vm.pages}
+                            total={vm.totalProducts}
+                        />
+                    </>
+                );
+            case 'tabla':
+            default:
+                return (
+                    <TablaFerreteria
+                        productsTable={productsTable}
+                        productsLoaded={vm.productsLoaded}
+                        visibleColumns={vm.safeVisibleColumns}
+                        currentPage={vm.currentPage}
+                        itemsPerPage={vm.itemsPerPage}
+                        totalProducts={vm.totalProducts}
+                        indexOfFirstItem={vm.indexOfFirstItem}
+                        indexOfLastItem={vm.indexOfLastItem}
+                        pages={vm.pages}
+                        setcurrentPage={actions.setcurrentPage}
+                        setitemsPerPage={actions.setitemsPerPage}
+                    />
+                );
+        }
+    };
+
+    const renderMobileProducts = () => {
+        if (vm.loading || (!vm.productsLoaded && productsSource.length === 0)) {
+            return <TableSkeleton />;
+        }
+
+        if (productsSource.length === 0) {
+            return (
+                <div className="py-12 text-center">
+                    <Icon icon="solar:box-linear" className="mx-auto mb-3 text-5xl text-gray-300 dark:text-slate-600" />
+                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">No se encontraron productos</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-3">
+                {productsSource.map((item: any) => {
+                    const imageSrc = item?.imagenUrlDisplay || item?.imagenUrl;
+                    const stock = Number(item?.stock || 0);
+                    const esServicio = String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+                    const stockTone = esServicio
+                        ? 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
+                        : stock <= 0
+                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+                            : stock <= 10
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300';
+
+                    return (
+                        <article key={item.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111c44]/70 dark:backdrop-blur-xl">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-[#111c44]/60">
+                                    {imageSrc ? (
+                                        <img src={imageSrc} alt={item?.descripcion} className="h-full w-full object-contain" />
+                                    ) : (
+                                        <Icon icon="solar:gallery-linear" width={28} className="text-gray-300" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="line-clamp-2 text-sm font-black uppercase leading-snug text-gray-900 dark:text-white">{item?.descripcion}</p>
+                                    <p className="mt-1 text-[11px] font-mono text-gray-400">{item?.codigo || 'Sin código'}</p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+                                            {item?.categoria?.nombre || 'Sin categoría'}
+                                        </span>
+                                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${stockTone}`}>
+                                            {esServicio ? 'Servicio' : `${stock} stock`}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        actions.setOpenAccionesId(item.id);
+                                        actions.setAnchorEl(e.currentTarget);
+                                    }}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700 dark:border-white/10 dark:bg-[#111c44]/60 dark:text-gray-200"
+                                    aria-label="Acciones"
+                                >
+                                    <Icon icon="mdi:dots-vertical" width={20} height={20} />
+                                </button>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
+                                    <p className="font-bold uppercase tracking-wide text-gray-400">Precio venta</p>
+                                    <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.precioUnitario || 0).toFixed(2)}</p>
+                                </div>
+                                <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
+                                    <p className="font-bold uppercase tracking-wide text-gray-400">Costo</p>
+                                    <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}</p>
+                                </div>
+                                <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
+                                    <p className="font-bold uppercase tracking-wide text-gray-400">Marca</p>
+                                    <p className="mt-1 truncate font-bold text-gray-700 dark:text-gray-200">{item?.marca?.nombre || 'Sin marca'}</p>
+                                </div>
+                                <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
+                                    <p className="font-bold uppercase tracking-wide text-gray-400">Tienda</p>
+                                    <p className={`mt-1 font-bold ${(item as any).publicarEnTienda ? 'text-emerald-600' : 'text-gray-400'}`}>{(item as any).publicarEnTienda ? 'Publicado' : 'Oculto'}</p>
+                                </div>
+                            </div>
+                        </article>
+                    );
+                })}
+
+                <Pagination
+                    data={productsSource}
+                    optionSelect
+                    currentPage={vm.currentPage}
+                    indexOfFirstItem={vm.indexOfFirstItem}
+                    indexOfLastItem={vm.indexOfLastItem}
+                    setcurrentPage={actions.setcurrentPage}
+                    setitemsPerPage={actions.setitemsPerPage}
+                    pages={vm.pages}
+                    total={vm.totalProducts}
+                />
+            </div>
+        );
+    };
+
+    return (
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+                <Icon icon="solar:home-smile-linear" className="text-base" />
+                <span>Panel</span>
+                <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
+                <span>Inventario</span>
+                <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
+                <span className="font-semibold" style={{ color: ACCENT }}>{vm.labels.titulo}</span>
+            </div>
+
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+                <div className="min-w-0">
+                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">{vm.labels.titulo}</h1>
+                    <p className="text-sm text-slate-400 mt-0.5">Gestiona tu inventario de {vm.labels.titulo.toLowerCase()}</p>
+                </div>
+                <div className="flex w-full sm:w-auto gap-3">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/administrador/kardex/productos/nuevo')}
+                        className="h-11 w-full sm:w-auto px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
+                        style={{ background: ACCENT }}
+                    >
+                        <Icon icon="solar:add-circle-bold" className="text-lg" />
+                        {vm.labels.nuevoBtn}
+                    </button>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] relative z-0 overflow-hidden">
+                <div className="p-4 sm:p-5 border-b border-slate-100">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="flex-1">
+                            <InputPro
+                                name="search"
+                                value={vm.searchClient}
+                                onChange={actions.setSearchClient}
+                                label={vm.labels.buscar}
+                                isLabel
+                            />
+                        </div>
+                        <BarcodeScannerInput
+                            className="w-full lg:min-w-[220px] lg:w-auto"
+                            inputRef={barcodeRef}
+                            value={barcodeInput}
+                            onChange={(e) => setBarcodeInput(e.target.value)}
+                            onScan={handleBarcodeScan}
+                            loading={barcodeLoading}
+                            label='Escanear código de barras'
+                            placeholder=""
+                        />
+                        {vm.isAdmin && vm.esPrincipal && (
+                            <div className="w-full lg:w-48">
+                                <Select
+                                    onChange={(id: any) => vm.handleSelectSede(id)}
+                                    label="Sede"
+                                    name="sedeId"
+                                    options={vm.sedesOptions}
+                                    error=""
+                                    defaultValue="Todas las sedes"
+                                />
+                            </div>
+                        )}
+                        <div className="w-full flex md:top-3 relative z-50 lg:w-auto overflow-visible pb-2 lg:pb-0">
+                            <div className="flex gap-2 px-1 items-center overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                    <Icon icon="solar:tag-bold-duotone" className="text-blue-500" /> Categorías
+                                </button>
+                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                    <Icon icon="solar:star-bold-duotone" className="text-emerald-500" /> Marcas
+                                </button>
+                                <div className="relative inline-block shrink-0" ref={dropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
+                                        className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                                    >
+                                        <Icon icon="solar:file-bold-duotone" className="text-amber-500" width={16} />
+                                        Excel / CSV
+                                        <Icon icon={showOptionsDropdown ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} className="text-slate-400" width={14} />
+                                    </button>
+
+                                    {showOptionsDropdown && (
+                                        <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1.5 font-inter">
+                                            <input
+                                                type="file"
+                                                accept=".xlsx, .xls"
+                                                ref={vm.fileInputRef}
+                                                onChange={(e) => {
+                                                    actions.handleImportExcel(e);
+                                                    setShowOptionsDropdown(false);
+                                                }}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                onClick={() => { actions.exportProducts(); setShowOptionsDropdown(false); }}
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                            >
+                                                <Icon icon="solar:export-bold" className="mr-2 text-emerald-500" width={18} />
+                                                Exportar Productos
+                                            </button>
+                                            <button
+                                                onClick={() => { vm.fileInputRef.current?.click(); }}
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                            >
+                                                <Icon icon="solar:import-bold" className="mr-2 text-blue-500" width={18} />
+                                                Importar desde Excel
+                                            </button>
+                                            <div className="mx-4 my-1 border-t border-slate-100"></div>
+                                            <button
+                                                onClick={async () => {
+                                                    setShowOptionsDropdown(false);
+                                                    const baseUrl = (import.meta.env.VITE_API_URL as string) || '';
+                                                    const resp = await fetch(`${baseUrl}/productos/plantilla`, {
+                                                        headers: { Authorization: `Bearer ${localStorage.getItem('ACCESS_TOKEN')}` },
+                                                    });
+                                                    const blob = await resp.blob();
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = 'plantilla_productos.xlsx';
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                }}
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                            >
+                                                <Icon icon="solar:file-download-bold" className="mr-2 text-amber-500" width={18} />
+                                                Descargar Modelo (Guía)
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                    <Icon icon="solar:shop-bold" className="text-indigo-500" /> Catálogo PDF
+                                </button>
+                                {/* Botón "Autocompletar" oculto a pedido del usuario. */}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-3 sm:p-4">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={vm.uploadImageRef}
+                        onChange={actions.handleUploadImage}
+                        className="hidden"
+                        disabled={vm.uploading}
+                    />
+
+                    <div className="hidden md:block overflow-x-auto">
+                        {renderContent()}
+                    </div>
+                    <div className="md:hidden">
+                        {renderMobileProducts()}
+                    </div>
+
+                    {/* Modals */}
+                    <ModalCategories isOpenModal={vm.isOpenModalCategory} closeModal={() => actions.setIsOpenModalCategory(false)} setIsOpenModal={actions.setIsOpenModalCategory} />
+                    <ModalMarcas isOpenModal={vm.isOpenModalBrands} closeModal={() => actions.setIsOpenModalBrands(false)} setIsOpenModal={actions.setIsOpenModalBrands} />
+                    {vm.isOpenModalCatalog && <ModalCatalog
+                        isOpen={vm.isOpenModalCatalog}
+                        onClose={() => actions.setIsOpenModalCatalog(false)}
+                        onSuccess={() => {
+                            actions.setIsOpenModalCatalog(false);
+                            actions.refreshProducts();
+                        }}
+                    />}
+
+                    <TableActionMenu
+                        isOpen={!!vm.openAccionesId && !!vm.anchorEl}
+                        anchorEl={vm.anchorEl}
+                        onClose={() => { actions.setOpenAccionesId(null); actions.setAnchorEl(null); }}
+                    >
+                        {vm.openAccionesId && (() => {
+                            const rowBase = productsSource.find((r) => r.id === vm.openAccionesId);
+                            if (!rowBase) return null;
+                            return (
+                                <>
+                                    <button type="button" onClick={() => { goEditProduct(rowBase); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                        <Icon icon="material-symbols:edit" width={16} height={16} /> <span>Editar</span>
+                                    </button>
+                                    <button type="button" onClick={() => { actions.setUploadTarget({ id: rowBase.id, tipo: 'principal' }); vm.uploadImageRef.current?.click(); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                        <Icon icon="solar:upload-minimalistic-bold" width={16} height={16} /> <span>Subir imagen</span>
+                                    </button>
+                                    <button type="button" onClick={() => { actions.handleToggleClientState({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                        <Icon icon="mdi:power" width={16} height={16} /> <span>{rowBase.estado === 'INACTIVO' ? 'Activar' : 'Desactivar'}</span>
+                                    </button>
+                                    {vm.tieneTienda && (
+                                        <button type="button" onClick={() => { actions.togglePublicarTienda(rowBase); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                            <Icon icon={(rowBase as any).publicarEnTienda ? 'mdi:store-off' : 'mdi:store'} width={16} height={16} className={(rowBase as any).publicarEnTienda ? 'text-orange-500 dark:text-orange-400' : 'text-emerald-500 dark:text-emerald-400'} />
+                                            <span>{(rowBase as any).publicarEnTienda ? 'Quitar de tienda' : 'Publicar en tienda'}</span>
+                                        </button>
+                                    )}
+                                    <button type="button" onClick={() => { actions.handleOpenDelete({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-t border-gray-100 dark:border-white/10">
+                                        <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} /> <span>Eliminar</span>
+                                    </button>
+                                </>
+                            );
+                        })()}
+                    </TableActionMenu>
+                </div>
+            </div>
+
+            {vm.isOpenModal && <ModalProduct
+                isOpenModal={vm.isOpenModal}
+                setIsOpenModal={actions.setIsOpenModal}
+                closeModal={actions.closeProductModal}
+                errors={vm.errors}
+                initialForm={vm.emptyProductForm}
+                formValues={vm.formValues}
+                setErrors={actions.setErrors}
+                setFormValues={actions.setFormValues}
+                isEdit={vm.isEdit}
+            />}
+
+            <ModalConfirm
+                isOpenModal={vm.isOpenModalConfirm}
+                setIsOpenModal={actions.setIsOpenModalConfirm}
+                confirmSubmit={actions.confirmToggleroduct}
+                title={vm.labels.confirmarEstado}
+                information={`¿Estás seguro que deseas cambiar el estado de este ${vm.isRestaurante ? 'plato' : 'producto'}?`}
+            />
+
+            <ModalConfirm
+                isOpenModal={vm.isOpenModalDelete}
+                setIsOpenModal={actions.setIsOpenModalDelete}
+                confirmSubmit={actions.confirmDeleteProduct}
+                title={vm.labels.eliminar}
+                information={vm.labels.eliminarInfo}
+            />
+
+            <ModalPreviewCatalogo 
+                isOpen={isOpenModalPreviewCatalogo} 
+                onClose={() => setIsOpenModalPreviewCatalogo(false)} 
+            />
+
+        </div>
+    );
+}
