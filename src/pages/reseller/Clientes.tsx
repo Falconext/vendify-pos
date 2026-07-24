@@ -411,7 +411,11 @@ export default function ResellerClientes() {
                     ? `${cliente.plan.nombre}${cliente?.plan?.maxComprobantes ? ` · ${cliente.plan.maxComprobantes} comprob.` : ''}`
                     : `Plan ID: ${cliente.planId}`,
                 marca: cliente.esWhiteLabel ? '⬥ Marca blanca' : 'Estándar',
-                costo: formatCurrency(Number(cliente.costoActivacionReseller ?? cliente.plan?.costo ?? 0)),
+                costo: formatCurrency(
+                    cliente?.plan?.nombre
+                        ? costoResellerDePlan(planesFacturacion, cliente.plan, stats.clientesActivos || 0)
+                        : Number(cliente.costoActivacionReseller ?? cliente.plan?.costo ?? 0)
+                ),
                 vence,
                 renueva,
                 dias,
@@ -420,7 +424,7 @@ export default function ResellerClientes() {
                 usaDemo: Boolean(cliente.usaDemo),
             };
         });
-    }, [clientes, search, marcaFilter, estadoFilter]);
+    }, [clientes, search, marcaFilter, estadoFilter, planesFacturacion, stats.clientesActivos]);
 
     const exportCSV = () => {
         const head = ['Empresa', 'RUC', 'Plan', 'Marca', 'Costo reseller', 'Vence', 'Renueva', 'Estado'];
@@ -530,6 +534,7 @@ export default function ResellerClientes() {
                                         <th className="py-3 pl-5 pr-3">Empresa</th>
                                         <th className="py-3 px-3">Plan</th>
                                         <th className="py-3 px-3">Marca</th>
+                                        <th className="py-3 px-3">Ambiente</th>
                                         <th className="py-3 px-3">Costo reseller</th>
                                         <th className="py-3 px-3">Vence</th>
                                         <th className="py-3 px-3">Renueva</th>
@@ -560,6 +565,13 @@ export default function ResellerClientes() {
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-50 text-violet-600 whitespace-nowrap"><Icon icon="solar:crown-star-bold" width={12} /> Marca blanca</span>
                                                     ) : (
                                                         <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-500">Estándar</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-3">
+                                                    {row.usaDemo ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-600 whitespace-nowrap"><Icon icon="solar:test-tube-bold" width={12} /> Demo</span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-600 whitespace-nowrap"><Icon icon="solar:cloud-check-bold" width={12} /> Producción</span>
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-3 font-bold text-slate-800 text-sm whitespace-nowrap">{row.costo}</td>
