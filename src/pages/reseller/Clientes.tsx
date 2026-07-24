@@ -11,44 +11,28 @@ import Button from '@/components/Button';
 import { BRAND } from '@/lib/branding';
 import { useExtentionsStore } from '@/zustand/extentions';
 
-// Precio mayorista MENSUAL por tramos de volumen (1-5, 6-15, 16-30, 31+).
-const VENDIFY_VOLUME_PRICING: Record<string, [number, number, number, number]> = {
-    'Emprendedor': [15, 14, 13, 12],
-    'Negocio':     [30, 29, 28, 27],
-    'Corporativo': [45, 44, 43, 42],
-};
-
-// Precio mayorista ANUAL (plano, 10× base = 2 meses gratis). Sin tramos.
-const VENDIFY_ANNUAL_PRICING: Record<string, number> = {
-    'Emprendedor': 150.00,
-    'Negocio':     300.00,
-    'Corporativo': 450.00,
-};
-
-function getVolumeTierCost(planNombre: string, clientesActivos: number): number | null {
-    const key = Object.keys(VENDIFY_VOLUME_PRICING).find(
-        k => k.toLowerCase() === planNombre.toLowerCase().trim()
-    );
-    const prices = key ? VENDIFY_VOLUME_PRICING[key] : undefined;
-    if (!prices) return null;
-    if (clientesActivos <= 5)  return prices[0];
-    if (clientesActivos <= 15) return prices[1];
-    if (clientesActivos <= 30) return prices[2];
-    return prices[3];
+// El costo del reseller = precio de lista del plan (el que crea el ADMIN_SISTEMA)
+// menos el descuento configurado para ese reseller (stats.porcentajeDescuento).
+// Antes había precios mayoristas HARDCODEADOS por nombre + anual = mensual×10; se
+// quitaron para que el costo SIEMPRE refleje los planes reales (mensual y anual)
+// y el descuento real del reseller.
+function resellerCost(costo: number | string, descuentoPct: number): number {
+    return Number(costo || 0) * (1 - (Number(descuentoPct) || 0) / 100);
 }
 
-function getAnnualCost(planNombre: string): number | null {
-    const key = Object.keys(VENDIFY_ANNUAL_PRICING).find(
-        k => k.toLowerCase() === planNombre.toLowerCase().trim()
-    );
-    return key ? VENDIFY_ANNUAL_PRICING[key] : null;
+// Nombre base del tier, sin el sufijo " ANUAL".
+function baseTierName(nombre: string): string {
+    return String(nombre || '').replace(/\s*anual\s*$/i, '').trim();
 }
 
-function getTierLabel(clientesActivos: number): string {
-    if (clientesActivos <= 5)  return '1-5 clientes';
-    if (clientesActivos <= 15) return '6-15 clientes';
-    if (clientesActivos <= 30) return '16-30 clientes';
-    return '31+ clientes';
+// Empareja, dentro de la lista de planes, el plan MENSUAL y el ANUAL de un mismo
+// tier (ej. "CORPORATIVO" y "CORPORATIVO ANUAL") para mostrar ambos costos reales.
+function findPlanPair(planes: any[], nombre: string): { mensual: any; anual: any } {
+    const base = baseTierName(nombre).toLowerCase();
+    const esAnual = (n: string) => /anual\s*$/i.test(String(n || ''));
+    const mensual = planes.find((p: any) => baseTierName(p.nombre).toLowerCase() === base && !esAnual(p.nombre));
+    const anual = planes.find((p: any) => baseTierName(p.nombre).toLowerCase() === base && esAnual(p.nombre));
+    return { mensual, anual };
 }
 
 const isFlagship = ['default', 'vendify'].includes(String(BRAND.key || '').toLowerCase());
@@ -694,13 +678,11 @@ export default function ResellerClientes() {
                                 value={(() => {
                                     const p = planesFacturacion.find((x: any) => String(x.id) === String(editData.planId));
                                     if (!p) return '';
-                                    const finalCost = getVolumeTierCost(p.nombre, stats.clientesActivos || 0)
-                                        ?? Number(p.costo) * (1 - (Number(stats.porcentajeDescuento) || 0) / 100);
+                                    const finalCost = resellerCost(p.costo, Number(stats.porcentajeDescuento) || 0);
                                     return `${p.nombre} (S/${finalCost.toFixed(2)})`;
                                 })()}
                                 options={planesFacturacion.map((plan: any) => {
-                                    const finalCost = getVolumeTierCost(plan.nombre, stats.clientesActivos || 0)
-                                        ?? Number(plan.costo) * (1 - (Number(stats.porcentajeDescuento) || 0) / 100);
+                                    const finalCost = resellerCost(plan.costo, Number(stats.porcentajeDescuento) || 0);
                                     return { id: plan.id, value: `${plan.nombre} (S/${finalCost.toFixed(2)})` };
                                 })}
                                 onChange={(id: any) => setEditData(prev => ({ ...prev, planId: String(id) }))}
@@ -711,8 +693,7 @@ export default function ResellerClientes() {
                         {/* Precio que el reseller cobra al cliente + ganancia en vivo */}
                         {(() => {
                             const p = planesFacturacion.find((x: any) => String(x.id) === String(editData.planId));
-                            const costoMensual = p ? (getVolumeTierCost(p.nombre, stats.clientesActivos || 0)
-                                ?? Number(p.costo) * (1 - (Number(stats.porcentajeDescuento) || 0) / 100)) : 0;
+                            const costoMensual = p ? resellerCost(p.costo, Number(stats.porcentajeDescuento) || 0) : 0;
                             const precioNum = editData.precioClienteFinal === '' ? null : Number(editData.precioClienteFinal);
                             const ganancia = precioNum != null ? precioNum - costoMensual : null;
                             return (
@@ -976,17 +957,9 @@ export default function ResellerClientes() {
                                     </div>
                                     <div className="flex items-center justify-between mb-1.5">
                                         <label className="text-xs font-semibold text-slate-600">Tipo de Plan</label>
-                                        {(() => {
-                                            const sel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
-                                            const tieneTramo = sel ? getVolumeTierCost(sel.nombre, (stats.clientesActivos || 0) + 1) !== null : true;
-                                            return (
-                                                <span className="text-[10px] font-medium text-[#7551FF] bg-[#7551FF]/10 px-2 py-0.5 rounded-md">
-                                                    {tieneTramo
-                                                        ? `Nivel: ${getTierLabel((stats.clientesActivos || 0) + 1)} con este cliente`
-                                                        : `Tu descuento: ${stats.porcentajeDescuento || 0}%`}
-                                                </span>
-                                            );
-                                        })()}
+                                        <span className="text-[10px] font-medium text-[#7551FF] bg-[#7551FF]/10 px-2 py-0.5 rounded-md">
+                                            Tu descuento: {stats.porcentajeDescuento || 0}%
+                                        </span>
                                     </div>
                                     <Select
                                         label=""
@@ -1027,10 +1000,10 @@ export default function ResellerClientes() {
                                         const p = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
                                         if (!p) return null;
                                         const esAnual = formData.cicloFacturacion === 'ANUAL';
-                                        const clientesConNuevo = (stats.clientesActivos || 0) + 1;
-                                        const costoMensual = getVolumeTierCost(p.nombre, clientesConNuevo)
-                                            ?? Number(p.costo) * (1 - (Number(stats.porcentajeDescuento) || 0) / 100);
-                                        const costoAnual = getAnnualCost(p.nombre) ?? costoMensual * 10;
+                                        const desc = Number(stats.porcentajeDescuento) || 0;
+                                        const { mensual: planMensual, anual: planAnual } = findPlanPair(planesFacturacion, p.nombre);
+                                        const costoMensual = resellerCost((planMensual ?? p).costo, desc);
+                                        const costoAnual = planAnual ? resellerCost(planAnual.costo, desc) : costoMensual * 10;
                                         const precioNum = formData.precioClienteFinal === '' ? null : Number(formData.precioClienteFinal);
                                         const ganancia = precioNum != null ? precioNum - costoMensual : null;
                                         return (
