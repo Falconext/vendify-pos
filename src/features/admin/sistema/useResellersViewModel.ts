@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useResellerStore } from '@/zustand/resellers';
 
 export const useResellersViewModel = () => {
-    const { resellers, rentabilidad, getAllResellers, getRentabilidad, createReseller, recargarSaldo, toggleEstadoReseller } = useResellerStore();
+    const { resellers, rentabilidad, getAllResellers, getRentabilidad, createReseller, recargarSaldo, ajustarSaldo, toggleEstadoReseller } = useResellerStore();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
     const [selectedReseller, setSelectedReseller] = useState<any>(null);
@@ -28,6 +28,12 @@ export const useResellersViewModel = () => {
         whiteLabelWhatsapp: '',
     });
     const [rechargeData, setRechargeData] = useState({ monto: '', referencia: '' });
+    const [saldoMode, setSaldoMode] = useState<'recargar' | 'ajustar'>('recargar');
+    const [ajusteData, setAjusteData] = useState({ nuevoSaldo: '', motivo: '' });
+    const handleAjusteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setAjusteData(prev => ({ ...prev, [name]: value }));
+    };
 
     useEffect(() => {
         getAllResellers();
@@ -120,7 +126,9 @@ export const useResellersViewModel = () => {
 
     const openRechargeModal = (reseller: any) => {
         setSelectedReseller(reseller);
+        setSaldoMode('recargar');
         setRechargeData({ monto: '', referencia: '' });
+        setAjusteData({ nuevoSaldo: Number(reseller?.saldo ?? 0).toFixed(2), motivo: '' });
         setIsRechargeModalOpen(true);
     };
 
@@ -130,7 +138,17 @@ export const useResellersViewModel = () => {
         const monto = parseFloat(rechargeData.monto);
         if (isNaN(monto) || monto <= 0) return;
         const result = await recargarSaldo(selectedReseller.id, monto, rechargeData.referencia);
-        if (result.success) setIsRechargeModalOpen(false);
+        if (result.success) { setIsRechargeModalOpen(false); await getRentabilidad(); }
+    };
+
+    const handleAjustarSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedReseller) return;
+        const nuevoSaldo = parseFloat(ajusteData.nuevoSaldo);
+        if (isNaN(nuevoSaldo) || nuevoSaldo < 0) return;
+        if (!ajusteData.motivo.trim()) return;
+        const result = await ajustarSaldo(selectedReseller.id, nuevoSaldo, ajusteData.motivo.trim());
+        if (result.success) { setIsRechargeModalOpen(false); await getRentabilidad(); }
     };
 
     const handleToggleEstado = async (reseller: any) => {
@@ -147,5 +165,5 @@ export const useResellersViewModel = () => {
         return rentabilidad.find((item) => item.resellerId === resellerId);
     };
 
-    return { resellers, rentabilidad, isCreateModalOpen, setIsCreateModalOpen, isRechargeModalOpen, setIsRechargeModalOpen, selectedReseller, isEditMode, formData, rechargeData, handleCreateChange, handleRechargeChange, openCreateModal, openEditModal, handleCreateSubmit, openRechargeModal, handleRechargeSubmit, handleToggleEstado, getRentabilidadByReseller };
+    return { resellers, rentabilidad, isCreateModalOpen, setIsCreateModalOpen, isRechargeModalOpen, setIsRechargeModalOpen, selectedReseller, isEditMode, formData, rechargeData, handleCreateChange, handleRechargeChange, openCreateModal, openEditModal, handleCreateSubmit, openRechargeModal, handleRechargeSubmit, handleToggleEstado, getRentabilidadByReseller, saldoMode, setSaldoMode, ajusteData, handleAjusteChange, handleAjustarSubmit };
 };

@@ -192,7 +192,7 @@ export default function UrbanoCatalogPage(props: UrbanoCatalogPageProps) {
     );
 
     return (
-        <div className="bg-white min-h-screen text-black" style={{ fontFamily: '"Inter", sans-serif' }}>
+        <div className="bg-white min-h-screen text-black overflow-x-hidden" style={{ fontFamily: '"Inter", sans-serif' }}>
             <UrbanoHeader
                 tienda={tienda}
                 slug={slug}
@@ -223,22 +223,24 @@ export default function UrbanoCatalogPage(props: UrbanoCatalogPageProps) {
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex items-center justify-between gap-4 mb-8">
-                    <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-500">
+                <div className="flex items-center justify-between gap-3 mb-8">
+                    <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-gray-500 shrink-0">
                         {loading ? 'Cargando…' : `${displayTotal} ${displayTotal === 1 ? 'producto' : 'productos'}`}
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <button
                             onClick={() => setShowMobileFilters(true)}
-                            className="lg:hidden flex items-center gap-1.5 border-2 border-black px-4 py-2 text-[11px] font-bold tracking-[0.15em] uppercase"
+                            className="lg:hidden flex items-center gap-1.5 border-2 border-black px-3 sm:px-4 py-2 text-[11px] font-bold tracking-[0.15em] uppercase shrink-0"
                         >
                             Filtros <Icon icon="solar:filter-linear" width={15} />
                         </button>
-                        <div className="relative">
+                        {/* Ancho fijo: evita que el <select> nativo se ensanche a la opción
+                            más larga ("Precio: menor a mayor") y desborde en mobile. */}
+                        <div className="relative w-[9.5rem] sm:w-44 shrink-0">
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none border-2 border-black bg-white pl-4 pr-9 py-2 text-[11px] font-bold tracking-[0.1em] uppercase outline-none cursor-pointer hover:bg-black hover:text-white transition-colors"
+                                className="w-full appearance-none truncate border-2 border-black bg-white pl-3 sm:pl-4 pr-9 py-2 text-[11px] font-bold tracking-[0.1em] uppercase outline-none cursor-pointer hover:bg-black hover:text-white transition-colors"
                             >
                                 {SORT_OPTIONS.map((o) => (
                                     <option key={o.value} value={o.value} className="text-black normal-case">{o.label}</option>

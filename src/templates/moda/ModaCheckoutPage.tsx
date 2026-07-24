@@ -6,7 +6,6 @@ import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import type { TemplateCheckoutPageProps } from '@/templates/shared/types';
 import { BancoLogo } from '@/components/shared/BancoLogo';
-import { STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
 
 type MedioPago = 'YAPE' | 'PLIN' | 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 
@@ -356,7 +355,7 @@ export default function ModaCheckoutPage({
           isOpen={showPaymentModal}
           onClose={() => { setShowPaymentModal(false); window.location.href = `/tienda/${slug}/seguimiento?codigo=${pedidoCreado.codigoSeguimiento}`; }}
           orderData={{ id: pedidoCreado.id, codigoSeguimiento: pedidoCreado.codigoSeguimiento, total: pedidoCreado.total || calcularTotal(), medioPago: formData.medioPago, tipoEntrega: formData.tipoEntrega, clienteNombre: formData.clienteNombre }}
-          paymentConfig={configPago ? { yapeQR: configPago.yapeQR || configPago.yapeQrUrl || undefined, plinQR: configPago.plinQR || configPago.plinQrUrl || undefined, yapeNumero: configPago.yapeNumero || undefined, plinNumero: configPago.plinNumero || undefined, whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER } : undefined}
+          paymentConfig={configPago ? { yapeQR: configPago.yapeQR || configPago.yapeQrUrl || undefined, plinQR: configPago.plinQR || configPago.plinQrUrl || undefined, yapeNumero: configPago.yapeNumero || undefined, plinNumero: configPago.plinNumero || undefined, whatsappTienda: configPago?.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda } : undefined}
           storeSlug={slug || ''}
         />
       )}

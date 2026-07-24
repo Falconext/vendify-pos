@@ -154,36 +154,31 @@ export const usePagosStore = create<IPagosState>()(
         }
       },
 
-      // Obtener Cuentas por Cobrar (comprobantes con saldo pendiente)
+      // Obtener Cuentas por Cobrar (comprobantes con saldo pendiente).
+      // Usa el endpoint dedicado que filtra en la BD y devuelve TODOS los
+      // receivables (sin paginar), por lo que coincide con el indicador
+      // "Por Cobrar" del dashboard. Antes consumía `comprobante/listar`
+      // paginado y filtraba en el cliente, perdiendo los comprobantes que
+      // caían fuera de la primera página.
       getCuentasPorCobrar: async (params: any) => {
         try {
           set({ loadingCuentas: true });
-          // Agregar tipoComprobante=INFORMAL siempre
-          const queryParams = {
-            tipoComprobante: 'TODOS',
-            ...params,
-          };
-          const filteredParams = Object.entries(queryParams)
+          // La lista no se pagina; se ignoran page/limit del componente.
+          const { page: _page, limit: _limit, ...rest } = params || {};
+          const filteredParams = Object.entries(rest)
             .filter(([_, value]) => value !== undefined && value !== '')
             .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
 
           const query = new URLSearchParams(filteredParams as any).toString();
-          const resp: any = await get(`comprobante/listar?${query}`);
+          const resp: any = await get(
+            `comprobante/cuentas-por-cobrar${query ? `?${query}` : ''}`,
+          );
 
           if (resp.code === 1) {
-            const comprobantes = resp.data?.comprobantes || resp.data || [];
-
-            // Filtrar solo los que tienen saldo > 0, no están anulados y no son NP (pedidos preliminares)
-            const pendientes = comprobantes.filter((c: any) =>
-              (c.saldo ?? 0) > 0 &&
-              c.estadoPago !== 'COMPLETADO' &&
-              c.estadoPago !== 'ANULADO' &&
-              c.estadoEnvioSunat !== 'ANULADO' &&
-              c.tipoDoc !== 'NP'
-            );
+            const pendientes = resp.data?.comprobantes || [];
             set({
               cuentasPorCobrar: pendientes,
-              totalCuentasPorCobrar: pendientes.length,
+              totalCuentasPorCobrar: resp.data?.resumen?.cantidad ?? pendientes.length,
               loadingCuentas: false
             });
             return { success: true };
@@ -234,7 +229,7 @@ export const usePagosStore = create<IPagosState>()(
         try {
           const resp: any = await get(`pago/comprobante/${comprobanteId}/historial`);
           
-          let pagos = [];
+          let pagos: any[] = [];
           let totalPagado = 0;
           
           if (resp?.data?.pagos) {

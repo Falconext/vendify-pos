@@ -14,21 +14,28 @@ const COLOR_HEX: Record<string, string> = {
   black: '#111111',
   blanco: '#F8FAFC',
   blue: '#2563EB',
+  bronce: '#8C5A2B',
   cafe: '#7C4A2D',
   camel: '#C28B57',
   celeste: '#93C5FD',
+  cobre: '#B87333',
   crema: '#F5E6C8',
   dorado: '#D4AF37',
   gris: '#6B7280',
+  guinda: '#7F1D1D',
   marron: '#7C4A2D',
   morado: '#7C3AED',
+  multicolor: '#9CA3AF',
   naranja: '#F97316',
   negro: '#111111',
+  plata: '#C0C0C0',
+  plateado: '#C0C0C0',
   red: '#DC2626',
   rojo: '#DC2626',
   rosa: '#F9A8D4',
   rosado: '#F9A8D4',
   verde: '#16A34A',
+  vino: '#7F1D1D',
   white: '#F8FAFC',
 };
 
@@ -107,6 +114,52 @@ export const colorToHex = (name: string) => {
   return COLOR_HEX[normalized] || '#E5E7EB';
 };
 
+// Mapa nombre-de-color -> hex configurado por el comerciante en el admin
+// (`atributosTecnicos.coloresTienda`). Es la FUENTE DE VERDAD de los swatches:
+// incluye colores personalizados (ej. "Cobre") que no están en COLOR_HEX.
+const colorMapFromProducto = (producto: any): Record<string, string> => {
+  const raw = producto?.atributosTecnicos?.coloresTienda;
+  const obj =
+    typeof raw === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+          } catch {
+            return {};
+          }
+        })()
+      : raw;
+  if (!obj || typeof obj !== 'object') return {};
+  const map: Record<string, string> = {};
+  Object.entries(obj).forEach(([key, value]) => {
+    if (typeof value === 'string' && value.trim()) {
+      map[normalizeText(key)] = value.trim();
+    }
+  });
+  return map;
+};
+
+// Hex "placeholder" que el admin asigna cuando el comerciante NO personalizó
+// el color (gris por defecto). Si el color sí es conocido, preferimos el hex
+// real para que, p.ej., "Cobre" salga cobre y no gris.
+const PLACEHOLDER_HEX = new Set(['#cbd5e1', '#e5e7eb']);
+
+// Resuelve el hex de un color respetando primero lo que el comerciante guardó
+// en el producto, luego la paleta conocida, y por último un gris neutro.
+export const resolveColorHex = (
+  name: string,
+  colorMap?: Record<string, string>,
+) => {
+  const normalized = normalizeText(name);
+  const known = COLOR_HEX[normalized];
+  const custom = colorMap?.[normalized];
+  if (custom && !(known && PLACEHOLDER_HEX.has(custom.toLowerCase()))) {
+    return custom;
+  }
+  return known || custom || '#E5E7EB';
+};
+
 // Imagen representativa de un color: la primera variante de ese color con imagen.
 // En la tienda la imagen es por color (todas las tallas comparten la misma foto).
 export const getFashionColorImage = (producto: any, colorValue: string): string | null => {
@@ -164,7 +217,12 @@ export const getFashionColors = (producto: any): FashionColorOption[] => {
   const values = hasOptions
     ? valuesFromOptions(producto, isColorName)
     : valuesFromVariants(producto, isColorName);
-  return values.map((name) => ({ name, hex: colorToHex(name), image: getFashionColorImage(producto, name) }));
+  const colorMap = colorMapFromProducto(producto);
+  return values.map((name) => ({
+    name,
+    hex: resolveColorHex(name, colorMap),
+    image: getFashionColorImage(producto, name),
+  }));
 };
 
 export const getFashionSizes = (producto: any): string[] => {

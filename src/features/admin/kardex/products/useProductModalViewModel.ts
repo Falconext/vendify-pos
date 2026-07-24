@@ -526,14 +526,12 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         formValues?.precioUnitario && Number(formValues?.precioUnitario) > 0
           ? ""
           : "El producto debe tener un precio",
-      stock: !esServicio && !isEdit
-        ? (esFarmaceutico && features.gestionLotes)
-          ? (creationLote.stockInicial && Number(creationLote.stockInicial) > 0)
-            ? ""
-            : "Debe ingresar el stock inicial usando el botón Gestión de Lotes"
-          : (formValues?.stock && Number(formValues?.stock) > 0)
-            ? ""
-            : "El producto debe tener un stock"
+      // Se permite crear un producto con stock 0 (se abastece después).
+      // Solo farmacia con gestión de lotes exige el lote inicial (trazabilidad/vencimiento).
+      stock: !esServicio && !isEdit && esFarmaceutico && features.gestionLotes
+        ? (creationLote.stockInicial && Number(creationLote.stockInicial) > 0)
+          ? ""
+          : "Debe ingresar el stock inicial usando el botón Gestión de Lotes"
         : "",
     };
     setErrors(newErrors);
@@ -1409,7 +1407,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             stock:
               esFarmaceutico && features.gestionLotes && creationLote.lote
                 ? 0
-                : Number(formValues.stock),
+                : Number(formValues.stock || 0),
             stockMinimo:
               formValues?.stockMinimo != null
                 ? Number(formValues?.stockMinimo)

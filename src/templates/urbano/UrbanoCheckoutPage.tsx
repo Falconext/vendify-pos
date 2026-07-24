@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import type { TemplateCheckoutPageProps } from '@/templates/shared/types';
 import { BancoLogo } from '@/components/shared/BancoLogo';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 type MedioPago = 'YAPE' | 'PLIN' | 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 
@@ -49,6 +49,7 @@ export default function UrbanoCheckoutPage({
 }: TemplateCheckoutPageProps) {
   const navigate = useNavigate();
   const isPreview = slug === 'preview';
+  const storeWhatsappNumber = configPago?.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda;
   const safeFormData = {
     clienteNombre: '',
     clienteTelefono: '',
@@ -108,7 +109,8 @@ export default function UrbanoCheckoutPage({
       `Envío: ${envio === 0 ? 'Gratis' : `S/ ${envio.toFixed(2)}`}\n` +
       `*Total: S/ ${total.toFixed(2)}*\n\n` +
       `Cotización generada desde la tienda online.`;
-    window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank');
+    const url = buildStorePurchaseWhatsappUrl(storeWhatsappNumber, mensaje);
+    if (url) window.open(url, '_blank');
   };
 
   return (
@@ -431,17 +433,21 @@ export default function UrbanoCheckoutPage({
                   }
                 </button>
 
-                <button
-                  onClick={cotizarPorWhatsApp}
-                  disabled={cartItems.length === 0}
-                  className="w-full py-4 mt-3 bg-white text-black font-bold text-[11px] tracking-[0.2em] uppercase border-2 border-black transition-all hover:bg-[#25D366] hover:border-[#25D366] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                >
-                  <Icon icon="ic:baseline-whatsapp" width={18} />
-                  Cotizar por WhatsApp
-                </button>
-                <p className="text-center text-[10px] text-gray-400 mt-3 uppercase tracking-[0.15em]">
-                  Te enviamos la cotización a tu WhatsApp
-                </p>
+                {!!normalizeStoreWhatsapp(storeWhatsappNumber) && (
+                  <>
+                    <button
+                      onClick={cotizarPorWhatsApp}
+                      disabled={cartItems.length === 0}
+                      className="w-full py-4 mt-3 bg-white text-black font-bold text-[11px] tracking-[0.2em] uppercase border-2 border-black transition-all hover:bg-[#25D366] hover:border-[#25D366] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                    >
+                      <Icon icon="ic:baseline-whatsapp" width={18} />
+                      Cotizar por WhatsApp
+                    </button>
+                    <p className="text-center text-[10px] text-gray-400 mt-3 uppercase tracking-[0.15em]">
+                      Te enviamos la cotización a tu WhatsApp
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -510,7 +516,7 @@ export default function UrbanoCheckoutPage({
           isOpen={showPaymentModal}
           onClose={() => { setShowPaymentModal(false); window.location.href = `/tienda/${slug}/seguimiento?codigo=${pedidoCreado.codigoSeguimiento}`; }}
           orderData={{ id: pedidoCreado.id, codigoSeguimiento: pedidoCreado.codigoSeguimiento, total: pedidoCreado.total || calcularTotal(), medioPago: safeFormData.medioPago, tipoEntrega: safeFormData.tipoEntrega, clienteNombre: safeFormData.clienteNombre }}
-          paymentConfig={configPago ? { yapeQR: configPago.yapeQR || configPago.yapeQrUrl || undefined, plinQR: configPago.plinQR || configPago.plinQrUrl || undefined, yapeNumero: configPago.yapeNumero || undefined, plinNumero: configPago.plinNumero || undefined, whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER } : undefined}
+          paymentConfig={configPago ? { yapeQR: configPago.yapeQR || configPago.yapeQrUrl || undefined, plinQR: configPago.plinQR || configPago.plinQrUrl || undefined, yapeNumero: configPago.yapeNumero || undefined, plinNumero: configPago.plinNumero || undefined, whatsappTienda: configPago?.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda } : undefined}
           storeSlug={slug || ''}
         />
       )}

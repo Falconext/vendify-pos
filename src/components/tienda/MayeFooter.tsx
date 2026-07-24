@@ -2,7 +2,7 @@ import React from 'react';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_RAW } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface Props {
   tienda: any;
@@ -16,9 +16,9 @@ export default function MayeFooter({ tienda, slug, diseno }: Props) {
   const accentShadow = `${cp}4D`;
   const helpTitle = diseno?.mayeFooterHelpTitle || 'Información de Ayuda';
   const helpText = diseno?.mayeFooterHelpText || 'Encuentra productos disponibles, soporte de compra y atención directa desde nuestra tienda virtual.';
-  const phone = STORE_PURCHASE_WHATSAPP_RAW;
+  const phone = normalizeStoreWhatsapp(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda);
   const email = diseno?.mayeFooterEmail || tienda?.email || tienda?.correo || '';
-  const whatsappUrl = buildStorePurchaseWhatsappUrl(`Hola, vengo de ${tienda?.nombreComercial || 'la tienda'} y quisiera información.`);
+  const whatsappUrl = buildStorePurchaseWhatsappUrl(phone, `Hola, vengo de ${tienda?.nombreComercial || 'la tienda'} y quisiera información.`) ?? undefined;
   const socialLinks = [
     { url: tienda?.twitterUrl || diseno?.twitterUrl, icon: 'mdi:twitter', label: 'Twitter' },
     { url: tienda?.facebookUrl || diseno?.facebookUrl, icon: 'mdi:facebook', label: 'Facebook' },

@@ -329,7 +329,8 @@ const Comprobantes = () => {
             s3PdfUrl: item?.s3PdfUrl,
             client: item?.cliente?.nombre,
             vendedor: item?.usuario?.nombre || '-',
-            total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
+            // El importe se muestra en la moneda del comprobante: US$ para dólares, S/ para soles.
+            total: `${String((item as any).tipoMoneda).toUpperCase() === 'USD' ? '$' : 'S/'} ${item.mtoImpVenta.toFixed(2)}`,
             estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
                 ? item.estadoEnvioSunat
                 : item.estadoPago,
@@ -453,8 +454,8 @@ const Comprobantes = () => {
                 serie: formValues.serie,
                 correlativo: formValues.correlativo,
                 cliente: { nombre: formValues.client },
-                mtoImpVenta: parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0'),
-                saldo: parseFloat((formValues?.saldo || '').toString().replace('S/ ', '') || '0') || undefined,
+                mtoImpVenta: parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0'),
+                saldo: parseFloat((formValues?.saldo || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0') || undefined,
             },
             async (_comprobante: any, _medioPago: string, _monto: number, _observacion?: string, _referencia?: string, _cuentaBancariaId?: number) => {
                 // Reutiliza completePay del store (acepta monto opcional)
@@ -1065,14 +1066,14 @@ const Comprobantes = () => {
                     isOpen={isOpenModalPagoParcial}
                     isLoading={paymentFlow.isLoading}
                     paymentType={paymentFlow.payment.tipo}
-                    saldoPendiente={parseFloat((formValues?.saldo || '').toString().replace('S/ ', '') || '0') || parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')}
-                    totalComprobante={parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')}
+                    saldoPendiente={parseFloat((formValues?.saldo || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0') || parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')}
+                    totalComprobante={parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')}
                     comprobanteInfo={{
                         id: formValues.id,
                         serie: formValues.serie,
                         correlativo: formValues.correlativo,
                         cliente: formValues.client,
-                        total: parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')
+                        total: parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')
                     }}
                     onConfirm={handleConfirmPago}
                     onCancel={() => {

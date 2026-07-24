@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
 import { BRAND } from '@/lib/branding';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_RAW } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface FooterProps {
     tienda: any;
@@ -10,6 +10,8 @@ interface FooterProps {
 export default function Footer({ tienda, diseno }: FooterProps) {
     const year = new Date().getFullYear();
     const cp = diseno?.colorPrimario || '#FF9500';
+    const phone = normalizeStoreWhatsapp(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda);
+    const whatsappUrl = buildStorePurchaseWhatsappUrl(phone, `Hola, vengo de ${tienda.nombreComercial || 'la tienda'} y quisiera información.`);
 
     const socialLinks = [
         { key: 'instagramUrl', icon: 'mdi:instagram' },
@@ -113,15 +115,15 @@ export default function Footer({ tienda, diseno }: FooterProps) {
                     <div>
                         <h4 className="text-xs font-bold text-[#999] uppercase tracking-widest mb-4">Contacto</h4>
                         <ul className="space-y-3">
-                            {STORE_PURCHASE_WHATSAPP_RAW && (
+                            {phone && (
                                 <li>
                                     <a
-                                        href={buildStorePurchaseWhatsappUrl(`Hola, vengo de ${tienda.nombreComercial || 'la tienda'} y quisiera información.`)}
+                                        href={whatsappUrl ?? undefined}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="text-sm text-[#333] transition-colors"
                                     >
-                                        {STORE_PURCHASE_WHATSAPP_RAW}
+                                        {phone}
                                     </a>
                                 </li>
                             )}

@@ -40,7 +40,8 @@ export default function MayeCartModal({
       `${lineas}\n\n` +
       `*Total estimado: ${money(total)}*\n\n` +
       `Hola, quisiera cotizar estos productos. ¿Me confirman precio y disponibilidad?`;
-    window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank', 'noopener,noreferrer');
+    const url = buildStorePurchaseWhatsappUrl(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda, mensaje);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (

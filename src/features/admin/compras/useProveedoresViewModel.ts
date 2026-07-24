@@ -26,7 +26,7 @@ const getDocLabel = (data: IClient): string => {
 };
 
 export const useProveedoresViewModel = () => {
-    const { getAllClients, clients, totalClients, toggleStateClient } = useClientsStore();
+    const { getAllClients, clients, totalClients, toggleStateClient, deleteClient } = useClientsStore();
     const { success } = useAlertStore();
 
     const [state, setState] = useState<IProveedoresViewModelState>({
@@ -99,6 +99,9 @@ export const useProveedoresViewModel = () => {
             toggleStateClient(Number(state.formValues?.id));
             setState(prev => ({ ...prev, isOpenModalConfirm: false }));
         },
+        // Eliminación con candado: el backend rechaza si el proveedor tiene historial.
+        deleteClient: (id: number) => deleteClient(id),
+        closeMenu: () => setState(prev => ({ ...prev, openAccionesId: null, anchorEl: null })),
         setIsOpenModalConfirm: (v: boolean) =>
             setState(prev => ({ ...prev, isOpenModalConfirm: v })),
         setcurrentPage: (page: number) =>

@@ -12,6 +12,8 @@ export interface IFormCompany {
     nombreComercial: string
     planNombre: string
     tipoEmpresa: string
+    // Régimen tributario SUNAT: GENERAL | RER | MYPE | RUS. En RUS solo se emiten boletas.
+    regimenTributario?: string
     maxSedes?: number
     ubigeo: string
     fechaActivacion: any;

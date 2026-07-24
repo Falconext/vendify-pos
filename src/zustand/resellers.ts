@@ -51,6 +51,7 @@ export interface IResellerState {
     createReseller: (data: any) => Promise<{ success: boolean; error?: string }>;
     getResellerById: (id: number) => Promise<{ success: boolean; error?: string }>;
     recargarSaldo: (id: number, monto: number, referencia?: string) => Promise<{ success: boolean; error?: string }>;
+    ajustarSaldo: (id: number, nuevoSaldo: number, motivo: string) => Promise<{ success: boolean; error?: string }>;
     updateReseller: (id: number, data: any) => Promise<{ success: boolean; error?: string }>;
     toggleEstadoReseller: (id: number, activo: boolean) => Promise<{ success: boolean; error?: string }>;
     resetReseller: () => void;
@@ -174,6 +175,29 @@ export const useResellerStore = create<IResellerState>()(devtools((set) => ({
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al recargar saldo', 'error');
+            return { success: false, error: error.message };
+        }
+    },
+
+    ajustarSaldo: async (id: number, nuevoSaldo: number, motivo: string) => {
+        try {
+            useAlertStore.setState({ loading: true });
+            const resp: any = await patch(`resellers/${id}/saldo`, { nuevoSaldo, motivo });
+            if (resp.code === 1) {
+                useAlertStore.setState({ loading: false });
+                useAlertStore.getState().alert('Saldo ajustado correctamente', 'success');
+                set((state) => ({
+                    resellers: state.resellers.map(r => r.id === id ? { ...r, saldo: Number(nuevoSaldo) } : r),
+                    reseller: state.reseller?.id === id ? { ...state.reseller, saldo: Number(nuevoSaldo) } : state.reseller
+                }), false, 'ADJUST_SALDO');
+                return { success: true };
+            }
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(resp.error || 'Error al ajustar saldo', 'error');
+            return { success: false, error: resp.error };
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error.message || 'Error al ajustar saldo', 'error');
             return { success: false, error: error.message };
         }
     },

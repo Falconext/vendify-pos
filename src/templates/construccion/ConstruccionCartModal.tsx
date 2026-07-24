@@ -35,7 +35,8 @@ export default function ConstruccionCartModal({
       .map((item) => `• ${Number(item.cantidad || 1)} x ${item.descripcion} - ${money(Number(item.precioUnitario || 0) * Number(item.cantidad || 1))}`)
       .join('\n');
     const message = `Hola, quiero cotizar estos productos en ${storeName}:\n\n${detail}\n\nTotal estimado: ${money(total)}\n¿Me confirman stock y tiempo de entrega?`;
-    window.open(buildStorePurchaseWhatsappUrl(message), '_blank', 'noopener,noreferrer');
+    const url = buildStorePurchaseWhatsappUrl(tienda?.whatsappTienda ?? diseno?.whatsappTienda, message);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (

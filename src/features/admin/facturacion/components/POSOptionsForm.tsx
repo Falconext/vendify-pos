@@ -331,10 +331,10 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                 </div>
             )}
 
-            {/* Moneda de la cotización — relabela todo el formato (S/ o US$) */}
-            {vm.isQuotationRoute && (
+            {/* Moneda del documento (cotización o comprobante) — S/ o US$ (facturas de exportación en USD) */}
+            {(vm.isQuotationRoute || vm.esFacturaOBoleta) && (
                 <div className="mt-3">
-                    <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Moneda</label>
+                    <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Moneda{vm.isQuotationRoute ? '' : ' del comprobante'}</label>
                     <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 h-9">
                         {([['PEN', 'Soles (S/)'], ['USD', 'Dólares (US$)']] as const).map(([code, label]) => (
                             <button

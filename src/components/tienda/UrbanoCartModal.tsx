@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface UrbanoCartModalProps {
     isOpen: boolean;
@@ -24,6 +24,9 @@ export default function UrbanoCartModal({
 }: UrbanoCartModalProps) {
     if (!isOpen) return null;
 
+    const whatsappNumero = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda;
+    const tieneWhatsapp = !!normalizeStoreWhatsapp(whatsappNumero);
+
     const calcularSubtotal = () =>
         carrito.reduce((sum, item) => sum + Number(item.precioUnitario) * Number(item.cantidad || 1), 0);
 
@@ -38,7 +41,8 @@ export default function UrbanoCartModal({
             `${lineas}\n\n` +
             `*Total estimado: S/ ${calcularSubtotal().toFixed(2)}*\n\n` +
             `Hola, quisiera cotizar estos productos. ¿Me confirman precio y disponibilidad?`;
-        window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank', 'noopener,noreferrer');
+        const url = buildStorePurchaseWhatsappUrl(whatsappNumero, mensaje);
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const eliminarItem = (item: any) => {
@@ -171,13 +175,15 @@ export default function UrbanoCartModal({
                             Ir a pagar
                             <span className="opacity-0 group-hover:opacity-100 transition-opacity">]</span>
                         </button>
-                        <button
-                            onClick={cotizarPorWhatsApp}
-                            className="mt-3 w-full bg-white text-black py-4 font-bold text-[11px] tracking-[0.2em] uppercase border-2 border-black hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
-                        >
-                            <Icon icon="ic:baseline-whatsapp" width={16} />
-                            Cotizar por WhatsApp
-                        </button>
+                        {tieneWhatsapp && (
+                            <button
+                                onClick={cotizarPorWhatsApp}
+                                className="mt-3 w-full bg-white text-black py-4 font-bold text-[11px] tracking-[0.2em] uppercase border-2 border-black hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                <Icon icon="ic:baseline-whatsapp" width={16} />
+                                Cotizar por WhatsApp
+                            </button>
+                        )}
                         <p className="text-center text-[10px] text-gray-400 mt-4 uppercase tracking-[0.15em]">
                             Impuestos y envíos calculados al finalizar
                         </p>

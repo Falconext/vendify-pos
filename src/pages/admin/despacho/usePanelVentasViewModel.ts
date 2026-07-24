@@ -104,7 +104,8 @@ export function usePanelVentasViewModel() {
             // Admins on the principal sede see all sedes; everyone else filters by their sede
             if (sedeActiva?.id && !esPrincipalAdmin) params.set('sedeId', String(sedeActiva.id));
             if (canFilterByUsuario && filtroUsuarioId) params.set('usuarioId', String(filtroUsuarioId));
-            const { data } = await apiClient.get<any>(`/ventas/panel?${params}`);
+            // Reporte pesado: damos más margen que el timeout global de 12s
+            const { data } = await apiClient.get<any>(`/ventas/panel?${params}`, { timeout: 30_000 });
             const raw = data?.data?.data ?? data?.data ?? [];
             setItems(Array.isArray(raw) ? raw : []);
             const resumenGlobal = data?.data?.resumen?.porCobrarGlobal ?? data?.resumen?.porCobrarGlobal;

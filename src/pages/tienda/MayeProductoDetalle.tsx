@@ -215,7 +215,10 @@ export default function MayeProductoDetalle() {
   const specPairs: { label: string; value: any; pill?: boolean }[][] = [];
   for (let i = 0; i < specs.length; i += 2) specPairs.push(specs.slice(i, i + 2));
   const whatsappText = `Hola, quiero asesoría sobre ${producto.descripcion}`;
-  const whatsappUrl = buildStorePurchaseWhatsappUrl(whatsappText);
+  const whatsappUrl = buildStorePurchaseWhatsappUrl(
+    tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda,
+    whatsappText,
+  );
   const googleReviewsUrl = diseno?.googleReviewsUrl
     || diseno?.googleOpinionesUrl
     || (storeDisplayName ? `https://www.google.com/search?q=${encodeURIComponent(`${storeDisplayName} opiniones Google`)}` : '');

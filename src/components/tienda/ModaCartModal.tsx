@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface ModaCartModalProps {
   isOpen: boolean;
@@ -46,6 +46,9 @@ export default function ModaCartModal({
 
   const subtotal = carrito.reduce((sum, item) => sum + getPrice(item) * Number(item.cantidad || 1), 0);
 
+  const whatsappNumero = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda;
+  const puedeCotizarWhatsapp = !!normalizeStoreWhatsapp(whatsappNumero);
+
   const cotizarPorWhatsApp = () => {
     if (!carrito.length) return;
     const nombreTienda = tienda?.nombreComercial || tienda?.nombre || 'Tienda';
@@ -57,7 +60,8 @@ export default function ModaCartModal({
       `${lineas}\n\n` +
       `*Total estimado: ${money(subtotal)}*\n\n` +
       `Hola, quisiera cotizar estos productos. ¿Me confirman precio y disponibilidad?`;
-    window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank', 'noopener,noreferrer');
+    const url = buildStorePurchaseWhatsappUrl(whatsappNumero, mensaje);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
   const freeShippingGoal = 199;
   const remaining = Math.max(0, freeShippingGoal - subtotal);
@@ -176,13 +180,15 @@ export default function ModaCartModal({
             <button onClick={onCheckout} className="h-11 w-full bg-black text-[13px] font-medium text-white hover:bg-neutral-800">
               Finalizar compra →
             </button>
-            <button
-              onClick={cotizarPorWhatsApp}
-              className="mt-2 flex h-11 w-full items-center justify-center gap-2 border border-neutral-300 bg-white text-[13px] font-medium text-neutral-800 transition-colors hover:border-black hover:bg-neutral-50"
-            >
-              <Icon icon="ic:baseline-whatsapp" width={17} className="text-emerald-600" />
-              Cotizar por WhatsApp
-            </button>
+            {puedeCotizarWhatsapp && (
+              <button
+                onClick={cotizarPorWhatsApp}
+                className="mt-2 flex h-11 w-full items-center justify-center gap-2 border border-neutral-300 bg-white text-[13px] font-medium text-neutral-800 transition-colors hover:border-black hover:bg-neutral-50"
+              >
+                <Icon icon="ic:baseline-whatsapp" width={17} className="text-emerald-600" />
+                Cotizar por WhatsApp
+              </button>
+            )}
             <p className="mt-3 text-center text-[11px] text-neutral-500">Impuestos y envío se calculan al finalizar.</p>
           </footer>
         )}

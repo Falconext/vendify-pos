@@ -141,6 +141,7 @@ interface UpdateEmpresaDto {
   logo?: File | string | any;
   planId: number;
   tipoEmpresa: 'FORMAL' | 'INFORMAL';
+  regimenTributario?: 'GENERAL' | 'RER' | 'MYPE' | 'RUS';
   departamento: string;
   provincia: string;
   distrito: string;

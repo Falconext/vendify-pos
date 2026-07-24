@@ -223,17 +223,33 @@ const PrintPDF = ({
     }, 0);
 
     const totalPrices = productsInvoice.reduce((sum, producto) => {
-        return sum + (Number(producto.precioUnitario || producto.mtoPrecioUnitario || 0) * (producto.cantidad || 0));
+        const cant = Number(producto.cantidad || 0);
+        // Precio de lista de la línea: en creación viene precioUnitario; en reimpresión se
+        // reconstruye sumando el descuento guardado (mtoDescuento) al precio ya rebajado.
+        const grossLine = producto.precioUnitario != null
+            ? Number(producto.precioUnitario) * cant
+            : Number(producto.mtoPrecioUnitario || 0) * cant + Number((producto as any).mtoDescuento || 0);
+        return sum + grossLine;
     }, 0);
 
     const isDocumentoFiscal = ['01', '03', '07', '08'].includes(String(formValues?.tipoDoc || ''));
-    const totalDescuentos = Number(
+    // Descuento por línea guardado en el comprobante (reimpresión desde la lista). En el
+    // ticket de creación los ítems del carrito no lo traen, así que el ahorro se deduce de
+    // (totalPrices - totalReceipt). Nota: mtoDescuentoGlobal llega como 0 (no null) en la
+    // reimpresión, por lo que la cadena `??` lo cortaría; por eso se suma explícitamente.
+    const lineDiscountsSum = productsInvoice.reduce(
+        (s: number, p: any) => s + Number(p?.mtoDescuento || 0), 0
+    );
+    const headerGlobalDiscount = Number(
         formValues?.totalDescuentos ??
         formValues?.mtoDescuentos ??
         formValues?.mtoDescuentoGlobal ??
-        discount ??
-        (totalPrices > totalReceipt ? totalPrices - totalReceipt : 0)
-    );
+        0
+    ) || 0;
+    const fallbackDiscount = totalPrices > totalReceipt ? totalPrices - totalReceipt : 0;
+    const totalDescuentos = (lineDiscountsSum + headerGlobalDiscount) > 0
+        ? lineDiscountsSum + headerGlobalDiscount
+        : (Number(discount || 0) || fallbackDiscount);
     const explicitDiscount = Number(formValues?.mtoDescuentoGlobal ?? formValues?.totalDescuentos ?? discount ?? 0) || 0;
     const netTotalFallback = Math.max(0, totalReceipt - explicitDiscount);
     const mtoOperGravadas = Number(formValues?.mtoOperGravadas ?? (netTotalFallback / 1.18));
@@ -397,7 +413,11 @@ const PrintPDF = ({
                                         <Text style={styles.tableCell}>{formatCantidad(item?.cantidad)}</Text>
                                         <Text style={styles.tableCell}>{item?.unidad?.toUpperCase() || item?.unidadMedida?.toUpperCase() || item?.producto?.unidadMedida?.codigo?.toUpperCase() || ''}</Text>
                                         <Text style={styles.tableCellDescription}>{item?.descripcion?.toUpperCase() || ''}</Text>
-                                        <Text style={styles.tableCellNumber}>{Number(item?.precioUnitario || item?.mtoPrecioUnitario || 0).toFixed(2)}</Text>
+                                        <Text style={styles.tableCellNumber}>{Number(
+                                            item?.precioUnitario != null
+                                                ? item.precioUnitario
+                                                : Number(item?.mtoPrecioUnitario || 0) + (Number((item as any)?.mtoDescuento || 0) / Number(item?.cantidad || 1))
+                                        ).toFixed(2)}</Text>
                                         <Text style={styles.tableCellNumber}>{Number(item?.total || (item?.mtoPrecioUnitario ?? 0) * (item?.cantidad ?? 0) || 0).toFixed(2)}</Text>
                                     </View>
                                 ))}
@@ -490,13 +510,13 @@ const PrintPDF = ({
                             </>
                             <View style={styles.section}>
                                 <Text style={styles.bold}>SON: {totalInWords || ''}</Text>
-                                {(discount && Number(discount) > 0) && (
+                                {!isDocumentoFiscal && (discount && Number(discount) > 0) && (
                                     <View style={styles.infoRow}>
                                         <Text style={styles.label}>DESCUENTO:</Text>
                                         <Text style={styles.value}>- S/ {round2(totalDescuentos).toFixed(2)}</Text>
                                     </View>
                                 )}
-                                {!explicitDiscount && totalReceipt < totalPrices && (
+                                {!isDocumentoFiscal && !explicitDiscount && totalReceipt < totalPrices && (
                                     <View style={styles.infoRow}>
                                         <Text style={styles.label}>DESCUENTO:</Text>
                                         <Text style={styles.value}>S/ {(totalPrices - totalReceipt).toFixed(2)}</Text>
@@ -779,7 +799,11 @@ const PrintPDF = ({
                                                 </Text>
                                             )}
                                         </View>
-                                        <Text style={styles.tableCellNumber}>{Number(item?.precioUnitario || item?.mtoPrecioUnitario || 0).toFixed(2)}</Text>
+                                        <Text style={styles.tableCellNumber}>{Number(
+                                            item?.precioUnitario != null
+                                                ? item.precioUnitario
+                                                : Number(item?.mtoPrecioUnitario || 0) + (Number((item as any)?.mtoDescuento || 0) / Number(item?.cantidad || 1))
+                                        ).toFixed(2)}</Text>
                                         <Text style={styles.tableCellNumber}>{Number(item?.total || (item?.mtoPrecioUnitario ?? 0) * (item?.cantidad ?? 0) || 0).toFixed(2)}</Text>
                                     </View>
                                 ))}

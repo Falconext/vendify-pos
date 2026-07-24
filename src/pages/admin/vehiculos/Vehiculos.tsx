@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useMemo, type ChangeEvent } from 'react';
 import { Icon } from '@iconify/react';
-import { get, post, patch, del } from '@/utils/fetch';
+import { get, post } from '@/utils/fetch';
+import { useVehiculosStore } from '@/zustand/vehiculos';
+import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import { useDebounce } from '@/hooks/useDebounce';
 import InputPro from '@/components/InputPro';
 import Select from '@/components/Select';
 import ModalConfirm from '@/components/ModalConfirm';
 import type {
-    IVehiculo, IVehiculosResponse, EstadoContrato, TipoActa, NivelCombustible,
+    IVehiculo, EstadoContrato, TipoActa, NivelCombustible,
 } from '@/interfaces/vehiculo';
 import ChecklistPicker, { type ChecklistState, checklistToPayload } from './ChecklistPicker';
+import { printActa } from './actaPrint';
 
 // ─── Estilo CRM claro (ver src/pages/admin/Index.tsx) ──────────────────────────
 const ACCENT = '#7551FF';
@@ -42,10 +45,13 @@ const NIVEL_OPTS = (['LLENO', '3/4', '1/2', '1/4', 'VACIO'] as NivelCombustible[
 // ─── Modal Vehículo (CRUD) ────────────────────────────────────────────────────
 function VehiculoModal({ vehiculo, onClose, onSaved }: { vehiculo?: IVehiculo | null; onClose: () => void; onSaved: () => void }) {
     const { alert } = useAlertStore();
+    const addVehiculo = useVehiculosStore((s) => s.addVehiculo);
+    const updateVehiculo = useVehiculosStore((s) => s.updateVehiculo);
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
         placa: vehiculo?.placa ?? '', marca: vehiculo?.marca ?? '', modelo: vehiculo?.modelo ?? '',
         color: vehiculo?.color ?? '', anio: vehiculo?.anio?.toString() ?? '', observaciones: vehiculo?.observaciones ?? '',
+        kilometraje: vehiculo?.kilometraje?.toString() ?? '', nivelCombustible: vehiculo?.nivelCombustible ?? '',
     });
     // Checklist de inspección inicial: solo al registrar un vehículo nuevo.
     const [checks, setChecks] = useState<ChecklistState>({});
@@ -63,24 +69,25 @@ function VehiculoModal({ vehiculo, onClose, onSaved }: { vehiculo?: IVehiculo | 
                 placa: form.placa.toUpperCase().trim(), marca: form.marca.trim(),
                 modelo: form.modelo.trim() || undefined, color: form.color.trim() || undefined,
                 anio: form.anio ? parseInt(form.anio) : undefined, observaciones: form.observaciones.trim() || undefined,
+                kilometraje: form.kilometraje ? parseInt(form.kilometraje) : undefined,
+                nivelCombustible: form.nivelCombustible || undefined,
             };
             if (vehiculo) {
-                await patch(`vehiculos/${vehiculo.id}`, payload);
-                alert('Vehículo actualizado', 'success');
+                const ok = await updateVehiculo(vehiculo.id, payload);
+                if (!ok) return; // el store ya mostró el error
             } else {
-                const res: any = await post('vehiculos', payload);
+                const creado = await addVehiculo(payload);
+                if (!creado) return; // el store ya mostró el error
                 // Registra un acta de INGRESO inicial con la inspección hecha al registrar.
-                const nuevoId = res?.data?.id;
                 const checklist = checklistToPayload(checks);
-                if (nuevoId && checklist.length) {
-                    await post(`vehiculos/${nuevoId}/acta`, {
+                if (creado.id && checklist.length) {
+                    await post(`vehiculos/${creado.id}/acta`, {
                         tipo: 'INGRESO',
                         observaciones: 'Inspección inicial al registrar el vehículo.',
                         fotos: [],
                         checklist,
                     });
                 }
-                alert('Vehículo registrado', 'success');
             }
             onSaved();
         } catch (err: any) {
@@ -112,6 +119,10 @@ function VehiculoModal({ vehiculo, onClose, onSaved }: { vehiculo?: IVehiculo | 
                             <InputPro name="color" value={form.color} onChange={handleChange} isLabel label="Color" placeholder="Blanco, Negro..." error={null} />
                         </div>
                         <InputPro name="anio" type="number" value={form.anio} onChange={handleChange} isLabel label="Año" placeholder="2024" error={null} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputPro name="kilometraje" type="number" value={form.kilometraje} onChange={handleChange} isLabel label="Kilometraje" placeholder="0" error={null} />
+                            <Select name="nivelCombustible" label="Nivel de combustible" options={NIVEL_OPTS} value={form.nivelCombustible} onChange={(id: any) => setForm((f) => ({ ...f, nivelCombustible: String(id) as NivelCombustible }))} placeholder="— Seleccionar —" error={null} />
+                        </div>
                         {/* Checklist de inspección inicial — solo al registrar un vehículo nuevo */}
                         {!vehiculo && (
                             <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -135,6 +146,7 @@ function VehiculoModal({ vehiculo, onClose, onSaved }: { vehiculo?: IVehiculo | 
 // ─── Modal Acta de Inspección ─────────────────────────────────────────────────
 function ActaModal({ vehiculo, onClose, onSaved }: { vehiculo: IVehiculo; onClose: () => void; onSaved: () => void }) {
     const { alert } = useAlertStore();
+    const auth = useAuthStore((s) => s.auth);
     const [loading, setLoading] = useState(false);
     const [tipo, setTipo] = useState<TipoActa>('INGRESO');
     const [km, setKm] = useState('');
@@ -142,6 +154,23 @@ function ActaModal({ vehiculo, onClose, onSaved }: { vehiculo: IVehiculo; onClos
     const [observaciones, setObservaciones] = useState('');
     // Checklist: solo se guardan los ítems marcados con novedad.
     const [checks, setChecks] = useState<ChecklistState>({});
+
+    // Genera el acta imprimible / PDF con lo capturado, para que el cliente la firme.
+    const handleImprimir = () => {
+        printActa({
+            tipo,
+            km: km ? parseInt(km) : null,
+            nivelCombustible: nivelCombustible || null,
+            observaciones: observaciones.trim() || null,
+            checklist: checklistToPayload(checks),
+            usuarioNombre: (auth as any)?.nombre,
+            vehiculo: {
+                placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo,
+                color: vehiculo.color, anio: vehiculo.anio, cliente: vehiculo.cliente,
+            },
+            empresa: (auth as any)?.empresa,
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -199,11 +228,16 @@ function ActaModal({ vehiculo, onClose, onSaved }: { vehiculo: IVehiculo; onClos
                         <InputPro name="observaciones" type="textarea" rows={3} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} isLabel label="Observaciones adicionales" placeholder="Cualquier detalle extra no cubierto por el checklist..." error={null} />
                     </div>
 
-                    <div className="flex flex-shrink-0 gap-3 border-t border-slate-100 p-4 dark:border-slate-800">
-                        <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancelar</button>
-                        <button type="submit" disabled={loading} className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition disabled:opacity-60 ${tipo === 'INGRESO' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-                            {loading ? <Icon icon="eos-icons:loading" /> : <Icon icon="solar:clipboard-check-bold" />}Registrar acta de {tipo === 'INGRESO' ? 'ingreso' : 'retiro'}
+                    <div className="flex flex-shrink-0 flex-col-reverse gap-3 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                        <button type="button" onClick={handleImprimir} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                            <Icon icon="solar:printer-bold" />Imprimir / PDF
                         </button>
+                        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                            <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 py-2.5 px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancelar</button>
+                            <button type="submit" disabled={loading} className={`flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-sm font-semibold text-white transition disabled:opacity-60 ${tipo === 'INGRESO' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
+                                {loading ? <Icon icon="eos-icons:loading" /> : <Icon icon="solar:clipboard-check-bold" />}Registrar acta de {tipo === 'INGRESO' ? 'ingreso' : 'retiro'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -214,8 +248,28 @@ function ActaModal({ vehiculo, onClose, onSaved }: { vehiculo: IVehiculo; onClos
 // ─── Modal Detalle Vehículo ───────────────────────────────────────────────────
 function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo; onClose: () => void; onNuevaActa: () => void }) {
     const { alert } = useAlertStore();
+    const auth = useAuthStore((s) => s.auth);
     const [detalle, setDetalle] = useState<IVehiculo | null>(null);
     const [loadingDetalle, setLoadingDetalle] = useState(true);
+
+    // Reimprime un acta ya guardada para que el cliente la firme.
+    const imprimirActa = (acta: NonNullable<IVehiculo['actas']>[number]) => {
+        const v = detalle ?? vehiculo;
+        printActa({
+            tipo: acta.tipo,
+            km: acta.km,
+            nivelCombustible: acta.nivelCombustible,
+            observaciones: acta.observaciones,
+            checklist: acta.checklist ?? [],
+            fecha: acta.creadoEn,
+            usuarioNombre: acta.usuario?.nombre,
+            vehiculo: {
+                placa: v.placa, marca: v.marca, modelo: v.modelo,
+                color: v.color, anio: v.anio, cliente: v.cliente,
+            },
+            empresa: (auth as any)?.empresa,
+        });
+    };
 
     const cargar = useCallback(async () => {
         setLoadingDetalle(true);
@@ -225,7 +279,9 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
     }, [vehiculo.id]);
     useEffect(() => { cargar(); }, [cargar]);
 
-    const ultimoContrato = detalle?.contratos?.[0];
+    // Contrato del vehículo: como principal (contratos) o como unidad de un
+    // contrato multi-vehículo (contratoItems). Se toma el más reciente.
+    const ultimoContrato = detalle?.contratos?.[0] ?? detalle?.contratoItems?.[0]?.contrato;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
@@ -283,7 +339,7 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
                                             <div key={acta.id} className={`flex items-start gap-3 rounded-xl border p-3 ${acta.tipo === 'INGRESO' ? 'border-blue-100 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/5' : 'border-orange-100 bg-orange-50 dark:border-orange-500/20 dark:bg-orange-500/5'}`}>
                                                 <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${acta.tipo === 'INGRESO' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/20'}`}><Icon icon={acta.tipo === 'INGRESO' ? 'solar:arrow-right-down-bold' : 'solar:arrow-left-up-bold'} className="text-lg" /></div>
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center justify-between"><span className={`text-xs font-semibold ${acta.tipo === 'INGRESO' ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>{acta.tipo === 'INGRESO' ? 'Ingreso' : 'Retiro'}</span><span className="text-xs text-slate-400">{fmt(acta.creadoEn)}</span></div>
+                                                    <div className="flex items-center justify-between"><span className={`text-xs font-semibold ${acta.tipo === 'INGRESO' ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>{acta.tipo === 'INGRESO' ? 'Ingreso' : 'Retiro'}</span><div className="flex items-center gap-1.5"><span className="text-xs text-slate-400">{fmt(acta.creadoEn)}</span><button type="button" title="Imprimir / PDF" onClick={() => imprimirActa(acta)} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"><Icon icon="solar:printer-bold" className="text-sm" /></button></div></div>
                                                     <div className="mt-0.5 flex gap-4 text-xs text-slate-500">
                                                         {acta.km != null && <span>🚗 {acta.km.toLocaleString()} km</span>}
                                                         {acta.nivelCombustible && <span>⛽ {acta.nivelCombustible}</span>}
@@ -318,12 +374,14 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
 
 // ─── Página Principal ─────────────────────────────────────────────────────────
 export default function VehiculosPage() {
-    const { alert } = useAlertStore();
-    const [data, setData] = useState<IVehiculo[]>([]);
-    const [total, setTotal] = useState(0);
+    // Estado de la lista desde el store (se actualiza reactivamente en cada CRUD).
+    const data = useVehiculosStore((s) => s.vehiculos);
+    const total = useVehiculosStore((s) => s.totalVehiculos);
+    const loading = useVehiculosStore((s) => s.loadingVehiculos);
+    const getVehiculos = useVehiculosStore((s) => s.getVehiculos);
+    const deleteVehiculo = useVehiculosStore((s) => s.deleteVehiculo);
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 350);
-    const [loading, setLoading] = useState(false);
 
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(15);
@@ -335,29 +393,24 @@ export default function VehiculosPage() {
     const [vehiculoEliminar, setVehiculoEliminar] = useState<IVehiculo | null>(null);
     const [eliminando, setEliminando] = useState(false);
 
-    const cargar = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({ page: '1', limit: '100', ...(debouncedSearch ? { search: debouncedSearch } : {}) });
-            const resp: any = await get(`vehiculos?${params}`);
-            const body: IVehiculosResponse = resp.data;
-            setData(body.data);
-            setTotal(body.paginacion?.total ?? body.data.length);
-        } catch { alert('Error al cargar vehículos', 'error'); }
-        finally { setLoading(false); }
-    }, [debouncedSearch]);
+    const cargar = useCallback(() => getVehiculos({ search: debouncedSearch }), [getVehiculos, debouncedSearch]);
     useEffect(() => { cargar(); }, [cargar]);
     useEffect(() => { setPage(1); }, [debouncedSearch, data.length, limit]);
 
     const handleEliminar = async () => {
         if (!vehiculoEliminar) return;
         setEliminando(true);
-        try { await del(`vehiculos/${vehiculoEliminar.id}`); alert('Vehículo eliminado', 'success'); setVehiculoEliminar(null); cargar(); }
-        catch (err: any) { alert(err?.response?.data?.message || 'Error al eliminar', 'error'); }
-        finally { setEliminando(false); }
+        const ok = await deleteVehiculo(vehiculoEliminar.id);
+        if (ok) setVehiculoEliminar(null);
+        setEliminando(false);
     };
 
-    const contratoActivo = (v: IVehiculo) => v.contratos?.find((c) => c.estado === 'VIGENTE' || c.estado === 'POR_VENCER');
+    // Contrato activo del vehículo: como principal (contratos) o como unidad de un
+    // contrato multi-vehículo (contratoItems).
+    const esActivo = (c?: { estado: EstadoContrato } | null) => !!c && (c.estado === 'VIGENTE' || c.estado === 'POR_VENCER');
+    const contratoActivo = (v: IVehiculo) =>
+        v.contratos?.find((c) => esActivo(c)) ??
+        v.contratoItems?.map((i) => i.contrato).find((c) => esActivo(c));
 
     // ── Paginación client-side (la data llega en un solo lote de hasta 100) ──────
     const totalPages = Math.max(1, Math.ceil(data.length / limit));
@@ -475,6 +528,7 @@ export default function VehiculosPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-semibold text-slate-700 truncate max-w-[160px]">{v.cliente.nombre}</p>
+                                                        {v.cliente.email && <p className="text-xs text-slate-400 truncate max-w-[160px]">{v.cliente.email}</p>}
                                                         <p className="text-xs text-slate-400">{v.cliente.telefono || '—'}</p>
                                                     </div>
                                                 </div>

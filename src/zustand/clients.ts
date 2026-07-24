@@ -17,6 +17,7 @@ export interface IClientsState {
         allProperties?: boolean) => void
     // updateDocument: (data: any) => void
     toggleStateClient: (data: number) => void
+    deleteClient: (id: number) => Promise<void>;
     getClientFromDoc: (nroDoc: string, tipoDoc?: string) => Promise<any>;
     exportClients: (search?: string) => Promise<void>;
     importClients: (file: File) => Promise<void>;
@@ -134,6 +135,28 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             }
         } catch (error) {
             useAlertStore.getState().alert("Error al cambiar el estado del cliente", "error");
+        }
+    },
+    deleteClient: async (id: number) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await del(`clientes/${id}`);
+            if (resp.code === 1 || resp.success === true) {
+                useAlertStore.setState({ success: true, loading: false });
+                set((state) => ({
+                    clients: state.clients.filter((c) => c.id !== id),
+                    totalClients: Math.max(0, (state.totalClients || 0) - 1),
+                }), false, "DELETE_CLIENT");
+                useAlertStore.getState().alert("Cliente eliminado correctamente", "success");
+            } else {
+                useAlertStore.setState({ success: false, loading: false });
+                const msg = Array.isArray(resp.message) ? resp.message.join('. ') : (resp.message || resp.error);
+                useAlertStore.getState().alert(msg || "No se pudo eliminar el cliente", "error");
+            }
+        } catch (error: any) {
+            useAlertStore.setState({ success: false, loading: false });
+            const errMsg = error?.response?.data?.message || error?.message || "Error al eliminar el cliente";
+            useAlertStore.getState().alert(errMsg, "error");
         }
     },
     getClientFromDoc: async (nroDoc: string, tipoDoc?: string) => {

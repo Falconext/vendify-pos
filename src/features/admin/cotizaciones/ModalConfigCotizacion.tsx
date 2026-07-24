@@ -17,7 +17,7 @@ const numberToWords = (n: number) =>
 
 // Datos de ejemplo para el preview del formato
 const SAMPLE_PRODUCTS = [
-  { cantidad: 1, unidad: 'UNIDAD', descripcion: 'Distribuidor 12V (ejemplo)', precioUnitario: 630, total: 630, imagenUrl: null },
+  { cantidad: 1, unidad: 'UNIDAD', descripcion: 'Distribuidor 12V (ejemplo)', codigoBarras: '7501234567890', codigo: 'PROD-001', precioUnitario: 630, total: 630, imagenUrl: null },
   { cantidad: 1, unidad: 'SERVICIO', descripcion: 'Servicio de reparación (ejemplo)', precioUnitario: 259.6, total: 259.6, imagenUrl: null },
 ];
 const SAMPLE_CLIENT = { nombre: 'CLIENTE DE EJEMPLO S.A.C.', nroDoc: '20123456789', email: 'cliente@correo.com', telefono: '999 888 777', direccion: 'AV. EJEMPLO 123, LIMA' };

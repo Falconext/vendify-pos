@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +19,9 @@ export default function GadgetsCartModal({
 }: Props) {
   const subtotal = carrito.reduce((sum, item) => sum + Number(item.precioUnitario) * Number(item.cantidad || 1), 0);
 
+  const whatsappNumero = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda;
+  const puedeCotizarWhatsapp = !!normalizeStoreWhatsapp(whatsappNumero);
+
   const cotizarPorWhatsApp = () => {
     if (!carrito.length) return;
     const nombreTienda = tienda?.nombreComercial || tienda?.nombre || 'Tienda';
@@ -30,7 +33,8 @@ export default function GadgetsCartModal({
       `${lineas}\n\n` +
       `*Total estimado: S/ ${subtotal.toFixed(2)}*\n\n` +
       `Hola, quisiera cotizar estos productos. ¿Me confirman precio y disponibilidad?`;
-    window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank', 'noopener,noreferrer');
+    const url = buildStorePurchaseWhatsappUrl(whatsappNumero, mensaje);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -171,13 +175,15 @@ export default function GadgetsCartModal({
               Ir a Pagar
               <Icon icon="solar:arrow-right-linear" className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              onClick={cotizarPorWhatsApp}
-              className="mt-2.5 w-full py-3 font-bold text-sm rounded-xl flex items-center justify-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
-            >
-              <Icon icon="ic:baseline-whatsapp" width={18} className="text-emerald-600" />
-              Cotizar por WhatsApp
-            </button>
+            {puedeCotizarWhatsapp && (
+              <button
+                onClick={cotizarPorWhatsApp}
+                className="mt-2.5 w-full py-3 font-bold text-sm rounded-xl flex items-center justify-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                <Icon icon="ic:baseline-whatsapp" width={18} className="text-emerald-600" />
+                Cotizar por WhatsApp
+              </button>
+            )}
             <p className="text-center text-[11px] text-gray-500 mt-2.5">
               Impuestos y envío calculados al finalizar
             </p>

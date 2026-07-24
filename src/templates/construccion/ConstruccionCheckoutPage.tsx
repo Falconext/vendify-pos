@@ -5,7 +5,6 @@ import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import { BancoLogo } from '@/components/shared/BancoLogo';
 import type { TemplateCheckoutPageProps } from '@/templates/shared/types';
-import { STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
 
 type MedioPago = 'YAPE' | 'PLIN' | 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 
@@ -349,7 +348,7 @@ export default function ConstruccionCheckoutPage(props: TemplateCheckoutPageProp
                   plinQR: props.configPago.plinQR || props.configPago.plinQrUrl || undefined,
                   yapeNumero: props.configPago.yapeNumero || undefined,
                   plinNumero: props.configPago.plinNumero || undefined,
-                  whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER,
+                  whatsappTienda: props.configPago?.whatsappTienda ?? props.tienda?.whatsappTienda ?? props.tienda?.diseno?.whatsappTienda,
                   cuentasBancarias: props.configPago.cuentasBancarias || undefined,
                 }
               : undefined

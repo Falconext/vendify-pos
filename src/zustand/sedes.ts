@@ -65,6 +65,13 @@ export const useSedesStore = create<ISedesState>()(
                     await sedeService.actualizar(id, data);
                     await get().listarSedes();
                     await useAuthStore.getState().me();
+                    // Si se editó la sede activa, refrescar su copia en localStorage
+                    // para que cambios como permiteFacturacion apliquen sin re-loguear.
+                    const authState = useAuthStore.getState();
+                    if (authState.sedeActiva?.id === id) {
+                        const sedeActualizada = get().sedes.find((s) => s.id === id);
+                        if (sedeActualizada) authState.setSedeActiva(sedeActualizada as any);
+                    }
                     useAlertStore.getState().alert('Sede actualizada exitosamente', 'success');
                 } catch (error: any) {
                     console.error('Error al actualizar sede:', error);

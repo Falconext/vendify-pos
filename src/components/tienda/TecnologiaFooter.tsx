@@ -1,7 +1,7 @@
 import { Icon } from '@iconify/react';
 import { BRAND } from '@/lib/branding';
 import { Link } from 'react-router-dom';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_RAW } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface Props {
   tienda: any;
@@ -20,7 +20,7 @@ export default function TecnologiaFooter({ tienda, slug, diseno, categories = []
   const cp = diseno?.colorPrimario || '#2563EB';
   const storeName = tienda?.nombreComercial || tienda?.nombre || tienda?.razonSocial || 'TechStore Peru';
   const isConstruccion = diseno?.plantillaId === 'construccion';
-  const phone = STORE_PURCHASE_WHATSAPP_RAW;
+  const phone = normalizeStoreWhatsapp(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda);
   const email = clean(diseno?.tecnologiaFooterEmail || tienda?.email || tienda?.correo || tienda?.correoPrincipal);
   const footerText = diseno?.tecnologiaFooterText || (
     isConstruccion
@@ -36,7 +36,7 @@ export default function TecnologiaFooter({ tienda, slug, diseno, categories = []
     return slug ? `/tienda/${slug}${path}` : '/';
   };
   const whatsapp = phone;
-  const contactHref = buildStorePurchaseWhatsappUrl(`Hola, vengo de ${storeName} y quisiera información.`);
+  const contactHref = buildStorePurchaseWhatsappUrl(phone, `Hola, vengo de ${storeName} y quisiera información.`);
   const realCategories = Array.from(new Set(categories.map(categoryName).filter(Boolean)))
     .filter((name) => name.toLowerCase() !== 'todos')
     .slice(0, 4);
@@ -113,7 +113,7 @@ export default function TecnologiaFooter({ tienda, slug, diseno, categories = []
             {(phone || email) && (
               <div className="mt-6 space-y-3 text-sm text-white/65">
                 {phone && (
-                  <a href={buildStorePurchaseWhatsappUrl(`Hola, vengo de ${storeName} y quisiera información.`)} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-white">
+                  <a href={contactHref ?? undefined} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-white">
                     <Icon icon="solar:phone-calling-linear" width={18} style={{ color: cp }} />
                     {phone}
                   </a>

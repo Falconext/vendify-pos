@@ -130,6 +130,9 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
   const [editingValues, setEditingValues] = useState<Record<number, string>>({});
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#CBD5E1');
+  // Valores para "aplicar a todas las variantes" de un solo golpe.
+  const [bulkPrecio, setBulkPrecio] = useState('');
+  const [bulkStock, setBulkStock] = useState('');
 
   const opcionesAtributos: VariantOption[] = Array.isArray((formValues as any).opcionesAtributos)
     ? (formValues as any).opcionesAtributos
@@ -408,6 +411,39 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
         stock: stockTotal,
       };
     });
+  };
+
+  // Aplica un mismo valor (precio y/o stock) a TODAS las variantes a la vez.
+  // Útil cuando hay muchas combinaciones que comparten precio.
+  const patchAllVariants = (patch: Partial<VariantConfig>, recomputeStock = false) => {
+    setFormValues((prev: any) => {
+      const prevOptions: VariantOption[] = Array.isArray(prev?.opcionesAtributos)
+        ? prev.opcionesAtributos
+        : opcionesAtributos;
+      const prevConfig: VariantConfig[] = Array.isArray(prev?.variantesConfig)
+        ? prev.variantesConfig
+        : variantesConfig;
+      const nextConfig = buildConfig(prevOptions, prevConfig).map((row) => ({ ...row, ...patch }));
+      const next: any = { ...prev, variantesConfig: nextConfig };
+      if (recomputeStock) {
+        next.stock = nextConfig.reduce((sum, row) => sum + Number(row.stock || 0), 0);
+      }
+      return next;
+    });
+  };
+
+  const applyPriceToAll = () => {
+    if (bulkPrecio.trim() === '') return;
+    const value = Number(bulkPrecio);
+    if (Number.isNaN(value) || value < 0) return;
+    patchAllVariants({ precioUnitario: value });
+  };
+
+  const applyStockToAll = () => {
+    if (bulkStock.trim() === '') return;
+    const value = Number(bulkStock);
+    if (Number.isNaN(value) || value < 0) return;
+    patchAllVariants({ stock: value }, true);
   };
 
   const handleColorImage = (color: string, file?: File | null) => {
@@ -800,6 +836,50 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           <div className="flex items-center gap-2 border-b border-gray-100 bg-violet-50/60 px-4 py-2 text-[11px] font-semibold text-violet-700 dark:border-slate-800 dark:bg-violet-950/20 dark:text-violet-300">
             <span>💡</span>
             <span>Consejo: haz clic en el primer campo <b>Barras</b> y escanea cada prenda con el lector — el foco salta solo a la siguiente variante.</span>
+          </div>
+          {/* Aplicar el mismo precio/stock a todas las variantes de una sola vez */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/40">
+            <span className="text-[11px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">Aplicar a todas ({rows.length})</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-gray-400">S/</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={bulkPrecio}
+                onChange={(event) => setBulkPrecio(event.target.value)}
+                onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); applyPriceToAll(); } }}
+                placeholder="Precio"
+                className="w-24 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-bold outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={applyPriceToAll}
+                disabled={bulkPrecio.trim() === ''}
+                className="rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Aplicar precio
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min="0"
+                value={bulkStock}
+                onChange={(event) => setBulkStock(event.target.value)}
+                onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); applyStockToAll(); } }}
+                placeholder="Stock"
+                className="w-24 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-bold outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={applyStockToAll}
+                disabled={bulkStock.trim() === ''}
+                className="rounded-lg border border-violet-300 px-3 py-1.5 text-[11px] font-bold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"
+              >
+                Aplicar stock
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">

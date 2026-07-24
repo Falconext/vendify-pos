@@ -256,7 +256,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
     navRoute: () => '/administrador/vehiculos',
     pathPrefix: () => '/administrador/vehiculos',
     extraItems: () => [
-      { codigo: 'vehiculos:lista', nombre: 'Vehículos registrados', ruta: '/administrador/vehiculos' },
+      // `end: true` → match exacto: no se marca activo en /vehiculos/contratos.
+      { codigo: 'vehiculos:lista', nombre: 'Vehículos registrados', ruta: '/administrador/vehiculos', end: true },
       { codigo: 'vehiculos:contratos', nombre: 'Contratos / Suscripciones', ruta: '/administrador/vehiculos/contratos' },
     ],
   },

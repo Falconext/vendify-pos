@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface AutopartesCartModalProps {
   isOpen: boolean;
@@ -26,6 +26,9 @@ export default function AutopartesCartModal({
 }: AutopartesCartModalProps) {
   const total = carrito.reduce((acc, curr) => acc + Number(curr.precioUnitario) * curr.cantidad, 0);
 
+  const whatsappNumero = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda;
+  const puedeCotizarWhatsapp = !!normalizeStoreWhatsapp(whatsappNumero);
+
   const cotizarPorWhatsApp = () => {
     if (!carrito.length) return;
     const nombreTienda = tienda?.nombreComercial || tienda?.nombre || 'Tienda';
@@ -37,7 +40,8 @@ export default function AutopartesCartModal({
       `${lineas}\n\n` +
       `*Total estimado: S/ ${total.toFixed(2)}*\n\n` +
       `Hola, quisiera cotizar estos productos. ¿Me confirman precio y disponibilidad?`;
-    window.open(buildStorePurchaseWhatsappUrl(mensaje), '_blank', 'noopener,noreferrer');
+    const url = buildStorePurchaseWhatsappUrl(whatsappNumero, mensaje);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -162,13 +166,15 @@ export default function AutopartesCartModal({
                 >
                   Ir al Checkout <Icon icon="solar:alt-arrow-right-bold" />
                 </button>
-                <button
-                  onClick={cotizarPorWhatsApp}
-                  className="mt-3 w-full py-3.5 rounded-xl flex items-center justify-center gap-2 font-black text-base border border-gray-700 bg-gray-900 text-gray-100 transition-colors hover:border-gray-500 hover:bg-gray-800"
-                >
-                  <Icon icon="ic:baseline-whatsapp" width={20} className="text-emerald-400" />
-                  Cotizar por WhatsApp
-                </button>
+                {puedeCotizarWhatsapp && (
+                  <button
+                    onClick={cotizarPorWhatsApp}
+                    className="mt-3 w-full py-3.5 rounded-xl flex items-center justify-center gap-2 font-black text-base border border-gray-700 bg-gray-900 text-gray-100 transition-colors hover:border-gray-500 hover:bg-gray-800"
+                  >
+                    <Icon icon="ic:baseline-whatsapp" width={20} className="text-emerald-400" />
+                    Cotizar por WhatsApp
+                  </button>
+                )}
               </div>
             )}
           </motion.div>

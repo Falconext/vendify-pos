@@ -77,7 +77,12 @@ export function esRubroComputo(nombreRubro: string | null | undefined): boolean 
         nombre.includes('accesorio') ||
         nombre.includes('hardware') ||
         nombre.includes('laptop') ||
-        nombre.includes('pc ')
+        nombre.includes('pc ') ||
+        nombre.includes('celular') ||
+        nombre.includes('telefon') || // teléfono / telefonía / telefonos
+        nombre.includes('móvil') ||
+        nombre.includes('movil') ||
+        nombre.includes('smartphone')
     );
 }
 

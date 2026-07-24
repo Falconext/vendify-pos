@@ -22,8 +22,8 @@ export interface IProductsState {
         allProperties?: boolean) => void
     toggleStateProduct: (data: number) => void
     getCodeProduct: (empresa: number) => void
-    exportProducts: (search?: string) => void;
-    importProducts: (file: File) => Promise<void>;
+    exportProducts: (search?: string, sedeId?: number | null) => void;
+    importProducts: (file: File, sedeId?: number | null) => Promise<void>;
     deleteProduct: (productoId: number) => Promise<void>;
     deleteAllProducts: (sedeId?: number) => Promise<void>;
     setProductImage: (productoId: number, imagenUrl: string, imagenUrlDisplay?: string) => void;
@@ -350,11 +350,14 @@ export const useProductsStore = create<IProductsState>()(devtools((set, _get) =>
             console.log(error);
         }
     },
-    exportProducts: async (search?: string) => {
+    exportProducts: async (search?: string, sedeId?: number | null) => {
         try {
             useAlertStore.setState({ loading: true });
             const baseUrl = import.meta.env.VITE_API_URL as string;
-            const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            if (sedeId != null) params.set('sedeId', String(sedeId));
+            const qs = params.toString() ? `?${params.toString()}` : '';
             const response = await fetch(`${baseUrl}/productos/exportar${qs}`, {
                 method: 'GET',
                 headers: {
@@ -382,19 +385,24 @@ export const useProductsStore = create<IProductsState>()(devtools((set, _get) =>
             useAlertStore.setState({ loading: false });
         }
     },
-    importProducts: async (file: File) => {
+    importProducts: async (file: File, sedeId?: number | null) => {
         try {
             useAlertStore.setState({ loading: true });
 
             const formData = new FormData();
             formData.append('file', file);
+            // Enviar sedeId también en el body por compatibilidad.
+            if (sedeId != null) formData.append('sedeId', String(sedeId));
             console.log('Archivo enviado:', {
                 name: file.name,
                 size: file.size,
                 type: file.type,
+                sedeId,
             });
             const baseUrl = import.meta.env.VITE_API_URL as string;
-            const response = await fetch(`${baseUrl}/productos/importar`, {
+            // sedeId va en el query param: es 100% confiable (no depende del parseo multipart).
+            const qs = sedeId != null ? `?sedeId=${sedeId}` : '';
+            const response = await fetch(`${baseUrl}/productos/importar${qs}`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('ACCESS_TOKEN')}`,

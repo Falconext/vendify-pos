@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
 import ModaHeader from '@/components/tienda/ModaHeader';
@@ -22,6 +23,13 @@ import {
 } from '@/templates/urbano/fashionVariants';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+
+// Animación de deslizamiento (slide) de la imagen principal en mobile/desktop.
+const imageSlideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 48 : -48 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -48 : 48 }),
+};
 
 const QUILL_PROSE = [
   'text-sm text-gray-600 leading-relaxed break-words overflow-hidden w-full',
@@ -175,6 +183,8 @@ export default function ModaProductoDetalle() {
   const [selectedImage, setSelectedImage] = useState('');
   const [varianteSelecciones, setVarianteSelecciones] = useState<Record<string, string>>({});
   const [varianteActiva, setVarianteActiva] = useState<any>(null);
+  const [imgDirection, setImgDirection] = useState(0);
+  const imageColumnRef = useRef<HTMLDivElement>(null);
   const [carrito, setCarrito] = useState<any[]>([]);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [search, setSearch] = useState('');
@@ -522,6 +532,53 @@ export default function ModaProductoDetalle() {
   const isSizeGroup = (g: any) =>
     /talla|size|tamaño/i.test(g.nombre);
 
+  /* ── Galería como slide (swipe en mobile) + scroll al elegir color ── */
+  const urlPath = (url: string) => {
+    try { return new URL(url).pathname; } catch { return url; }
+  };
+
+  const handleThumbnailClick = (image: string) => {
+    const matched = Array.isArray(producto?.variantes)
+      ? producto.variantes.find((v: any) => v.imagenUrl && urlPath(v.imagenUrl) === urlPath(image))
+      : null;
+    const color = matched ? variantValues(matched)[variantOptionNames.color] : null;
+    if (color) handleVariantChange(variantOptionNames.color, color);
+    else setSelectedImage(image);
+  };
+
+  const currentImageIndex = Math.max(
+    0,
+    productImages.findIndex((img: string) => urlPath(img) === urlPath(selectedImage)),
+  );
+
+  const goToImage = (index: number) => {
+    if (productImages.length < 2) return;
+    const total = productImages.length;
+    const next = ((index % total) + total) % total;
+    setImgDirection(index >= currentImageIndex ? 1 : -1);
+    handleThumbnailClick(productImages[next]);
+  };
+
+  const handleImageDragEnd = (_e: unknown, info: PanInfo) => {
+    const threshold = 60;
+    if (info.offset.x < -threshold) goToImage(currentImageIndex + 1);
+    else if (info.offset.x > threshold) goToImage(currentImageIndex - 1);
+  };
+
+  const scrollToImageTop = () => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    requestAnimationFrame(() => {
+      const el = imageColumnRef.current;
+      const top = el ? el.getBoundingClientRect().top + window.scrollY - 8 : 0;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  };
+
+  const selectVariantColor = (colorName: string) => {
+    handleVariantChange(variantOptionNames.color, colorName);
+    scrollToImageTop();
+  };
+
   return (
     <div
       className="min-h-screen bg-[#FAF9F6] text-gray-900"
@@ -573,16 +630,51 @@ export default function ModaProductoDetalle() {
           {/* ── LEFT: Images ── */}
           <div className="flex flex-col gap-4">
             {/* Main image */}
-            <div className="relative overflow-hidden rounded-3xl bg-[#F5F0EB] aspect-[4/5]">
+            <div ref={imageColumnRef} className="relative overflow-hidden rounded-3xl bg-[#F5F0EB] aspect-[4/5]">
               {selectedImage ? (
-                <img
-                  src={selectedImage}
-                  alt={producto.descripcion}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-                />
+                <AnimatePresence initial={false} custom={imgDirection} mode="popLayout">
+                  <motion.img
+                    key={selectedImage}
+                    src={selectedImage}
+                    alt={producto.descripcion}
+                    custom={imgDirection}
+                    variants={imageSlideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    drag={productImages.length > 1 ? 'x' : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.18}
+                    onDragEnd={handleImageDragEnd}
+                    draggable={false}
+                    className="absolute inset-0 w-full h-full object-cover select-none touch-pan-y lg:touch-auto"
+                  />
+                </AnimatePresence>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Icon icon="solar:box-linear" className="text-gray-300 text-7xl" />
+                </div>
+              )}
+              {productImages.length > 1 && (
+                <div className="absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5 lg:hidden">
+                  {productImages.slice(0, 5).map((img: string, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => goToImage(i)}
+                      aria-label={`Ver imagen ${i + 1}`}
+                      className="p-1.5"
+                    >
+                      <motion.span
+                        animate={{
+                          width: urlPath(selectedImage) === urlPath(img) ? 20 : 6,
+                          opacity: urlPath(selectedImage) === urlPath(img) ? 1 : 0.4,
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="block h-1.5 rounded-full bg-gray-900"
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
               {hasDiscount && (
@@ -619,19 +711,20 @@ export default function ModaProductoDetalle() {
             {productImages.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-1">
                 {productImages.slice(0, 5).map((img: string, i: number) => (
-                  <button
+                  <motion.button
                     key={i}
-                    onClick={() => setSelectedImage(img)}
+                    onClick={() => handleThumbnailClick(img)}
+                    whileTap={{ scale: 0.92 }}
                     className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all"
                     style={{
                       borderColor:
-                        selectedImage === img || (!selectedImage && i === 0)
+                        urlPath(selectedImage) === urlPath(img) || (!selectedImage && i === 0)
                           ? '#1A1A1A'
                           : '#E5E7EB',
                     }}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover bg-[#F5F0EB]" />
-                  </button>
+                    <img src={img} alt="" className="w-full h-full object-cover bg-[#F5F0EB]" draggable={false} />
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -708,23 +801,26 @@ export default function ModaProductoDetalle() {
                     const isSelected = selectedColor === color.name;
                     const colorPreview = color.image || getFashionColorGallery(producto, color.name)[0];
                     return (
-                      <button
+                      <motion.button
                         key={color.name}
                         type="button"
                         title={color.name}
-                        onClick={() => handleVariantChange(variantOptionNames.color, color.name)}
-                        className="h-14 w-14 overflow-hidden rounded-xl border-2 bg-white transition-all hover:scale-105"
+                        onClick={() => selectVariantColor(color.name)}
+                        whileTap={{ scale: 0.9 }}
+                        animate={{ scale: isSelected ? 1.06 : 1 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                        className="h-14 w-14 overflow-hidden rounded-xl border-2 bg-white"
                         style={{
                           borderColor: isSelected ? '#1A1A1A' : '#E5E7EB',
                           boxShadow: isSelected ? '0 0 0 2px #fff, 0 0 0 4px #1A1A1A' : 'none',
                         }}
                       >
                         {colorPreview ? (
-                          <img src={colorPreview} alt={color.name} className="h-full w-full object-cover" />
+                          <img src={colorPreview} alt={color.name} className="h-full w-full object-cover" draggable={false} />
                         ) : (
                           <span className="block h-full w-full" style={{ backgroundColor: color.hex }} />
                         )}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -786,10 +882,11 @@ export default function ModaProductoDetalle() {
                   {grupo.opciones.map((op: any) => {
                     const isSelected = (selecciones[grupo.id] || []).includes(op.id);
                     return (
-                      <button
+                      <motion.button
                         key={op.id}
                         title={op.nombre}
-                        onClick={() =>
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
                           setSelecciones(prev => ({
                             ...prev,
                             [grupo.id]:
@@ -798,8 +895,9 @@ export default function ModaProductoDetalle() {
                                 : isSelected
                                 ? (prev[grupo.id] || []).filter((x: number) => x !== op.id)
                                 : [...(prev[grupo.id] || []), op.id],
-                          }))
-                        }
+                          }));
+                          scrollToImageTop();
+                        }}
                         className="relative w-8 h-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none"
                         style={{
                           backgroundColor: op.colorHex || '#E5E7EB',
@@ -814,7 +912,7 @@ export default function ModaProductoDetalle() {
                             className="absolute inset-0 m-auto text-white drop-shadow"
                           />
                         )}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>

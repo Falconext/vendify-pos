@@ -247,6 +247,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                     cantidad: 1,
                     lote: '',
                     fechaVencimiento: '',
+                    _controlSeries: leerControlSeries(prod.atributosTecnicos),
                 }));
                 setBarcodeInput('');
             } else {
@@ -265,6 +266,32 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
     const updateItem = (idx: number, field: string, value: any) => {
         setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
     };
+
+    // Lee el flag "controlar series/garantía" desde los atributos técnicos del producto.
+    const leerControlSeries = (attrs: any): boolean => {
+        if (!attrs) return false;
+        const control = String(attrs.controlSeries ?? attrs.requiereSerie ?? '').toLowerCase();
+        return attrs.controlSeries === true || attrs.requiereSerie === true || ['true', 'si', 'sí', '1'].includes(control);
+    };
+
+    // Determina si el producto (o su padre, para variantes) controla series.
+    const productoControlaSeries = (productoId?: number): boolean => {
+        if (!productoId) return false;
+        const nid = Number(productoId);
+        let prod: any = (products as any[]).find(p => Number(p.id) === nid);
+        if (!prod) {
+            for (const p of (products as any[])) {
+                const v = (p?.variantes || []).find((x: any) => Number(x.id) === nid);
+                if (v) { prod = p; break; } // controlSeries vive en el producto padre
+            }
+        }
+        return prod ? leerControlSeries(prod.atributosTecnicos) : false;
+    };
+
+    // Prioriza el flag cacheado en el ítem (ej. escaneo por código de barras) y
+    // cae al lookup en la lista de productos.
+    const itemRequiereSeries = (item: any): boolean =>
+        item?._controlSeries ?? productoControlaSeries(item?.productoId);
 
     const vincularItemXml = (idx: number) => {
         const productoId = Number(linkProductIdByRow[idx] || 0);
@@ -549,6 +576,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                 lote: i.lote || undefined,
                 fechaVencimiento: i.fechaVencimiento || undefined,
                 codigoXml: i._codigoXml || undefined,
+                numerosSerie: (i.numerosSerie && i.numerosSerie.length) ? i.numerosSerie : undefined,
+                garantiaMeses: i.garantiaMeses || undefined,
             })),
             formaPago: payment.condicionPago,
             montoPagadoInicial: payment.condicionPago === 'CONTADO' ? total : Number(payment.montoPagadoInicial),
@@ -934,6 +963,42 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                                                         />
                                                     </div>
                                                 </div>
+                                                {itemRequiereSeries(item) && (() => {
+                                                    const series: string[] = (item.numerosSerie || []).filter((s: string) => String(s).trim());
+                                                    const completo = series.length === Number(item.cantidad);
+                                                    return (
+                                                        <div className="mt-2 p-2 rounded-lg border border-violet-200 dark:border-violet-800/40 bg-violet-50/50 dark:bg-violet-900/10">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <label className="text-[11px] font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1">
+                                                                    <Icon icon="solar:shield-check-bold" width={12} />
+                                                                    Series / IMEI (opcional)
+                                                                </label>
+                                                                <span className={`text-[10px] font-semibold ${completo ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                                    {series.length}/{item.cantidad}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-col md:flex-row gap-2">
+                                                                <textarea
+                                                                    className="flex-1 min-w-[180px] text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-gray-800 dark:text-gray-100 resize-y focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                                                    rows={Math.min(Math.max(Number(item.cantidad) || 1, 1), 4)}
+                                                                    placeholder="Una serie/IMEI por línea"
+                                                                    value={(item.numerosSerie || []).join('\n')}
+                                                                    onChange={e => updateItem(idx, 'numerosSerie', e.target.value.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean))}
+                                                                />
+                                                                <div className="w-full md:w-28">
+                                                                    <InputPro
+                                                                        type="number"
+                                                                        placeholder="Garantía (meses)"
+                                                                        name={`garantia_${idx}`}
+                                                                        value={item.garantiaMeses ?? ''}
+                                                                        onChange={e => updateItem(idx, 'garantiaMeses', e.target.value === '' ? undefined : Number(e.target.value))}
+                                                                        autocomplete="off"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-3 py-3 text-center text-gray-600 dark:text-gray-300">{item.cantidad}</td>
                                             <td className="px-3 py-3 text-right text-gray-600 dark:text-gray-300">S/ {Number(item.precioUnitario).toFixed(2)}</td>

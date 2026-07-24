@@ -11,7 +11,7 @@ import { templateRegistry } from '@/templates/registry';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import { clearTiendaCart, persistTiendaCart, tiendaCartKey } from '@/utils/tiendaCart';
 import { withPricingList } from '@/templates/shared/pricing';
-import { STORE_PURCHASE_WHATSAPP_NUMBER, withStorePurchaseWhatsapp } from '@/utils/storeWhatsapp';
+import { withStorePurchaseWhatsapp } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -205,7 +205,7 @@ export default function Checkout() {
                 plinQR: rawConfig.plinQrUrl || rawConfig.plinQR,
                 yapeNumero: rawConfig.yapeNumero || rawConfig.yapePhone,
                 plinNumero: rawConfig.plinNumero || rawConfig.plinPhone,
-                whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER,
+                whatsappTienda: rawConfig.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda,
             };
             setConfigPago(normalizedConfig);
             if (normalizedConfig.aceptaEfectivo) {
@@ -826,7 +826,7 @@ export default function Checkout() {
                         plinQR: configPago.plinQR || configPago.plinQrUrl || undefined,
                         yapeNumero: configPago.yapeNumero || undefined,
                         plinNumero: configPago.plinNumero || undefined,
-                        whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER,
+                        whatsappTienda: configPago?.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda,
                     } : undefined}
                     storeSlug={slug || ''}
                 />

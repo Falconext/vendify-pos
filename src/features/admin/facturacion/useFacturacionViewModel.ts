@@ -83,7 +83,38 @@ const crearEstadoItemLibre = () => ({
     cantidad: '1',
     precioUnitario: '',
     tipo: 'SERVICIO' as 'SERVICIO' | 'PRODUCTO',
+    // Afectación IGV (Catálogo 07): '10' gravado, '20' exonerado, '30' inafecto,
+    // '40' exportación, y gratuitas (11-16 gravado, 21 exonerado, 31-37 inafecto).
+    afectacion: '10' as string,
 });
+
+// Nombre legible por código de afectación (Catálogo 07) para mostrar en el ticket.
+const NOMBRE_AFECTACION: Record<string, string> = {
+    '10': 'Gravado – Operación Onerosa',
+    '20': 'Exonerado',
+    '30': 'Inafecto',
+    '40': 'Exportación',
+    '11': 'Gravado – Gratuito (premio)',
+    '12': 'Gravado – Gratuito (donación)',
+    '13': 'Gravado – Gratuito (retiro)',
+    '14': 'Gravado – Gratuito (publicidad)',
+    '15': 'Gravado – Bonificación',
+    '16': 'Gravado – Gratuito (a trabajadores)',
+    '21': 'Exonerado – Transferencia gratuita',
+    '31': 'Inafecto – Gratuito (bonificación)',
+    '32': 'Inafecto – Gratuito (retiro)',
+    '33': 'Inafecto – Gratuito',
+    '34': 'Inafecto – Gratuito',
+    '35': 'Inafecto – Gratuito',
+    '36': 'Inafecto – Gratuito',
+    '37': 'Inafecto – Gratuito',
+};
+
+// Afectaciones gratuitas (Catálogo 07): no suman al importe a pagar (son sin costo).
+const esAfectacionGratuita = (codigo: any): boolean => {
+    const n = Number(codigo);
+    return (n >= 11 && n <= 16) || n === 21 || (n >= 31 && n <= 37);
+};
 
 const isCompleteEnvioDespacho = (data: EnvioDespachoFormData) => {
     const celular = cleanText(data.celularDest).replace(/\D/g, '');
@@ -396,6 +427,20 @@ export const useFacturacionViewModel = () => {
     const [editQuotationId, setEditQuotationId] = useState<number | null>(null);
     const [showFreeQuoteItemForm, setShowFreeQuoteItemForm] = useState(false);
     const [freeQuoteItem, setFreeQuoteItem] = useState(crearEstadoItemLibre);
+    // Anticipos previos a regularizar/descontar en esta factura (referencia a
+    // comprobantes de anticipo ya emitidos). Se envían en el payload como `anticipos[]`
+    // y el backend genera el UBL de regularización (PrepaidPayment + descuento 04/05/06).
+    const [anticipos, setAnticipos] = useState<Array<{ tipoDoc: string; serie: string; numero: string; monto: number; fecha?: string }>>([]);
+    const agregarAnticipo = (a: { tipoDoc: string; serie: string; numero: string; monto: number; fecha?: string }) => {
+        const serie = cleanText(a.serie).toUpperCase();
+        const numero = cleanText(a.numero);
+        const monto = Number(a.monto);
+        if (!serie || !numero) return useAlertStore.getState().alert("Serie y número del anticipo son obligatorios", "warning");
+        if (!Number.isFinite(monto) || monto <= 0) return useAlertStore.getState().alert("El monto del anticipo debe ser mayor a cero", "warning");
+        setAnticipos((prev) => [...prev, { tipoDoc: a.tipoDoc || '01', serie, numero, monto, ...(a.fecha ? { fecha: a.fecha } : {}) }]);
+    };
+    const eliminarAnticipo = (index: number) => setAnticipos((prev) => prev.filter((_, i) => i !== index));
+    const totalAnticipos = anticipos.reduce((sum, a) => sum + Number(a.monto || 0), 0);
 
     const debounceSerie = useDebounce(serie, 200);
     const debounceCorrelative = useDebounce(correlative, 200);
@@ -1186,8 +1231,8 @@ export const useFacturacionViewModel = () => {
         // (facturación, o cotización en soles). Si la cotización es en dólares, el producto
         // en USD conserva su precio original ($472 sigue siendo $472, sin multiplicar por TC).
         const esUSD = String(product?.moneda || 'PEN').toUpperCase() === 'USD';
-        const cotizEnDolares = isQuotationRoute && String(quotationCurrency).toUpperCase() === 'USD';
-        const convertirUSD = esUSD && !cotizEnDolares;
+        const docEnDolares = String(quotationCurrency).toUpperCase() === 'USD';
+        const convertirUSD = esUSD && !docEnDolares;
         const tc = convertirUSD ? Number(tcVenta) : 1;
         if (convertirUSD && (!Number.isFinite(tc) || tc <= 0)) {
             // Aún no cargó el tipo de cambio: lo pedimos y avisamos que reintente.
@@ -1310,8 +1355,8 @@ export const useFacturacionViewModel = () => {
             unidadMedida: freeQuoteItem.tipo === 'SERVICIO' ? 'SERVICIO' : 'UNIDAD',
             unidadMedidaNombre: freeQuoteItem.tipo === 'SERVICIO' ? 'SERVICIO' : 'UNIDAD',
             unidadMedidaCodigo: freeQuoteItem.tipo === 'SERVICIO' ? 'ZZ' : 'NIU',
-            tipoAfectacionIGV: '10',
-            afectacionNombre: 'Gravado – Operación Onerosa',
+            tipoAfectacionIGV: freeQuoteItem.afectacion || '10',
+            afectacionNombre: NOMBRE_AFECTACION[freeQuoteItem.afectacion] || 'Gravado – Operación Onerosa',
             estado: 'ACTIVO',
             esItemLibre: true,
             atributosTecnicos: { tipoProducto: freeQuoteItem.tipo },
@@ -1569,12 +1614,21 @@ export const useFacturacionViewModel = () => {
 
     const { total, discount: productDiscount, hasDiscount } = useMemo(() => calculateTotals(productsInvoice), [productsInvoice]);
     const esInformal = tiposInformales.includes(formValues.tipoDoc);
-    // Símbolo de moneda para la cotización (solo relabela; el carrito trabaja en soles).
-    // Fuera de cotizaciones siempre es S/.
+    // Símbolo de moneda del documento (cotización, factura o boleta): US$ cuando se emite
+    // en dólares (p. ej. factura de exportación); S/ en caso contrario.
     const monedaSimbolo =
-        isQuotationRoute && String(quotationCurrency).toUpperCase() === 'USD' ? 'US$' : 'S/';
+        String(quotationCurrency).toUpperCase() === 'USD' ? 'US$' : 'S/';
+    // Factura (01) o Boleta (03): habilita el toggle de moneda del comprobante y el envío
+    // de tipoMoneda/tipoCambio en dólares (requerido para facturas de exportación).
+    const esFacturaOBoleta = formValues.tipoDoc === '01' || formValues.tipoDoc === '03';
     const isDiscountGlobalApplicable = formValues.motivoId === 6;
-    const totalOriginal = Number(total);
+    // Las líneas gratuitas no se cobran: se excluyen del total a pagar (el backend también
+    // las excluye del importe del comprobante; aquí se refleja en el preview del POS).
+    const totalGratuitas = productsInvoice.reduce(
+        (s: number, p: any) => (esAfectacionGratuita(p.tipoAfectacionIGV) ? s + (parseFloat(p.total) || 0) : s),
+        0,
+    );
+    const totalOriginal = Math.max(0, Number(total) - totalGratuitas);
     // Descuento global (%, S/ o $): aplica a todos los comprobantes (formales e informales).
     const montoDescuentoNV = descuentoModoNV === 'SOLES'
         ? Math.min(descuentoSolesNV, totalOriginal)
@@ -1663,21 +1717,34 @@ export const useFacturacionViewModel = () => {
     }, [porcentajeDetraccion, totalAdjusted]);
 
     const igvRate = 0.18;
-    
+
+    // Operación de exportación (Catálogo 51): fuerza todas las líneas a exportación
+    // (afectación 40, sin IGV). Debe coincidir con la detección del backend
+    // (comprobante.service → esExportacion) para que el preview cuadre con el XML.
+    const operacionActual = tiposOperacion.find((op: any) => op.id === formValues.tipoOperacionId);
+    const esOperacionExportacion = !!operacionActual?.codigo && (
+        String(operacionActual.codigo).startsWith('02') ||
+        operacionActual.codigo === '0102' ||
+        operacionActual.codigo === '0113'
+    );
+
     let sumGravadas = 0;
     let sumExoneradas = 0;
     let sumInafectas = 0;
+    let sumExportacion = 0;
 
     productsInvoice.forEach((p: any) => {
+        // Gratuitas: no forman parte de la base gravable ni del importe a pagar.
+        if (esAfectacionGratuita(p.tipoAfectacionIGV)) return;
         const lineTotal = parseFloat(p.total) || 0;
-        const type = String(p.tipoAfectacionIGV || '10');
-        if (type.startsWith('1')) sumGravadas += lineTotal;
+        const type = esOperacionExportacion ? '40' : String(p.tipoAfectacionIGV || '10');
+        if (type.startsWith('4')) sumExportacion += lineTotal;
         else if (type.startsWith('2')) sumExoneradas += lineTotal;
         else if (type.startsWith('3')) sumInafectas += lineTotal;
         else sumGravadas += lineTotal;
     });
 
-    const sumTotalLines = sumGravadas + sumExoneradas + sumInafectas;
+    const sumTotalLines = sumGravadas + sumExoneradas + sumInafectas + sumExportacion;
     const discountRatio = (sumTotalLines > 0 && totalAdjusted < sumTotalLines) 
         ? totalAdjusted / sumTotalLines 
         : 1;
@@ -1698,7 +1765,8 @@ export const useFacturacionViewModel = () => {
         ?.map((d: any) => d?.precioUnitario)
         ?.reduce((sum: any, x: any) => sum + x);
 
-    const totalInWords = numberToWords(parseFloat(totalAdjusted.toFixed(2))) + " SOLES";
+    const monedaLeyenda = String(quotationCurrency).toUpperCase() === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
+    const totalInWords = numberToWords(parseFloat(totalAdjusted.toFixed(2))) + " " + monedaLeyenda;
 
     useEffect(() => {
         setFormValues((prev) => ({
@@ -1718,9 +1786,10 @@ export const useFacturacionViewModel = () => {
     const addInvoiceReceipt = async () => {
         if (!validateForm()) return;
         const selectedOperacion = tiposOperacion.find(op => op.id === formValues.tipoOperacionId);
-        const isExportServiceHotel = selectedOperacion?.codigo === '0202';
-        if (formValues?.comprobante === "FACTURA" && selectedClient?.nroDoc?.length !== 11 && !isExportServiceHotel) {
-            return useAlertStore.getState().alert("El cliente debe tener RUC (11 dígitos) para generar una factura. Para Hospedaje a no domiciliados use Tipo de operación 0202.", "error");
+        // Operaciones de exportación (Catálogo 51: 0102/0200/0201/0202…): el receptor es NO
+        // domiciliado (pasaporte/otros), así que NO se exige RUC de 11 dígitos.
+        if (formValues?.comprobante === "FACTURA" && selectedClient?.nroDoc?.length !== 11 && !esOperacionExportacion) {
+            return useAlertStore.getState().alert("El cliente debe tener RUC (11 dígitos) para generar una factura. Para exportación a no domiciliados, elige un Tipo de operación de exportación (0102/0200/0201/0202).", "error");
         }
         if ((serie === "" || correlative === "") && formValues?.comprobante === "NOTA DE CREDITO") {
             return useAlertStore.getState().alert("Serie y correlativo son obligatorios para nota de credito", "error")
@@ -1852,8 +1921,23 @@ export const useFacturacionViewModel = () => {
                     productoId: Number(item?.productoId || item?.id) || null,
                     descripcion: item.descripcion,
                     cantidad: Number(item.cantidad),
-                    nuevoValorUnitario: Number((Number(item.precioUnitario) * ratioDescuentoGlobal).toFixed(6)),
+                    // Afectación IGV por línea (Catálogo 07). Necesario para ítems libres
+                    // como "ANTICIPO/ADELANTO DEL PEDIDO" que van sin IGV (exportación/exonerado).
+                    ...(item.tipoAfectacionIGV ? { tipoAfectacionIGV: String(item.tipoAfectacionIGV) } : {}),
+                    // El backend recalcula base/IGV/total desde nuevoValorUnitario y NO lee el
+                    // campo `descuento` por línea, por lo que el descuento por ítem debe quedar
+                    // plegado dentro del precio unitario (igual que el descuento global vía
+                    // ratioDescuentoGlobal). Así la lista y la reimpresión persisten el total
+                    // con descuento y no el precio de lista.
+                    nuevoValorUnitario: Number((
+                        Number(item.precioUnitario) *
+                        (1 - Number(item.descuento || 0) / 100) *
+                        ratioDescuentoGlobal
+                    ).toFixed(6)),
                     descuento: Number(item.descuento ?? 0),
+                    // Precio de lista (sin descuento) para que el ticket guardado muestre el
+                    // precio original y el ahorro, igual que el ticket de creación.
+                    precioUnitarioOriginal: Number(item.precioUnitario),
                     // Farmacia: trazabilidad de lote y receta médica
                     ...(item.loteId != null ? { loteId: item.loteId } : {}),
                     ...(item.datosReceta?.numeroReceta ? { numeroReceta: item.datosReceta.numeroReceta } : {}),
@@ -1875,10 +1959,16 @@ export const useFacturacionViewModel = () => {
                 }] : []),
             ],
             formaPagoTipo: esPagoCredito ? 'Credito' : (formValues.medioPago || 'Contado'),
-            formaPagoMoneda: "PEN",
-            tipoMoneda: "PEN",
+            // Moneda del comprobante (PEN por defecto; USD si se eligió el toggle de moneda,
+            // p. ej. en facturas de exportación). tipoCambio = TC del día cuando es USD.
+            formaPagoMoneda: String(quotationCurrency).toUpperCase() === 'USD' ? 'USD' : 'PEN',
+            tipoMoneda: String(quotationCurrency).toUpperCase() === 'USD' ? 'USD' : 'PEN',
+            tipoCambio: String(quotationCurrency).toUpperCase() === 'USD' ? (Number(tcVenta) || undefined) : 1,
             descuento: finalDiscount,
             ...(esInformal && montoDescuentoNV > 0 ? { montoDescuentoGlobal: montoDescuentoNV } : {}),
+            // Anticipos previos a regularizar (solo facturas): el backend arma el UBL de
+            // regularización (AdditionalDocumentReference + PrepaidPayment + descuento).
+            ...(anticipos.length > 0 && formValues?.comprobante === "FACTURA" ? { anticipos } : {}),
             leyenda: totalInWords,
             observaciones: observacionesFinal,
             ...(esPagoCredito && fechaVencimientoCredito ? { fechaVencimientoCredito } : {}),
@@ -2128,6 +2218,7 @@ export const useFacturacionViewModel = () => {
         productsInvoice,
         showFreeQuoteItemForm, setShowFreeQuoteItemForm,
         freeQuoteItem, setFreeQuoteItem,
+        anticipos, agregarAnticipo, eliminarAnticipo, totalAnticipos,
 
         // Form & Selections
         formValues, setFormValues,
@@ -2203,6 +2294,7 @@ export const useFacturacionViewModel = () => {
         descuentoModoNV, setDescuentoModoNV,
         fechaVencimientoCredito, setFechaVencimientoCredito,
         esInformal,
+        esFacturaOBoleta,
 
         // Farmacia: receta modal
         isRecetaModalOpen, setIsRecetaModalOpen,

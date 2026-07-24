@@ -29,6 +29,10 @@ export const useCombosViewModel = () => {
         getAllProducts({ limit: 500 });
     }, []);
 
+    const refreshCombos = () => {
+        fetchCombos(true);
+    };
+
     const abrirModal = (combo?: Combo) => {
         if (combo) {
             setEditingCombo(combo);
@@ -137,6 +141,6 @@ export const useCombosViewModel = () => {
         abrirModal, cerrarModal, agregarProducto, actualizarItem, eliminarItem,
         getProductOptionLabel,
         calcularPrecioRegular, calcularDescuento, guardarCombo, onFileSelect,
-        handleEliminarCombo, toggleComboActivo,
+        handleEliminarCombo, toggleComboActivo, refreshCombos,
     };
 };

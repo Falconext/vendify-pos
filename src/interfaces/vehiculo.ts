@@ -5,6 +5,8 @@ export interface IVehiculo {
     modelo?: string | null;
     color?: string | null;
     anio?: number | null;
+    kilometraje?: number | null;
+    nivelCombustible?: NivelCombustible | null;
     clienteId?: number | null;
     sedeId?: number | null;
     observaciones?: string | null;
@@ -19,6 +21,15 @@ export interface IVehiculo {
     } | null;
     actas?: IActaInspeccion[];
     contratos?: IContratoVehicular[];
+    // Contratos donde el vehículo participa como unidad (multi-vehículo).
+    contratoItems?: { id: number; contrato: IContratoVehicular }[];
+}
+
+export interface IContratoVehiculoItem {
+    id: number;
+    vehiculoId: number;
+    montoAnual?: number | null;
+    vehiculo?: Pick<IVehiculo, 'id' | 'placa' | 'marca' | 'modelo' | 'color' | 'anio'>;
 }
 
 export type TipoActa = 'INGRESO' | 'RETIRO';
@@ -56,6 +67,8 @@ export interface IContratoVehicular {
     creadoEn: string;
     actualizadoEn: string;
     vehiculo?: Pick<IVehiculo, 'id' | 'placa' | 'marca' | 'modelo' | 'color' | 'cliente'>;
+    // Detalle de vehículos incluidos en el contrato (multi-vehículo).
+    unidades?: IContratoVehiculoItem[];
     producto?: {
         id: number;
         descripcion: string;

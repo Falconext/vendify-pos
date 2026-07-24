@@ -110,6 +110,8 @@ export default function AdminLayout() {
   }, [location.pathname])
 
   const isAlmacen = sedeActiva?.tipo === 'ALMACEN'
+  // Almacén con facturación habilitada: además de kardex, permite el módulo de comprobantes.
+  const almacenFactura = isAlmacen && sedeActiva?.permiteFacturacion === true
 
   // Redireccionar a primer módulo permitido si no tiene acceso a dashboard
   useEffect(() => {
@@ -122,13 +124,16 @@ export default function AdminLayout() {
     }
   }, [auth, location.pathname, navigate])
 
-  // Sede tipo ALMACEN: solo kardex permitido
+  // Sede tipo ALMACEN: solo kardex permitido (y facturación si la sede lo habilita)
   useEffect(() => {
     if (!isAlmacen) return
-    if (!location.pathname.startsWith('/administrador/kardex')) {
+    const allowedPrefixes = ['/administrador/kardex']
+    if (almacenFactura) allowedPrefixes.push('/administrador/facturacion')
+    const permitido = allowedPrefixes.some((p) => location.pathname.startsWith(p))
+    if (!permitido) {
       navigate('/administrador/kardex/productos', { replace: true })
     }
-  }, [isAlmacen, location.pathname, navigate])
+  }, [isAlmacen, almacenFactura, location.pathname, navigate])
 
   // Robust scroll lock for mobile drawer using position:fixed and restoring scroll
   useEffect(() => {
@@ -453,14 +458,14 @@ export default function AdminLayout() {
                     <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
                       <Icon icon="solar:box-bold-duotone" width={12} /> Modo Almacén
                     </p>
-                    <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-0.5">Solo acceso a Kardex</p>
+                    <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-0.5">{almacenFactura ? 'Acceso a Kardex y Facturación' : 'Solo acceso a Kardex'}</p>
                   </div>
                 )}
 
                 {/* ── Sidebar dinámico generado desde plan.modulosAsignados ── */}
                 {planModules.map(({ modulo }) => {
-                  // En modo almacén solo mostrar el módulo kardex
-                  if (isAlmacen && modulo.codigo !== 'kardex') return null;
+                  // En modo almacén solo mostrar kardex (y comprobantes si la sede habilita facturación)
+                  if (isAlmacen && modulo.codigo !== 'kardex' && !(almacenFactura && modulo.codigo === 'comprobantes')) return null;
                   if (!hasPermission(auth, modulo.codigo)) return null;
                   const meta = MODULE_META[modulo.codigo];
                   if (meta?.condition && !meta.condition(auth)) return null;

@@ -47,7 +47,15 @@ const ComprobantePrintPage = ({
     }, [productsInvoice, totalInWords, qrCodeDataUrl, observation, company, formValues, mode, total, receipt, selectedClient, discount, size, includeProductImages, quotationDiscount, quotationValidity, quotationSignature, retencionData]);
 
     const totalReceipt = productsInvoice?.reduce((sum: any, p: any) => sum + Number(p.total || p.mtoPrecioUnitario * p.cantidad || 0), 0);
-    const totalPrices = productsInvoice?.reduce((sum: any, p: any) => sum + (Number(p.precioUnitario || p.mtoPrecioUnitario || 0) * (p.cantidad || 0)), 0);
+    const totalPrices = productsInvoice?.reduce((sum: any, p: any) => {
+        const cant = Number(p.cantidad || 0);
+        // Precio de lista de la línea: en creación viene precioUnitario; en reimpresión se
+        // reconstruye sumando el descuento guardado (mtoDescuento) al precio ya rebajado.
+        const grossLine = p.precioUnitario != null
+            ? Number(p.precioUnitario) * cant
+            : Number(p.mtoPrecioUnitario || 0) * cant + Number(p.mtoDescuento || 0);
+        return sum + grossLine;
+    }, 0);
 
     // Configuración del formato de cotización (visibilidad + tamaño por elemento)
     const fc = (key: string) => elemCfg((company?.empresa as any)?.cotizFormatoConfig, key);
@@ -92,13 +100,23 @@ console.log(formValues)
         0
     );
     const netTotalFallback = Math.max(0, totalReceipt - explicitDiscount);
-    const totalDescuentos = parseAmount(
+    // Descuento por línea guardado en el comprobante (reimpresión desde la lista). En el
+    // ticket de creación los ítems del carrito no lo traen, así que el ahorro se deduce de
+    // (totalPrices - totalReceipt). Nota: mtoDescuentoGlobal llega como 0 (no null) en la
+    // reimpresión, por lo que la cadena `??` lo cortaría; por eso se suma explícitamente.
+    const lineDiscountsSum = productsInvoice?.reduce(
+        (s: number, p: any) => s + Number(p?.mtoDescuento || 0), 0
+    ) || 0;
+    const headerGlobalDiscount = parseAmount(
         formValues?.totalDescuentos ??
         formValues?.mtoDescuentos ??
-        formValues?.mtoDescuentoGlobal ??
-        discount ??
-        (totalPrices > totalReceipt ? totalPrices - totalReceipt : 0)
+        formValues?.mtoDescuentoGlobal,
+        0
     );
+    const fallbackDiscount = totalPrices > totalReceipt ? totalPrices - totalReceipt : 0;
+    const totalDescuentos = (lineDiscountsSum + headerGlobalDiscount) > 0
+        ? lineDiscountsSum + headerGlobalDiscount
+        : (parseAmount(discount, 0) || fallbackDiscount);
     const mtoOperGravadas = parseAmount(formValues?.mtoOperGravadas, netTotalFallback / 1.18);
     const mtoOperGratuitas = parseAmount(formValues?.mtoOperGratuitas, 0);
     const mtoOperInafectas = parseAmount(formValues?.mtoOperInafectas, 0);
@@ -272,22 +290,37 @@ console.log(formValues)
                                             </div>
                                         )}
                                     </span>
-                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || item?.precioUnitario || 0).toFixed(2)}</span>
-                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(item?.total || (Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || item?.precioUnitario || 0) * item?.cantidad)).toFixed(2)}</span>
+                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(
+                                        item?.precioUnitario != null
+                                            ? item.precioUnitario
+                                            : Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || 0) + (Number(item?.mtoDescuento || 0) / Number(item?.cantidad || 1))
+                                    ).toFixed(2)}</span>
+                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(
+                                        (item?.precioUnitario != null
+                                            ? Number(item.precioUnitario)
+                                            : Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || 0) + (Number(item?.mtoDescuento || 0) / Number(item?.cantidad || 1))
+                                        ) * Number(item?.cantidad || 0)
+                                    ).toFixed(2)}</span>
                                 </div>
                             ))}
                         </div>
                         <hr className="my-1 border-dashed border-[#222]" />
                         <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} `}>SON: {totalInWords || ''}</p>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">TOTAL GRAVADAS:</div> <div>{round2(mtoOperGravadas).toFixed(2)}</div></label>
-                        <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">I.G.V 18.00 %:</div> <div>{round2(mtoIgv).toFixed(2)}</div></label>
+                        {totalDescuentos > 0 && (
+                            <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                                <div className="">SUBTOTAL:</div>
+                                <div>{round2(totalPrices).toFixed(2)}</div>
+                            </label>
+                        )}
                         {totalDescuentos > 0 && (
                             <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
                                 <div className="">DESCUENTO:</div>
                                 <div>- {round2(totalDescuentos).toFixed(2)}</div>
                             </label>
                         )}
+                        <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">TOTAL GRAVADAS:</div> <div>{round2(mtoOperGravadas).toFixed(2)}</div></label>
+                        <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">I.G.V 18.00 %:</div> <div>{round2(mtoIgv).toFixed(2)}</div></label>
                         <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">IMPORTE TOTAL:</div> <div>{round2(mtoImpVenta).toFixed(2)}</div></label>
                         {
                             shouldShowRetention && (
@@ -482,9 +515,14 @@ console.log(formValues)
 
                                     {/* Table Body */}
                                     {productsInvoice?.map((item: any, i: number) => {
-                                        const pUnit = Number(item?.mtoPrecioUnitario || item?.precioUnitario || item?.producto?.precioUnitario || 0);
                                         const cant = Number(item?.cantidad || 0);
-                                        const totalItem = Number(item?.total || (pUnit * cant));
+                                        // Precio final (ya con descuento) para el importe de la línea.
+                                        const pUnitFinal = Number(item?.mtoPrecioUnitario || item?.precioUnitario || item?.producto?.precioUnitario || 0);
+                                        // Precio de lista para la columna P.UNIT: en reimpresión = final + descuento por unidad.
+                                        const pUnit = item?.precioUnitario != null
+                                            ? Number(item.precioUnitario)
+                                            : pUnitFinal + (Number(item?.mtoDescuento || 0) / (cant || 1));
+                                        const totalItem = Number(item?.total || (pUnitFinal * cant));
 
                                         return (
                                             <div key={i} className="flex border-b border-l border-r border-gray-300" style={{ fontSize: px('productos') }}>
@@ -810,9 +848,14 @@ console.log(formValues)
                                     </div>
 
                                     {productsInvoice?.map((item: any, i: number) => {
-                                        const pUnit = Number(item?.mtoPrecioUnitario || item?.precioUnitario || item?.producto?.precioUnitario || 0);
                                         const cant = Number(item?.cantidad || 0);
-                                        const totalItem = Number(item?.total || (pUnit * cant));
+                                        // Precio final (ya con descuento) para el importe de la línea.
+                                        const pUnitFinal = Number(item?.mtoPrecioUnitario || item?.precioUnitario || item?.producto?.precioUnitario || 0);
+                                        // Precio de lista para la columna P.UNIT: en reimpresión = final + descuento por unidad.
+                                        const pUnit = item?.precioUnitario != null
+                                            ? Number(item.precioUnitario)
+                                            : pUnitFinal + (Number(item?.mtoDescuento || 0) / (cant || 1));
+                                        const totalItem = Number(item?.total || (pUnitFinal * cant));
 
                                         return (
                                             <div key={i} className="flex border-b border-l border-r border-gray-300" style={{ fontSize: px('productos') }}>

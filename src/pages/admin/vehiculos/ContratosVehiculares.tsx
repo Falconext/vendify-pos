@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { get, post, patch } from '@/utils/fetch';
+import { get } from '@/utils/fetch';
+import { useContratosVehicularesStore } from '@/zustand/contratosVehiculares';
+import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import { useDebounce } from '@/hooks/useDebounce';
 import DataTable from '@/components/Datatable';
@@ -8,8 +10,10 @@ import InputPro from '@/components/InputPro';
 import Select from '@/components/Select';
 import ModalConfirm from '@/components/ModalConfirm';
 import type {
-    IContratoVehicular, IVehiculo, IContratosResponse, EstadoContrato,
+    IContratoVehicular, IVehiculo, EstadoContrato,
 } from '@/interfaces/vehiculo';
+import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { printContrato } from './contratoPrint';
 
 // ─── Estilo CRM claro (Brix UI) ────────────────────────────────────────────────
 const ACCENT = '#7551FF';
@@ -41,37 +45,115 @@ const ESTADO_OPTS = [
 ];
 const DURACION_OPTS = [{ id: 6, value: '6 meses' }, { id: 12, value: '12 meses' }, { id: 24, value: '24 meses' }];
 
-// ─── Modal Nuevo Contrato ─────────────────────────────────────────────────────
-function NuevoContratoModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+const mesesEntre = (inicio: string, fin: string) => {
+    const a = new Date(inicio); const b = new Date(fin);
+    const m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    return m > 0 ? m : 12;
+};
+
+// Una unidad (vehículo) dentro del formulario de contrato.
+interface UnidadForm { vehiculoId: number; placa: string; desc: string; montoAnual: string }
+
+// Deriva las unidades iniciales de un contrato para el modo edición.
+const unidadesDeContrato = (c?: IContratoVehicular | null): UnidadForm[] => {
+    if (!c) return [];
+    if (c.unidades?.length) {
+        return c.unidades.map((u) => ({
+            vehiculoId: u.vehiculoId,
+            placa: u.vehiculo?.placa || '',
+            desc: `${u.vehiculo?.marca || ''} ${u.vehiculo?.modelo || ''}`.trim(),
+            montoAnual: u.montoAnual != null ? String(u.montoAnual) : '',
+        }));
+    }
+    // Contrato legacy (sin unidades): usa el vehículo principal.
+    return [{
+        vehiculoId: c.vehiculoId,
+        placa: c.vehiculo?.placa || '',
+        desc: `${c.vehiculo?.marca || ''} ${c.vehiculo?.modelo || ''}`.trim(),
+        montoAnual: c.montoAnual != null ? String(c.montoAnual) : '',
+    }];
+};
+
+// ─── Modal Crear / Editar Contrato (multi-vehículo) ───────────────────────────
+function ContratoModal({ contrato, onClose, onSaved }: { contrato?: IContratoVehicular | null; onClose: () => void; onSaved: () => void }) {
     const { alert } = useAlertStore();
+    const addContrato = useContratosVehicularesStore((s) => s.addContrato);
+    const updateContrato = useContratosVehicularesStore((s) => s.updateContrato);
+    const esEdicion = !!contrato;
     const [loading, setLoading] = useState(false);
     const [vehiculos, setVehiculos] = useState<IVehiculo[]>([]);
+    const [productos, setProductos] = useState<{ id: number; descripcion: string; precioUnitario?: number }[]>([]);
+    // Vehículos incluidos en el contrato (multi-vehículo).
+    const [unidades, setUnidades] = useState<UnidadForm[]>(() => unidadesDeContrato(contrato));
+    const [vehiculoPick, setVehiculoPick] = useState('');
     const [form, setForm] = useState({
-        vehiculoId: '', fechaInicio: new Date().toISOString().split('T')[0],
-        duracionMeses: '12', montoAnual: '', observaciones: '',
+        fechaInicio: contrato ? new Date(contrato.fechaInicio).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        duracionMeses: contrato ? String(mesesEntre(contrato.fechaInicio, contrato.fechaFin)) : '12',
+        productoId: contrato?.producto?.id ? String(contrato.producto.id) : '',
+        montoAnual: contrato?.montoAnual != null ? String(contrato.montoAnual) : '', // solo edición (total)
+        observaciones: contrato?.observaciones ?? '',
     });
 
     useEffect(() => { get('vehiculos?limit=200').then((resp: any) => setVehiculos(resp.data?.data ?? [])); }, []);
+    useEffect(() => {
+        get('productos?limit=200&soloVendibles=true')
+            .then((resp: any) => setProductos(resp.data?.productos ?? []))
+            .catch(() => { /* silencioso: el selector de servicio queda vacío */ });
+    }, []);
 
-    const vehiculoOpts = vehiculos.map((v) => ({ id: v.id, value: `${v.placa} — ${v.marca} ${v.modelo || ''}${v.cliente ? ` (${v.cliente.nombre})` : ''}` }));
-    const vehiculoSel = vehiculoOpts.find((o) => String(o.id) === form.vehiculoId)?.value || '';
-    const duracionSel = DURACION_OPTS.find((o) => String(o.id) === form.duracionMeses)?.value || '';
+    // Vehículos disponibles = catálogo menos los ya agregados.
+    const vehiculoOpts = vehiculos
+        .filter((v) => !unidades.some((u) => u.vehiculoId === v.id))
+        .map((v) => ({ id: v.id, value: `${v.placa} — ${v.marca} ${v.modelo || ''}${v.cliente ? ` (${v.cliente.nombre})` : ''}` }));
+    const vehiculoPickLabel = vehiculoOpts.find((o) => String(o.id) === vehiculoPick)?.value || '';
+    const productoOpts = productos.map((p) => ({ id: p.id, value: p.descripcion }));
+    const productoSel = productoOpts.find((o) => String(o.id) === form.productoId)?.value || '';
+    // La duración editada puede no estar en el catálogo base; la añadimos si falta.
+    const duracionOpts = DURACION_OPTS.some((o) => String(o.id) === form.duracionMeses)
+        ? DURACION_OPTS
+        : [...DURACION_OPTS, { id: parseInt(form.duracionMeses), value: `${form.duracionMeses} meses` }];
+    const duracionSel = duracionOpts.find((o) => String(o.id) === form.duracionMeses)?.value || '';
+
+    const totalUnidades = unidades.reduce((acc, u) => acc + (parseFloat(u.montoAnual) || 0), 0);
+
+    const agregarVehiculo = (id: number) => {
+        if (unidades.some((u) => u.vehiculoId === id)) { setVehiculoPick(''); return; }
+        const v = vehiculos.find((x) => x.id === id);
+        if (!v) return;
+        const prod = productos.find((p) => String(p.id) === form.productoId);
+        setUnidades((prev) => [...prev, {
+            vehiculoId: id,
+            placa: v.placa,
+            desc: `${v.marca} ${v.modelo || ''}`.trim(),
+            montoAnual: prod?.precioUnitario != null ? String(prod.precioUnitario) : '',
+        }]);
+        setVehiculoPick('');
+    };
+    const quitarVehiculo = (id: number) => setUnidades((prev) => prev.filter((u) => u.vehiculoId !== id));
+    const setUnidadMonto = (id: number, monto: string) =>
+        setUnidades((prev) => prev.map((u) => (u.vehiculoId === id ? { ...u, montoAnual: monto } : u)));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.vehiculoId) { alert('Selecciona un vehículo', 'warning'); return; }
+        if (unidades.length === 0) { alert('Agrega al menos un vehículo', 'warning'); return; }
         setLoading(true);
         try {
-            await post('contratos-vehiculares', {
-                vehiculoId: parseInt(form.vehiculoId), fechaInicio: form.fechaInicio,
+            const base: any = {
+                fechaInicio: form.fechaInicio,
                 duracionMeses: parseInt(form.duracionMeses),
-                montoAnual: form.montoAnual ? parseFloat(form.montoAnual) : undefined,
+                productoId: form.productoId ? parseInt(form.productoId) : undefined,
                 observaciones: form.observaciones || undefined,
-            });
-            alert('Contrato creado exitosamente', 'success');
-            onSaved();
-        } catch (err: any) {
-            alert(err?.response?.data?.message || 'Error al crear contrato', 'error');
+                // El set de vehículos ahora es editable también en edición: se envían las
+                // unidades y el backend las sincroniza (agrega/quita/actualiza montos).
+                vehiculos: unidades.map((u) => ({
+                    vehiculoId: u.vehiculoId,
+                    montoAnual: u.montoAnual ? parseFloat(u.montoAnual) : undefined,
+                })),
+            };
+            const ok = esEdicion
+                ? await updateContrato(contrato!.id, base)
+                : await addContrato(base);
+            if (ok) onSaved(); // el store ya mostró el toast (éxito o error)
         } finally { setLoading(false); }
     };
 
@@ -83,32 +165,97 @@ function NuevoContratoModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
-            <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
-                <div className="flex items-center justify-between px-6 py-5" style={{ background: ACCENT }}>
+            <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+                <div className="flex flex-shrink-0 items-center justify-between px-6 py-5" style={{ background: ACCENT }}>
                     <div className="flex items-center gap-3">
-                        <div className="rounded-2xl bg-white/15 p-2.5"><Icon icon="solar:document-add-bold-duotone" className="text-2xl text-white" /></div>
-                        <div><h2 className="text-lg font-bold text-white">Nuevo contrato</h2><p className="text-xs text-white/70">Suscripción anual vehicular</p></div>
+                        <div className="rounded-2xl bg-white/15 p-2.5"><Icon icon={esEdicion ? 'solar:pen-2-bold-duotone' : 'solar:document-add-bold-duotone'} className="text-2xl text-white" /></div>
+                        <div><h2 className="text-lg font-bold text-white">{esEdicion ? 'Editar contrato' : 'Nuevo contrato'}</h2><p className="text-xs text-white/70">Suscripción vehicular</p></div>
                     </div>
                     <button onClick={onClose} className="text-white/70 transition hover:text-white"><Icon icon="solar:close-circle-bold" className="text-2xl" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4 p-6">
-                    <Select name="vehiculoId" label="Vehículo *" options={vehiculoOpts} value={vehiculoSel} isSearch onChange={(id: any) => setForm((f) => ({ ...f, vehiculoId: String(id) }))} placeholder="— Seleccionar vehículo —" error={null} />
-                    <div className="grid grid-cols-2 gap-4">
-                        <InputPro name="fechaInicio" type="date" value={form.fechaInicio} onChange={(e) => setForm((f) => ({ ...f, fechaInicio: e.target.value }))} isLabel label="Fecha de inicio *" error={null} />
-                        <Select name="duracionMeses" label="Duración" options={DURACION_OPTS} value={duracionSel} onChange={(id: any) => setForm((f) => ({ ...f, duracionMeses: String(id) }))} error={null} />
-                    </div>
-                    {fechaFinPreview && (
-                        <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
-                            <Icon icon="solar:calendar-mark-bold" className="text-lg text-violet-500" />
-                            <span className="text-sm text-violet-700">Vence el <strong>{fechaFinPreview}</strong></span>
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-6">
+                        {/* Servicio primero: al agregar vehículos, autocompleta su monto con el precio del servicio */}
+                        <Select
+                            name="productoId"
+                            label="Servicio"
+                            options={productoOpts}
+                            value={productoSel}
+                            isSearch
+                            onChange={(id: any) => setForm((f) => ({ ...f, productoId: String(id) }))}
+                            placeholder="— Servicio (GPS, monitoreo, alarma...) —"
+                            error={null}
+                        />
+
+                        {/* Selector de vehículos (multi-vehículo) — disponible al crear y al editar */}
+                        <div>
+                            <Select
+                                name="vehiculoPick"
+                                label="Agregar vehículo(s) *"
+                                options={vehiculoOpts}
+                                value={vehiculoPickLabel}
+                                isSearch
+                                onChange={(id: any) => { setVehiculoPick(String(id)); agregarVehiculo(Number(id)); }}
+                                placeholder="— Buscar y agregar vehículo —"
+                                error={null}
+                            />
+                            <p className="mt-1 text-xs text-slate-400">Puedes agregar, quitar o cambiar los vehículos del contrato.</p>
                         </div>
-                    )}
-                    <InputPro name="montoAnual" type="number" value={form.montoAnual} onChange={(e) => setForm((f) => ({ ...f, montoAnual: e.target.value }))} isLabel label="Monto anual (S/)" placeholder="500.00" error={null} />
-                    <InputPro name="observaciones" type="textarea" rows={3} value={form.observaciones} onChange={(e) => setForm((f) => ({ ...f, observaciones: e.target.value }))} isLabel label="Observaciones" placeholder="GPS marca X instalado, alarma modelo Y..." error={null} />
-                    <div className="flex gap-3 pt-2">
+
+                        {/* Lista de vehículos del contrato */}
+                        {unidades.length > 0 && (
+                            <div className="rounded-2xl border border-slate-200">
+                                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Vehículos ({unidades.length})</span>
+                                </div>
+                                <div className="divide-y divide-slate-100">
+                                    {unidades.map((u) => (
+                                        <div key={u.vehiculoId} className="flex items-center gap-3 px-4 py-2.5">
+                                            <span className="rounded-lg bg-slate-100 px-2 py-0.5 font-mono text-sm font-bold tracking-widest text-slate-800">{u.placa}</span>
+                                            <span className="flex-1 truncate text-sm text-slate-600">{u.desc}</span>
+                                            <div className="w-28">
+                                                <InputPro
+                                                    name={`monto-${u.vehiculoId}`}
+                                                    type="number"
+                                                    value={u.montoAnual}
+                                                    onChange={(e) => setUnidadMonto(u.vehiculoId, e.target.value)}
+                                                    isLabel={false}
+                                                    placeholder="Monto S/"
+                                                    error={null}
+                                                />
+                                            </div>
+                                            <button type="button" onClick={() => quitarVehiculo(u.vehiculoId)} aria-label="Quitar" className="text-slate-400 transition hover:text-rose-500">
+                                                <Icon icon="solar:trash-bin-trash-bold" width={18} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                {totalUnidades > 0 && (
+                                    <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total anual</span>
+                                        <span className="text-sm font-bold text-slate-800">S/ {totalUnidades.toFixed(2)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputPro name="fechaInicio" type="date" value={form.fechaInicio} onChange={(e) => setForm((f) => ({ ...f, fechaInicio: e.target.value }))} isLabel label="Fecha de inicio *" error={null} />
+                            <Select name="duracionMeses" label="Duración" options={duracionOpts} value={duracionSel} onChange={(id: any) => setForm((f) => ({ ...f, duracionMeses: String(id) }))} error={null} />
+                        </div>
+                        {fechaFinPreview && (
+                            <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
+                                <Icon icon="solar:calendar-mark-bold" className="text-lg text-violet-500" />
+                                <span className="text-sm text-violet-700">Vence el <strong>{fechaFinPreview}</strong></span>
+                            </div>
+                        )}
+                        {/* El monto total es la suma de los montos por vehículo (ver "Total anual"). */}
+                        <InputPro name="observaciones" type="textarea" rows={3} value={form.observaciones} onChange={(e) => setForm((f) => ({ ...f, observaciones: e.target.value }))} isLabel label="Observaciones" placeholder="GPS marca X instalado, alarma modelo Y..." error={null} />
+                    </div>
+                    <div className="flex flex-shrink-0 gap-3 border-t border-slate-100 p-4">
                         <button type="button" onClick={onClose} className="flex-1 rounded-2xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancelar</button>
                         <button type="submit" disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-105 disabled:opacity-60" style={{ background: ACCENT }}>
-                            {loading ? <Icon icon="eos-icons:loading" /> : <Icon icon="solar:check-circle-bold" />}Crear contrato
+                            {loading ? <Icon icon="eos-icons:loading" /> : <Icon icon="solar:check-circle-bold" />}{esEdicion ? 'Guardar cambios' : 'Crear contrato'}
                         </button>
                     </div>
                 </form>
@@ -120,57 +267,125 @@ function NuevoContratoModal({ onClose, onSaved }: { onClose: () => void; onSaved
 // ─── Página Principal ─────────────────────────────────────────────────────────
 export default function ContratosVehicularesPage() {
     const { alert } = useAlertStore();
-    const [data, setData] = useState<IContratoVehicular[]>([]);
-    const [alertas, setAlertas] = useState<IContratoVehicular[]>([]);
-    const [total, setTotal] = useState(0);
+    const auth = useAuthStore((s) => s.auth);
+    // Estado de la lista desde el store (se actualiza reactivamente en cada CRUD).
+    const data = useContratosVehicularesStore((s) => s.contratos);
+    const alertas = useContratosVehicularesStore((s) => s.alertas);
+    const total = useContratosVehicularesStore((s) => s.totalContratos);
+    const loading = useContratosVehicularesStore((s) => s.loadingContratos);
+    const getContratos = useContratosVehicularesStore((s) => s.getContratos);
+    const renovarContrato = useContratosVehicularesStore((s) => s.renovarContrato);
+    const cancelarContrato = useContratosVehicularesStore((s) => s.cancelarContrato);
+    const deleteContrato = useContratosVehicularesStore((s) => s.deleteContrato);
+
     const [estadoFilter, setEstadoFilter] = useState<EstadoContrato | 'TODOS'>('TODOS');
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 350);
-    const [loading, setLoading] = useState(false);
+
     const [modalNuevo, setModalNuevo] = useState(false);
+    const [contratoEditar, setContratoEditar] = useState<IContratoVehicular | null>(null);
     const [renovando, setRenovando] = useState<number | null>(null);
+    const [contratoRenovar, setContratoRenovar] = useState<IContratoVehicular | null>(null);
     const [contratoCancelar, setContratoCancelar] = useState<IContratoVehicular | null>(null);
     const [cancelando, setCancelando] = useState(false);
+    const [contratoEliminar, setContratoEliminar] = useState<IContratoVehicular | null>(null);
+    const [eliminando, setEliminando] = useState(false);
 
-    const cargar = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({
-                page: '1', limit: '100',
-                ...(estadoFilter !== 'TODOS' ? { estado: estadoFilter } : {}),
-                ...(debouncedSearch ? { search: debouncedSearch } : {}),
-            });
-            const [resp, alertasResp]: any[] = await Promise.all([
-                get(`contratos-vehiculares?${params}`),
-                get('contratos-vehiculares/alertas'),
-            ]);
-            const body: IContratosResponse = resp.data;
-            setData(body.data);
-            setTotal(body.paginacion?.total ?? body.data.length);
-            setAlertas(alertasResp.data ?? []);
-        } catch { alert('Error al cargar contratos', 'error'); }
-        finally { setLoading(false); }
-    }, [estadoFilter, debouncedSearch]);
-    useEffect(() => { cargar(); }, [cargar]);
+    useEffect(() => {
+        getContratos({ estado: estadoFilter, search: debouncedSearch });
+    }, [estadoFilter, debouncedSearch, getContratos]);
 
-    const handleRenovar = async (contrato: IContratoVehicular) => {
+    const cargar = () => getContratos({ estado: estadoFilter, search: debouncedSearch });
+
+    // Renovar pasa siempre por confirmación para evitar renovaciones por error.
+    const confirmarRenovar = async () => {
+        if (!contratoRenovar) return;
+        const contrato = contratoRenovar;
         setRenovando(contrato.id);
-        try { await patch(`contratos-vehiculares/${contrato.id}/renovar`, {}); alert(`Contrato de ${contrato.vehiculo?.placa} renovado por 12 meses`, 'success'); cargar(); }
-        catch (err: any) { alert(err?.response?.data?.message || 'Error al renovar', 'error'); }
-        finally { setRenovando(null); }
+        setContratoRenovar(null);
+        await renovarContrato(contrato.id);
+        setRenovando(null);
     };
 
     const handleCancelar = async () => {
         if (!contratoCancelar) return;
         setCancelando(true);
-        try { await patch(`contratos-vehiculares/${contratoCancelar.id}/cancelar`, {}); alert('Contrato cancelado', 'success'); setContratoCancelar(null); cargar(); }
-        catch (err: any) { alert(err?.response?.data?.message || 'Error al cancelar', 'error'); }
-        finally { setCancelando(false); }
+        const ok = await cancelarContrato(contratoCancelar.id);
+        if (ok) setContratoCancelar(null);
+        setCancelando(false);
+    };
+
+    const handleEliminar = async () => {
+        if (!contratoEliminar) return;
+        setEliminando(true);
+        const ok = await deleteContrato(contratoEliminar.id);
+        if (ok) setContratoEliminar(null);
+        setEliminando(false);
+    };
+
+    // Placas del contrato (todas las unidades; respaldo al vehículo principal).
+    const placasDeContrato = (c: IContratoVehicular): string[] => {
+        if (c.unidades?.length) return c.unidades.map((u) => u.vehiculo?.placa || '').filter(Boolean);
+        return c.vehiculo?.placa ? [c.vehiculo.placa] : [];
+    };
+
+    // Abre WhatsApp con un recordatorio de vencimiento prellenado para el propietario.
+    const recordarWhatsApp = (c: IContratoVehicular) => {
+        const tel = c.vehiculo?.cliente?.telefono;
+        if (!tel) { alert('Este propietario no tiene teléfono registrado', 'warning'); return; }
+        const dias = diasRestantes(c.fechaFin);
+        const nombre = c.vehiculo?.cliente?.nombre || 'estimado(a) cliente';
+        const servicio = c.producto?.descripcion ? ` (${c.producto.descripcion})` : '';
+        const placas = placasDeContrato(c);
+        const vehiculosTxt = placas.length > 1
+            ? `sus vehículos ${placas.join(', ')}`
+            : `su vehículo ${placas[0] || ''}`;
+        const estadoTxt = dias < 0
+            ? `venció hace ${Math.abs(dias)} día${Math.abs(dias) === 1 ? '' : 's'}`
+            : dias === 0 ? 'vence hoy'
+                : `vence en ${dias} día${dias === 1 ? '' : 's'}`;
+        const mensaje =
+            `Hola ${nombre}, le recordamos que el contrato/suscripción de ${vehiculosTxt}${servicio} ${estadoTxt} (${fmt(c.fechaFin)}). ` +
+            `Le invitamos a renovarlo para mantener su servicio activo. ¡Gracias!`;
+        const url = buildStorePurchaseWhatsappUrl(tel, mensaje);
+        if (!url) { alert('No se pudo generar el enlace de WhatsApp', 'warning'); return; }
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    // Genera el PDF/impresión del contrato con la lista completa de vehículos.
+    const imprimirContrato = (c: IContratoVehicular) => {
+        const vehiculos = c.unidades?.length
+            ? c.unidades.map((u) => ({
+                placa: u.vehiculo?.placa || '',
+                marca: u.vehiculo?.marca, modelo: u.vehiculo?.modelo,
+                color: u.vehiculo?.color, anio: u.vehiculo?.anio,
+                montoAnual: u.montoAnual,
+            }))
+            : [{
+                placa: c.vehiculo?.placa || '',
+                marca: c.vehiculo?.marca, modelo: c.vehiculo?.modelo,
+                color: c.vehiculo?.color, anio: undefined,
+                montoAnual: c.montoAnual,
+            }];
+        printContrato({
+            numero: c.id,
+            estado: estadoLabel[c.estado],
+            servicio: c.producto?.descripcion,
+            fechaInicio: c.fechaInicio,
+            fechaFin: c.fechaFin,
+            montoTotalAnual: c.montoAnual,
+            observaciones: c.observaciones,
+            cliente: c.vehiculo?.cliente,
+            vehiculos,
+            empresa: (auth as any)?.empresa,
+        });
     };
 
     const bodyData = data.map((c) => {
         const dias = diasRestantes(c.fechaFin);
         const pill = estadoPill[c.estado];
+        const placas = placasDeContrato(c);
+        const extra = placas.length - 1;
         return {
             id: c.id,
             Vehículo: (
@@ -179,8 +394,13 @@ export default function ContratosVehicularesPage() {
                         <Icon icon="solar:card-2-linear" className="text-lg" />
                     </div>
                     <div className="min-w-0">
-                        <span className="font-mono text-sm font-bold tracking-wide text-slate-800">{c.vehiculo?.placa}</span>
-                        <p className="mt-0.5 text-xs text-slate-400 truncate">{c.vehiculo?.marca} {c.vehiculo?.modelo || ''}</p>
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-sm font-bold tracking-wide text-slate-800">{c.vehiculo?.placa}</span>
+                            {extra > 0 && (
+                                <span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700" title={placas.join(', ')}>+{extra}</span>
+                            )}
+                        </div>
+                        <p className="mt-0.5 text-xs text-slate-400 truncate">{extra > 0 ? `${placas.length} vehículos` : `${c.vehiculo?.marca || ''} ${c.vehiculo?.modelo || ''}`}</p>
                     </div>
                 </div>
             ),
@@ -189,7 +409,10 @@ export default function ContratosVehicularesPage() {
                     <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-[11px] font-bold">
                         {(c.vehiculo?.cliente?.nombre || '—').charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm font-semibold text-slate-700 truncate max-w-[160px]">{c.vehiculo?.cliente?.nombre || '—'}</span>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate max-w-[160px]">{c.vehiculo?.cliente?.nombre || '—'}</p>
+                        {c.vehiculo?.cliente?.email && <p className="text-xs text-slate-400 truncate max-w-[160px]">{c.vehiculo.cliente.email}</p>}
+                    </div>
                 </div>
             ),
             Servicio: c.producto?.descripcion ? <span className="text-sm text-slate-600">{c.producto.descripcion}</span> : <span className="text-slate-300">—</span>,
@@ -204,14 +427,20 @@ export default function ContratosVehicularesPage() {
             ),
             Acciones: (
                 <div className="flex items-center gap-1">
+                    <button title="Editar contrato" onClick={() => setContratoEditar(c)} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><Icon icon="solar:pen-bold" className="text-lg" /></button>
+                    <button title="Imprimir / PDF" onClick={() => imprimirContrato(c)} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><Icon icon="solar:printer-bold" className="text-lg" /></button>
+                    {c.vehiculo?.cliente?.telefono && (
+                        <button title="Recordar por WhatsApp" onClick={() => recordarWhatsApp(c)} className="rounded-lg p-2 text-emerald-500 transition hover:bg-emerald-50"><Icon icon="mdi:whatsapp" className="text-lg" /></button>
+                    )}
                     {c.estado !== 'CANCELADO' && (
-                        <button title="Renovar +12 meses" onClick={() => handleRenovar(c)} disabled={renovando === c.id} className="rounded-lg p-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-50">
+                        <button title="Renovar +12 meses" onClick={() => setContratoRenovar(c)} disabled={renovando === c.id} className="rounded-lg p-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-50">
                             {renovando === c.id ? <Icon icon="eos-icons:loading" className="text-lg" /> : <Icon icon="solar:refresh-circle-bold" className="text-lg" />}
                         </button>
                     )}
                     {c.estado !== 'CANCELADO' && c.estado !== 'VENCIDO' && (
-                        <button title="Cancelar contrato" onClick={() => setContratoCancelar(c)} className="rounded-lg p-2 text-rose-400 transition hover:bg-rose-50"><Icon icon="solar:close-circle-bold" className="text-lg" /></button>
+                        <button title="Cancelar contrato" onClick={() => setContratoCancelar(c)} className="rounded-lg p-2 text-amber-500 transition hover:bg-amber-50"><Icon icon="solar:close-circle-bold" className="text-lg" /></button>
                     )}
+                    <button title="Eliminar contrato" onClick={() => setContratoEliminar(c)} className="rounded-lg p-2 text-rose-400 transition hover:bg-rose-50"><Icon icon="solar:trash-bin-trash-bold" className="text-lg" /></button>
                 </div>
             ),
         };
@@ -277,7 +506,12 @@ export default function ContratosVehicularesPage() {
                                 <div key={c.id} className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/60 px-3 py-2">
                                     <span className="font-mono text-sm font-bold text-slate-800">{c.vehiculo?.placa}</span>
                                     <span className={`text-xs ${diasColor(dias)}`}>{dias < 0 ? 'Vencido' : `${dias}d`}</span>
-                                    <button onClick={() => handleRenovar(c)} disabled={renovando === c.id} className="rounded-lg px-2.5 py-1 text-xs font-bold text-white transition hover:brightness-105 disabled:opacity-60" style={{ background: ACCENT }}>{renovando === c.id ? '...' : 'Renovar'}</button>
+                                    {c.vehiculo?.cliente?.telefono && (
+                                        <button onClick={() => recordarWhatsApp(c)} title="Avisar al cliente por WhatsApp" className="flex items-center justify-center rounded-lg bg-emerald-500 p-1.5 text-white transition hover:bg-emerald-600">
+                                            <Icon icon="mdi:whatsapp" width={15} height={15} />
+                                        </button>
+                                    )}
+                                    <button onClick={() => setContratoRenovar(c)} disabled={renovando === c.id} className="rounded-lg px-2.5 py-1 text-xs font-bold text-white transition hover:brightness-105 disabled:opacity-60" style={{ background: ACCENT }}>{renovando === c.id ? '...' : 'Renovar'}</button>
                                 </div>
                             );
                         })}
@@ -324,16 +558,43 @@ export default function ContratosVehicularesPage() {
                 )}
             </div>
 
-            {modalNuevo && <NuevoContratoModal onClose={() => setModalNuevo(false)} onSaved={() => { setModalNuevo(false); cargar(); }} />}
+            {(modalNuevo || contratoEditar) && (
+                <ContratoModal
+                    contrato={contratoEditar}
+                    onClose={() => { setModalNuevo(false); setContratoEditar(null); }}
+                    onSaved={() => { setModalNuevo(false); setContratoEditar(null); }}
+                />
+            )}
+            {contratoRenovar && (
+                <ModalConfirm
+                    isOpenModal={!!contratoRenovar}
+                    setIsOpenModal={(v) => { if (!v) setContratoRenovar(null); }}
+                    confirmSubmit={confirmarRenovar}
+                    title="Renovar contrato"
+                    information={`¿Renovar el contrato del vehículo ${contratoRenovar.vehiculo?.placa} por 12 meses más?`}
+                    confirmText="Renovar"
+                />
+            )}
             {contratoCancelar && (
                 <ModalConfirm
                     isOpenModal={!!contratoCancelar}
                     setIsOpenModal={(v) => { if (!v) setContratoCancelar(null); }}
                     confirmSubmit={handleCancelar}
                     title="Cancelar contrato"
-                    information={`¿Cancelar el contrato del vehículo ${contratoCancelar.vehiculo?.placa}? Esta acción no se puede deshacer.`}
+                    information={`¿Cancelar el contrato del vehículo ${contratoCancelar.vehiculo?.placa}? El contrato queda inactivo pero conserva su historial.`}
                     confirmText="Cancelar contrato"
                     confirmLoading={cancelando}
+                />
+            )}
+            {contratoEliminar && (
+                <ModalConfirm
+                    isOpenModal={!!contratoEliminar}
+                    setIsOpenModal={(v) => { if (!v) setContratoEliminar(null); }}
+                    confirmSubmit={handleEliminar}
+                    title="Eliminar contrato"
+                    information={`¿Eliminar definitivamente el contrato del vehículo ${contratoEliminar.vehiculo?.placa}? Esta acción no se puede deshacer.`}
+                    confirmText="Eliminar"
+                    confirmLoading={eliminando}
                 />
             )}
         </div>

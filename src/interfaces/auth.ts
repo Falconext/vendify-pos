@@ -12,6 +12,8 @@ export interface ISede {
     codigo: string | null
     tipo: TipoSede
     esPrincipal: boolean
+    /** Permite facturar aunque la sede sea tipo ALMACEN. */
+    permiteFacturacion?: boolean
     activo: boolean
 }
 

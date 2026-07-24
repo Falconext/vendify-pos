@@ -30,7 +30,12 @@ const afectaciones = [
     { id: "10", value: "Gravado - Operación Onerosa" },
     { id: "20", value: "Exonerado" },
     { id: "30", value: "Inafecto" },
-    { id: "40", value: "Exportación" }
+    { id: "40", value: "Exportación" },
+    { id: "15", value: "Gravado - Bonificación (gratuito)" },
+    { id: "13", value: "Gravado - Retiro (gratuito)" },
+    { id: "21", value: "Exonerado - Transferencia gratuita" },
+    { id: "31", value: "Inafecto - Bonificación (gratuito)" },
+    { id: "32", value: "Inafecto - Retiro (gratuito)" }
 ]
 
 const ModalProduct = ({ setSelectProduct, isInvoice, initialForm, formValues, setErrors, isOpenModal, setFormValues, closeModal, isEdit, errors, setIsOpenModal }: IPropsProducts) => {
@@ -366,6 +371,9 @@ const ModalProduct = ({ setSelectProduct, isInvoice, initialForm, formValues, se
                     </div>
                     <div className="col-span-3 md:col-span-1">
                         <Select defaultValue={formValues.afectacionNombre || "Gravado - operación onerosa"} error={""} isSearch options={afectaciones} id="tipoAfectacionIGV" name="afectacionNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Tipo de afectación" />
+                    </div>
+                    <div className="col-span-3 md:col-span-1">
+                        <InputPro autocomplete="off" value={formValues?.codProdSunat || ''} name="codProdSunat" onChange={handleChange} isLabel label="Código Producto SUNAT (UNSPSC · detracción)" />
                     </div>
                     <div className="col-span-3 md:col-span-1">
                         <Select defaultValue={formValues?.unidadMedidaNombre} error={""} isSearch options={unitOfMeasure?.map((item: ICategory) => ({

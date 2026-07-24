@@ -54,6 +54,19 @@ export const useProductsViewModel = () => {
         return id !== null && id !== undefined ? Number(id) : null;
     }, [esPrincipal, selectedSedeId, sedeActiva?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Para importar/exportar stock necesitamos un almacén ELEGIDO EXPLÍCITAMENTE
+    // (a diferencia de effectiveSedeId, que por defecto cae en la sede principal).
+    // Un admin de sede principal debe seleccionar un almacén concreto en el dropdown;
+    // un usuario de sede fija usa su propia sede.
+    const sedeParaImportar = useMemo(() => {
+        if (esPrincipal) {
+            return userChoseSede.current && selectedSedeId != null
+                ? Number(selectedSedeId)
+                : null;
+        }
+        return sedeActiva?.id != null ? Number(sedeActiva.id) : null;
+    }, [esPrincipal, selectedSedeId, sedeActiva?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const sedesOptions = [
         { id: 0, value: 'Todas las sedes' },
         ...sedes.map(s => ({ id: s.id, value: s.esPrincipal ? `${s.nombre}` : s.nombre }))
@@ -526,7 +539,13 @@ export const useProductsViewModel = () => {
             useAlertStore.getState().alert("Use archivo .xlsx o .xls válido", "error");
             return;
         }
-        await importProductsAction(file);
+        // El stock del Excel se aplica a un almacén concreto: exigir sede elegida.
+        if (sedeParaImportar == null) {
+            useAlertStore.getState().alert("Seleccione el almacén de destino en el selector 'Sede' antes de importar.", "error");
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+        }
+        await importProductsAction(file, sedeParaImportar);
         if (fileInputRef.current) fileInputRef.current.value = "";
         await fetchProductsList();
     };
@@ -638,7 +657,7 @@ export const useProductsViewModel = () => {
         handleToggleClientState,
         confirmToggleroduct,
         togglePublicarTienda,
-        exportProducts: () => exportProductsAction(debounce),
+        exportProducts: () => exportProductsAction(debounce, effectiveSedeId),
         refreshProducts: async () => {
             await fetchProductsList();
         }

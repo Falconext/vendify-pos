@@ -32,6 +32,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
         codigo: '',
         tipo: 'PUNTO_DE_VENTA' as TipoSede,
         esPrincipal: false,
+        permiteFacturacion: false,
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,6 +45,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                 codigo: sede.codigo || '',
                 tipo: sede.tipo ?? 'PUNTO_DE_VENTA',
                 esPrincipal: sede.esPrincipal,
+                permiteFacturacion: sede.permiteFacturacion ?? false,
             });
         } else {
             setFormData({
@@ -52,6 +54,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                 codigo: '',
                 tipo: 'PUNTO_DE_VENTA',
                 esPrincipal: false,
+                permiteFacturacion: false,
             });
         }
         setErrors({});
@@ -189,6 +192,23 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                                 })}
                             </div>
                         </div>
+
+                        {/* Facturación en Almacén: solo aplica a sedes tipo ALMACEN */}
+                        {formData.tipo === 'ALMACEN' && (
+                            <div className="flex items-start space-x-2 mt-4 bg-emerald-50/60 dark:bg-emerald-900/10 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                                <input
+                                    type="checkbox"
+                                    id="permiteFacturacion"
+                                    checked={formData.permiteFacturacion}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, permiteFacturacion: e.target.checked }))}
+                                    className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-500 focus:ring-emerald-500 dark:focus:ring-emerald-600 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 rounded transition-colors"
+                                />
+                                <label htmlFor="permiteFacturacion" className="cursor-pointer">
+                                    <span className="block text-sm font-bold text-emerald-800 dark:text-emerald-300">Permitir facturación en este almacén</span>
+                                    <span className="block text-[11px] text-emerald-600/90 dark:text-emerald-400/80 mt-0.5">Habilita el módulo de Comprobantes para emitir boletas/facturas desde esta sede.</span>
+                                </label>
+                            </div>
+                        )}
 
                         <div className="flex items-center space-x-2 mt-4 bg-gray-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-gray-100 dark:border-transparent">
                             <input

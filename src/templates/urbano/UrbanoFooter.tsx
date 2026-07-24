@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_RAW } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
 interface UrbanoFooterProps {
   diseno?: any;
@@ -41,10 +41,10 @@ export default function UrbanoFooter({ tienda, diseno, slug, categories = [] }: 
     }
     return storeSlug ? `/tienda/${storeSlug}${path}` : '/';
   };
-  const phone = STORE_PURCHASE_WHATSAPP_RAW;
+  const phone = normalizeStoreWhatsapp(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda);
   const email = clean(cfg.urbanoFooterEmail || tienda?.email || tienda?.correo || tienda?.correoPrincipal);
   const whatsapp = phone;
-  const contactHref = buildStorePurchaseWhatsappUrl(`Hola, vengo de ${storeName} y quisiera información.`);
+  const contactHref = buildStorePurchaseWhatsappUrl(phone, `Hola, vengo de ${storeName} y quisiera información.`);
   const socialLinks = [
     { label: 'Instagram', url: clean(cfg.instagramUrl || cfg.urbanoInstagramUrl || tienda?.instagramUrl) },
     { label: 'TikTok', url: clean(cfg.tiktokUrl || cfg.urbanoTiktokUrl || tienda?.tiktokUrl) },

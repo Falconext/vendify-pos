@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { BancoLogo } from '@/components/shared/BancoLogo';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 
 interface PaymentConfirmationModalProps {
     isOpen: boolean;
@@ -70,8 +70,10 @@ export default function ModaPaymentConfirmationModal({
         return baseMessage;
     };
 
+    const whatsappUrl = buildStorePurchaseWhatsappUrl(paymentConfig?.whatsappTienda, generateWhatsAppMessage());
+
     const openWhatsApp = () => {
-        window.open(buildStorePurchaseWhatsappUrl(generateWhatsAppMessage()), '_blank');
+        if (whatsappUrl) window.open(whatsappUrl, '_blank');
     };
 
     const qrCode = getQRCode();
@@ -229,7 +231,7 @@ export default function ModaPaymentConfirmationModal({
                     >
                         Ver Estado del Pedido
                     </button>
-                    {STORE_PURCHASE_WHATSAPP_NUMBER && (
+                    {whatsappUrl && (
                         <button
                             onClick={openWhatsApp}
                             className="w-full py-3.5 border border-gray-300 text-gray-900 font-bold tracking-wide uppercase hover:bg-white flex items-center justify-center gap-2 transition-colors"

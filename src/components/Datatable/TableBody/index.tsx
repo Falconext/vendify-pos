@@ -261,6 +261,12 @@ const TableBody: FC<ITableBodyProps> = ({ data, formValues, actions, columns }) 
                                                     );
                                                 }
 
+                                                // Correos/emails siempre en minúscula (nunca capitalizados).
+                                                const isEmail = keyLower.includes('correo') || keyLower.includes('email') || keyLower.includes('e-mail');
+                                                if (isString && isEmail) {
+                                                    return <span className="lowercase" title={cellValue}>{cell.toString().toLowerCase()}</span>;
+                                                }
+
                                                 if (isString && !isCode) {
                                                     return <span className="capitalize">{cell.toString().toLowerCase()}</span>;
                                                 }

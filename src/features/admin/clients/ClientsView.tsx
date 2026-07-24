@@ -22,6 +22,8 @@ export default function ClientsView() {
     const { actions, clients, clientsTable, totalClients, isFarmacia } = vm;
 
     const [showOptionsDropdown, setShowOptionsDropdown] = React.useState(false);
+    const [clienteEliminar, setClienteEliminar] = React.useState<any>(null);
+    const [eliminando, setEliminando] = React.useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -276,6 +278,15 @@ export default function ClientsView() {
                                 <Icon icon="mdi:power" width={16} height={16} />
                                 <span>{rowBase.estado === 'INACTIVO' ? 'Activar' : 'Desactivar'}</span>
                             </button>
+                            <div className="my-1 border-t border-slate-100" />
+                            <button
+                                type="button"
+                                onClick={() => { setClienteEliminar(rowBase); actions.closeMenu(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50"
+                            >
+                                <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} />
+                                <span>Eliminar</span>
+                            </button>
                         </>
                     );
                 })()}
@@ -302,6 +313,21 @@ export default function ClientsView() {
                     setIsOpenModal={actions.setIsOpenModalConfirm}
                     title="Confirmación"
                     information="¿Estás seguro que deseas cambiar el estado del cliente?"
+                />
+            )}
+            {clienteEliminar && (
+                <ModalConfirm
+                    isOpenModal={!!clienteEliminar}
+                    setIsOpenModal={(v: boolean) => { if (!v) setClienteEliminar(null); }}
+                    confirmSubmit={async () => {
+                        setEliminando(true);
+                        try { await actions.deleteClient(Number(clienteEliminar.id)); setClienteEliminar(null); }
+                        finally { setEliminando(false); }
+                    }}
+                    title="Eliminar registro"
+                    information={`¿Eliminar definitivamente a "${clienteEliminar.nombre || 'este registro'}"? Solo se puede si no tiene compras, comprobantes ni vehículos asociados; de lo contrario usa Desactivar.`}
+                    confirmText="Eliminar"
+                    confirmLoading={eliminando}
                 />
             )}
         </div>

@@ -8,6 +8,8 @@ export interface Sede {
     codigo: string | null;
     tipo: TipoSede;
     esPrincipal: boolean;
+    /** Permite facturar aunque la sede sea tipo ALMACEN. */
+    permiteFacturacion?: boolean;
     activo: boolean;
     estado: 'ACTIVO' | 'INACTIVO';
     creadoEn?: string;
@@ -20,6 +22,7 @@ export interface CreateSedeDto {
     codigo?: string;
     tipo?: TipoSede;
     esPrincipal?: boolean;
+    permiteFacturacion?: boolean;
     activo?: boolean;
 }
 

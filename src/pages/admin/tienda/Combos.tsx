@@ -1,40 +1,117 @@
+import { useState } from 'react';
 import { useCombosViewModel } from '@/features/admin/tienda/useCombosViewModel';
 import { Icon } from '@iconify/react';
 import InputPro from '@/components/InputPro';
 import { Calendar } from '@/components/Date';
 import Select from '@/components/Select';
 import Button from '@/components/Button';
+import {
+  InventoryCard,
+  InventoryEmptyState,
+  InventoryHero,
+  InventoryInfoPill,
+  InventoryPage,
+  InventorySearchBox,
+  InventoryToolbar,
+  InventoryToolbarButton,
+} from '@/features/admin/kardex/shared/InventoryChrome';
+
+const ACCENT = '#7551FF';
 
 export default function CombosAdmin() {
   const vm = useCombosViewModel();
   const { t } = vm;
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<'TODOS' | 'ACTIVOS' | 'INACTIVOS'>('TODOS');
+
+  const filteredCombos = vm.combos.filter((combo) => {
+    const matchesSearch = !search.trim()
+      || combo.nombre.toLowerCase().includes(search.toLowerCase())
+      || String(combo.descripcion || '').toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = status === 'TODOS'
+      || (status === 'ACTIVOS' ? combo.activo : !combo.activo);
+    return matchesSearch && matchesStatus;
+  });
 
   if (vm.loading) return <div className="flex items-center justify-center h-64"><Icon icon="eos-icons:loading" className="w-12 h-12 text-gray-400" /></div>;
 
   return (
-    <div className="min-h-screen px-2 pb-4 bg-gray-50 dark:bg-[#0A0D14]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pt-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Kits y Packs</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestiona tus kits y ofertas especiales</p>
-        </div>
-        <button onClick={() => vm.abrirModal()} className={`flex items-center gap-2 ${t.bg} text-white px-5 py-2.5 rounded-xl ${t.hover} transition-all shadow-sm hover:shadow-md font-medium text-sm`}>
-          <Icon icon="solar:add-circle-bold" width={20} /> Nuevo Kit / Pack
-        </button>
+    <InventoryPage>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+        <Icon icon="solar:home-smile-linear" className="text-base" />
+        <span>Panel</span>
+        <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
+        <span>Tienda</span>
+        <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
+        <span className="font-semibold" style={{ color: ACCENT }}>Kits y Packs</span>
       </div>
 
-      {vm.combos.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent">
-          <Icon icon="solar:bag-smile-bold-duotone" className="w-16 h-16 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">No hay kits creados</p>
-          <button onClick={() => vm.abrirModal()} className={`${t.text} hover:opacity-80 font-medium flex items-center gap-2 mx-auto`}>
-            <Icon icon="solar:add-circle-linear" />Crear tu primer kit
-          </button>
-        </div>
+      <InventoryHero
+        icon="solar:bag-smile-bold-duotone"
+        title="Kits y packs"
+        subtitle="Gestiona tus kits y ofertas especiales desde un panel más limpio y ordenado."
+        badge="Promos"
+        actions={
+          <>
+            <InventoryToolbarButton
+              icon="solar:refresh-linear"
+              label="Actualizar"
+              onClick={() => vm.refreshCombos()}
+            />
+            <InventoryToolbarButton
+              icon="solar:add-circle-bold"
+              label="Nuevo kit"
+              onClick={() => vm.abrirModal()}
+              tone="primary"
+            />
+          </>
+        }
+      />
+
+      <InventoryCard>
+        <InventoryToolbar>
+          <div className="flex flex-wrap items-center gap-3">
+            <InventoryInfoPill
+              icon="solar:box-linear"
+              label={`${filteredCombos.length} kits`}
+            />
+            <div className="flex flex-wrap gap-2">
+              {(['TODOS', 'ACTIVOS', 'INACTIVOS'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setStatus(option)}
+                  className={`inline-flex h-11 items-center rounded-2xl border px-4 text-sm font-semibold transition-all ${
+                    status === option
+                      ? 'border-violet-200 bg-violet-50 text-violet-600 dark:border-indigo-800/60 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300'
+                  }`}
+                >
+                  {option === 'TODOS' ? 'Todos' : option === 'ACTIVOS' ? 'Activos' : 'Inactivos'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <InventorySearchBox
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar kit, promo o descripción..."
+            className="w-full sm:max-w-md"
+          />
+        </InventoryToolbar>
+
+        <div className="p-5">
+      {filteredCombos.length === 0 ? (
+        <InventoryEmptyState
+          icon="solar:bag-smile-bold-duotone"
+          title={vm.combos.length === 0 ? 'No hay kits creados' : 'No hay resultados para esos filtros'}
+          subtitle={vm.combos.length === 0 ? 'Crea tu primer kit para empezar a ofrecer promociones y packs.' : 'Prueba con otro término de búsqueda o cambia el estado seleccionado.'}
+        />
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {vm.combos.map((combo) => (
-            <div key={combo.id} className={`bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent overflow-hidden hover:shadow-lg transition-all ${!combo.activo ? 'opacity-60' : ''}`}>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredCombos.map((combo) => (
+            <div key={combo.id} className={`overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(117,81,255,0.15)] dark:border-slate-800 dark:bg-[#111827] ${!combo.activo ? 'opacity-65' : ''}`}>
               <div className="relative h-44 bg-gray-900 overflow-hidden">
                 {combo.imagenUrl ? <img src={combo.imagenUrl} alt={combo.nombre} className="w-full h-full object-cover transition-transform group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900"><Icon icon="solar:bag-smile-bold-duotone" className="w-20 h-20 text-white/30" /></div>}
                 <div className="absolute top-3 right-3 flex gap-2">
@@ -56,15 +133,17 @@ export default function CombosAdmin() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => vm.toggleComboActivo(combo)} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${combo.activo ? 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 border border-transparent dark:border-slate-700' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50'}`}>{combo.activo ? 'Desactivar' : 'Activar'}</button>
-                  <button onClick={() => vm.abrirModal(combo)} className={`p-2.5 ${t.soft} dark:bg-indigo-900/30 dark:text-indigo-400 rounded-xl hover:opacity-80 transition-colors border dark:border-indigo-800/50`}><Icon icon="solar:pen-bold" width={18} /></button>
-                  <button onClick={() => vm.handleEliminarCombo(combo.id)} className="p-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border dark:border-red-800/50"><Icon icon="solar:trash-bin-trash-bold" width={18} /></button>
+                  <button onClick={() => vm.toggleComboActivo(combo)} className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-all ${combo.activo ? 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 border border-transparent dark:border-slate-700' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800/50'}`}>{combo.activo ? 'Desactivar' : 'Activar'}</button>
+                  <button onClick={() => vm.abrirModal(combo)} className={`p-2.5 ${t.soft} dark:bg-indigo-900/30 dark:text-indigo-400 rounded-2xl hover:opacity-80 transition-colors border dark:border-indigo-800/50`}><Icon icon="solar:pen-bold" width={18} /></button>
+                  <button onClick={() => vm.handleEliminarCombo(combo.id)} className="p-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border dark:border-red-800/50"><Icon icon="solar:trash-bin-trash-bold" width={18} /></button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+        </div>
+      </InventoryCard>
 
       {vm.showModal && (
         <div className="fixed inset-0 bg-black/60   z-50 flex items-center justify-center p-4">
@@ -179,6 +258,6 @@ export default function CombosAdmin() {
           </div>
         </div>
       )}
-    </div>
+    </InventoryPage>
   );
 }

@@ -6,7 +6,7 @@ import LineaTiempoEstados from '@/components/LineaTiempoEstados';
 import Footer from '@/components/tienda/Footer';
 import { templateRegistry } from '@/templates/registry';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -312,6 +312,7 @@ export default function SeguimientoPedido() {
                         const estimada = new Date(new Date(pedido.creadoEn).getTime() + tiempoBase * 60000);
                         const horaEstimada = estimada.toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit' });
                         const fechaEstimada = estimada.toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const whatsappUrl = buildStorePurchaseWhatsappUrl(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda, `Hola, necesito ayuda con mi pedido ${pedido.codigoSeguimiento || ''}.`);
 
                         return (
                             <div className="space-y-5">
@@ -409,9 +410,9 @@ export default function SeguimientoPedido() {
                                     </div>
 
                                     <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {STORE_PURCHASE_WHATSAPP_NUMBER && (
+                                        {whatsappUrl && (
                                             <a
-                                                href={buildStorePurchaseWhatsappUrl(`Hola, necesito ayuda con mi pedido ${pedido.codigoSeguimiento || ''}.`)}
+                                                href={whatsappUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className={`flex items-center justify-center gap-2 w-full bg-green-600 text-white py-3 ${btnRadius} font-bold hover:bg-green-700 transition-colors`}

@@ -46,7 +46,13 @@ export default function ProductsView() {
         setBarcodeLoading(true);
         try {
             const resp: any = await get(`productos/barcode/${encodeURIComponent(trimmed)}`);
-            if (resp.code === 1 && resp.data) {
+            if (resp.code === 1 && resp.data?.multipleMatches) {
+                // Prefijo (4+) coincide con varios: vuelca el prefijo en el buscador
+                // para que el debounce liste todas las coincidencias y el usuario elija.
+                actions.setSearchClient({ target: { value: trimmed } });
+                alert(`Hay ${resp.data.count} productos cuyo código empieza con "${trimmed}". Se muestran en la lista.`, 'warning');
+                setBarcodeInput('');
+            } else if (resp.code === 1 && resp.data) {
                 // Vuelca la descripción en el buscador existente → el debounce filtra la lista
                 actions.setSearchClient({ target: { value: resp.data.descripcion } });
                 setBarcodeInput('');

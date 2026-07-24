@@ -4,7 +4,7 @@ import UrbanoHeader from './UrbanoHeader';
 import UrbanoFooter from './UrbanoFooter';
 import LineaTiempoEstados from '@/components/LineaTiempoEstados';
 import type { TemplateSeguimientoPageProps } from '@/templates/shared/types';
-import { buildStorePurchaseWhatsappUrl, STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
+import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 
 const IMPACT = '"Impact", "Arial Black", sans-serif';
 
@@ -42,6 +42,10 @@ export default function UrbanoSeguimientoPage({
   getEstadoSeguimiento, lastUpdated, TERMINAL_STATES,
 }: TemplateSeguimientoPageProps) {
   const navigate = useNavigate();
+  const storeWhatsappNumber = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda;
+  const whatsappUrl = pedido
+    ? buildStorePurchaseWhatsappUrl(storeWhatsappNumber, `Hola, necesito ayuda con mi pedido ${pedido.codigoSeguimiento || ''}.`)
+    : null;
   const estadoSeguimiento = pedido ? getEstadoSeguimiento(pedido) : '';
   const tiempoBase = (pedido?.empresa as any)?.tiempoPreparacionMin ?? 20;
   const estimada = pedido ? new Date(new Date(pedido.creadoEn).getTime() + tiempoBase * 60000) : null;
@@ -250,9 +254,9 @@ export default function UrbanoSeguimientoPage({
               </div>
 
               <div className="flex flex-col gap-3">
-                {STORE_PURCHASE_WHATSAPP_NUMBER && (
+                {whatsappUrl && (
                   <a
-                    href={buildStorePurchaseWhatsappUrl(`Hola, necesito ayuda con mi pedido ${pedido.codigoSeguimiento || ''}.`)}
+                    href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-4 text-[11px] font-black tracking-[0.15em] uppercase hover:bg-[#1DB954] transition-colors"

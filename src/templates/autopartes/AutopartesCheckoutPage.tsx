@@ -2,7 +2,6 @@ import AutopartesCheckout from '@/pages/tienda/AutopartesCheckout';
 import type { TemplateCheckoutPageProps } from '@/templates/shared/types';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
-import { STORE_PURCHASE_WHATSAPP_NUMBER } from '@/utils/storeWhatsapp';
 
 export default function AutopartesCheckoutPage(props: TemplateCheckoutPageProps) {
   return (
@@ -30,7 +29,7 @@ export default function AutopartesCheckoutPage(props: TemplateCheckoutPageProps)
                   plinQR: props.configPago.plinQR || props.configPago.plinQrUrl || undefined,
                   yapeNumero: props.configPago.yapeNumero || undefined,
                   plinNumero: props.configPago.plinNumero || undefined,
-                  whatsappTienda: STORE_PURCHASE_WHATSAPP_NUMBER,
+                  whatsappTienda: props.configPago?.whatsappTienda ?? props.tienda?.whatsappTienda ?? props.tienda?.diseno?.whatsappTienda,
                 }
               : undefined
           }

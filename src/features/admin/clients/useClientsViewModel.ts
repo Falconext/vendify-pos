@@ -29,7 +29,7 @@ const getDocLabel = (data: IClient): string => {
 };
 
 export const useClientsViewModel = () => {
-    const { getAllClients, clients, totalClients, toggleStateClient, exportClients, importClients } = useClientsStore();
+    const { getAllClients, clients, totalClients, toggleStateClient, deleteClient, exportClients, importClients } = useClientsStore();
     const { success } = useAlertStore();
     const { auth } = useAuthStore();
 
@@ -217,6 +217,9 @@ export const useClientsViewModel = () => {
                 }
             });
         },
+        // Eliminación con candado: el backend rechaza si el cliente/proveedor tiene historial.
+        deleteClient: (id: number) => deleteClient(id),
+        closeMenu: () => setState(prev => ({ ...prev, openAccionesId: null, anchorEl: null })),
         setShowColumnFilter: (v: boolean) => setState(prev => ({ ...prev, showColumnFilter: v })),
         setOpenAccionesId: (id: number | null) => setState(prev => ({ ...prev, openAccionesId: id })),
         setAnchorEl: (el: HTMLElement | null) => setState(prev => ({ ...prev, anchorEl: el })),

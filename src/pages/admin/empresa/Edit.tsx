@@ -16,6 +16,7 @@ interface FormData {
   logo?: File | string;
   planId: number;
   tipoEmpresa: 'FORMAL' | 'INFORMAL';
+  regimenTributario: 'GENERAL' | 'RER' | 'MYPE' | 'RUS';
   departamento: string;
   provincia: string;
   distrito: string;
@@ -69,6 +70,7 @@ const EditEmpresa = () => {
     direccion: '',
     planId: 0,
     tipoEmpresa: 'FORMAL',
+    regimenTributario: 'GENERAL',
     departamento: '',
     rubro: '',
     provincia: '',
@@ -121,6 +123,7 @@ const EditEmpresa = () => {
         direccion: empresa.direccion,
         planId: empresa.plan?.id || 0,
         tipoEmpresa: (empresa as any).tipoEmpresa || 'FORMAL',
+        regimenTributario: (empresa as any).regimenTributario || 'GENERAL',
         departamento: empresa.departamento || '',
         provincia: empresa.provincia || '',
         distrito: empresa.distrito || '',
@@ -253,6 +256,14 @@ const EditEmpresa = () => {
     setFormData(prev => ({
       ...prev,
       tipoEmpresa: id as 'FORMAL' | 'INFORMAL'
+    }));
+  };
+
+  // Manejar cambio de régimen tributario (RUS bloquea la emisión de facturas)
+  const handleRegimenChange = (id: any) => {
+    setFormData(prev => ({
+      ...prev,
+      regimenTributario: id as 'GENERAL' | 'RER' | 'MYPE' | 'RUS'
     }));
   };
 
@@ -506,6 +517,33 @@ const EditEmpresa = () => {
                   error={errors.tipoEmpresa}
                   withLabel
                 />
+              </div>
+
+              <div>
+                <Select
+                  name="regimenTributario"
+                  label="Régimen Tributario"
+                  options={[
+                    { id: 'GENERAL', value: 'Régimen General' },
+                    { id: 'RER', value: 'Régimen Especial (RER)' },
+                    { id: 'MYPE', value: 'Régimen MYPE Tributario' },
+                    { id: 'RUS', value: 'Nuevo RUS (solo boletas)' },
+                  ]}
+                  value={
+                    formData.regimenTributario === 'RUS' ? 'Nuevo RUS (solo boletas)'
+                      : formData.regimenTributario === 'RER' ? 'Régimen Especial (RER)'
+                        : formData.regimenTributario === 'MYPE' ? 'Régimen MYPE Tributario'
+                          : 'Régimen General'
+                  }
+                  onChange={handleRegimenChange}
+                  error={(errors as any).regimenTributario}
+                  withLabel
+                />
+                {formData.regimenTributario === 'RUS' && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    En RUS solo se pueden emitir Boletas (la Factura queda deshabilitada).
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">

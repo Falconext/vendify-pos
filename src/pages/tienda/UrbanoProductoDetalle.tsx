@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
 import { useFavoritosStore } from '@/zustand/favoritos';
@@ -23,6 +24,13 @@ import {
 } from '@/templates/urbano/fashionVariants';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+
+// Animación de deslizamiento (slide) de la imagen principal en mobile/desktop.
+const imageSlideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 48 : -48 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -48 : 48 }),
+};
 
 function LoadingSkeleton() {
   return (
@@ -62,6 +70,8 @@ export default function UrbanoProductoDetalle() {
   const [varianteSelecciones, setVarianteSelecciones] = useState<Record<string, string>>({});
   const [varianteActiva, setVarianteActiva] = useState<any>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>('DESCRIPCION');
+  const [imgDirection, setImgDirection] = useState(0);
+  const imageColumnRef = useRef<HTMLDivElement>(null);
   const { toggleFavorito, isFavorito } = useFavoritosStore();
 
   useEffect(() => {
@@ -353,6 +363,47 @@ export default function UrbanoProductoDetalle() {
     }
   };
 
+  // --- Galería como slide (swipe en mobile) ---
+  const currentImageIndex = Math.max(
+    0,
+    productImages.findIndex((img: string) => urlPath(img) === urlPath(mainImage)),
+  );
+
+  const goToImage = (index: number) => {
+    if (productImages.length < 2) return;
+    const total = productImages.length;
+    const next = ((index % total) + total) % total;
+    setImgDirection(index >= currentImageIndex ? 1 : -1);
+    handleThumbnailClick(productImages[next]);
+  };
+
+  const handleImageDragEnd = (_e: unknown, info: PanInfo) => {
+    const threshold = 60;
+    if (info.offset.x < -threshold) goToImage(currentImageIndex + 1);
+    else if (info.offset.x > threshold) goToImage(currentImageIndex - 1);
+  };
+
+  // En mobile, al elegir un color llevamos la vista al tope de la imagen para
+  // que se vea el cambio (los swatches están debajo de la foto).
+  const scrollToImageTop = () => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    requestAnimationFrame(() => {
+      const el = imageColumnRef.current;
+      const top = el ? el.getBoundingClientRect().top + window.scrollY - 8 : 0;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  };
+
+  const selectVariantColor = (colorName: string) => {
+    handleVariantChange(variantOptionNames.color, colorName);
+    scrollToImageTop();
+  };
+
+  const selectModifierColor = (grupoId: number, opId: number) => {
+    setSelecciones((prev) => ({ ...prev, [grupoId]: [opId] }));
+    scrollToImageTop();
+  };
+
   const AccordionItem = ({ title, id: itemId, children }: { title: string; id: string; children: React.ReactNode }) => (
     <div className="border-b border-gray-200">
       <button
@@ -399,28 +450,63 @@ export default function UrbanoProductoDetalle() {
 
       <main className="w-full flex flex-col">
         <section className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-108px)]">
-          <div className="w-full lg:w-[55%] bg-[#F4F5F6] flex items-center justify-center min-h-[62vh] lg:min-h-[calc(100vh-108px)] relative overflow-hidden group">
-            <img
-              src={mainImage}
-              alt={producto.descripcion}
-              className="absolute top-6 left-0 right-0 bottom-0 w-full h-[calc(100%-24px)] object-contain transition-transform duration-1000 group-hover:scale-105"
-            />
+          <div ref={imageColumnRef} className="w-full lg:w-[55%] bg-[#F4F5F6] flex items-center justify-center min-h-[62vh] lg:min-h-[calc(100vh-108px)] relative overflow-hidden group">
+            <AnimatePresence initial={false} custom={imgDirection} mode="popLayout">
+              <motion.img
+                key={mainImage}
+                src={mainImage}
+                alt={producto.descripcion}
+                custom={imgDirection}
+                variants={imageSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                drag={productImages.length > 1 ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.18}
+                onDragEnd={handleImageDragEnd}
+                draggable={false}
+                className="absolute top-6 left-0 right-0 bottom-0 w-full h-[calc(100%-24px)] object-contain select-none touch-pan-y lg:touch-auto"
+              />
+            </AnimatePresence>
 
             {productImages.length > 1 && (
               <div className="absolute z-10 left-4 right-4 top-4 flex flex-row overflow-x-auto no-scrollbar gap-2 lg:right-auto lg:flex-col lg:overflow-visible">
                 {productImages.slice(0, 6).map((image: string) => (
-                  <button
+                  <motion.button
                     key={image}
                     onClick={() => handleThumbnailClick(image)}
-                    className={`h-16 w-12 shrink-0 overflow-hidden bg-white border-2 ${selectedImage === image ? 'border-black' : 'border-white'}`}
+                    whileTap={{ scale: 0.92 }}
+                    className={`h-16 w-12 shrink-0 overflow-hidden bg-white border-2 transition-colors ${urlPath(selectedImage) === urlPath(image) ? 'border-black' : 'border-white'}`}
                   >
-                    <img src={image} alt="" className="h-full w-full object-cover" />
-                  </button>
+                    <img src={image} alt="" className="h-full w-full object-cover" draggable={false} />
+                  </motion.button>
                 ))}
               </div>
             )}
 
-
+            {productImages.length > 1 && (
+              <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-1.5 lg:hidden">
+                {productImages.slice(0, 6).map((image: string, i: number) => (
+                  <button
+                    key={image}
+                    onClick={() => goToImage(i)}
+                    aria-label={`Ver imagen ${i + 1}`}
+                    className="p-1.5"
+                  >
+                    <motion.span
+                      animate={{
+                        width: urlPath(selectedImage) === urlPath(image) ? 20 : 6,
+                        opacity: urlPath(selectedImage) === urlPath(image) ? 1 : 0.35,
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className="block h-1.5 rounded-full bg-black"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="w-full lg:w-[45%] bg-white relative">
@@ -468,15 +554,18 @@ export default function UrbanoProductoDetalle() {
                       {grupo.opciones.map((op: any) => {
                         const selected = (selecciones[grupo.id] || []).includes(op.id);
                         return (
-                          <button
+                          <motion.button
                             key={op.id}
-                            onClick={() => setSelecciones((prev) => ({ ...prev, [grupo.id]: [op.id] }))}
-                            className="relative w-[50px] h-[60px] rounded border transition-all p-1"
+                            onClick={() => selectModifierColor(grupo.id, op.id)}
+                            whileTap={{ scale: 0.9 }}
+                            animate={{ scale: selected ? 1.06 : 1 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                            className="relative w-[50px] h-[60px] rounded border p-1"
                             style={{ borderColor: selected ? '#000' : '#E5E7EB' }}
                             title={op.nombre}
                           >
                             <div className="w-full h-full rounded-[2px]" style={{ backgroundColor: op.colorHex || '#DDD' }} />
-                          </button>
+                          </motion.button>
                         );
                       })}
                     </div>
@@ -492,16 +581,19 @@ export default function UrbanoProductoDetalle() {
                           [variantOptionNames.color]: color.name,
                         });
                         return (
-                          <button
+                          <motion.button
                             key={color.name}
-                            onClick={() => handleVariantChange(variantOptionNames.color, color.name)}
+                            onClick={() => selectVariantColor(color.name)}
                             disabled={!available}
-                            className="relative w-[50px] h-[60px] rounded border transition-all p-1 disabled:cursor-not-allowed disabled:opacity-35"
+                            whileTap={{ scale: 0.9 }}
+                            animate={{ scale: varianteSelecciones[variantOptionNames.color] === color.name ? 1.06 : 1 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                            className="relative w-[50px] h-[60px] rounded border p-1 disabled:cursor-not-allowed disabled:opacity-35"
                             style={{ borderColor: varianteSelecciones[variantOptionNames.color] === color.name ? '#000' : '#E5E7EB' }}
                             title={color.name}
                           >
                             <div className="w-full h-full rounded-[2px]" style={{ backgroundColor: color.hex }} />
-                          </button>
+                          </motion.button>
                         );
                       })}
                     </div>
