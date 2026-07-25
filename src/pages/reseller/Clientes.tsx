@@ -1038,7 +1038,9 @@ export default function ResellerClientes() {
                                         const costoMensual = costoMensualReseller(precioBaseMensual(planesFacturacion, p), clientesConNuevo);
                                         const costoAnual = precioAnual(planesFacturacion, p);
                                         const precioNum = formData.precioClienteFinal === '' ? null : Number(formData.precioClienteFinal);
-                                        const ganancia = precioNum != null ? precioNum - costoMensual : null;
+                                        // La ganancia se calcula contra el costo del ciclo elegido (anual vs mensual).
+                                        const costoBase = esAnual ? costoAnual : costoMensual;
+                                        const ganancia = precioNum != null ? precioNum - costoBase : null;
                                         return (
                                             <>
                                             <div className="mt-2 flex items-center gap-3 rounded-2xl bg-[#7551FF]/[0.07] border border-[#7551FF]/15 px-4 py-3">
@@ -1062,7 +1064,7 @@ export default function ResellerClientes() {
                                             <div className="mt-2 grid grid-cols-[1fr_auto] gap-3 items-end">
                                                 <div>
                                                     <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                                                        Precio que le cobras al cliente (mensual)
+                                                        Precio que le cobras al cliente ({esAnual ? 'anual' : 'mensual'})
                                                         <span className="text-[10px] font-normal text-slate-400">opcional</span>
                                                     </label>
                                                     <div className="relative mt-1">
