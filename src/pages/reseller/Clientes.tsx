@@ -99,7 +99,7 @@ const initialFormData = {
     precioClienteFinal: '',
     esWhiteLabel: true, // los clientes de un reseller SIEMPRE operan bajo su marca blanca
     usaCodigoBarrasManual: false,
-    usaDemo: true,
+    usaDemo: false, // Producción SUNAT activo por defecto (Demo = apagado)
     billingProvider: 'QPSE',
     providerId: '',
     providerToken: '',
@@ -990,7 +990,8 @@ export default function ResellerClientes() {
                                         readOnly={true}
                                     />
 
-                                    {/* Ciclo de cobro (mensual / anual) */}
+                                    {/* Ciclo de cobro — solo en Producción (el Demo no cobra) */}
+                                    {!formData.usaDemo && (
                                     <div className="mt-3">
                                         <label className="mb-1.5 block text-xs font-semibold text-slate-600">Ciclo de cobro</label>
                                         <div className="grid grid-cols-2 gap-2">
@@ -1022,10 +1023,12 @@ export default function ResellerClientes() {
                                         </div>
                                     </div>
 
-                                    {/* Pill de costo reseller al seleccionar */}
+                                    )}
+
+                                    {/* Pill de costo/precio/ganancia — solo en Producción (el Demo no cobra) */}
                                     {(() => {
                                         const p = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
-                                        if (!p) return null;
+                                        if (!p || formData.usaDemo) return null;
                                         const esAnual = formData.cicloFacturacion === 'ANUAL';
                                         const clientesConNuevo = (stats.clientesActivos || 0) + 1;
                                         const costoMensual = costoMensualReseller(precioBaseMensual(planesFacturacion, p), clientesConNuevo);
