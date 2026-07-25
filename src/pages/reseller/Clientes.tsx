@@ -1157,13 +1157,15 @@ export default function ResellerClientes() {
                         {(() => {
                             const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
                             const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesActivos || 0) + 1) : 0;
-                            const saldoInsuf = Boolean(planSel) && Number(stats.saldo || 0) < costoActivacion;
+                            // Los clientes DEMO no cobran saldo; solo se bloquea al crear en producción.
+                            const esProduccion = !formData.usaDemo;
+                            const saldoInsuf = esProduccion && Boolean(planSel) && Number(stats.saldo || 0) < costoActivacion;
                             return (
                                 <>
                                     {saldoInsuf && (
                                         <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
                                             <Icon icon="solar:wallet-money-bold-duotone" width={16} className="shrink-0" />
-                                            <span>Saldo insuficiente: el plan cuesta S/{costoActivacion.toFixed(2)} y tu saldo es S/{Number(stats.saldo || 0).toFixed(2)}. Recarga para poder activar este cliente.</span>
+                                            <span>Saldo insuficiente: el plan cuesta S/{costoActivacion.toFixed(2)} y tu saldo es S/{Number(stats.saldo || 0).toFixed(2)}. Recarga o créalo como Demo (no consume saldo).</span>
                                         </div>
                                     )}
                                     <div className="flex gap-3">
