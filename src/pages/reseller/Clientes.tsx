@@ -328,24 +328,17 @@ export default function ResellerClientes() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("HANDLE SUBMIT TRIGGERED"); // Debug log
 
         if (!auth) {
             alert("Error: No autenticado");
             return;
         }
 
-        // Check ResellerId fallback (e.g. if key is different)
         const resellerId = (auth as any).resellerId;
-        console.log("Auth Object:", auth);
-        console.log("Reseller ID:", resellerId);
-
         if (!resellerId) {
             alert("Error: No se encontró ID de Reseller en la sesión. Recarga la página.");
             return;
         }
-
-        console.log("Submitting Client Create Payload:", formData);
 
         const result = await createCliente(resellerId, {
             ...formData,
@@ -1160,9 +1153,26 @@ export default function ResellerClientes() {
                         )}
                     </div>
 
-                    <div className="flex gap-3 px-5 pb-5">
-                        <Button type="button" onClick={() => setIsModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
-                        <Button type="submit" color="primary" className="flex-1">Crear Cliente</Button>
+                    <div className="flex flex-col gap-2 px-5 pb-5">
+                        {(() => {
+                            const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
+                            const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesActivos || 0) + 1) : 0;
+                            const saldoInsuf = Boolean(planSel) && Number(stats.saldo || 0) < costoActivacion;
+                            return (
+                                <>
+                                    {saldoInsuf && (
+                                        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
+                                            <Icon icon="solar:wallet-money-bold-duotone" width={16} className="shrink-0" />
+                                            <span>Saldo insuficiente: el plan cuesta S/{costoActivacion.toFixed(2)} y tu saldo es S/{Number(stats.saldo || 0).toFixed(2)}. Recarga para poder activar este cliente.</span>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-3">
+                                        <Button type="button" onClick={() => setIsModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
+                                        <Button type="submit" color="primary" className="flex-1" disabled={saldoInsuf}>Crear Cliente</Button>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </form>
             </Modal>
