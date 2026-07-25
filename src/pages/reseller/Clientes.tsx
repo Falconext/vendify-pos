@@ -988,7 +988,11 @@ export default function ResellerClientes() {
                                         name="planId"
                                         value={planesFacturacion.find((p: any) => String(p.id) === String(formData.planId))?.nombre || ''}
                                         options={planesFacturacion.map((plan: any) => ({ id: plan.id, value: plan.nombre }))}
-                                        onChange={(id: any) => setFormData(prev => ({ ...prev, planId: id }))}
+                                        onChange={(id: any) => {
+                                            const plan = planesFacturacion.find((x: any) => String(x.id) === String(id));
+                                            const ciclo = plan && esPlanAnual(plan.nombre) ? 'ANUAL' : 'MENSUAL';
+                                            setFormData(prev => ({ ...prev, planId: id, cicloFacturacion: ciclo }));
+                                        }}
                                         error={null}
                                         readOnly={true}
                                     />
@@ -997,23 +1001,31 @@ export default function ResellerClientes() {
                                     <div className="mt-3">
                                         <label className="mb-1.5 block text-xs font-semibold text-slate-600">Ciclo de cobro</label>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {(['MENSUAL', 'ANUAL'] as const).map((c) => {
-                                                const active = formData.cicloFacturacion === c;
-                                                return (
-                                                    <button
-                                                        type="button"
-                                                        key={c}
-                                                        onClick={() => setFormData(prev => ({ ...prev, cicloFacturacion: c }))}
-                                                        className={`rounded-xl border px-3 py-2.5 text-left transition-all ${active ? 'border-[#7551FF] bg-[#7551FF]/5 ring-1 ring-[#7551FF]/30' : 'border-slate-200 hover:border-slate-300'}`}
-                                                    >
-                                                        <div className="flex items-center justify-between gap-1">
-                                                            <span className={`text-sm font-bold ${active ? 'text-[#7551FF]' : 'text-slate-700'}`}>{c === 'MENSUAL' ? 'Mensual' : 'Anual'}</span>
-                                                            {c === 'ANUAL' && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">2 MESES GRATIS</span>}
-                                                        </div>
-                                                        <span className="text-[11px] text-slate-400">{c === 'MENSUAL' ? 'Se cobra cada 30 días' : 'Se cobra 1 vez al año'}</span>
-                                                    </button>
-                                                );
-                                            })}
+                                            {(() => {
+                                                const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
+                                                const planEsAnual = planSel ? esPlanAnual(planSel.nombre) : false;
+                                                return (['MENSUAL', 'ANUAL'] as const).map((c) => {
+                                                    const active = formData.cicloFacturacion === c;
+                                                    // El ciclo lo determina el plan: si es un plan anual, solo "Anual" es
+                                                    // seleccionable; si es mensual, solo "Mensual".
+                                                    const disabled = (c === 'MENSUAL' && planEsAnual) || (c === 'ANUAL' && !planEsAnual);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={c}
+                                                            disabled={disabled}
+                                                            onClick={() => { if (!disabled) setFormData(prev => ({ ...prev, cicloFacturacion: c })); }}
+                                                            className={`rounded-xl border px-3 py-2.5 text-left transition-all ${disabled ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed' : active ? 'border-[#7551FF] bg-[#7551FF]/5 ring-1 ring-[#7551FF]/30' : 'border-slate-200 hover:border-slate-300'}`}
+                                                        >
+                                                            <div className="flex items-center justify-between gap-1">
+                                                                <span className={`text-sm font-bold ${active && !disabled ? 'text-[#7551FF]' : 'text-slate-700'}`}>{c === 'MENSUAL' ? 'Mensual' : 'Anual'}</span>
+                                                                {c === 'ANUAL' && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">2 MESES GRATIS</span>}
+                                                            </div>
+                                                            <span className="text-[11px] text-slate-400">{c === 'MENSUAL' ? 'Se cobra cada 30 días' : 'Se cobra 1 vez al año'}</span>
+                                                        </button>
+                                                    );
+                                                });
+                                            })()}
                                         </div>
                                     </div>
 
