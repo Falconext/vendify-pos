@@ -97,7 +97,7 @@ const initialFormData = {
     planId: '',
     cicloFacturacion: 'MENSUAL' as 'MENSUAL' | 'ANUAL',
     precioClienteFinal: '',
-    esWhiteLabel: false,
+    esWhiteLabel: true, // los clientes de un reseller SIEMPRE operan bajo su marca blanca
     usaCodigoBarrasManual: false,
     usaDemo: true,
     billingProvider: 'QPSE',
@@ -181,7 +181,7 @@ export default function ResellerClientes() {
         adminEmail: '',
         adminPassword: '',
         precioClienteFinal: '',
-        esWhiteLabel: false,
+        esWhiteLabel: true, // reseller: siempre marca blanca
         usaCodigoBarrasManual: false,
         usaDemo: true,
     });
@@ -204,7 +204,7 @@ export default function ResellerClientes() {
             adminEmail: raw?.usuarios?.[0]?.email || '',
             adminPassword: '',
             precioClienteFinal: raw?.precioClienteFinal != null ? String(raw.precioClienteFinal) : '',
-            esWhiteLabel: Boolean(raw?.esWhiteLabel),
+            esWhiteLabel: true, // reseller: siempre marca blanca
             usaCodigoBarrasManual: Boolean(raw?.usaCodigoBarrasManual),
             usaDemo: Boolean(raw?.usaDemo),
         });
@@ -756,22 +756,6 @@ export default function ResellerClientes() {
                                 </div>
                             );
                         })()}
-                        <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${editData.esWhiteLabel ? 'border-[#7551FF]/30 bg-[#7551FF]/[0.06]' : 'border-slate-100 bg-slate-50'}`}>
-                            <span className="flex items-center gap-3">
-                                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${editData.esWhiteLabel ? 'bg-[#7551FF] text-white' : 'bg-white text-slate-400'}`}>
-                                    <Icon icon="solar:crown-star-bold-duotone" width="20" />
-                                </span>
-                                <span>
-                                    <strong className="block text-sm text-slate-800">Marca blanca</strong>
-                                    <span className="text-xs text-slate-500">Este cliente opera bajo tu marca.</span>
-                                </span>
-                            </span>
-                            <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
-                                <input type="checkbox" className="peer sr-only" checked={editData.esWhiteLabel} onChange={(e) => setEditData(prev => ({ ...prev, esWhiteLabel: e.target.checked }))} />
-                                <span className="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-[#7551FF]" />
-                                <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-                            </span>
-                        </label>
                         {editingCliente && (
                             <div className="col-span-2 bg-slate-50 rounded-xl p-3 text-xs text-slate-500 space-y-0.5">
                                 <p><span className="font-semibold">RUC:</span> {editingCliente.ruc}</p>
@@ -1091,20 +1075,6 @@ export default function ResellerClientes() {
                                                 </div>
                                             </div>
                                             <p className="mt-1 text-[10px] text-slate-400">Si lo dejas vacío, en Ganancias se usará el precio de lista del plan como estimado.</p>
-                                            {/* Toggle marca blanca */}
-                                            <label className="mt-3 flex items-center gap-2.5 cursor-pointer">
-                                                <input
-                                                    name="esWhiteLabel"
-                                                    type="checkbox"
-                                                    checked={formData.esWhiteLabel}
-                                                    onChange={handleChange as any}
-                                                    className="h-4 w-4 accent-violet-600"
-                                                />
-                                                <span className="text-sm text-slate-700 flex items-center gap-1">
-                                                    <Icon icon="solar:crown-star-bold-duotone" className="text-violet-500 text-base" />
-                                                    Cliente bajo mi marca blanca
-                                                </span>
-                                            </label>
                                             </>
                                         );
                                     })()}
