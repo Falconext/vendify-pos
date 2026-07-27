@@ -103,7 +103,7 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
     };
 
     const handlePasarProduccion = async () => {
-        if (!window.confirm('Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales y válidos ante SUNAT.\n\nEs irreversible (no se puede volver a modo prueba).\n\n¿Continuar?')) return;
+        if (!window.confirm('Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales ante SUNAT.\n\n• Se descuenta la activación de tu saldo (según el plan del cliente).\n• Es irreversible (no vuelve a modo prueba).\n\n¿Continuar?')) return;
         const result = await pasarProduccionCliente(resellerId, clienteId, qpsePlanType);
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
@@ -322,7 +322,7 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                                                     </div>
 
                                                     <p className="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                                                        La facturación electrónica ya está cubierta por Vendify (sin costo extra para ti). Solo confirma el paso a producción. Es <b>irreversible</b> (no se puede volver a prueba).
+                                                        Al pasar a producción se <b>descuenta la activación de tu saldo</b> (según el plan del cliente). El costo por comprobante lo cubre Vendify. Es <b>irreversible</b> (no se puede volver a modo prueba).
                                                     </p>
 
                                                     <button type="button" onClick={handlePasarProduccion} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white hover:brightness-110 transition-all">
