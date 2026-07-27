@@ -150,6 +150,7 @@ export interface IResellerPanelState {
     getClienteDetalle: (resellerId: number, clienteId: number) => Promise<any>;
     updateClienteConfig: (resellerId: number, clienteId: number, data: any) => Promise<{ success: boolean; error?: string }>;
     aprovisionarQpse: (resellerId: number, clienteId: number, forzar?: boolean) => Promise<{ success: boolean; message?: string }>;
+    pasarProduccionCliente: (resellerId: number, clienteId: number, planType: '01' | '02') => Promise<{ success: boolean; message?: string }>;
     updatePreciosPlan: (resellerId: number, precios: Record<string, number>) => Promise<{ success: boolean }>;
     updateCliente: (resellerId: number, clienteId: number, data: any) => Promise<{ success: boolean; error?: string }>;
     consultarDocumento: (resellerId: number, tipo: 'DNI' | 'RUC', numero: string) => Promise<any>;
@@ -493,6 +494,25 @@ export const useResellerPanelStore = create<IResellerPanelState>((set, get) => (
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al aprovisionar QPSE', 'error');
+            return { success: false, message: error.message };
+        }
+    },
+
+    pasarProduccionCliente: async (resellerId: number, clienteId: number, planType: '01' | '02') => {
+        try {
+            useAlertStore.setState({ loading: true });
+            const resp: any = await post(`resellers/${resellerId}/clientes/${clienteId}/pasar-produccion`, { planType });
+            useAlertStore.setState({ loading: false });
+            const data = resp?.data ?? resp;
+            if (resp.code === 1 && data?.ok) {
+                useAlertStore.getState().alert(data?.message || 'Empresa pasada a producción', 'success');
+                return { success: true, message: data?.message };
+            }
+            useAlertStore.getState().alert(data?.message || resp.error || 'No se pudo pasar a producción', 'error');
+            return { success: false, message: data?.message || resp.error };
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error.message || 'Error al pasar a producción', 'error');
             return { success: false, message: error.message };
         }
     },

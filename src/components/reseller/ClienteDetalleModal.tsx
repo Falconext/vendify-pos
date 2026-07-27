@@ -14,11 +14,12 @@ interface Props {
 }
 
 export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onClose }: Props) {
-    const { getClienteDetalle, toggleEstadoCliente, updateClienteConfig, aprovisionarQpse } = useResellerPanelStore();
+    const { getClienteDetalle, toggleEstadoCliente, updateClienteConfig, aprovisionarQpse, pasarProduccionCliente } = useResellerPanelStore();
     const [cliente, setCliente] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<'info' | 'config'>('info');
+    const [qpsePlanType, setQpsePlanType] = useState<'01' | '02'>('01');
     const [configForm, setConfigForm] = useState<any>({
         billingProvider: 'QPSE',
         providerId: '',
@@ -96,11 +97,22 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
             setCliente(updated);
-            setConfigForm((prev: any) => ({ ...prev, usuarioPse: updated?.usuarioPse || '', contrasenaPse: updated?.contrasenaPse || '' }));
+            setConfigForm((prev: any) => ({ ...prev, usuarioPse: updated?.usuarioPse || '', contrasenaPse: updated?.contrasenaPse || '', usaDemo: Boolean(updated?.usaDemo) }));
+        }
+    };
+
+    const handlePasarProduccion = async () => {
+        if (!window.confirm('ACCIÓN IRREVERSIBLE: la empresa pasará de DEMO a PRODUCCIÓN en QPSE y no podrá volver a demo. Asegúrate de que el certificado digital y el OSE estén configurados en QPSE. ¿Continuar?')) return;
+        const result = await pasarProduccionCliente(resellerId, clienteId, qpsePlanType);
+        if (result.success) {
+            const updated = await getClienteDetalle(resellerId, clienteId);
+            setCliente(updated);
+            setConfigForm((prev: any) => ({ ...prev, usaDemo: Boolean(updated?.usaDemo) }));
         }
     };
 
     const tieneQpse = Boolean(configForm.usuarioPse && configForm.contrasenaPse);
+    const esProduccion = tieneQpse && configForm.usaDemo === false;
     const isActive = cliente?.estado === 'ACTIVO';
 
     return (
@@ -285,6 +297,44 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                                             <p className="mt-2 text-[11px] leading-snug text-slate-400">
                                                 Vendify gestiona la facturación QPSE de este cliente. Las credenciales se generan automáticamente desde el RUC (consulta SUNAT); no es necesario ingresarlas a mano.
                                             </p>
+
+                                            {tieneQpse && (
+                                                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700/60">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${esProduccion ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'}`}>
+                                                                <Icon icon={esProduccion ? 'solar:check-circle-bold' : 'solar:test-tube-bold'} width="13" />
+                                                                {esProduccion ? 'Producción' : 'Demo'}
+                                                            </span>
+                                                            <p className="text-[11px] text-slate-400">
+                                                                {esProduccion ? 'Emite comprobantes reales ante SUNAT.' : 'Emite comprobantes de prueba (sandbox).'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {!esProduccion && (
+                                                        <>
+                                                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                                <select
+                                                                    value={qpsePlanType}
+                                                                    onChange={(e) => setQpsePlanType(e.target.value === '02' ? '02' : '01')}
+                                                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                                                >
+                                                                    <option value="01">Plan por comprobante (consumo)</option>
+                                                                    <option value="02">Plan por empresa (ilimitado)</option>
+                                                                </select>
+                                                                <button type="button" onClick={handlePasarProduccion} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:brightness-110 transition-all">
+                                                                    <Icon icon="solar:rocket-2-bold-duotone" width="16" />
+                                                                    Pasar a producción
+                                                                </button>
+                                                            </div>
+                                                            <p className="mt-2 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+                                                                Acción irreversible. Antes de continuar, sube el certificado digital y configura el OSE de esta empresa en QPSE.
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
