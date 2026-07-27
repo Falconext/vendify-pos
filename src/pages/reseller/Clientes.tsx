@@ -166,8 +166,10 @@ export default function ResellerClientes() {
         }
     }, [auth]);
 
+    const [searchingDocEdit, setSearchingDocEdit] = useState(false);
     const [editData, setEditData] = useState({
         planId: '',
+        ruc: '',
         razonSocial: '',
         nombreComercial: '',
         direccion: '',
@@ -191,6 +193,7 @@ export default function ResellerClientes() {
         setEditingCliente(raw);
         setEditData({
             planId: String(raw?.planId || ''),
+            ruc: raw?.ruc || '',
             razonSocial: raw?.razonSocial || '',
             nombreComercial: raw?.nombreComercial || '',
             direccion: raw?.direccion || '',
@@ -221,7 +224,14 @@ export default function ResellerClientes() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!auth || !editingCliente) return;
+        const rucLimpio = (editData.ruc || '').replace(/\D/g, '');
+        if (rucLimpio && rucLimpio !== (editingCliente.ruc || '') && rucLimpio.length !== 11) {
+            alert('El RUC debe tener 11 dígitos.');
+            return;
+        }
+        if (rucLimpio && rucLimpio !== (editingCliente.ruc || '') && !window.confirm('Vas a CAMBIAR el RUC de esta empresa. Esto borrará sus credenciales QPSE actuales (deberás volver a generarlas con el nuevo RUC). ¿Continuar?')) return;
         const payload: any = {
+            ruc: rucLimpio || undefined,
             razonSocial: editData.razonSocial,
             nombreComercial: editData.nombreComercial,
             direccion: editData.direccion,
@@ -292,6 +302,31 @@ export default function ResellerClientes() {
             alert(error.message || 'No se pudo consultar el RUC.');
         } finally {
             setSearchingDoc(false);
+        }
+    };
+
+    const handleSearchDocumentEdit = async () => {
+        if (!auth?.resellerId || (editData.ruc || '').replace(/\D/g, '').length !== 11) {
+            alert('Ingresa un RUC válido de 11 dígitos.');
+            return;
+        }
+        setSearchingDocEdit(true);
+        try {
+            const data = await consultarDocumento(auth.resellerId, 'RUC', editData.ruc);
+            setEditData(prev => ({
+                ...prev,
+                razonSocial: data?.nombre_o_razon_social || data?.razonSocial || data?.nombre || prev.razonSocial,
+                nombreComercial: data?.nombre_comercial || data?.nombre_o_razon_social || prev.nombreComercial,
+                direccion: data?.direccion || prev.direccion,
+                departamento: data?.departamento || prev.departamento,
+                provincia: data?.provincia || prev.provincia,
+                distrito: data?.distrito || prev.distrito,
+                ubigeo: data?.ubigeo || prev.ubigeo,
+            }));
+        } catch (error: any) {
+            alert(error.message || 'No se pudo consultar el RUC.');
+        } finally {
+            setSearchingDocEdit(false);
         }
     };
 
@@ -630,6 +665,16 @@ export default function ResellerClientes() {
             >
                 <form onSubmit={handleEditSubmit}>
                     <div className="p-5 grid grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto">
+                        <div className="col-span-2 grid grid-cols-[1fr_auto] items-end gap-2">
+                            <InputPro isLabel label="RUC" name="ruc" value={editData.ruc} onChange={(e: any) => setEditData(prev => ({ ...prev, ruc: e.target.value }))} placeholder="20100100100" maxLength={11} />
+                            <button type="button" onClick={handleSearchDocumentEdit} disabled={searchingDocEdit} className="h-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF]/10 px-4 text-sm font-bold text-[#7551FF] hover:bg-[#7551FF]/20 disabled:opacity-60">
+                                <Icon icon={searchingDocEdit ? 'svg-spinners:ring-resize' : 'solar:magnifer-linear'} width="16" />
+                                {searchingDocEdit ? '...' : 'Buscar'}
+                            </button>
+                        </div>
+                        <p className="col-span-2 -mt-1 text-[11px] text-amber-600">
+                            Cambiar el RUC borra las credenciales QPSE actuales; deberás volver a generarlas.
+                        </p>
                         <div className="col-span-2">
                             <InputPro isLabel label="Razón Social" name="razonSocial" value={editData.razonSocial} onChange={(e: any) => setEditData(prev => ({ ...prev, razonSocial: e.target.value }))} placeholder="Empresa SAC" />
                         </div>
@@ -751,7 +796,6 @@ export default function ResellerClientes() {
                         })()}
                         {editingCliente && (
                             <div className="col-span-2 bg-slate-50 rounded-xl p-3 text-xs text-slate-500 space-y-0.5">
-                                <p><span className="font-semibold">RUC:</span> {editingCliente.ruc}</p>
                                 <p><span className="font-semibold">Plan actual:</span> {editingCliente.plan?.nombre}</p>
                                 <p><span className="font-semibold">Estado:</span> {editingCliente.estado}</p>
                             </div>
