@@ -800,23 +800,37 @@ export default function ResellerClientes() {
                                 <p><span className="font-semibold">Estado:</span> {editingCliente.estado}</p>
                             </div>
                         )}
-                        {/* Producción SUNAT */}
-                        <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${!editData.usaDemo ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-100 bg-slate-50'}`}>
-                            <span className="flex items-center gap-3">
-                                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400'}`}>
-                                    <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:cloud-storage-bold-duotone'} width="20" />
+                        {/* Entorno de facturación */}
+                        {String(editingCliente?.billingProvider || 'QPSE').toUpperCase() === 'QPSE' ? (
+                            <div className="col-span-2 flex items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                <span className="flex items-center gap-3">
+                                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-white'}`}>
+                                        <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:test-tube-bold-duotone'} width="20" />
+                                    </span>
+                                    <span>
+                                        <strong className="block text-sm text-slate-800">Facturación: {!editData.usaDemo ? 'Producción' : 'Modo prueba'}</strong>
+                                        <span className="text-xs text-slate-500">Para pasar este cliente a <b>producción</b>, entra a <b>Ver&nbsp;👁&nbsp;→ Configuración → Pasar a producción</b>.</span>
+                                    </span>
                                 </span>
-                                <span>
-                                    <strong className="block text-sm text-slate-800">Producción SUNAT</strong>
-                                    <span className="text-xs text-slate-500">{!editData.usaDemo ? 'Emite comprobantes reales ante SUNAT.' : 'Apagado = entorno Demo (pruebas).'}</span>
+                            </div>
+                        ) : (
+                            <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${!editData.usaDemo ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-100 bg-slate-50'}`}>
+                                <span className="flex items-center gap-3">
+                                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400'}`}>
+                                        <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:cloud-storage-bold-duotone'} width="20" />
+                                    </span>
+                                    <span>
+                                        <strong className="block text-sm text-slate-800">Producción SUNAT</strong>
+                                        <span className="text-xs text-slate-500">{!editData.usaDemo ? 'Emite comprobantes reales ante SUNAT.' : 'Apagado = entorno Demo (pruebas).'}</span>
+                                    </span>
                                 </span>
-                            </span>
-                            <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
-                                <input type="checkbox" className="peer sr-only" checked={!editData.usaDemo} onChange={(e) => setEditData(prev => ({ ...prev, usaDemo: !e.target.checked }))} />
-                                <span className="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500" />
-                                <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-                            </span>
-                        </label>
+                                <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+                                    <input type="checkbox" className="peer sr-only" checked={!editData.usaDemo} onChange={(e) => setEditData(prev => ({ ...prev, usaDemo: !e.target.checked }))} />
+                                    <span className="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500" />
+                                    <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+                                </span>
+                            </label>
+                        )}
 
                         {/* Código de barras */}
                         <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${editData.usaCodigoBarrasManual ? 'border-[#7551FF]/30 bg-[#7551FF]/[0.06]' : 'border-slate-100 bg-slate-50'}`}>
