@@ -9,9 +9,10 @@ const BRANDING_STORAGE_KEY = 'PUBLIC_BRANDING_CONFIG_VENDIFY'
 type BrandConfig = { name?: string; favicon?: string; [key: string]: unknown }
 
 // Marcas legacy que ya no existen (Vendify las reemplaza): se ignoran si el
-// backend/caché las devuelve.
+// backend/caché las devuelve. Se filtra SOLO por `key` (las estáticas viejas
+// tenían key 'falconext'/'krezka'); NO por `name`, porque un reseller
+// white-label puede llamarse "Falconext" y su key es su código ('res-003').
 const esMarcaLegacy = (b: any): boolean =>
-  ['falconext', 'krezka'].includes(String(b?.name ?? '').toLowerCase()) ||
   ['falconext', 'krezka'].includes(String(b?.key ?? '').toLowerCase())
 
 // Los resellers white-label se resuelven en runtime por host vía el backend

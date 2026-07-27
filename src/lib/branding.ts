@@ -71,9 +71,11 @@ const isPublicBrandingFetchDisabled =
 
 // Marcas legacy que ya no existen: si el backend/caché las devuelve (p. ej.
 // un backend sin reiniciar), se ignoran y se usa la marca Vendify.
+// OJO: se filtra SOLO por `key` (las marcas estáticas viejas tenían key
+// 'falconext'/'krezka'). NO por `name`, porque un reseller white-label puede
+// llamarse legítimamente "Falconext" y su key es su código (p. ej. 'res-003').
 const LEGACY_BRANDS = new Set(['falconext', 'krezka']);
 const esMarcaLegacy = (b: any): boolean =>
-  LEGACY_BRANDS.has(String(b?.name ?? '').toLowerCase()) ||
   LEGACY_BRANDS.has(String(b?.key ?? '').toLowerCase());
 
 const getRuntimeBranding = (): BrandConfig | null => {
