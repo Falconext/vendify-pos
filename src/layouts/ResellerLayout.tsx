@@ -45,7 +45,20 @@ export default function ResellerLayout() {
     const userMenuRef = useRef<HTMLDivElement | null>(null)
     const zoomMenuRef = useRef<HTMLDivElement | null>(null)
 
-    useEffect(() => { initTheme() }, [initTheme])
+    // El portal reseller arranca en modo CLARO por defecto (marca blanca de cara
+    // al cliente). Se fuerza una sola vez por navegador; si el reseller luego
+    // activa el modo oscuro, su preferencia se respeta en las siguientes visitas.
+    useEffect(() => {
+        const KEY = 'reseller-theme-defaulted-light'
+        if (!localStorage.getItem(KEY)) {
+            localStorage.setItem(KEY, '1')
+            if (useThemeStore.getState().isDarkMode) {
+                useThemeStore.getState().toggleDarkMode() // -> claro + quita clase 'dark'
+                return
+            }
+        }
+        initTheme()
+    }, [initTheme])
 
     // Usa la misma tipografía y scope de estilos que el panel del cliente (admin):
     // Plus Jakarta Sans forzado por `html.is-admin` en index.css.
