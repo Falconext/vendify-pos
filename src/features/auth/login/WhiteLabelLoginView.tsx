@@ -42,7 +42,7 @@ export default function WhiteLabelLoginView() {
   const logo = BRAND.logo || BRAND.logoWhite;
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4" style={{ background: skyBg }}>
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4" style={{ background: skyBg, fontFamily: "'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif" }}>
       <div className="fixed top-5 right-5 z-50">
         <Alert />
       </div>
@@ -162,20 +162,10 @@ export default function WhiteLabelLoginView() {
           <button
             type="button"
             onClick={handleLogin}
-            className="w-full h-12 rounded-2xl bg-slate-900 text-white font-semibold text-sm transition-all hover:bg-slate-800 active:scale-[0.99] shadow-lg shadow-slate-900/20"
+            className="mt-1 w-full h-12 rounded-2xl bg-slate-900 text-white font-semibold text-sm transition-all hover:bg-slate-800 active:scale-[0.99] shadow-lg shadow-slate-900/20"
           >
             Iniciar sesión
           </button>
-
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              onClick={() => navigate("/tienda/login")}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              ¿Eres cliente? Ir a la tienda
-            </button>
-          </div>
         </form>
       </div>
     </div>

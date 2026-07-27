@@ -14,6 +14,7 @@ type Props = {
   information: string;
   children?: React.ReactNode;
   confirmText?: string;
+  confirmColor?: string;
   confirmDisabled?: boolean;
   confirmLoading?: boolean;
 };
@@ -26,6 +27,7 @@ export default function ModalConfirm({
   information,
   children,
   confirmText = 'Confirmar',
+  confirmColor = 'danger',
   confirmDisabled = false,
   confirmLoading = false,
 }: Props) {
@@ -68,7 +70,7 @@ export default function ModalConfirm({
           </motion.div>
           
           <Button
-            color='danger'
+            color={confirmColor}
             onClick={confirmSubmit}
             disabled={confirmDisabled || confirmLoading}
           >

@@ -6,6 +6,8 @@ import { useResellerPanelStore } from '@/zustand/reseller-panel';
 import Select from '@/components/Select';
 import ClienteDetalleModal from '@/components/reseller/ClienteDetalleModal';
 import Modal from '@/components/Modal';
+import ModalConfirm from '@/components/ModalConfirm';
+import useAlertStore from '@/zustand/alert';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
 import { BRAND } from '@/lib/branding';
@@ -167,6 +169,20 @@ export default function ResellerClientes() {
     }, [auth]);
 
     const [searchingDocEdit, setSearchingDocEdit] = useState(false);
+    const [confirm, setConfirm] = useState<null | {
+        title: string;
+        information: string;
+        children?: React.ReactNode;
+        confirmText: string;
+        confirmColor?: string;
+        onConfirm: () => Promise<void> | void;
+    }>(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const runConfirm = async () => {
+        if (!confirm) return;
+        setConfirmLoading(true);
+        try { await confirm.onConfirm(); } finally { setConfirmLoading(false); setConfirm(null); }
+    };
     const [editData, setEditData] = useState({
         planId: '',
         ruc: '',
@@ -221,15 +237,8 @@ export default function ResellerClientes() {
         setIsEditModalOpen(true);
     };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const doEditSave = async (rucLimpio: string) => {
         if (!auth || !editingCliente) return;
-        const rucLimpio = (editData.ruc || '').replace(/\D/g, '');
-        if (rucLimpio && rucLimpio !== (editingCliente.ruc || '') && rucLimpio.length !== 11) {
-            alert('El RUC debe tener 11 dígitos.');
-            return;
-        }
-        if (rucLimpio && rucLimpio !== (editingCliente.ruc || '') && !window.confirm('Vas a CAMBIAR el RUC de esta empresa. Esto borrará sus credenciales QPSE actuales (deberás volver a generarlas con el nuevo RUC). ¿Continuar?')) return;
         const payload: any = {
             ruc: rucLimpio || undefined,
             razonSocial: editData.razonSocial,
@@ -256,6 +265,33 @@ export default function ResellerClientes() {
             setIsEditModalOpen(false);
             getClientes(auth.resellerId!);
         }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!auth || !editingCliente) return;
+        const rucLimpio = (editData.ruc || '').replace(/\D/g, '');
+        const rucCambia = rucLimpio && rucLimpio !== (editingCliente.ruc || '');
+        if (rucCambia && rucLimpio.length !== 11) {
+            useAlertStore.getState().alert('El RUC debe tener 11 dígitos.', 'error');
+            return;
+        }
+        if (rucCambia) {
+            setConfirm({
+                title: 'Cambiar el RUC del cliente',
+                information: 'Vas a cambiar el RUC de esta empresa.',
+                children: (
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                        Se <b>borrarán las credenciales QPSE actuales</b> del cliente; deberás volver a generarlas con el nuevo RUC desde <b>Ver → Configuración</b>.
+                    </p>
+                ),
+                confirmText: 'Cambiar RUC',
+                confirmColor: 'danger',
+                onConfirm: () => doEditSave(rucLimpio),
+            });
+            return;
+        }
+        await doEditSave(rucLimpio);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -622,10 +658,15 @@ export default function ResellerClientes() {
                                                         </button>
                                                         {row.usaDemo && (
                                                             <button
-                                                                onClick={async () => {
-                                                                    const ok = window.confirm('Este cliente demo se ocultará del panel y sus usuarios quedarán inactivos. ¿Continuar?');
-                                                                    if (!ok || !auth?.resellerId) return;
-                                                                    await deleteDemoCliente(auth.resellerId, row.id);
+                                                                onClick={() => {
+                                                                    if (!auth?.resellerId) return;
+                                                                    setConfirm({
+                                                                        title: 'Eliminar cliente demo',
+                                                                        information: 'Este cliente demo se ocultará del panel y sus usuarios quedarán inactivos.',
+                                                                        confirmText: 'Eliminar',
+                                                                        confirmColor: 'danger',
+                                                                        onConfirm: async () => { await deleteDemoCliente(auth.resellerId!, row.id); },
+                                                                    });
                                                                 }}
                                                                 title="Eliminar demo" aria-label="Eliminar demo"
                                                                 className="h-8 w-8 grid place-items-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition-colors"
@@ -1239,6 +1280,19 @@ export default function ResellerClientes() {
                     </div>
                 </form>
             </Modal>
+
+            <ModalConfirm
+                isOpenModal={!!confirm}
+                setIsOpenModal={(v) => { if (!v) setConfirm(null); }}
+                confirmSubmit={runConfirm}
+                title={confirm?.title || ''}
+                information={confirm?.information || ''}
+                confirmText={confirm?.confirmText || 'Confirmar'}
+                confirmColor={confirm?.confirmColor}
+                confirmLoading={confirmLoading}
+            >
+                {confirm?.children}
+            </ModalConfirm>
         </div>
     );
 }

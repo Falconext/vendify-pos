@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useResellerPanelStore } from '@/zustand/reseller-panel';
 import Modal from '@/components/Modal';
+import ModalConfirm from '@/components/ModalConfirm';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
 import Select from '@/components/Select';
@@ -21,6 +22,20 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
     const [activeTab, setActiveTab] = useState<'info' | 'config'>('info');
     // Plan de facturación QPSE por defecto (la afiliación es a nivel Vendify).
     const qpsePlanType: '01' | '02' = '01';
+    const [confirm, setConfirm] = useState<null | {
+        title: string;
+        information: string;
+        children?: React.ReactNode;
+        confirmText: string;
+        confirmColor?: string;
+        onConfirm: () => Promise<void> | void;
+    }>(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const runConfirm = async () => {
+        if (!confirm) return;
+        setConfirmLoading(true);
+        try { await confirm.onConfirm(); } finally { setConfirmLoading(false); setConfirm(null); }
+    };
     const [configForm, setConfigForm] = useState<any>({
         billingProvider: 'QPSE',
         providerId: '',
@@ -84,16 +99,23 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
         setSaving(false);
     };
 
-    const handleToggleEstado = async () => {
+    const doToggleEstado = async (nuevoEstado: 'ACTIVO' | 'INACTIVO') => {
+        const result = await toggleEstadoCliente(resellerId, clienteId, nuevoEstado);
+        if (result.success && cliente) setCliente({ ...cliente, estado: nuevoEstado });
+    };
+    const handleToggleEstado = () => {
         if (!cliente) return;
         const nuevoEstado = cliente.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-        if (!window.confirm(`¿Estás seguro de ${nuevoEstado === 'ACTIVO' ? 'ACTIVAR' : 'SUSPENDER'} a este cliente?`)) return;
-        const result = await toggleEstadoCliente(resellerId, clienteId, nuevoEstado);
-        if (result.success) setCliente({ ...cliente, estado: nuevoEstado });
+        setConfirm({
+            title: nuevoEstado === 'ACTIVO' ? 'Activar cliente' : 'Suspender cliente',
+            information: `¿Seguro que quieres ${nuevoEstado === 'ACTIVO' ? 'activar' : 'suspender'} a este cliente?`,
+            confirmText: nuevoEstado === 'ACTIVO' ? 'Activar' : 'Suspender',
+            confirmColor: nuevoEstado === 'ACTIVO' ? 'success' : 'danger',
+            onConfirm: () => doToggleEstado(nuevoEstado),
+        });
     };
 
-    const handleAprovisionarQpse = async (forzar = false) => {
-        if (forzar && !window.confirm('Esto generará NUEVAS credenciales QPSE y reemplazará las actuales. ¿Continuar?')) return;
+    const doAprovisionar = async (forzar: boolean) => {
         const result = await aprovisionarQpse(resellerId, clienteId, forzar);
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
@@ -101,9 +123,18 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
             setConfigForm((prev: any) => ({ ...prev, usuarioPse: updated?.usuarioPse || '', contrasenaPse: updated?.contrasenaPse || '', usaDemo: Boolean(updated?.usaDemo) }));
         }
     };
+    const handleAprovisionarQpse = (forzar = false) => {
+        if (!forzar) { void doAprovisionar(false); return; }
+        setConfirm({
+            title: 'Regenerar credenciales QPSE',
+            information: 'Esto generará NUEVAS credenciales QPSE y reemplazará las actuales del cliente.',
+            confirmText: 'Regenerar',
+            confirmColor: 'danger',
+            onConfirm: () => doAprovisionar(true),
+        });
+    };
 
-    const handlePasarProduccion = async () => {
-        if (!window.confirm('Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales ante SUNAT.\n\n• Se descuenta la activación de tu saldo (según el plan del cliente).\n• Es irreversible (no vuelve a modo prueba).\n\n¿Continuar?')) return;
+    const doPasarProduccion = async () => {
         const result = await pasarProduccionCliente(resellerId, clienteId, qpsePlanType);
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
@@ -111,12 +142,29 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
             setConfigForm((prev: any) => ({ ...prev, usaDemo: Boolean(updated?.usaDemo) }));
         }
     };
+    const handlePasarProduccion = () => {
+        setConfirm({
+            title: 'Pasar a producción',
+            information: 'Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales ante SUNAT.',
+            children: (
+                <ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2"><Icon icon="solar:wallet-money-bold-duotone" className="mt-0.5 shrink-0 text-slate-400" width="16" /> Se descuenta la activación de tu saldo (según el plan del cliente).</li>
+                    <li className="flex gap-2"><Icon icon="solar:shield-check-bold-duotone" className="mt-0.5 shrink-0 text-emerald-500" width="16" /> El costo por comprobante lo cubre Vendify.</li>
+                    <li className="flex gap-2"><Icon icon="solar:danger-triangle-bold-duotone" className="mt-0.5 shrink-0 text-amber-500" width="16" /> Es irreversible: no se puede volver a modo prueba.</li>
+                </ul>
+            ),
+            confirmText: 'Pasar a producción',
+            confirmColor: 'success',
+            onConfirm: doPasarProduccion,
+        });
+    };
 
     const tieneQpse = Boolean(configForm.usuarioPse && configForm.contrasenaPse);
     const esProduccion = tieneQpse && configForm.usaDemo === false;
     const isActive = cliente?.estado === 'ACTIVO';
 
     return (
+        <>
         <Modal
             isOpenModal={isOpen}
             closeModal={onClose}
@@ -432,5 +480,19 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                 </>
             )}
         </Modal>
+
+        <ModalConfirm
+            isOpenModal={!!confirm}
+            setIsOpenModal={(v) => { if (!v) setConfirm(null); }}
+            confirmSubmit={runConfirm}
+            title={confirm?.title || ''}
+            information={confirm?.information || ''}
+            confirmText={confirm?.confirmText || 'Confirmar'}
+            confirmColor={confirm?.confirmColor}
+            confirmLoading={confirmLoading}
+        >
+            {confirm?.children}
+        </ModalConfirm>
+        </>
     );
 }
