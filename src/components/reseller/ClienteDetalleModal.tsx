@@ -19,7 +19,8 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<'info' | 'config'>('info');
-    const [qpsePlanType, setQpsePlanType] = useState<'01' | '02'>('01');
+    // Plan de facturación QPSE por defecto (la afiliación es a nivel Vendify).
+    const qpsePlanType: '01' | '02' = '01';
     const [configForm, setConfigForm] = useState<any>({
         billingProvider: 'QPSE',
         providerId: '',
@@ -102,7 +103,7 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
     };
 
     const handlePasarProduccion = async () => {
-        if (!window.confirm('Vas a pasar este cliente a PRODUCCIÓN.\n\n• Es irreversible (no se puede volver a modo prueba).\n• Se cobrará la activación a tu saldo.\n• En QPSE debe estar el certificado digital y el OSE configurados.\n\n¿Continuar?')) return;
+        if (!window.confirm('Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales y válidos ante SUNAT.\n\nEs irreversible (no se puede volver a modo prueba).\n\n¿Continuar?')) return;
         const result = await pasarProduccionCliente(resellerId, clienteId, qpsePlanType);
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
@@ -316,25 +317,13 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                                                         </span>
                                                         <div>
                                                             <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Este cliente está en modo prueba</p>
-                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Los comprobantes que emita <b>no son válidos</b> ante SUNAT. Pásalo a producción para emitir de verdad.</p>
+                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Los comprobantes que emita <b>no son válidos</b> ante SUNAT. Pásalo a producción para que emita comprobantes reales.</p>
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-3 rounded-xl bg-white/70 p-3 text-[11px] leading-relaxed text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
-                                                        <p className="mb-1 font-semibold text-slate-600 dark:text-slate-300">Antes de pasar a producción:</p>
-                                                        <p>1. En tu cuenta de <b>QPSE</b>, sube el <b>certificado digital</b> y configura el <b>OSE</b> de esta empresa.</p>
-                                                        <p>2. Esto <b>cobra la activación a tu saldo</b> y es <b>irreversible</b> (no se puede volver a prueba).</p>
-                                                    </div>
-
-                                                    <label className="mt-3 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">¿Cómo te cobra QPSE por este cliente?</label>
-                                                    <select
-                                                        value={qpsePlanType}
-                                                        onChange={(e) => setQpsePlanType(e.target.value === '02' ? '02' : '01')}
-                                                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                                    >
-                                                        <option value="01">Por comprobante — pagas por cada documento emitido</option>
-                                                        <option value="02">Por empresa — tarifa fija, comprobantes ilimitados</option>
-                                                    </select>
+                                                    <p className="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                                        La facturación electrónica ya está cubierta por Vendify (sin costo extra para ti). Solo confirma el paso a producción. Es <b>irreversible</b> (no se puede volver a prueba).
+                                                    </p>
 
                                                     <button type="button" onClick={handlePasarProduccion} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white hover:brightness-110 transition-all">
                                                         <Icon icon="solar:rocket-2-bold-duotone" width="18" />
