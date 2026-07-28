@@ -50,6 +50,9 @@ export default function Catalogo() {
     const [allProductos, setAllProductos] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
+    // true cuando la carga de productos FALLA (red/API/caché). Se distingue de
+    // "0 resultados": un fallo no debe disfrazarse de catálogo vacío.
+    const [cargaError, setCargaError] = useState(false);
     const [page, setPage] = useState(1);
     const limit = 30;
 
@@ -206,7 +209,12 @@ export default function Catalogo() {
             items = withPricingList(items);
             setTotal(totalItems); setPage(currentPage);
             if (reset) setProductos(items); else setProductos(prev => [...prev, ...items]);
-        } catch { }
+            setCargaError(false);
+        } catch {
+            // No tragar el error en silencio: marcarlo para mostrar un estado
+            // de "no se pudo cargar / reintentar" en vez de un catálogo vacío.
+            if (reset) setCargaError(true);
+        }
         finally { setLoading(false); }
     };
 
@@ -331,6 +339,30 @@ export default function Catalogo() {
         return (
             <div className="flex items-center justify-center h-screen bg-white">
                 <Icon icon="eos-icons:loading" className="w-12 h-12 text-[#FF9500]" />
+            </div>
+        );
+    }
+
+    // Fallo de carga (sin productos por un error, no por filtros): mostrar un estado
+    // claro con "Reintentar" en vez de un catálogo mudo/vacío. Evita que un problema
+    // transitorio de red o de caché del navegador se vea como "la tienda no tiene productos".
+    if (cargaError && productos.length === 0 && !loading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-white px-6 text-center">
+                <Icon icon="solar:wifi-router-minimalistic-broken" className="w-16 h-16 text-gray-300 mb-4" />
+                <h2 className="text-lg font-black text-gray-900 mb-1">No pudimos cargar el catálogo</h2>
+                <p className="text-sm text-gray-500 mb-6 max-w-sm">
+                    Revisa tu conexión a internet e inténtalo de nuevo. Si el problema
+                    persiste, recarga la página desde cero.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => { setCargaError(false); setLoading(true); cargarProductos(1, true); }}
+                    className="rounded-xl px-6 py-3 text-sm font-black text-white"
+                    style={{ backgroundColor: cp }}
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }

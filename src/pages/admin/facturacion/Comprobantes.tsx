@@ -26,6 +26,7 @@ import Modal from "@/components/Modal";
 import TableActionMenu from "@/components/TableActionMenu";
 import { useSedesStore } from "@/zustand/sedes";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
+import ModalImportarComprobante from "./ModalImportarComprobante";
 import { useUsersStore } from "@/zustand/users";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 
@@ -146,6 +147,7 @@ const Comprobantes = () => {
     };
     const paymentFlow = usePaymentFlow();
     const [isOpenModalPagoParcial, setIsOpenModalPagoParcial] = useState(false);
+    const [isOpenModalImportar, setIsOpenModalImportar] = useState(false);
     const [isOpenModalPdf, setIsOpenModalPdf] = useState(false);
     const [pdfUrl, setPdfUrl] = useState<string>("");
     const [pdfName, setPdfName] = useState<string>("comprobante.pdf");
@@ -712,6 +714,14 @@ const Comprobantes = () => {
                     </div>
                     <button
                         type="button"
+                        onClick={() => setIsOpenModalImportar(true)}
+                        className="h-11 px-4 rounded-2xl border-2 text-sm font-bold flex items-center gap-1.5 hover:bg-violet-50 transition-all shrink-0"
+                        style={{ borderColor: `${ACCENT}55`, color: ACCENT }}
+                    >
+                        <Icon icon="solar:import-bold-duotone" className="text-lg" /> <span className="hidden sm:inline">Importar emitido</span>
+                    </button>
+                    <button
+                        type="button"
                         onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
                         className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
                         style={{ background: ACCENT }}
@@ -1103,6 +1113,12 @@ const Comprobantes = () => {
                 comprobanteId={detalleComprobanteId}
                 isOpen={detalleComprobanteId !== null}
                 onClose={() => setDetalleComprobanteId(null)}
+            />
+
+            <ModalImportarComprobante
+                isOpen={isOpenModalImportar}
+                onClose={() => setIsOpenModalImportar(false)}
+                onSuccess={() => fetchFormalInvoices()}
             />
 
             {/* Modal error SUNAT */}

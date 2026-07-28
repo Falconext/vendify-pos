@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Pagination from "@/components/Pagination";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import ModalAnticipos from "./ModalAnticipos";
 
 export const POSCatalogLayout = ({ vm }: { vm: any }) => {
     const [infoProduct, setInfoProduct] = useState<any | null>(null);
@@ -233,90 +234,30 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                     <div className="mb-4">
                         <button
                             type="button"
-                            onClick={() => setShowAnticipos((v) => !v)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-sm transition-all"
+                            onClick={() => setShowAnticipos(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-bold text-sm transition-all hover:bg-indigo-100 dark:hover:bg-indigo-950/50"
                             title="Descontar anticipos previos en esta factura"
                         >
                             <Icon icon="solar:hand-money-bold-duotone" className="text-lg" />
                             Anticipos a descontar
                             {vm.anticipos?.length > 0 && (
-                                <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black">
+                                <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-black">
                                     {vm.anticipos.length} · {String(vm.formValues?.tipoMoneda === 'USD' || vm.quotationCurrency === 'USD' ? 'US$' : 'S/')} {Number(vm.totalAnticipos || 0).toFixed(2)}
                                 </span>
                             )}
                         </button>
 
-                        {showAnticipos && (
-                            <div className="mt-3 rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/10 p-3">
-                                <div className="flex flex-col lg:flex-row gap-2">
-                                    <select
-                                        value={anticipoForm.tipoDoc}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, tipoDoc: e.target.value }))}
-                                        title="Tipo de comprobante del anticipo"
-                                        className="px-3 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    >
-                                        <option value="01">Factura</option>
-                                        <option value="03">Boleta</option>
-                                    </select>
-                                    <input
-                                        value={anticipoForm.serie}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, serie: e.target.value }))}
-                                        placeholder="Serie (ej: FX02)"
-                                        className="w-full lg:w-32 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300 uppercase"
-                                    />
-                                    <input
-                                        value={anticipoForm.numero}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, numero: e.target.value }))}
-                                        placeholder="Número (ej: 000024)"
-                                        className="w-full lg:w-36 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <input
-                                        type="number" min="0.01" step="0.01"
-                                        value={anticipoForm.monto}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, monto: e.target.value }))}
-                                        placeholder="Monto"
-                                        className="w-full lg:w-28 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <input
-                                        type="date"
-                                        value={anticipoForm.fecha}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, fecha: e.target.value }))}
-                                        title="Fecha del anticipo (opcional)"
-                                        className="w-full lg:w-40 px-3 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleAddAnticipo}
-                                        className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                                    >
-                                        <Icon icon="solar:add-circle-bold" className="text-lg" />
-                                        Agregar
-                                    </button>
-                                </div>
-
-                                {vm.anticipos?.length > 0 && (
-                                    <div className="mt-3 space-y-1.5">
-                                        {vm.anticipos.map((a: any, i: number) => (
-                                            <div key={`${a.serie}-${a.numero}-${i}`} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30">
-                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
-                                                    {a.tipoDoc === '03' ? 'Boleta' : 'Factura'} {a.serie}-{a.numero}
-                                                    {a.fecha ? <span className="text-xs text-gray-400 ml-2">{a.fecha}</span> : null}
-                                                </span>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">{Number(a.monto).toFixed(2)}</span>
-                                                    <button type="button" onClick={() => vm.eliminarAnticipo(i)} className="text-red-400 hover:text-red-600" title="Quitar anticipo">
-                                                        <Icon icon="solar:trash-bin-trash-bold" className="text-base" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-300/80 font-semibold">
-                                    El total del anticipo se descuenta como PrepaidAmount en la factura (importe a pagar = total − anticipos). La moneda debe coincidir con la del comprobante.
-                                </p>
-                            </div>
-                        )}
+                        <ModalAnticipos
+                            isOpen={showAnticipos}
+                            onClose={() => setShowAnticipos(false)}
+                            form={anticipoForm}
+                            setForm={setAnticipoForm}
+                            onAdd={handleAddAnticipo}
+                            anticipos={vm.anticipos || []}
+                            totalAnticipos={Number(vm.totalAnticipos || 0)}
+                            currencySymbol={String(vm.formValues?.tipoMoneda === 'USD' || vm.quotationCurrency === 'USD' ? 'US$' : 'S/')}
+                            onRemove={(i: number) => vm.eliminarAnticipo(i)}
+                        />
                     </div>
                 )}
 
