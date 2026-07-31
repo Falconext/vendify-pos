@@ -7,7 +7,7 @@ import { useAuthStore } from '@/zustand/auth';
 export interface Plan {
     id: number; nombre: string; descripcion?: string; costo: number;
     plataforma?: string;
-    producto?: 'facturacion' | 'hotel';
+    producto?: 'facturacion' | 'hotel' | 'restaurante';
     duracionDias: number; limiteUsuarios: number; maxSedes: number;
     maxImagenesProducto: number;
     maxBanners: number; maxComprobantes: number; esPrueba: boolean;
@@ -71,9 +71,9 @@ export const usePlanesViewModel = () => {
     // Sistema unificado: la plataforma (plataforma múltiple) fue eliminada. Se usa
     // un valor neutro 'default' y ya no se filtra ni scopea por plataforma.
     const plataformaScope = '' as string;
-    const productoScope = (String(auth?.sistemaProducto || '').toLowerCase() === 'hotel' ? 'hotel' : String(auth?.sistemaProducto || '').toLowerCase() === 'facturacion' ? 'facturacion' : '') as '' | 'facturacion' | 'hotel';
+    const productoScope = (String(auth?.sistemaProducto || '').toLowerCase() === 'hotel' ? 'hotel' : String(auth?.sistemaProducto || '').toLowerCase() === 'restaurante' ? 'restaurante' : String(auth?.sistemaProducto || '').toLowerCase() === 'facturacion' ? 'facturacion' : '') as '' | 'facturacion' | 'hotel' | 'restaurante';
     const [plataformaFiltro, setPlataformaFiltro] = useState<string>('');
-    const [productoFiltro, setProductoFiltro] = useState<'' | 'facturacion' | 'hotel'>(productoScope);
+    const [productoFiltro, setProductoFiltro] = useState<'' | 'facturacion' | 'hotel' | 'restaurante'>(productoScope);
 
     useEffect(() => {
         setProductoFiltro(productoScope);
@@ -122,7 +122,7 @@ export const usePlanesViewModel = () => {
 
     const handleOpenEdit = (plan: Plan) => {
         const plataforma = plan.plataforma || 'default';
-        const producto = (plan.producto || 'facturacion') as 'facturacion' | 'hotel';
+        const producto = (plan.producto || 'facturacion') as 'facturacion' | 'hotel' | 'restaurante';
         setIsEdit(true);
         setCurrentId(plan.id);
         setForm({
@@ -150,7 +150,7 @@ export const usePlanesViewModel = () => {
                     return acc;
                 }, {} as Record<string, boolean>),
                 plataforma: form.plataforma || 'default',
-                producto: (productoScope || form.producto || 'facturacion') as 'facturacion' | 'hotel',
+                producto: (productoScope || form.producto || 'facturacion') as 'facturacion' | 'hotel' | 'restaurante',
                 costo: Number(form.costo),
                 duracionDias: Number(form.duracionDias),
                 limiteUsuarios: Number(form.limiteUsuarios),

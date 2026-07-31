@@ -147,9 +147,9 @@ export default function AdminResellers() {
                     <p className="text-sm text-slate-400 mt-0.5">Gestiona los socios comerciales, sus saldos y rentabilidad.</p>
                 </div>
                 <button onClick={vm.openCreateModal}
-                    className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
+                    className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0 w-full lg:w-auto"
                     style={{ background: ACCENT }}>
-                    <Icon icon="solar:user-plus-bold" className="text-lg" /> <span className="hidden sm:inline">Nuevo Distribuidor</span>
+                    <Icon icon="solar:user-plus-bold" className="text-lg" /> <span>Nuevo Distribuidor</span>
                 </button>
             </div>
 

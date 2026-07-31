@@ -193,6 +193,9 @@ export const useFacturacionViewModel = () => {
     // trazar receta de psicotrópicos/estupefacientes también a nivel mayorista)
     const habilitaRecetaMedica = isFarmaciaRetail || esDrogueria;
     const usarPrecioLoteFefo = Boolean((auth?.empresa as any)?.usarPrecioLoteFefo);
+    // Sobreventa: si la empresa lo habilitó, el POS permite agregar/vender productos
+    // aunque el stock sea 0 o insuficiente (solo se muestra una advertencia).
+    const permitirVentaSinStock = Boolean((auth?.empresa as any)?.permitirVentaSinStock);
     const [togglingPrecioLote, setTogglingPrecioLote] = useState(false);
     // Toggle rápido (solo rubros con lotes) — persiste el flag de empresa y actualiza el estado
     const togglePrecioLoteFefo = async () => {
@@ -289,6 +292,9 @@ export const useFacturacionViewModel = () => {
     ]);
     const [adelanto, setAdelanto] = useState<number>(0);
     const [fechaRecojo, setFechaRecojo] = useState<string>('');
+    // Nota de Pedido: si el usuario marca esto, la NP descuenta stock al emitirse.
+    // Por defecto false → la NP no toca stock hasta convertirse en comprobante formal.
+    const [descontarStockNP, setDescontarStockNP] = useState<boolean>(false);
     const [adelantoError, _setAdelantoError] = useState<string>('');
 
     // ID del comprobante informal de origen (cuando se convierte NV/Ticket → Formal)
@@ -1097,7 +1103,7 @@ export const useFacturacionViewModel = () => {
             const qtyActualEnCarrito = getCartQtyByProductId(Number(producto.id));
             const stockDisponible = Number(producto?.stock || 0);
             // Los servicios no tienen stock: solo se valida stock para productos físicos.
-            if (!esServicioTecnico(producto) && qtyActualEnCarrito + qtyRequerida > stockDisponible) {
+            if (!permitirVentaSinStock && !esServicioTecnico(producto) && qtyActualEnCarrito + qtyRequerida > stockDisponible) {
                 return useAlertStore.getState().alert(
                     `Stock insuficiente para ${String(producto.descripcion || "producto").toUpperCase()} al agregar el kit`,
                     "warning",
@@ -1278,16 +1284,22 @@ export const useFacturacionViewModel = () => {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!esServicio && stockDisponible < newQty) {
+            if (!permitirVentaSinStock && !esServicio && stockDisponible < newQty) {
                 return useAlertStore.getState().alert("Stock insuficiente", "warning");
+            }
+            if (permitirVentaSinStock && !esServicio && stockDisponible < newQty) {
+                useAlertStore.getState().alert("Vendiendo sin stock disponible", "warning");
             }
             updateProductInvoice(existingIndex, calculateLineItem(currentItem, newQty));
         } else {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!esServicio && stockDisponible < 1) {
+            if (!permitirVentaSinStock && !esServicio && stockDisponible < 1) {
                 return useAlertStore.getState().alert("Sin stock", "warning");
+            }
+            if (permitirVentaSinStock && !esServicio && stockDisponible < 1) {
+                useAlertStore.getState().alert("Vendiendo sin stock disponible", "warning");
             }
             const base = precioBaseSeleccionado;
             addProductsInvoice({
@@ -1689,17 +1701,14 @@ export const useFacturacionViewModel = () => {
 
     const validatePaymentDetails = () => {
         if (isQuotationRoute || formValues.medioPago === 'Crédito') return true;
-        const requiresReference = (method?: string) => ['TRANSFERENCIA', 'TARJETA'].includes(normalizePaymentMethod(method));
+        // El N° de operación/voucher es opcional: no bloquea la emisión (se puede
+        // registrar después). Solo se exige la cuenta bancaria para transferencias.
         const requiresAccount = (method?: string) => normalizePaymentMethod(method) === 'TRANSFERENCIA';
         const details = buildPaymentDetails();
         const lines: PaymentLine[] = details.mode === 'MIXTO' ? (details.splitPayments ?? []) : [details as PaymentLine];
 
         for (const line of lines) {
             if (Number(line.amount || 0) <= 0) continue;
-            if (requiresReference(line.method) && !cleanText(line.referencia)) {
-                useAlertStore.getState().alert(`Ingresa el número de operación/voucher para ${line.method}.`, "error");
-                return false;
-            }
             if (requiresAccount(line.method) && !line.cuentaBancariaId) {
                 useAlertStore.getState().alert("Selecciona la cuenta bancaria donde ingresó la transferencia.", "error");
                 return false;
@@ -1982,6 +1991,7 @@ export const useFacturacionViewModel = () => {
                 return adelantoFinal > 0 ? adelantoFinal : undefined;
             })(),
             fechaRecojo: (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") && fechaRecojoFinal ? fechaRecojoFinal : undefined,
+            descontarStock: formValues.tipoDoc === "NP" ? descontarStockNP : undefined,
             cotizIncluirImagenes: isQuotationRoute ? includeProductImages : undefined,
             cotizDescuento: isQuotationRoute ? quotationDiscount : undefined,
             cotizVigencia: isQuotationRoute ? quotationValidity : undefined,
@@ -2229,6 +2239,7 @@ export const useFacturacionViewModel = () => {
         splitPayments, setSplitPayments,
         adelanto, setAdelanto,
         fechaRecojo, setFechaRecojo,
+        descontarStockNP, setDescontarStockNP,
         fechaEmisionManual, setFechaEmisionManual,
         fechaEmisionMinDate: (() => {
             const tipoDoc = (formValues as any)?.tipoDoc;

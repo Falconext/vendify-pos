@@ -11,7 +11,7 @@ const ACCENT = '#7551FF';
 
 export default function PerfilIndex() {
     const vm = usePerfilViewModel();
-    const { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword } = vm;
+    const { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingVentaSinStockConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword } = vm;
     const [showActual, setShowActual] = useState(false);
     const [showNueva, setShowNueva] = useState(false);
     const [directorInput, setDirectorInput] = useState<string | null>(null);
@@ -511,6 +511,20 @@ export default function PerfilIndex() {
                                             <p className="text-xs text-orange-600 mt-1">Disponible solo si la característica de lotes está activa en el plan.</p>
                                         )}
                                         {savingFefoPriceConfig && <p className="text-xs text-violet-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-xl border border-amber-100 bg-amber-50/40 cursor-pointer hover:bg-amber-50 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean(perfil.empresa.permitirVentaSinStock)}
+                                        disabled={savingVentaSinStockConfig}
+                                        onChange={(e) => vm.handleVentaSinStockToggle(e.target.checked)}
+                                        className="mt-1 w-4 h-4 accent-amber-600 rounded border-slate-300 bg-white"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800">Permitir vender sin stock (sobreventa)</p>
+                                        <p className="text-xs text-slate-500 mt-1">Cuando esté activo, podrás emitir comprobantes aunque el producto tenga stock 0 o insuficiente. La salida se registra igual y el inventario puede quedar en 0. Úsalo con cuidado.</p>
+                                        {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100">

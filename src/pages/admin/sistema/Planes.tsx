@@ -96,6 +96,7 @@ const Planes = () => {
                                 { id: '', label: 'Todos' },
                                 { id: 'facturacion', label: 'Facturación' },
                                 { id: 'hotel', label: 'Hotel' },
+                                { id: 'restaurante', label: 'Restaurante' },
                             ] as const).map((item) => {
                                 const active = vm.productoFiltro === item.id;
                                 return (
@@ -185,6 +186,8 @@ const Planes = () => {
                                     <td className="py-3 px-3">
                                         {p.producto === 'hotel'
                                             ? <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-600">Hotel</span>
+                                            : p.producto === 'restaurante'
+                                            ? <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-600">Restaurante</span>
                                             : <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-600">Facturación</span>}
                                     </td>
                                     <td className="py-3 px-3 font-bold text-slate-800 text-sm">S/ {Number(p.costo).toFixed(2)}</td>
@@ -254,6 +257,7 @@ const Planes = () => {
                                         {([
                                             { id: 'facturacion', label: 'Facturación', icon: 'solar:bill-list-bold-duotone', color: '#0EA5E9' },
                                             { id: 'hotel', label: 'Hotel', icon: 'solar:bed-bold-duotone', color: '#F59E0B' },
+                                            { id: 'restaurante', label: 'Restaurante', icon: 'solar:cup-hot-bold-duotone', color: '#10B981' },
                                         ] as const).map((product) => {
                                             const selected = (vm.form.producto || 'facturacion') === product.id;
                                             return (
@@ -422,7 +426,7 @@ const Planes = () => {
                         <p className="text-sm text-purple-700 dark:text-purple-400">Selecciona los <strong>módulos</strong> que incluye este plan. Para cada módulo seleccionado, haz clic en <strong>▼</strong> para elegir qué <strong>submódulos</strong> estarán disponibles. Si no configuras submódulos, la empresa tendrá acceso a todos los del módulo.</p>
                     </div>
                     <ModuloSelector
-                        producto={(vm.form.producto || 'facturacion') as 'facturacion' | 'hotel'}
+                        producto={(vm.form.producto || 'facturacion') as 'facturacion' | 'hotel' | 'restaurante'}
                         selectedModulos={vm.form.moduloIds || []}
                         onModulosChange={(modulos) => vm.setForm(prev => ({ ...prev, moduloIds: modulos }))}
                         selectedSubModulos={vm.form.subModuloIds || []}

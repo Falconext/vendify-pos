@@ -149,3 +149,104 @@ export const useReporteInformalesViewModel = () => {
 
     return { reports, resumenReporteInformal, fechaInicio, fechaFin, isHoveredExp, setIsHoveredExp, handleDate, handleExport, canFilterSede, sedesOptions, handleSelectSede };
 };
+
+const estadoPagoLabel: Record<string, string> = {
+    COMPLETADO: 'Pagado',
+    PENDIENTE_PAGO: 'Pendiente',
+    PAGO_PARCIAL: 'Parcial',
+    ANULADO: 'Anulado',
+};
+
+export const useReporteComprasViewModel = () => {
+    const { reportCompras, getAllReportCompras, resumenReporteCompras, exportExcelReportCompras } = useAccountingStore();
+    const { auth, fechaInicio, fechaFin, isHoveredExp, setIsHoveredExp, handleDate } = useDateFilter();
+    const { sedes, listarSedes } = useSedesStore();
+    const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
+
+    const canFilterSede = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA' || auth?.rol === 'USUARIO_EMPRESA';
+
+    const sedesOptions = [
+        { id: 0, value: "Todas las sedes" },
+        ...sedes.map(s => ({ id: s.id, value: s.esPrincipal ? `${s.nombre} (Principal)` : s.nombre }))
+    ];
+
+    const handleSelectSede = (id: any, _value: string) => {
+        setSelectedSedeId(id === 0 ? null : Number(id));
+    };
+
+    useEffect(() => {
+        if (canFilterSede) listarSedes();
+    }, [canFilterSede]);
+
+    useEffect(() => {
+        const params: any = { fechaInicio, fechaFin };
+        if (selectedSedeId) params.sedeId = selectedSedeId;
+        getAllReportCompras(params);
+    }, [fechaFin, fechaInicio, auth, selectedSedeId]);
+
+    const fmt = (v: any) => v != null ? Number(v).toFixed(2) : '0.00';
+
+    const reports = reportCompras?.map((item: any) => {
+        const moneda = item?.moneda || 'PEN';
+        const simbol = moneda === 'USD' ? '$' : 'S/';
+        return {
+            sede: item?.sede?.nombre || '-',
+            comprobante: item?.tipoDoc || '-',
+            serie: item?.serie || '-',
+            numero: item?.numero || '-',
+            ruc: item?.proveedor?.nroDoc || '-',
+            proveedor: item?.proveedor?.nombre || '-',
+            fecha: moment(item?.fechaEmision).utcOffset(-5 * 60).format('DD/MM/YYYY'),
+            moneda,
+            estadoPago: estadoPagoLabel[item?.estadoPago] || item?.estadoPago || '-',
+            gravadas: `${simbol} ${fmt(item?.subtotal)}`,
+            igv: `${simbol} ${fmt(item?.igv)}`,
+            total: `${simbol} ${fmt(item?.total)}`,
+            saldo: item?.saldo != null && Number(item.saldo) > 0 ? `${simbol} ${fmt(item.saldo)}` : '-',
+        };
+    });
+
+    const handleExport = () => {
+        const params: any = { fechaInicio, fechaFin };
+        if (selectedSedeId) params.sedeId = selectedSedeId;
+        exportExcelReportCompras(params);
+    };
+
+    return { reports, resumenReporteCompras, fechaInicio, fechaFin, isHoveredExp, setIsHoveredExp, handleDate, handleExport, canFilterSede, sedesOptions, handleSelectSede };
+};
+
+const CATEGORIA_GASTO_LABEL: Record<string, string> = {
+    PUBLICIDAD: 'Publicidad',
+    SUELDOS: 'Sueldos',
+    ENVIOS: 'Envíos',
+    COMISIONES: 'Comisiones',
+    ALQUILER: 'Alquiler',
+    OTROS: 'Otros',
+    PERSONALIZADA: 'Personalizada',
+};
+
+export const useReporteGastosViewModel = () => {
+    const { reportGastos, getAllReportGastos, resumenReporteGastos, exportExcelReportGastos } = useAccountingStore();
+    const { auth, fechaInicio, fechaFin, isHoveredExp, setIsHoveredExp, handleDate } = useDateFilter();
+
+    useEffect(() => {
+        getAllReportGastos({ fechaInicio, fechaFin });
+    }, [fechaFin, fechaInicio, auth]);
+
+    const fmt = (v: any) => v != null ? Number(v).toFixed(2) : '0.00';
+
+    const reports = reportGastos?.map((item: any) => ({
+        fecha: moment(item?.fecha).utcOffset(-5 * 60).format('DD/MM/YYYY'),
+        categoria: CATEGORIA_GASTO_LABEL[item?.categoria] || item?.categoria || '-',
+        etiqueta: item?.etiqueta || '-',
+        descripcion: item?.descripcion || '-',
+        recurrente: item?.recurrenteDiario ? 'Sí' : 'No',
+        monto: `S/ ${fmt(item?.monto)}`,
+    }));
+
+    const handleExport = () => {
+        exportExcelReportGastos({ fechaInicio, fechaFin });
+    };
+
+    return { reports, resumenReporteGastos, fechaInicio, fechaFin, isHoveredExp, setIsHoveredExp, handleDate, handleExport };
+};

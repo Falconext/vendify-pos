@@ -67,6 +67,19 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const getAtributoTecnico = (key: string) => String(((formValues as any)?.atributosTecnicos || {})[key] || '');
     const getAtributoTecnicoBool = (key: string) => Boolean(((formValues as any)?.atributosTecnicos || {})[key]);
 
+    // Códigos de barra ADICIONALES: mismo producto con distinto EAN por lote/importación.
+    // Al escanear cualquiera de estos códigos, el POS resuelve a este mismo producto.
+    const codigosExtra: string[] = Array.isArray((formValues as any)?.codigosBarrasExtra)
+        ? (formValues as any).codigosBarrasExtra
+        : [];
+    const setCodigosExtra = (next: string[]) =>
+        setFormValues({ ...formValues, codigosBarrasExtra: next } as any);
+    const addCodigoExtra = () => setCodigosExtra([...codigosExtra, '']);
+    const updateCodigoExtra = (i: number, val: string) =>
+        setCodigosExtra(codigosExtra.map((c, idx) => (idx === i ? val : c)));
+    const removeCodigoExtra = (i: number) =>
+        setCodigosExtra(codigosExtra.filter((_, idx) => idx !== i));
+
     const technicalFields = Array.isArray((vm as any).technicalTemplate?.campos)
         ? [...((vm as any).technicalTemplate.campos as any[])].sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0))
         : [];
@@ -387,6 +400,58 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         label="Código de Barras"
                         placeholder="EAN-13 / UPC"
                     />
+                </div>
+            )}
+
+            {productSections.codigos && (
+                <div className="col-span-1 md:col-span-2">
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Códigos de barra adicionales
+                        </label>
+                        <button
+                            type="button"
+                            onClick={addCodigoExtra}
+                            className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-full bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+                        >
+                            <Icon icon="mdi:plus" className="w-3.5 h-3.5" />
+                            Agregar código
+                        </button>
+                    </div>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2 leading-snug">
+                        Para el mismo producto que llega con distinto código de barras según el lote o la importación
+                        (ej. perfumes sellados). Al escanear cualquiera de estos códigos aparece este mismo producto,
+                        con el mismo precio y stock.
+                    </p>
+                    {codigosExtra.length === 0 ? (
+                        <p className="text-[11px] italic text-gray-400 dark:text-gray-600">
+                            Sin códigos adicionales. Usa “Agregar código” si un mismo perfume tiene varios EAN.
+                        </p>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            {codigosExtra.map((codigo, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <InputPro
+                                            autocomplete="off"
+                                            value={codigo}
+                                            name={`codigoBarrasExtra-${i}`}
+                                            onChange={(e: any) => updateCodigoExtra(i, e.target.value)}
+                                            placeholder="EAN-13 / UPC del otro lote"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeCodigoExtra(i)}
+                                        className="shrink-0 p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                        title="Quitar código"
+                                    >
+                                        <Icon icon="mdi:trash-can-outline" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

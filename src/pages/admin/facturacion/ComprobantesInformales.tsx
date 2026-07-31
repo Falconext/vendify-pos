@@ -33,6 +33,7 @@ import TableActionMenu from "@/components/TableActionMenu";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
 import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/comprobanteProductMapper";
+import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
 
 const ACCENT = '#7551FF';
 
@@ -86,6 +87,7 @@ const ComprobantesInformales = () => {
     const [stateInvoice, setStateInvoice] = useState<string>("TODOS");
     const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
     const [selectedUsuarioId, setSelectedUsuarioId] = useState<number | null>(null);
+    const [isOpenModalImportarNV, setIsOpenModalImportarNV] = useState(false);
     const [isOpenModalWhatsApp, setIsOpenModalWhatsApp] = useState(false);
     const [comprobanteWhatsApp, setComprobanteWhatsApp] = useState<any>(null);
     const [modalDefaultTab, setModalDefaultTab] = useState<'whatsapp' | 'email'>('whatsapp');
@@ -521,15 +523,26 @@ const ComprobantesInformales = () => {
                     <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Notas de venta</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Historial de notas de pedido</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'NV', defaultClient: 'CLIENTES_VARIOS' } })}
-                    className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
-                    style={{ background: ACCENT }}
-                >
-                    <Icon icon="solar:add-circle-bold" className="text-lg" />
-                    Nueva venta
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setIsOpenModalImportarNV(true)}
+                        className="h-11 px-4 rounded-2xl border border-violet-200 bg-white text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-violet-50 transition-all"
+                        style={{ color: ACCENT }}
+                    >
+                        <Icon icon="solar:import-bold-duotone" className="text-lg" />
+                        Importar histórico (Excel)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'NV', defaultClient: 'CLIENTES_VARIOS' } })}
+                        className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
+                        style={{ background: ACCENT }}
+                    >
+                        <Icon icon="solar:add-circle-bold" className="text-lg" />
+                        Nueva venta
+                    </button>
+                </div>
             </div>
 
             {/* Card contenedora */}
@@ -925,6 +938,27 @@ const ComprobantesInformales = () => {
                     );
                 })()}
             </TableActionMenu>
+
+            <ModalImportarNotaVentaLote
+                isOpen={isOpenModalImportarNV}
+                onClose={() => setIsOpenModalImportarNV(false)}
+                onSuccess={() => {
+                    const params: any = {
+                        tipoComprobante: "INFORMAL",
+                        page: currentPage,
+                        limit: itemsPerPage,
+                        search: debounce,
+                        fechaInicio: fechaInicio,
+                        fechaFin: fechaFin,
+                        ...(canFilterByUsuario && selectedUsuarioId ? { usuarioId: selectedUsuarioId } : {}),
+                        ...(effectiveSedeId ? { sedeId: effectiveSedeId } : {}),
+                    };
+                    if (stateInvoice !== "TODOS") {
+                        params.estadoPago = stateInvoice;
+                    }
+                    getAllInvoices(params);
+                }}
+            />
         </div>
     );
 

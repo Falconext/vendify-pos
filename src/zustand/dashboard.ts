@@ -26,6 +26,8 @@ export interface IDashboardState {
     getNewClientsByDate: (fechaInicio: string, fechaFin: string, sedeId?: number | null) => void
     overviewData: any;
     getOverview: (fechaInicio: string, fechaFin: string, sedeId?: number | null) => void
+    topPorCategoria: any;
+    getTopPorCategoria: (fechaInicio: string, fechaFin: string, opts?: { sedeId?: number | null; moneda?: string; categoriaId?: number | null; limit?: number }) => void
 }
 
 export const useDashboardStore = create<IDashboardState>()(devtools((set, _get) => ({
@@ -37,6 +39,24 @@ export const useDashboardStore = create<IDashboardState>()(devtools((set, _get) 
     totalAttendancePatients: 0,
     totalPaymentsMonth: 0,
     overviewData: null,
+    topPorCategoria: null,
+    getTopPorCategoria: async (fechaInicio, fechaFin, opts) => {
+        try {
+            const params = new URLSearchParams({ fechaInicio, fechaFin });
+            if (opts?.sedeId) params.append('sedeId', String(opts.sedeId));
+            if (opts?.moneda) params.append('moneda', opts.moneda);
+            if (opts?.categoriaId) params.append('categoriaId', String(opts.categoriaId));
+            if (opts?.limit) params.append('limit', String(opts.limit));
+            const resp: any = await get(`dashboard/top-productos-por-categoria?${params}`);
+            if (resp.code === 1) {
+                set({ topPorCategoria: resp.data }, false, "GET_TOP_POR_CATEGORIA");
+            } else {
+                set({ topPorCategoria: null });
+            }
+        } catch (error) {
+            set({ topPorCategoria: null });
+        }
+    },
     getOverview: async (fechaInicio: string, fechaFin: string, sedeId?: number | null) => {
         try {
             const params = new URLSearchParams({ fechaInicio, fechaFin });

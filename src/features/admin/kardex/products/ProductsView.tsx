@@ -118,8 +118,21 @@ export default function ProductsView() {
             return CAT_PALETTE[Math.abs(h) % CAT_PALETTE.length];
         };
 
+        // Ordenamiento por stock (client-side, solo la lista mostrada de la tabla).
+        // Los servicios (sin stock real) se envían al final en ambas direcciones.
+        const tableSource = vm.stockSort
+            ? [...productsSource].sort((a: any, b: any) => {
+                const esServicioA = String(a?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+                const esServicioB = String(b?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+                if (esServicioA && !esServicioB) return 1;
+                if (!esServicioA && esServicioB) return -1;
+                const diff = Number(a?.stock || 0) - Number(b?.stock || 0);
+                return vm.stockSort === 'asc' ? diff : -diff;
+            })
+            : productsSource;
+
         // Prepare table data for TablaFerreteria
-        const productsTable = productsSource.map((item) => {
+        const productsTable = tableSource.map((item) => {
             const itemAny = item as any;
             const unidadNombre =
                 item?.unidadMedida?.nombre ||
@@ -365,6 +378,9 @@ export default function ProductsView() {
                         pages={vm.pages}
                         setcurrentPage={actions.setcurrentPage}
                         setitemsPerPage={actions.setitemsPerPage}
+                        onSort={(key) => { if (key === 'Stock') actions.toggleStockSort(); }}
+                        sortColumn={vm.stockSort ? 'Stock' : undefined}
+                        sortDirection={vm.stockSort ?? undefined}
                     />
                 );
         }

@@ -92,7 +92,7 @@ export default function ResellerGanancias() {
                     </p>
                 </div>
 
-                <div className="lg:col-span-2 grid grid-cols-2 gap-6">
+                <div className="lg:col-span-2 grid grid-cols-2 gap-3 sm:gap-6">
                     <StatCard icon="solar:card-recive-bold-duotone" color="indigo" label="Ingreso mensual" value={fmt(r!.ingresoMensual)} hint={`${r!.clientesConPrecio} con precio · ${r!.clientesEstimados} estimados`} />
                     <StatCard icon="solar:card-send-bold-duotone" color="rose" label="Costo plataforma" value={fmt(r!.costoMensual)} hint="Lo que pagas por tus clientes" />
                     <StatCard icon="solar:wallet-money-bold-duotone" color="emerald" label="Ganancia mensual" value={fmt(r!.gananciaMensual)} hint={`Margen ${r!.margenPct.toFixed(1)}%`} />
@@ -291,11 +291,11 @@ function StatCard({ icon, color, label, value, hint }: { icon: string; color: st
         amber: 'bg-amber-50 text-amber-600',
     };
     return (
-        <div className="bg-white p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 flex items-center gap-4">
-            <div className={`p-3.5 rounded-2xl ${colorMap[color]}`}><Icon icon={icon} width="28" /></div>
-            <div className="min-w-0">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-4">
+            <div className={`p-2.5 sm:p-3.5 rounded-2xl ${colorMap[color]}`}><Icon icon={icon} width="28" /></div>
+            <div className="min-w-0 w-full">
                 <p className="text-xs font-medium text-slate-400">{label}</p>
-                <h3 className="text-xl font-bold text-slate-800 truncate">{value}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-800 truncate">{value}</h3>
                 {hint && <p className="text-[11px] text-slate-400 truncate">{hint}</p>}
             </div>
         </div>

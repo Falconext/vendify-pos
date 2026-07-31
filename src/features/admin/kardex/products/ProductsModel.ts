@@ -81,6 +81,7 @@ export const initialProductForm: IFormProduct = {
     laboratorio: "",
     // Campos Bodega/Supermercado
     codigoBarras: "",
+    codigosBarrasExtra: [],
     codProdSunat: "",
     unidadCompra: "",
     unidadVenta: "",

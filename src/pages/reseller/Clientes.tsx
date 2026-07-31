@@ -9,7 +9,6 @@ import Modal from '@/components/Modal';
 import ModalConfirm from '@/components/ModalConfirm';
 import useAlertStore from '@/zustand/alert';
 import InputPro from '@/components/InputPro';
-import Button from '@/components/Button';
 import { BRAND } from '@/lib/branding';
 import { useExtentionsStore } from '@/zustand/extentions';
 
@@ -92,6 +91,7 @@ const initialFormData = {
     distrito: '',
     ubigeo: '',
     rubroId: '',
+    producto: 'facturacion', // sistema: 'facturacion' | 'restaurante' | 'hotel'
     representa: '',
     email: '',
     telefono: '',
@@ -367,6 +367,12 @@ export default function ResellerClientes() {
     };
 
     const rubrosOptions = Array.isArray(rubros) ? rubros as any[] : [];
+    // Sistema/producto que correrá la empresa. 'restaurante' aprovisiona un tenant
+    // en el sistema dedicado falconext-restaurante; 'facturacion' vive en este POS.
+    const productoOptions = [
+        { id: 'facturacion', value: 'Facturación' },
+        { id: 'restaurante', value: 'Restaurante' },
+    ];
     const ubigeosOptions = (Array.isArray(ubigeos) ? ubigeos as any[] : []).map((u: any) => ({
         id: u.codigo,
         value: `${u.departamento} - ${u.provincia} - ${u.distrito}`,
@@ -704,8 +710,8 @@ export default function ResellerClientes() {
                 width="500px"
                 height="auto"
             >
-                <form onSubmit={handleEditSubmit}>
-                    <div className="p-5 grid grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleEditSubmit} className="flex flex-col min-h-[calc(100dvh-56px)] md:block md:min-h-0">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-5 grid grid-cols-2 gap-3 md:flex-none md:max-h-[70vh]">
                         <div className="col-span-2 grid grid-cols-[1fr_auto] items-end gap-2">
                             <InputPro isLabel label="RUC" name="ruc" value={editData.ruc} onChange={(e: any) => setEditData(prev => ({ ...prev, ruc: e.target.value }))} placeholder="20100100100" maxLength={11} />
                             <button type="button" onClick={handleSearchDocumentEdit} disabled={searchingDocEdit} className="h-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF]/10 px-4 text-sm font-bold text-[#7551FF] hover:bg-[#7551FF]/20 disabled:opacity-60">
@@ -783,8 +789,10 @@ export default function ResellerClientes() {
                                 readOnly={true}
                             />
                         </div>
-                        <InputPro isLabel label="Teléfono" name="telefono" value={editData.telefono} onChange={(e: any) => setEditData(prev => ({ ...prev, telefono: e.target.value }))} placeholder="999 999 999" />
-                        <InputPro isLabel label="Email Admin" name="adminEmail" type="email" value={editData.adminEmail} onChange={(e: any) => setEditData(prev => ({ ...prev, adminEmail: e.target.value }))} placeholder="admin@empresa.com" />
+                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <InputPro isLabel label="Teléfono" name="telefono" value={editData.telefono} onChange={(e: any) => setEditData(prev => ({ ...prev, telefono: e.target.value }))} placeholder="999 999 999" />
+                            <InputPro isLabel label="Email Admin" name="adminEmail" type="email" value={editData.adminEmail} onChange={(e: any) => setEditData(prev => ({ ...prev, adminEmail: e.target.value }))} placeholder="admin@empresa.com" />
+                        </div>
                         <div className="col-span-2">
                             <InputPro isLabel label="Nueva Contraseña (opcional)" name="adminPassword" type="password" value={editData.adminPassword} onChange={(e: any) => setEditData(prev => ({ ...prev, adminPassword: e.target.value }))} placeholder="Dejar vacío para no cambiar" />
                         </div>
@@ -922,9 +930,9 @@ export default function ResellerClientes() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-3 px-5 pb-5">
-                        <Button type="button" onClick={() => setIsEditModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
-                        <Button type="submit" color="primary" className="flex-1">Guardar Cambios</Button>
+                    <div className="sticky bottom-0 z-20 mt-auto flex gap-3 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
+                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
+                        <button type="submit" className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105">Guardar Cambios</button>
                     </div>
                 </form>
             </Modal>
@@ -939,7 +947,7 @@ export default function ResellerClientes() {
                 width="580px"
                 height="auto"
             >
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-56px)] md:block md:min-h-0">
                     <div className="flex gap-1 border-b border-slate-100 px-4 dark:border-slate-800">
                         {([
                             { id: 'empresa', label: 'Empresa', icon: 'solar:buildings-bold-duotone' },
@@ -958,7 +966,7 @@ export default function ResellerClientes() {
                         ))}
                     </div>
 
-                    <div className="p-5 max-h-[72vh] overflow-y-auto">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-5 md:flex-none md:max-h-[72vh]">
                         {activeTab === 'empresa' && (
                             <div className="space-y-5">
                                 {/* ── Sección: Datos de la empresa ── */}
@@ -971,7 +979,7 @@ export default function ResellerClientes() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="grid grid-cols-[1fr_auto] items-end gap-2">
                                                 <InputPro isLabel label="RUC" name="rut" value={formData.rut} onChange={handleChange as any} placeholder="20100100100" maxLength={11} />
                                                 <button type="button" onClick={handleSearchDocument} disabled={searchingDoc} className="h-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF]/10 px-4 text-sm font-bold text-[#7551FF] hover:bg-[#7551FF]/20 disabled:opacity-60">
@@ -1006,7 +1014,7 @@ export default function ResellerClientes() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Razón Social" name="razonSocial" value={formData.razonSocial} onChange={handleChange as any} placeholder="Empresa SAC" />
                                             <InputPro isLabel label="Nombre Comercial" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange as any} placeholder="Nombre visible" />
                                         </div>
@@ -1023,15 +1031,33 @@ export default function ResellerClientes() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange as any} placeholder="999 999 999" />
                                             <InputPro isLabel label="Representante" name="representa" value={formData.representa} onChange={handleChange as any} placeholder="Nombre del contacto" />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Dirección fiscal" name="direccion" value={formData.direccion} onChange={handleChange as any} placeholder="Dirección completa" />
                                             <Select label="Ubicación" name="ubigeo" value={formatUbigeoValue(formData)} options={ubigeosOptions} onChange={(id: any) => applyUbigeoToForm(id, 'create')} error={null} isSearch withLabel />
                                         </div>
-                                        <Select label="Rubro" name="rubroId" value={(rubros as any[]).find((r: any) => String(r.id) === String(formData.rubroId))?.value || ''} options={rubrosOptions} onChange={(id: any) => setFormData(prev => ({ ...prev, rubroId: String(id) }))} error={null} readOnly={true} />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <Select label="Sistema" name="producto" value={productoOptions.find((o) => o.id === formData.producto)?.value || ''} options={productoOptions} onChange={(id: any) => setFormData(prev => {
+                                                const next = { ...prev, producto: String(id) };
+                                                if (String(id) === 'restaurante') {
+                                                    // El rubro es evidente: se fija a "Restaurantes y comida" y se bloquea.
+                                                    const rubroResto = (rubros as any[]).find((r: any) => /restauran|comida/i.test(String(r.value ?? r.nombre ?? '')));
+                                                    if (rubroResto) next.rubroId = String(rubroResto.id);
+                                                } else {
+                                                    next.rubroId = '';
+                                                }
+                                                return next;
+                                            })} error={null} />
+                                            <Select label="Rubro" name="rubroId" value={(rubros as any[]).find((r: any) => String(r.id) === String(formData.rubroId))?.value || ''} options={rubrosOptions} onChange={(id: any) => setFormData(prev => ({ ...prev, rubroId: String(id) }))} error={null} disabled={formData.producto === 'restaurante'} />
+                                        </div>
+                                        {formData.producto === 'restaurante' && (
+                                            <p className="mt-2 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+                                                Al crear, la empresa se aprovisiona en el sistema Restaurante (backend dedicado). El administrador ingresará al panel de restaurante, no al POS de facturación.
+                                            </p>
+                                        )}
                                     </div>
                                 </section>
 
@@ -1044,11 +1070,11 @@ export default function ResellerClientes() {
                                             <p className="text-[11px] text-slate-400">Con estos datos el cliente inicia sesión.</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <InputPro isLabel label="Email (Admin)" name="email" type="email" value={formData.email} onChange={handleChange as any} placeholder="admin@empresa.com" />
                                         <InputPro isLabel label="Contraseña Inicial" name="password" value={formData.password} onChange={handleChange as any} placeholder="123456" />
                                     </div>
-                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-800/60">
                                             <span><strong className="block text-slate-700 text-xs dark:text-slate-100">Producción SUNAT</strong><span className="text-slate-400">Apagado = Demo</span></span>
                                             <input type="checkbox" checked={!formData.usaDemo} onChange={(e) => setFormData(prev => ({ ...prev, usaDemo: !e.target.checked }))} className="h-4 w-4 accent-[#7551FF]" />
@@ -1142,7 +1168,7 @@ export default function ResellerClientes() {
                                                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7551FF]/10 text-[#7551FF]">
                                                     <Icon icon="solar:tag-price-bold-duotone" width="18" />
                                                 </div>
-                                                <div className="flex items-center gap-4 flex-1">
+                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 flex-1">
                                                     <div className={`transition-opacity ${esAnual ? 'opacity-40' : ''}`}>
                                                         <div className="text-[10px] text-[#7551FF]/70 font-bold uppercase tracking-wide">Tu costo mensual</div>
                                                         <div className="text-lg font-black text-[#7551FF]">S/ {costoMensual.toFixed(2)}</div>
@@ -1231,8 +1257,10 @@ export default function ResellerClientes() {
                                         <div className="col-span-2">
                                             <InputPro isLabel label="Token API" name="billingApiToken" value={formData.billingApiToken} onChange={handleChange as any} placeholder="token (opcional si usas usuario/clave)" />
                                         </div>
-                                        <InputPro isLabel label="Usuario API" name="billingApiUser" value={formData.billingApiUser} onChange={handleChange as any} placeholder="usuario_api" />
-                                        <InputPro isLabel label="Clave API" name="billingApiPassword" type="password" value={formData.billingApiPassword} onChange={handleChange as any} placeholder="••••••••" />
+                                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <InputPro isLabel label="Usuario API" name="billingApiUser" value={formData.billingApiUser} onChange={handleChange as any} placeholder="usuario_api" />
+                                            <InputPro isLabel label="Clave API" name="billingApiPassword" type="password" value={formData.billingApiPassword} onChange={handleChange as any} placeholder="••••••••" />
+                                        </div>
                                     </>
                                 )}
                             </div>
@@ -1240,13 +1268,13 @@ export default function ResellerClientes() {
                         {activeTab === 'series' && (
                             <div className="space-y-3">
                                 {seriesData.map((item, index) => (
-                                    <div key={item.tipoDoc} className="grid grid-cols-[1fr_110px_110px_40px] items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-800">{item.nombre}</p>
+                                    <div key={item.tipoDoc} className="grid grid-cols-[minmax(0,1fr)_72px_72px_36px] sm:grid-cols-[1fr_110px_110px_40px] items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-800">{item.nombre}</p>
                                             <p className="text-[11px] text-slate-400">Tipo {item.tipoDoc}</p>
                                         </div>
-                                        <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold uppercase" value={item.serie} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, serie: e.target.value.toUpperCase() } : s))} />
-                                        <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm" type="number" min={1} value={item.correlativo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, correlativo: Number(e.target.value || 1) } : s))} />
+                                        <input className="w-full min-w-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 text-sm font-bold uppercase" value={item.serie} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, serie: e.target.value.toUpperCase() } : s))} />
+                                        <input className="w-full min-w-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 text-sm" type="number" min={1} value={item.correlativo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, correlativo: Number(e.target.value || 1) } : s))} />
                                         <input type="checkbox" checked={item.activo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, activo: e.target.checked } : s))} className="h-5 w-5 accent-[#7551FF]" />
                                     </div>
                                 ))}
@@ -1255,7 +1283,7 @@ export default function ResellerClientes() {
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-2 px-5 pb-5">
+                    <div className="sticky bottom-0 z-20 mt-auto flex flex-col gap-2 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
                         {(() => {
                             const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
                             const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesActivos || 0) + 1) : 0;
@@ -1271,8 +1299,8 @@ export default function ResellerClientes() {
                                         </div>
                                     )}
                                     <div className="flex gap-3">
-                                        <Button type="button" onClick={() => setIsModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
-                                        <Button type="submit" color="primary" className="flex-1" disabled={saldoInsuf}>Crear Cliente</Button>
+                                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
+                                        <button type="submit" disabled={saldoInsuf} className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">Crear Cliente</button>
                                     </div>
                                 </>
                             );

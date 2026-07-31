@@ -277,6 +277,24 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 </div>
                             </div>
                         )}
+
+                        {/* Descontar stock: solo para Nota de Pedido */}
+                        {vm.formValues.tipoDoc === 'NP' && (
+                            <label className="mt-3 flex items-start gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={vm.descontarStockNP}
+                                    onChange={(e) => vm.setDescontarStockNP(e.target.checked)}
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-slate-700 text-gray-900 focus:ring-gray-900"
+                                />
+                                <span className="text-xs text-gray-700 dark:text-gray-300">
+                                    Descontar del stock ahora
+                                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">
+                                        Si lo dejas sin marcar, el stock recién baja al convertir el pedido en boleta/factura.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
                     </div>
                 )}
             </div>

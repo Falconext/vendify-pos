@@ -19,6 +19,9 @@ const DataTable: FC<IDataTableProps> = ({
     actions,
     isCompact,
     pageSize,
+    onSort,
+    sortColumn,
+    sortDirection,
 }: any) => {
     const [data, setData] = useState(Array.isArray(bodyData) ? bodyData : []);
     const [currentPage, setCurrentPage] = useState(1);
@@ -103,6 +106,10 @@ const DataTable: FC<IDataTableProps> = ({
         setData(sortedData);
         setCurrentPage(1);
     };
+
+    // Ordenamiento controlado por el padre (opt-in). Si no se pasa `onSort`,
+    // se conserva el ordenamiento interno por defecto (retrocompatible).
+    const effectiveSort = typeof onSort === 'function' ? onSort : handleSort;
 
     // ── Pagination ──────────────────────────────────────────────────
     const totalItems = data?.length ?? 0;
@@ -203,8 +210,10 @@ const DataTable: FC<IDataTableProps> = ({
                                 <TableHeader
                                     columns={safeResolvedColumns}
                                     colorFont={colorFont}
-                                    onSort={handleSort}
+                                    onSort={effectiveSort}
                                     actions={actions}
+                                    sortColumn={sortColumn}
+                                    sortDirection={sortDirection}
                                 />
                                 <TableBody
                                     formValues={formValues}

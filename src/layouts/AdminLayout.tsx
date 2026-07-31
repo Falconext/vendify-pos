@@ -280,7 +280,7 @@ export default function AdminLayout() {
   };
 
   const theme = {
-    mainPadding: 'p-5',
+    mainPadding: 'p-3 sm:p-5',
 
     get sidebarBg() {
       switch (sidebarType) {

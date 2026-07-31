@@ -53,8 +53,9 @@ const ModulosPage = () => {
     const stats = [
         { label: 'Total módulos', value: vm.modulos.length, icon: 'solar:widget-bold-duotone', chip: 'bg-violet-50 text-violet-600' },
         { label: 'Activos', value: vm.modulos.filter(m => m.activo).length, icon: 'solar:check-circle-bold-duotone', chip: 'bg-emerald-50 text-emerald-600' },
-        { label: 'Facturación', value: vm.modulos.filter(m => m.producto !== 'hotel').length, icon: 'solar:bill-list-bold-duotone', chip: 'bg-blue-50 text-blue-600' },
+        { label: 'Facturación', value: vm.modulos.filter(m => m.producto !== 'hotel' && m.producto !== 'restaurante').length, icon: 'solar:bill-list-bold-duotone', chip: 'bg-blue-50 text-blue-600' },
         { label: 'Hotel', value: vm.modulos.filter(m => m.producto === 'hotel').length, icon: 'solar:bed-bold-duotone', chip: 'bg-amber-50 text-amber-600' },
+        { label: 'Restaurante', value: vm.modulos.filter(m => m.producto === 'restaurante').length, icon: 'solar:cup-hot-bold-duotone', chip: 'bg-emerald-50 text-emerald-600' },
     ];
 
     return (
@@ -82,6 +83,7 @@ const ModulosPage = () => {
                                 { id: '' as const, label: 'Todos', icon: 'solar:layers-bold-duotone' },
                                 { id: 'facturacion' as const, label: 'Facturación', icon: 'solar:bill-list-bold-duotone' },
                                 { id: 'hotel' as const, label: 'Hotel', icon: 'solar:bed-bold-duotone' },
+                                { id: 'restaurante' as const, label: 'Restaurante', icon: 'solar:cup-hot-bold-duotone' },
                             ]).map((item) => {
                                 const active = vm.productoFiltro === item.id;
                                 return (
@@ -342,6 +344,7 @@ const ModulosPage = () => {
                                 {([
                                     { id: 'facturacion', label: 'Facturación', icon: 'solar:bill-list-bold-duotone', color: '#0EA5E9' },
                                     { id: 'hotel', label: 'Hotel', icon: 'solar:bed-bold-duotone', color: '#F59E0B' },
+                                    { id: 'restaurante', label: 'Restaurante', icon: 'solar:cup-hot-bold-duotone', color: '#10B981' },
                                 ] as const).map((product) => {
                                     const selected = (vm.form.producto || 'facturacion') === product.id;
                                     return (

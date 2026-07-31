@@ -186,7 +186,7 @@ const Trend = ({ trend }: { trend: number }) => {
 export default function AdminIndex() {
   const navigate = useNavigate()
   const { auth, sedeActiva } = useAuthStore()
-  const { overviewData, getOverview }: IDashboardState = useDashboardStore()
+  const { overviewData, getOverview, topPorCategoria, getTopPorCategoria }: IDashboardState = useDashboardStore()
   const { showModal, tourStep, startTour, skipTour, nextStep, prevStep, endTour } = useWelcomeTour(auth)
 
   const rubroUI = useMemo(() => resolveRubroUI(auth?.empresa?.rubro?.nombre), [auth?.empresa?.rubro?.nombre])
@@ -203,6 +203,10 @@ export default function AdminIndex() {
   const effectiveSedeId = sedeActiva?.id ?? null
   const [ovLoading, setOvLoading] = useState(true)
 
+  // "Productos Más Vendidos por Categoría" — segmento moneda + selector de categoría
+  const [catMoneda, setCatMoneda] = useState<'PEN' | 'USD'>('PEN')
+  const [catSelId, setCatSelId] = useState<number | null>(null)
+
   useEffect(() => {
     let alive = true
     setOvLoading(true)
@@ -212,6 +216,15 @@ export default function AdminIndex() {
     })()
     return () => { alive = false }
   }, [fechaInicio, fechaFin, effectiveSedeId, getOverview])
+
+  useEffect(() => {
+    getTopPorCategoria(fechaInicio, fechaFin, {
+      sedeId: effectiveSedeId,
+      moneda: catMoneda,
+      categoriaId: catSelId,
+      limit: 5,
+    })
+  }, [fechaInicio, fechaFin, effectiveSedeId, catMoneda, catSelId, getTopPorCategoria])
 
   const kpis = overviewData?.kpis ?? { ventas: { value: 0, trend: 0 }, pedidos: { value: 0, trend: 0 }, clientes: { value: 0, trend: 0 }, conversion: { value: 0, trend: 0 } }
   const financiero = overviewData?.financiero ?? { ingresos: { value: 0, trend: 0 }, gastos: { value: 0, trend: 0 }, ganancias: { value: 0, trend: 0 }, margen: 0 }
@@ -241,6 +254,7 @@ export default function AdminIndex() {
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', ring: 'ring-amber-100' },
     violet: { bg: 'bg-violet-50', text: 'text-violet-600', ring: 'ring-violet-100' },
     sky: { bg: 'bg-sky-50', text: 'text-sky-600', ring: 'ring-sky-100' },
+    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', ring: 'ring-emerald-100' },
   }
 
   // ── Tabla de comprobantes (sección inferior) ──
@@ -564,6 +578,106 @@ export default function AdminIndex() {
             <p className="py-6 text-center text-sm text-slate-400">Sin productos vendidos en este periodo</p>
           )}
         </div>
+      </div>
+
+      {/* ── Resumen financiero ── */}
+      <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 mb-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-extrabold text-slate-800">Resumen financiero</h3>
+          <span className="text-xs text-slate-400">{periodLabel}</span>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { key: 'ingresos', label: 'Ingresos', value: financiero.ingresos?.value ?? 0, trend: financiero.ingresos?.trend ?? 0, icon: 'solar:wallet-money-bold-duotone', tone: 'violet', invert: false },
+            { key: 'compras', label: 'Compras', value: financiero.compras?.value ?? 0, trend: financiero.compras?.trend ?? 0, icon: 'solar:cart-large-2-bold-duotone', tone: 'amber', invert: true },
+            { key: 'gastos', label: 'Gastos', value: financiero.gastos?.value ?? 0, trend: financiero.gastos?.trend ?? 0, icon: 'solar:bill-list-bold-duotone', tone: 'rose', invert: true },
+            { key: 'ganancias', label: 'Ganancias', value: financiero.ganancias?.value ?? 0, trend: financiero.ganancias?.trend ?? 0, icon: 'solar:chart-square-bold-duotone', tone: 'emerald', invert: false },
+          ].map((f) => {
+            const t = toneMap[f.tone] ?? toneMap.violet
+            return (
+              <div key={f.key} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div className={`h-9 w-9 grid place-items-center rounded-xl ${t.bg} ${t.text}`}>
+                    <Icon icon={f.icon} className="text-lg" />
+                  </div>
+                  {!ovLoading && <Trend trend={f.invert ? -f.trend : f.trend} />}
+                </div>
+                <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{f.label}</p>
+                <p className="mt-0.5 text-lg font-extrabold text-slate-800 truncate">{formatMoney(f.value)}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Productos más vendidos por categoría ── */}
+      <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 mb-4">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-sm font-extrabold text-slate-800">Productos más vendidos por categoría</h3>
+          <div className="flex items-center gap-2.5">
+            {/* Segmento moneda: General (S/) vs Exportación (US$) */}
+            <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
+              <button onClick={() => setCatMoneda('PEN')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'PEN' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                style={catMoneda === 'PEN' ? { background: ACCENT } : undefined}>
+                General (S/)
+              </button>
+              <button onClick={() => setCatMoneda('USD')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'USD' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                style={catMoneda === 'USD' ? { background: ACCENT } : undefined}>
+                Exportación (US$)
+              </button>
+            </div>
+            {/* Selector de categoría */}
+            <select value={catSelId ?? 0} onChange={(e) => setCatSelId(Number(e.target.value) || null)}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 focus:outline-none focus:border-[var(--accent)]">
+              <option value={0}>Todas las categorías</option>
+              {(topPorCategoria?.categorias ?? []).map((c: any) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {(!topPorCategoria || (topPorCategoria.grupos ?? []).length === 0) ? (
+          <p className="py-8 text-center text-sm text-slate-400">
+            No hay productos vendidos en {catMoneda === 'USD' ? 'Exportación (US$)' : 'General (S/)'} para este periodo
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {(topPorCategoria.grupos ?? []).map((g: any) => {
+              const maxVal = g.productos[0]?.total || 1
+              return (
+                <div key={g.categoriaId} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="truncate text-sm font-bold text-slate-800 pr-2">{g.categoriaNombre}</h4>
+                    <span className="shrink-0 text-xs font-bold text-slate-500">{money(g.total, topPorCategoria.moneda)}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {g.productos.map((p: any, i: number) => {
+                      const pct = ((p.total || 0) / maxVal) * 100
+                      const color = SERIES[i % SERIES.length]
+                      return (
+                        <div key={p.productoId || i}>
+                          <div className="mb-1 flex items-baseline justify-between gap-2">
+                            <span className="truncate text-[13px] font-semibold text-slate-700 pr-2">{p.producto?.descripcion || 'Producto sin nombre'}</span>
+                            <span className="shrink-0 text-[13px] font-bold text-slate-600">{money(p.total, topPorCategoria.moneda)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                            </div>
+                            <span className="w-14 shrink-0 text-right text-[11px] font-medium text-slate-400">{p.cantidad ?? 0} u.</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Comprobantes recientes (tabla) ── */}

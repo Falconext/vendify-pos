@@ -19,6 +19,7 @@ interface Empresa {
   esAgenteRetencion?: boolean;
   usaCodigoBarrasManual?: boolean | null;
   usarPrecioLoteFefo?: boolean | null;
+  permitirVentaSinStock?: boolean | null;
   brand?: string;
   producto?: string;
   providerId?: string;
@@ -109,6 +110,7 @@ interface CreateEmpresaDto {
   providerToken?: string;
   usaDemo?: boolean;
   usarPrecioLoteFefo?: boolean;
+  permitirVentaSinStock?: boolean;
   brand?: string;
   producto?: string;
   usuarioPse?: string;
@@ -158,6 +160,7 @@ interface UpdateEmpresaDto {
   esAgenteRetencion?: boolean;
   usaCodigoBarrasManual?: boolean;
   usarPrecioLoteFefo?: boolean;
+  permitirVentaSinStock?: boolean;
   ticketLogoSize?: number;
   directorTecnico?: string;
   brand?: string;
@@ -188,7 +191,7 @@ interface ListEmpresaDto {
   estado?: 'ACTIVO' | 'INACTIVO' | 'TODOS';
   tipoEmpresa?: 'FORMAL' | 'INFORMAL' | '';
   brand?: string;
-  producto?: 'facturacion' | 'hotel';
+  producto?: 'facturacion' | 'hotel' | 'restaurante';
 }
 
 interface EmpresasListResponse {
