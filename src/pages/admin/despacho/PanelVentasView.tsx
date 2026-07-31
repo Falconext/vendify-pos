@@ -656,7 +656,9 @@ export default function PanelVentasView() {
                 <div className="min-w-0">
                     <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Panel de Ventas</h1>
                     <p className="text-sm text-slate-400 mt-0.5">
-                        Resumen del día seleccionado y deuda pendiente acumulada.
+                        {vm.fechaFin && vm.fechaFin > vm.fecha
+                            ? 'Resumen del rango seleccionado y deuda pendiente acumulada.'
+                            : 'Resumen del día seleccionado y deuda pendiente acumulada.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -672,6 +674,24 @@ export default function PanelVentasView() {
                         onChange={(e) => vm.setFecha(e.target.value)}
                         className="h-11 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
                     />
+                    <span className="text-xs font-semibold text-slate-400">hasta</span>
+                    <input
+                        type="date"
+                        value={vm.fechaFin}
+                        min={vm.fecha}
+                        onChange={(e) => vm.setFechaFin(e.target.value)}
+                        title="Fecha final del rango (opcional) — déjalo vacío para ver un solo día"
+                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
+                    />
+                    {vm.fechaFin && (
+                        <button
+                            onClick={() => vm.setFechaFin('')}
+                            className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 bg-white text-slate-400 hover:text-rose-500 transition-colors"
+                            title="Quitar rango (volver a un solo día)"
+                        >
+                            <Icon icon="solar:close-circle-linear" className="text-lg" />
+                        </button>
+                    )}
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
                         className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 bg-white text-slate-400 hover:text-slate-600 transition-colors"
@@ -686,6 +706,24 @@ export default function PanelVentasView() {
                     >
                         <Icon icon="solar:refresh-linear" className={vm.loading ? 'animate-spin text-lg' : 'text-lg'} />
                         <span className="hidden sm:inline">Actualizar</span>
+                    </button>
+                    <button
+                        onClick={() => vm.exportarResumen('pdf')}
+                        disabled={vm.exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-500 flex items-center gap-1.5 hover:bg-rose-50 transition-all disabled:opacity-50"
+                        title="Exportar el rango en PDF imprimible"
+                    >
+                        <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" />
+                        PDF
+                    </button>
+                    <button
+                        onClick={() => vm.exportarResumen('excel')}
+                        disabled={vm.exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-emerald-200 bg-white text-sm font-bold text-emerald-600 flex items-center gap-1.5 hover:bg-emerald-50 transition-all disabled:opacity-50"
+                        title="Exportar el rango en Excel"
+                    >
+                        <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
+                        Excel
                     </button>
                 </div>
             </div>

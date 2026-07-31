@@ -34,6 +34,7 @@ import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
 import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/comprobanteProductMapper";
 import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
+import apiClient from "@/utils/apiClient";
 
 const ACCENT = '#7551FF';
 
@@ -341,6 +342,40 @@ const ComprobantesInformales = () => {
         getAllInvoices(params);
     }, [debounce, currentPage, itemsPerPage, fechaInicio, fechaFin, stateInvoice, effectiveSedeId, selectedUsuarioId, canFilterByUsuario]);
 
+    // Exporta el listado filtrado (rango de fechas/estado/sede/vendedor) en PDF o Excel
+    const [exportando, setExportando] = useState<'pdf' | 'excel' | null>(null);
+    const handleExportarResumen = async (formato: 'pdf' | 'excel') => {
+        if (exportando) return;
+        setExportando(formato);
+        try {
+            const params = new URLSearchParams({
+                tipoComprobante: 'INFORMAL',
+                fechaInicio,
+                fechaFin,
+                formato,
+            });
+            if (stateInvoice !== 'TODOS') params.set('estadoPago', stateInvoice);
+            if (effectiveSedeId) params.set('sedeId', String(effectiveSedeId));
+            if (canFilterByUsuario && selectedUsuarioId) params.set('usuarioId', String(selectedUsuarioId));
+
+            const resp = await apiClient.get(`/comprobante/exportar-resumen?${params.toString()}`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([resp.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `notas_de_venta_${fechaInicio}_a_${fechaFin}.${formato === 'pdf' ? 'pdf' : 'xlsx'}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e: any) {
+            useAlertStore.getState().alert('No se pudo exportar: verifica que existan ventas en el rango seleccionado', 'error');
+        } finally {
+            setExportando(null);
+        }
+    };
+
     const ruc = "204812192919";
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
 
@@ -524,6 +559,24 @@ const ComprobantesInformales = () => {
                     <p className="text-sm text-slate-400 mt-0.5">Historial de notas de pedido</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => handleExportarResumen('pdf')}
+                        disabled={exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-500 flex items-center justify-center gap-1.5 hover:bg-rose-50 transition-all disabled:opacity-50"
+                    >
+                        <Icon icon={exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" />
+                        Exportar PDF
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleExportarResumen('excel')}
+                        disabled={exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-emerald-200 bg-white text-sm font-bold text-emerald-600 flex items-center justify-center gap-1.5 hover:bg-emerald-50 transition-all disabled:opacity-50"
+                    >
+                        <Icon icon={exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
+                        Exportar Excel
+                    </button>
                     <button
                         type="button"
                         onClick={() => setIsOpenModalImportarNV(true)}

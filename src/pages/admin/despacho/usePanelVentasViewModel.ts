@@ -84,6 +84,8 @@ export function usePanelVentasViewModel() {
     const { alert } = useAlertStore();
 
     const [fecha, setFecha] = useState(() => moment().format('YYYY-MM-DD'));
+    // Fin del rango (opcional). Vacío = panel de un solo día (comportamiento original).
+    const [fechaFin, setFechaFin] = useState('');
     const [items, setItems] = useState<VentaPanelItem[]>([]);
     const [porCobrarGlobal, setPorCobrarGlobal] = useState({ total: 0, cantidad: 0 });
     const [loading, setLoading] = useState(true);
@@ -101,6 +103,8 @@ export function usePanelVentasViewModel() {
         setLoading(true);
         try {
             const params = new URLSearchParams({ fecha });
+            // Rango: solo se envía si el usuario eligió una fecha final posterior
+            if (fechaFin && fechaFin > fecha) params.set('fechaFin', fechaFin);
             // Admins on the principal sede see all sedes; everyone else filters by their sede
             if (sedeActiva?.id && !esPrincipalAdmin) params.set('sedeId', String(sedeActiva.id));
             if (canFilterByUsuario && filtroUsuarioId) params.set('usuarioId', String(filtroUsuarioId));
@@ -118,7 +122,7 @@ export function usePanelVentasViewModel() {
         } finally {
             setLoading(false);
         }
-    }, [fecha, sedeActiva?.id, esPrincipalAdmin, filtroUsuarioId, canFilterByUsuario, alert]);
+    }, [fecha, fechaFin, sedeActiva?.id, esPrincipalAdmin, filtroUsuarioId, canFilterByUsuario, alert]);
 
     useEffect(() => { cargar(); }, [cargar]);
 
@@ -209,8 +213,43 @@ export function usePanelVentasViewModel() {
     const totalVentas = useMemo(() => ventasFinales.reduce((s, i) => s + (i.total ?? 0), 0), [ventasFinales]);
     const totalPorCobrar = useMemo(() => ventasFinales.reduce((s, i) => s + (i.saldo ?? 0), 0), [ventasFinales]);
 
+    // Exporta el rango visible del panel en PDF o Excel (resumen para cierre de mes)
+    const [exportando, setExportando] = useState<'pdf' | 'excel' | null>(null);
+    const exportarResumen = useCallback(async (formato: 'pdf' | 'excel') => {
+        setExportando(formato);
+        try {
+            const hasta = fechaFin && fechaFin > fecha ? fechaFin : fecha;
+            const params = new URLSearchParams({
+                tipoComprobante: 'TODOS',
+                fechaInicio: fecha,
+                fechaFin: hasta,
+                formato,
+            });
+            if (sedeActiva?.id && !esPrincipalAdmin) params.set('sedeId', String(sedeActiva.id));
+            if (canFilterByUsuario && filtroUsuarioId) params.set('usuarioId', String(filtroUsuarioId));
+            const resp = await apiClient.get(`/comprobante/exportar-resumen?${params.toString()}`, {
+                responseType: 'blob',
+                timeout: 60_000,
+            });
+            const url = window.URL.createObjectURL(new Blob([resp.data as any]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `ventas_${fecha}_a_${hasta}.${formato === 'pdf' ? 'pdf' : 'xlsx'}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('No se pudo exportar: verifica que existan ventas en el rango seleccionado', 'error');
+        } finally {
+            setExportando(null);
+        }
+    }, [fecha, fechaFin, sedeActiva?.id, esPrincipalAdmin, filtroUsuarioId, canFilterByUsuario, alert]);
+
     return {
         fecha, setFecha,
+        fechaFin, setFechaFin,
+        exportando, exportarResumen,
         items, filtrados,
         loading,
         tab, setTab,
