@@ -19,6 +19,8 @@ export interface VentaPanelItem {
     referencia: string;
     fecha: string;
     clienteDoc: string;
+    clienteTelefono: string;
+    clienteEmail: string;
     seriesGarantia: string[];
     cliente: string;
     total: number;
