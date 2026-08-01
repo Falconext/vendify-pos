@@ -44,6 +44,8 @@ export const FacturacionNuevoView = () => {
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle(localDimensions),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo del comprobante
+        documentTitle: vm.dataReceipt?.serie ? `${vm.dataReceipt.serie}-${vm.dataReceipt.correlativo}` : undefined,
     });
 
     useEffect(() => {

@@ -178,6 +178,8 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle(dim),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo del comprobante
+        documentTitle: comprobante?.serie ? `${comprobante.serie}-${comprobante.correlativo}` : undefined,
     });
 
     useEffect(() => {

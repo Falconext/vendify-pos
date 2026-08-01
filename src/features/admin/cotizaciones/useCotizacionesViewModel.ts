@@ -148,6 +148,8 @@ export function useCotizacionesViewModel() {
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle(dimensions),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo de la cotización
+        documentTitle: (invoice as any)?.serie ? `${(invoice as any).serie}-${(invoice as any).correlativo}` : undefined,
     });
 
     useEffect(() => {

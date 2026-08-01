@@ -83,6 +83,8 @@ const GuiaRemision = () => {
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle({ width: 210, height: 297 }),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo de la guía
+        documentTitle: guiaToPrint?.serie ? `${guiaToPrint.serie}-${guiaToPrint.correlativo}` : undefined,
     });
 
     const handlePrint = (guia: any) => {

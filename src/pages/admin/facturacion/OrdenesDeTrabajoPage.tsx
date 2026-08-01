@@ -254,6 +254,8 @@ const OrdenesDeTrabajoPage = () => {
   const printFn = useReactToPrint({
     contentRef: componentRef as any,
     pageStyle: buildComprobantePrintPageStyle(dimensions),
+    // Nombre sugerido al "Guardar como PDF": serie-correlativo de la OT
+    documentTitle: (invoice as any)?.serie ? `${(invoice as any).serie}-${(invoice as any).correlativo}` : undefined,
   });
 
   const handleDate = (date: string, name: string) => {

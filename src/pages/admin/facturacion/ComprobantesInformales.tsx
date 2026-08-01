@@ -439,6 +439,8 @@ const ComprobantesInformales = () => {
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle(dimensions),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo del comprobante
+        documentTitle: invoice?.serie ? `${invoice.serie}-${invoice.correlativo}` : undefined,
     });
 
     useEffect(() => {
