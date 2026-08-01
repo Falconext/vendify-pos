@@ -3,6 +3,7 @@ import { useEmpresasStore } from '@/zustand/empresas';
 import useAlertStore from '@/zustand/alert';
 import { useDebounce } from '@/hooks/useDebounce';
 import { post } from '@/utils/fetch';
+import apiClient from '@/utils/apiClient';
 
 const DAY_MS = 86400000;
 
@@ -74,6 +75,35 @@ export const useEmpresaIndexViewModel = (): any => {
     useEffect(() => {
         listarEmpresas({ search: debounceSearch, page: currentPageState, limit: itemsPerPage, sort: 'id', order: 'desc', estado: estadoFiltro, tipoEmpresa: tipoFiltro });
     }, [debounceSearch, currentPageState, itemsPerPage, estadoFiltro, tipoFiltro]);
+
+    // Exporta el listado filtrado de empresas en PDF o Excel
+    const [exportando, setExportando] = useState<'pdf' | 'excel' | null>(null);
+    const exportarEmpresas = async (formato: 'pdf' | 'excel') => {
+        if (exportando) return;
+        setExportando(formato);
+        try {
+            const params = new URLSearchParams({ formato });
+            if (debounceSearch) params.set('search', debounceSearch);
+            if (estadoFiltro !== 'TODOS') params.set('estado', estadoFiltro);
+            if (tipoFiltro) params.set('tipoEmpresa', tipoFiltro);
+            const resp = await apiClient.get(`/empresa/exportar?${params.toString()}`, {
+                responseType: 'blob',
+                timeout: 60_000,
+            });
+            const url = window.URL.createObjectURL(new Blob([resp.data as any]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `empresas.${formato === 'pdf' ? 'pdf' : 'xlsx'}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            useAlertStore.getState().alert('No se pudo exportar el listado de empresas', 'error');
+        } finally {
+            setExportando(null);
+        }
+    };
 
     useEffect(() => { if (success === true) { setIsOpenModalConfirm(false); setSelectedEmpresa(null); } }, [success]);
 
@@ -177,5 +207,5 @@ export const useEmpresaIndexViewModel = (): any => {
         })
         : empresasTable;
 
-    return { empresas, empresasTable: empresasTableFiltradas, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp };
+    return { exportando, exportarEmpresas, empresas, empresasTable: empresasTableFiltradas, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp };
 };

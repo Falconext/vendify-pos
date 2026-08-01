@@ -136,6 +136,22 @@ const EmpresasIndex = () => {
               </button>
             )}
           </div>
+          <button
+            onClick={() => vm.exportarEmpresas('pdf')}
+            disabled={vm.exportando !== null}
+            className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-500 flex items-center gap-1.5 hover:bg-rose-50 transition-all disabled:opacity-50 shrink-0"
+            title="Exportar el listado filtrado en PDF"
+          >
+            <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" /> <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            onClick={() => vm.exportarEmpresas('excel')}
+            disabled={vm.exportando !== null}
+            className="h-11 px-4 rounded-2xl border border-emerald-200 bg-white text-sm font-bold text-emerald-600 flex items-center gap-1.5 hover:bg-emerald-50 transition-all disabled:opacity-50 shrink-0"
+            title="Exportar el listado filtrado en Excel"
+          >
+            <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" /> <span className="hidden sm:inline">Excel</span>
+          </button>
           <button onClick={openCreate}
             className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
             style={{ background: ACCENT }}>
