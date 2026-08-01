@@ -133,7 +133,19 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
 
                 {vm.showFreeQuoteItemForm && (
                     <div className="mb-4 rounded-2xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/10 p-3">
-                        <div className="flex flex-col lg:flex-row gap-2">
+                        <div className="flex flex-col gap-2">
+                            {/* El nombre del ítem es el dato principal: fila propia a todo el ancho */}
+                            <input
+                                value={vm.freeQuoteItem.descripcion}
+                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, descripcion: e.target.value }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
+                                }}
+                                autoFocus
+                                placeholder="Nombre del producto o servicio — Ej: Instalación de Windows, mantenimiento, producto a pedido..."
+                                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
+                            />
+                            <div className="flex flex-col lg:flex-row gap-2">
                             <div className="flex rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-1">
                                 {(['SERVICIO', 'PRODUCTO'] as const).map((tipo) => (
                                     <button
@@ -174,15 +186,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                             >
                                 Anticipo
                             </button>
-                            <input
-                                value={vm.freeQuoteItem.descripcion}
-                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, descripcion: e.target.value }))}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
-                                }}
-                                placeholder="Ej: Instalación de Windows, mantenimiento, producto a pedido..."
-                                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
-                            />
+                            <div className="flex-1" />
                             <input
                                 type="number"
                                 min="0.001"
@@ -221,6 +225,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                 >
                                     <Icon icon="solar:close-circle-bold-duotone" className="text-lg" />
                                 </button>
+                            </div>
                             </div>
                         </div>
                         <p className="mt-2 text-xs text-violet-700/80 dark:text-violet-300/80 font-semibold">
