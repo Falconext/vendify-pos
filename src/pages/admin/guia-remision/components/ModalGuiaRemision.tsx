@@ -838,7 +838,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                                                     ? 'border-emerald-500 bg-emerald-500 text-white'
                                                     : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-400'}`}>
                                             {currentStep > step.id
-                                                ? <Icon icon="solar:check-bold" />
+                                                ? <Icon icon="mdi:check" className="text-lg" />
                                                 : step.id}
                                         </div>
                                         <span className={`mt-1 text-[10px] font-semibold hidden sm:block whitespace-nowrap transition-colors

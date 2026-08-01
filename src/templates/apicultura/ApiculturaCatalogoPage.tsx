@@ -223,7 +223,7 @@ export default function ApiculturaCatalogoPage({
                     return (
                       <label key={`${name}-${index}`} className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-500">
                         <span className="flex h-4 w-4 items-center justify-center border border-gray-200 bg-white">
-                          {checked && <Icon icon="solar:check-bold" width={12} className="text-black" />}
+                          {checked && <Icon icon="mdi:check" width={12} className="text-black" />}
                         </span>
                         <input type="checkbox" checked={checked} onChange={() => toggleCategory(name)} className="hidden" />
                         <span>{name}{count > 0 ? ` (${count})` : ''}</span>
@@ -272,7 +272,7 @@ export default function ApiculturaCatalogoPage({
                     return (
                       <label key={`${name}-${index}`} className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-500">
                         <span className="flex h-4 w-4 items-center justify-center border border-gray-200 bg-white">
-                          {checked && <Icon icon="solar:check-bold" width={12} className="text-black" />}
+                          {checked && <Icon icon="mdi:check" width={12} className="text-black" />}
                         </span>
                         <input type="checkbox" checked={checked} onChange={() => toggleBrand(name)} className="hidden" />
                         <span>{name}{count > 0 ? ` (${count})` : ''}</span>
