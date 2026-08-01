@@ -9,6 +9,7 @@ import ProductCardXtra from '@/components/tienda/ProductCardXtra';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { withPricing, withPricingList } from '@/templates/shared/pricing';
 import TiendaFloatingButtons from '@/components/tienda/TiendaFloatingButtons';
+import { parsePastedPairs } from '@/lib/pastedSpecs';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -169,6 +170,34 @@ export default function TecnologiaProductoDetalle() {
     const discountPct = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
     const marca = producto.marca?.nombre || producto.marca || 'Tech';
     const categoria = producto.categoria?.nombre || producto.categoria || 'Tecnología';
+
+    // Especificaciones/destacados cargados desde el admin (misma lógica que la plantilla Maye):
+    // el texto "pegado" tiene prioridad; si no existe, se arma con características + ficha técnica.
+    const fichaTecnica = (producto as any)?.fichaTecnica;
+    const pastedEspec = parsePastedPairs((producto as any)?.atributosTecnicos?.__especificacionesTexto);
+    const pastedDest = parsePastedPairs((producto as any)?.atributosTecnicos?.__destacadosTexto);
+    const rawSpecs: { label: string; value: any }[] = pastedEspec.length
+        ? pastedEspec.map((p) => ({ label: p.label, value: p.value }))
+        : [
+            ...(Array.isArray(producto.caracteristicas) ? producto.caracteristicas.map((item: any) => ({ label: item.nombre, value: item.valor })) : []),
+            ...(fichaTecnica && Array.isArray(fichaTecnica.destacados) ? fichaTecnica.destacados.map((it: any) => ({ label: it.label, value: it.value })) : []),
+            ...(fichaTecnica && Array.isArray(fichaTecnica.grupos)
+                ? fichaTecnica.grupos.flatMap((g: any) => Array.isArray(g.items) ? g.items.map((it: any) => ({ label: it.label, value: it.value })) : [])
+                : []),
+        ];
+    const seenSpecs = new Set<string>();
+    const specs = rawSpecs.filter((sp) => {
+        if (sp.value == null || sp.value === '') return false;
+        const key = String(sp.label || '').trim().toLowerCase();
+        if (key) {
+            if (seenSpecs.has(key)) return false;
+            seenSpecs.add(key);
+        }
+        return true;
+    });
+    const destacados = pastedDest.length
+        ? pastedDest.map((p) => ({ label: p.label, value: p.value }))
+        : specs.slice(0, 6);
     const renderStars = (rating: number, size = 18) => (
         <div className="flex text-[#F5B01D]">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -328,10 +357,10 @@ export default function TecnologiaProductoDetalle() {
                                         <span className="max-w-[70%] text-right font-bold">{producto.compatibilidad}</span>
                                     </div>
                                 )}
-                                {producto.caracteristicas?.slice(0, 4).map((c: any, i: number) => (
-                                    <div key={`${c.nombre}-${i}`} className="flex justify-between gap-4 border-t border-white/10 pt-3">
-                                        <span className="text-white/45">{c.nombre}</span>
-                                        <span className="max-w-[70%] text-right font-bold">{c.valor}</span>
+                                {destacados.map((c: any, i: number) => (
+                                    <div key={`${c.label}-${i}`} className="flex justify-between gap-4 border-t border-white/10 pt-3">
+                                        <span className="text-white/45">{c.label}</span>
+                                        <span className="max-w-[70%] text-right font-bold">{c.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -343,6 +372,23 @@ export default function TecnologiaProductoDetalle() {
                     <section className="mt-12 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:p-8">
                         <p className="text-xs font-black uppercase tracking-[0.25em]" style={{ color: cp }}>Descripción</p>
                         <div className="mt-4 text-sm leading-relaxed text-gray-600 overflow-hidden w-full [&_*]:!whitespace-pre-wrap [&_*]:!break-words [&_*]:!max-w-full" dangerouslySetInnerHTML={{ __html: producto.descripcionLarga }} />
+                    </section>
+                )}
+
+                {specs.length > 0 && (
+                    <section className="mt-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:p-8">
+                        <p className="text-xs font-black uppercase tracking-[0.25em]" style={{ color: cp }}>Especificaciones</p>
+                        <div className="mt-5 overflow-hidden rounded-xl border border-gray-100">
+                            {specs.map((spec, i) => (
+                                <div
+                                    key={`${spec.label}-${i}`}
+                                    className={`grid grid-cols-[38%_minmax(0,1fr)] gap-4 px-5 py-3 ${i !== specs.length - 1 ? 'border-b border-gray-100' : ''} ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}
+                                >
+                                    <span className="text-[11px] font-black uppercase tracking-wide text-gray-500">{spec.label}</span>
+                                    <span className="text-[13px] leading-snug text-gray-800">{spec.value}</span>
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 )}
 
