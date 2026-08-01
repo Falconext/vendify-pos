@@ -55,6 +55,20 @@ const GuiaRemision = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [guiaToEdit, setGuiaToEdit] = useState<any>(null);
+    // Flujo "Generar guía" desde la lista de Comprobantes: abre el modal precargado
+    const [prefillComprobante, setPrefillComprobante] = useState<{ id: number; serie?: string; correlativo?: number } | null>(null);
+
+    useEffect(() => {
+        const origen = (location.state as any)?.generarDesdeComprobante;
+        if (origen?.id) {
+            setPrefillComprobante(origen);
+            setGuiaToEdit(null);
+            setIsModalOpen(true);
+            // Limpiar el state de navegación para no re-disparar al refrescar
+            navigate(location.pathname, { replace: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state]);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
     const [isProcessingSend, setIsProcessingSend] = useState(false);
@@ -473,9 +487,11 @@ const GuiaRemision = () => {
                 {isModalOpen && (
                     <ModalGuiaRemision
                         isOpen={isModalOpen}
+                        prefillComprobante={prefillComprobante}
                         onClose={() => {
                             setIsModalOpen(false);
                             setGuiaToEdit(null);
+                            setPrefillComprobante(null);
                         }}
                         onSuccess={() => {
                             getAllGuiasRemision({

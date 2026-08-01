@@ -39,6 +39,9 @@ const TIPO_DOC_OPTIONS = [
 
 interface ModalGuiaRemisionProps {
     isOpen: boolean;
+    /** Comprobante (Factura/Boleta) desde el que se genera la guía: se importa
+     *  automáticamente al abrir (destinatario, dirección de llegada y bienes). */
+    prefillComprobante?: { id: number; serie?: string; correlativo?: number } | null;
     onClose: () => void;
     onSuccess?: () => void;
     guiaToEdit?: any;
@@ -100,7 +103,7 @@ const MODO_HELP: Record<string, { title: string; required: string[]; tip: string
     },
 };
 
-const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuiaRemisionProps) => {
+const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComprobante }: ModalGuiaRemisionProps) => {
     const { auth } = useAuthStore();
     const { createGuiaRemision, updateGuiaRemision, getSiguienteCorrelativo, siguienteCorrelativo, prefillDesdeComprobante, importarItemsExcel, descargarPlantillaItems } = useGuiaRemisionStore();
     const { getUbigeos, ubigeos } = useExtentionsStore();
@@ -168,6 +171,17 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
     });
     const [selectedProductValue, setSelectedProductValue] = useState<string>("");
     const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(false);
+    // Referencia del comprobante importado (p.ej. "F001-00000333") para feedback visual
+    const [importedRef, setImportedRef] = useState<string | null>(null);
+
+    // Flujo "desde la factura": si el modal se abre con un comprobante origen,
+    // importar sus datos automáticamente (destinatario, llegada y bienes).
+    useEffect(() => {
+        if (isOpen && !guiaToEdit?.id && prefillComprobante?.id) {
+            void handleImportComprobante(prefillComprobante);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, prefillComprobante?.id]);
     const [isEditQtyModalOpen, setIsEditQtyModalOpen] = useState(false);
     const [editingQtyIndex, setEditingQtyIndex] = useState<number | null>(null);
     const [editingQtyValue, setEditingQtyValue] = useState<number>(1);
@@ -178,6 +192,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
             getUbigeos();
             resetProducts();
             setCurrentStep(1);
+            setImportedRef(null);
 
             if (guiaToEdit?.id) {
                 // Modo Edición
@@ -473,7 +488,13 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                 })),
             };
         });
-        useAlertStore.getState().alert(`Datos importados de ${comprobante.serie}-${comprobante.correlativo}`, "success");
+        if (comprobante.serie && comprobante.correlativo != null) {
+            setImportedRef(`${comprobante.serie}-${String(comprobante.correlativo).padStart(8, '0')}`);
+            useAlertStore.getState().alert(`Datos importados de ${comprobante.serie}-${comprobante.correlativo}`, "success");
+        } else {
+            setImportedRef('comprobante');
+            useAlertStore.getState().alert('Datos del comprobante importados', 'success');
+        }
     };
 
     // ── Importar ítems desde un archivo Excel/CSV ──
@@ -842,6 +863,29 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                         {/* ── PASO 1: DATOS GENERALES ── */}
                         {currentStep === 1 && (
                             <div className="space-y-5 animate-in fade-in duration-300">
+                                {!guiaToEdit?.id && (
+                                    importedRef ? (
+                                        <div className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/60 dark:bg-emerald-900/10">
+                                            <Icon icon="solar:check-circle-bold-duotone" className="text-emerald-600 dark:text-emerald-400 text-xl shrink-0" />
+                                            <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                                                <span className="font-bold">Basada en {importedRef}.</span> Destinatario, dirección de llegada y bienes precargados — solo completa los datos del traslado.
+                                            </p>
+                                            <button type="button" onClick={() => setIsComprobanteModalOpen(true)} className="ml-auto text-xs font-semibold text-emerald-700 dark:text-emerald-400 underline underline-offset-2 whitespace-nowrap">
+                                                Cambiar
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/40 dark:bg-indigo-900/10">
+                                            <Icon icon="solar:bill-list-bold-duotone" className="text-indigo-600 dark:text-indigo-400 text-xl shrink-0" />
+                                            <p className="text-xs text-indigo-800 dark:text-indigo-300 flex-1 min-w-[200px]">
+                                                <span className="font-bold">¿El traslado viene de una venta?</span> Importa la Factura/Boleta y precargamos destinatario, dirección de llegada y bienes.
+                                            </p>
+                                            <Button type="button" size="sm" outline color="primary" onClick={() => setIsComprobanteModalOpen(true)}>
+                                                <Icon icon="solar:magnifer-linear" className="mr-1" /> Buscar comprobante
+                                            </Button>
+                                        </div>
+                                    )
+                                )}
                                 <div className="flex items-center gap-3 mb-1">
                                     <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
                                         <Icon icon="solar:document-text-bold-duotone" className="text-blue-600 dark:text-blue-400 text-xl" />
