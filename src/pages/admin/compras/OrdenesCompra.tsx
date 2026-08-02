@@ -328,6 +328,63 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
     const [proveedorId, setProveedorId] = useState<number | null>(orden?.proveedorId ?? null);
     const [proveedorOpts, setProveedorOpts] = useState<any[]>([]);
     const [showProvOpts, setShowProvOpts] = useState(false);
+    const [buscandoDoc, setBuscandoDoc] = useState(false);
+
+    // RUC/DNI + Enter: busca el proveedor en la empresa; si no existe, lo
+    // consulta en SUNAT/RENIEC y lo crea como PROVEEDOR automáticamente.
+    const buscarProveedorPorDoc = async () => {
+        const doc = proveedorQuery.replace(/\D/g, '');
+        if (doc.length !== 8 && doc.length !== 11) {
+            alert('Escribe un RUC (11 dígitos) o DNI (8) y presiona Enter, o busca por nombre', 'warning');
+            return;
+        }
+        const tipo = doc.length === 11 ? 'RUC' : 'DNI';
+        setBuscandoDoc(true);
+        try {
+            // 1) ¿Ya existe en la empresa?
+            const respBusq: any = await get(`clientes?search=${doc}&limit=5`);
+            const lista = respBusq?.data?.clientes ?? respBusq?.data?.data ?? [];
+            const existente = Array.isArray(lista) ? lista.find((c: any) => String(c.nroDoc) === doc) : null;
+            if (existente) {
+                setProveedorId(existente.id);
+                setProveedorQuery(existente.nombre);
+                setShowProvOpts(false);
+                alert(`Proveedor: ${existente.nombre}`, 'success');
+                return;
+            }
+            // 2) Consultar padrón y crear como PROVEEDOR
+            const respDoc: any = await get(`clientes/consultar/${tipo}/${doc}`);
+            const info = respDoc?.data;
+            const nombre = info?.nombre_o_razon_social || info?.nombre_completo || '';
+            if (!nombre) {
+                alert('No se encontraron datos en SUNAT/RENIEC para ese documento', 'error');
+                return;
+            }
+            const respCrear: any = await post('clientes', {
+                tipoDoc: tipo,
+                nroDoc: doc,
+                nombre,
+                direccion: info?.direccion || info?.direccion_completa || '',
+                departamento: info?.departamento || '',
+                provincia: info?.provincia || '',
+                distrito: info?.distrito || '',
+                ubigeo: info?.ubigeo_sunat || '',
+                persona: 'PROVEEDOR',
+                estado: 'ACTIVO',
+            });
+            if (respCrear.success) {
+                const creado = respCrear.data ?? {};
+                setProveedorId(Number(creado.id));
+                setProveedorQuery(nombre);
+                setShowProvOpts(false);
+                alert(`Proveedor creado y seleccionado: ${nombre}`, 'success');
+            } else {
+                alert(respCrear.error || 'No se pudo registrar el proveedor', 'error');
+            }
+        } finally {
+            setBuscandoDoc(false);
+        }
+    };
     const provBoxRef = useRef<HTMLDivElement>(null);
     const debouncedProv = useDebounce(proveedorQuery, 500);
 
@@ -444,10 +501,18 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                     <input
                         value={proveedorQuery}
                         onChange={(e) => { setProveedorQuery(e.target.value); setProveedorId(null); }}
-                        placeholder="Busca por nombre o RUC..."
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && /^\d{8}$|^\d{11}$/.test(proveedorQuery.replace(/\D/g, ''))) {
+                                e.preventDefault();
+                                void buscarProveedorPorDoc();
+                            }
+                        }}
+                        disabled={buscandoDoc}
+                        placeholder="Busca por nombre, o escribe el RUC/DNI y presiona Enter para traerlo de SUNAT..."
                         className={inputCls}
                     />
-                    {proveedorId && <Icon icon="solar:check-circle-bold" className="absolute right-3 top-9 text-lg text-emerald-500" />}
+                    {buscandoDoc && <Icon icon="svg-spinners:180-ring" className="absolute right-3 top-9 text-lg text-violet-500" />}
+                    {!buscandoDoc && proveedorId && <Icon icon="solar:check-circle-bold" className="absolute right-3 top-9 text-lg text-emerald-500" />}
                     {showProvOpts && proveedorOpts.length > 0 && !proveedorId && (
                         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
                             {proveedorOpts.map((p) => (
