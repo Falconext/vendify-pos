@@ -2,11 +2,37 @@ import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Pagination from "@/components/Pagination";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import apiClient from "@/utils/apiClient";
 import ModalAnticipos from "./ModalAnticipos";
 
-export const POSCatalogLayout = ({ vm }: { vm: any }) => {
+export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?: 'CATALOGO' | 'CAJA' }) => {
+    const compacto = layout === 'CAJA';
     const [infoProduct, setInfoProduct] = useState<any | null>(null);
     const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+    // Subir/cambiar imagen del producto directo desde la card del POS
+    const [uploadingId, setUploadingId] = useState<number | null>(null);
+    const [uploadedImages, setUploadedImages] = useState<Record<number, string>>({});
+    const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+    const handleImageUpload = async (productoId: number, file: File) => {
+        setUploadingId(productoId);
+        try {
+            const form = new FormData();
+            form.append('file', file);
+            const { data } = await apiClient.post(`/productos/${productoId}/imagen`, form, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const url = data?.data?.imagenUrl ?? data?.imagenUrl;
+            if (url) {
+                setUploadedImages(prev => ({ ...prev, [productoId]: url }));
+                setBrokenImages(prev => { const n = { ...prev }; delete n[`PRODUCTO-${productoId}`]; return n; });
+            }
+        } catch {
+
+        } finally {
+            setUploadingId(null);
+        }
+    };
     const searchRef = useRef<HTMLInputElement | null>(null);
 
     // Captura de anticipos previos a descontar (solo facturas)
@@ -85,7 +111,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
 
     return (
         <>
-        <div className="w-full md:w-[65%] flex flex-col gap-4 bg-white dark:bg-[#111827] rounded-[24px] shadow-gray-200/50 h-auto min-h-[500px] md:h-full overflow-hidden border border-white dark:border-transparent">
+        <div className={`w-full ${compacto ? 'md:w-[45%]' : 'md:w-[65%]'} flex flex-col gap-4 bg-white dark:bg-[#111827] rounded-[24px] shadow-gray-200/50 h-auto min-h-[500px] md:h-full overflow-hidden border border-white dark:border-transparent`}>
             {/* Header: Search & Categories */}
             <div className="p-4 md:p-5 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-[#111827]">
                 <div className="flex gap-2 mb-3">
@@ -294,6 +320,43 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
 
             {/* Product Grid */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 scrollbar-thin">
+                {compacto ? (
+                <div className="flex flex-col gap-1.5">
+                    {vm.catalogItems?.map((item: any, itemIndex: number) => {
+                        const isExpired = vm.usaLotesFarmacia && item.__catalogType === 'PRODUCTO' && item?.loteFefo?.diasAlVencimiento !== undefined && item?.loteFefo?.diasAlVencimiento < 0;
+                        const precio = item.__catalogType === 'COMBO'
+                            ? Number(item.precioCombo)
+                            : Number(item.precioUnitario);
+                        const simbolo = String(item.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
+                        const stockTxt = esServicio(item) ? 'Servicio' : `Stock: ${item.__catalogType === 'COMBO' ? getComboStock(item) : (item.stock ?? 0)}`;
+                        return (
+                            <button
+                                key={`c-${item.__catalogType}-${item.id}-${itemIndex}`}
+                                type="button"
+                                disabled={isExpired}
+                                onClick={() => { if (isExpired) return; item.__catalogType === 'COMBO' ? vm.handleComboClick(item) : vm.handleProductClick(item); }}
+                                className="group flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2 text-left transition-all hover:border-violet-300 hover:bg-violet-50/40 active:scale-[0.99] disabled:opacity-50 dark:border-slate-800 dark:bg-[#1E2435] dark:hover:bg-slate-800"
+                            >
+                                <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-gray-50 dark:bg-slate-800">
+                                    {(uploadedImages[item.id] || item.imagenUrl) && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
+                                        <img src={uploadedImages[item.id] ?? item.imagenUrl} alt="" className="h-full w-full object-contain" loading="lazy" onError={() => setBrokenImages((prev) => ({ ...prev, [`${item.__catalogType}-${item.id}`]: true }))} />
+                                    ) : (
+                                        <Icon icon="solar:box-minimalistic-linear" className="text-lg text-gray-300 dark:text-slate-600" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[13px] font-bold uppercase text-gray-800 dark:text-gray-200">{item.__catalogType === 'COMBO' ? item.nombre : item.descripcion}</p>
+                                    <p className="text-[11px] font-semibold text-gray-400">{stockTxt}{item.__catalogType === 'COMBO' ? ' · KIT' : ''}</p>
+                                </div>
+                                <span className="shrink-0 text-sm font-black text-gray-900 dark:text-white">{simbolo}{precio.toFixed(2)}</span>
+                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white shadow-sm transition group-hover:bg-violet-700">
+                                    <Icon icon="solar:add-circle-bold" className="text-lg" />
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+                ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
                     {vm.catalogItems?.map((item: any, itemIndex: number) => (
                         <div
@@ -309,9 +372,9 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                     item.__catalogType === 'COMBO' ? vm.handleComboClick(item) : vm.handleProductClick(item);
                                 }}
                             >
-                                {item.imagenUrl && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
+                                {(uploadedImages[item.id] || item.imagenUrl) && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
                                     <img
-                                        src={item.imagenUrl}
+                                        src={uploadedImages[item.id] ?? item.imagenUrl}
                                         alt={item.descripcion || "Producto"}
                                         className="w-full h-full object-contain"
                                         loading="lazy"
@@ -424,6 +487,34 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                             <Icon icon="solar:info-circle-linear" className="text-lg" />
                                         </button>
 
+                                        {/* Subir imagen (solo productos, no combos) */}
+                                        {item.__catalogType === 'PRODUCTO' && (
+                                            <>
+                                                <input
+                                                    ref={el => { fileInputRefs.current[item.id] = el; }}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) handleImageUpload(item.id, f);
+                                                        e.target.value = '';
+                                                    }}
+                                                />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); fileInputRefs.current[item.id]?.click(); }}
+                                                    disabled={uploadingId === item.id}
+                                                    className="shrink-0 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    title={(uploadedImages[item.id] || item.imagenUrl) ? "Cambiar imagen" : "Subir imagen"}
+                                                >
+                                                    {uploadingId === item.id
+                                                        ? <Icon icon="eos-icons:loading" className="text-lg animate-spin" />
+                                                        : <Icon icon={uploadedImages[item.id] || item.imagenUrl ? "solar:camera-rotate-bold-duotone" : "solar:camera-add-bold-duotone"} className="text-lg" />
+                                                    }
+                                                </button>
+                                            </>
+                                        )}
+
                                         {/* Agregar al comprobante — acción principal, siempre visible */}
                                         {(() => {
                                             const isExpired = vm.usaLotesFarmacia && item.__catalogType === 'PRODUCTO' && item?.loteFefo?.diasAlVencimiento !== undefined && item?.loteFefo?.diasAlVencimiento < 0;
@@ -450,6 +541,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                         </div>
                     ))}
                 </div>
+                )}
                 {!vm.catalogItems?.length && (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
                         <Icon icon="solar:sad-square-linear" className="text-6xl mb-2 opacity-50" />

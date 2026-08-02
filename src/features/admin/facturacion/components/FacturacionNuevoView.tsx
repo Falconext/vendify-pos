@@ -30,6 +30,14 @@ export const FacturacionNuevoView = () => {
     const shouldAskDocumentType = !vm.isQuotationRoute && !routeState?.fromCreditNote && !routeState?.fromNotaVenta && !routeState?.defaultType;
     const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(shouldAskDocumentType);
     const [isSaleConfigOpen, setIsSaleConfigOpen] = useState(false);
+    // Diseño del POS elegido por el usuario: CATALOGO (cards) o CAJA (carrito prioritario)
+    const [posLayout, setPosLayout] = useState<'CATALOGO' | 'CAJA'>(() =>
+        (localStorage.getItem('POS_LAYOUT') as 'CATALOGO' | 'CAJA') || 'CATALOGO',
+    );
+    const cambiarLayout = (l: 'CATALOGO' | 'CAJA') => {
+        setPosLayout(l);
+        localStorage.setItem('POS_LAYOUT', l);
+    };
     // Input rápido de cliente: DNI/RUC + Enter → busca/crea y setea el cliente
     const [clienteDocInput, setClienteDocInput] = useState('');
     const [editingClienteDoc, setEditingClienteDoc] = useState(false);
@@ -38,7 +46,6 @@ export const FacturacionNuevoView = () => {
         const ok = await vm.handleClienteDocLookup(clienteDocInput);
         if (ok) { setClienteDocInput(''); setEditingClienteDoc(false); }
     };
-
     const printSizes = useMemo(() => new Set(['A4', 'A5', 'TICKET']), []);
 
     const localDimensions = useMemo(() => {
@@ -162,7 +169,7 @@ export const FacturacionNuevoView = () => {
             </div>
 
             {/* LEFT PANEL */}
-            <POSCatalogLayout vm={vm} />
+            <POSCatalogLayout vm={vm} layout={posLayout} />
 
             {/* Floating Mobile Cart Toggle */}
             {vm.isMobile && !vm.showMobileCart && vm.productsInvoice.length > 0 && (
@@ -182,7 +189,7 @@ export const FacturacionNuevoView = () => {
             )}
 
             {/* RIGHT PANEL: CART / INVOICE */}
-            <div className={`w-full md:w-[35%] flex-col h-auto md:h-full overflow-hidden bg-white dark:bg-[#111827] rounded-[24px] shadow-[0_18px_55px_rgba(15,23,42,0.08)] border border-slate-100 dark:border-transparent ${vm.isMobile ? (vm.showMobileCart ? 'fixed inset-0 z-[60] flex' : 'hidden') : 'flex'} md:flex`}>
+            <div className={`w-full ${posLayout === 'CAJA' ? 'md:w-[55%]' : 'md:w-[35%]'} flex-col h-auto md:h-full overflow-hidden bg-white dark:bg-[#111827] rounded-[24px] shadow-[0_18px_55px_rgba(15,23,42,0.08)] border border-slate-100 dark:border-transparent ${vm.isMobile ? (vm.showMobileCart ? 'fixed inset-0 z-[60] flex' : 'hidden') : 'flex'} md:flex`}>
                 <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -205,14 +212,35 @@ export const FacturacionNuevoView = () => {
                             </div>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setIsSaleConfigOpen(true)}
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-violet-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                        >
-                            <Icon icon="solar:settings-linear" className="text-sm" />
-                            Configurar
-                        </button>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                            {/* Selector de diseño del POS (se recuerda por equipo) */}
+                            <div className="hidden md:flex items-center rounded-xl border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800" title="Diseño de la vista de venta">
+                                <button
+                                    type="button"
+                                    onClick={() => cambiarLayout('CATALOGO')}
+                                    title="Diseño Catálogo: cards de productos grandes"
+                                    className={`grid h-8 w-8 place-items-center rounded-lg transition ${posLayout === 'CATALOGO' ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-400 hover:text-violet-600'}`}
+                                >
+                                    <Icon icon="solar:widget-4-linear" className="text-sm" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => cambiarLayout('CAJA')}
+                                    title="Diseño Caja rápida: prioridad al carrito, productos en lista"
+                                    className={`grid h-8 w-8 place-items-center rounded-lg transition ${posLayout === 'CAJA' ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-400 hover:text-violet-600'}`}
+                                >
+                                    <Icon icon="solar:cart-check-linear" className="text-sm" />
+                                </button>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsSaleConfigOpen(true)}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-violet-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                <Icon icon="solar:settings-linear" className="text-sm" />
+                                Configurar
+                            </button>
+                        </div>
                     </div>
 
                     <div className="mt-3 grid grid-cols-1 gap-2">
