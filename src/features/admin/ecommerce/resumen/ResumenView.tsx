@@ -7,7 +7,7 @@ import { useAuthStore } from '@/zustand/auth';
 import moment from 'moment';
 
 // ── Resumen del Negocio — estilo dashboard (Brix UI, tema claro) ──────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const ESTADO_CONFIG = {
   bien:    { icon: '✅', label: 'Ganando bien',     color: 'text-emerald-600' },

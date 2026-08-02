@@ -20,7 +20,7 @@ import { useCotizacionesViewModel } from "./useCotizacionesViewModel";
 import ModalConfigCotizacion from "./ModalConfigCotizacion";
 import { IInvoices } from "@/interfaces/invoices";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function CotizacionesView() {
     const vm = useCotizacionesViewModel();

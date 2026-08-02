@@ -6,7 +6,7 @@ import { Calendar } from "@/components/Date";
 import { Icon } from "@iconify/react";
 import Select from "@/components/Select";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const ArqueoCaja = () => {
     const vm = useArqueoViewModel();

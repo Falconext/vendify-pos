@@ -6,7 +6,7 @@ import InputPro from '@/components/InputPro';
 import useEscapeKey from '@/hooks/useEscapeKey';
 import ModalRegistrarGasto from './ModalRegistrarGasto';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const CajaControl: React.FC = () => {
     const {

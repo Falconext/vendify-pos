@@ -6,7 +6,7 @@ import moment from 'moment';
 import { useEffect } from 'react';
 import { useClientsStore } from '@/zustand/clients';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const getBadgeDias = (dias: number) => {
     if (dias < 0) return { label: 'VENCIDO', dot: 'bg-rose-500', cls: 'bg-rose-50 text-rose-600' };

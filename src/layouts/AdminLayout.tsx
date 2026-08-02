@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
 import { hasPermission, hasPlanFeature, hasSubPermission, getRedirectPath } from '@/utils/permissions'
-import { useThemeStore, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
+import { useThemeStore, SIDEBAR_COLOR_HEX, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
 import Configurator from '@/components/ui/Configurator'
 import { BRAND, getBrandByKey } from '@/lib/branding'
 import { esRubroFabricacion } from '@/utils/rubro-features'
@@ -37,6 +37,12 @@ export default function AdminLayout() {
   const location = useLocation()
   const { auth, sedeActiva, selectSede }: IAuthState = useAuthStore()
   const { sidebarColor, sidebarType, sidebarCollapsed, setSidebarCollapsed, navbarFixed, toggleConfigurator, zoomLevel, setZoomLevel, isDarkMode, toggleDarkMode, initTheme } = useThemeStore()
+
+  // El color de acento elegido en Personalización se publica como variable CSS
+  // global (--accent): los botones principales del panel la consumen.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF')
+  }, [sidebarColor])
 
   // Detectar si el rubro es restaurante para cambiar nombres del menú
   const isRestaurante = useMemo(() => {

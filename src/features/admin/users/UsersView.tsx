@@ -7,7 +7,7 @@ import ModalUsuario from '../../../pages/admin/usuarios/ModalUsuario';
 import { useUsersViewModel } from './useUsersViewModel';
 
 // ── Gestión de Usuarios — estilo CRM claro (dashboard) ──────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 const PER_PAGE = [10, 25, 50];
 
 export default function UsersView() {

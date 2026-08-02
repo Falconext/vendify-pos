@@ -7,7 +7,7 @@ import { hasPlanFeature } from '@/utils/permissions';
 import { useState } from 'react';
 import CuentasBancariasConfig from '@/pages/admin/empresa/CuentasBancariasConfig';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function PerfilIndex() {
     const vm = usePerfilViewModel();

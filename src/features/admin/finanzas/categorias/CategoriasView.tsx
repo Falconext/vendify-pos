@@ -10,7 +10,7 @@ import {
 } from './CategoriasModel';
 import { useCategoriasViewModel } from './useCategoriasViewModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 

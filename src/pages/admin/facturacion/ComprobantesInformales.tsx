@@ -36,7 +36,7 @@ import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/c
 import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
 import apiClient from "@/utils/apiClient";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Pills de estado (CRM light) — punto de color + texto, fondos pastel.
 const estadoPill = (estado?: string) => {

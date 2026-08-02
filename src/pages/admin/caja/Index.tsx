@@ -4,7 +4,7 @@ import CajaControl from './components/CajaControl';
 import CajaHistorial from './components/CajaHistorial';
 
 // ── Gestión de Caja — estilo CRM claro (Brix UI) ──────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const TABS = [
     { key: 'CONTROL', label: 'Control de Caja', icon: 'solar:shop-2-bold-duotone' },

@@ -6,7 +6,7 @@ import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
 import apiClient from '@/utils/apiClient';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Chequeo en vivo de disponibilidad del dominio/subdominio del reseller.
 function DominioDisponibilidad({ dominio, excludeId }: { dominio?: string; excludeId?: number }) {

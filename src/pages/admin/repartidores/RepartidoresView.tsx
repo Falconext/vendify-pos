@@ -19,7 +19,7 @@ type FiltroEstado = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const EMPTY_FORM: RepartidorFormData = { nombre: '', celular: '', tipo: 'EVENTUAL', activo: true };
 

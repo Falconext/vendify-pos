@@ -17,7 +17,7 @@ import { useAuthStore } from '@/zustand/auth';
 import ComprobantePrintPage from "./comprobanteImprimir";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Pill de estado de cobro — punto de color + texto, estilo CRM claro.
 const estadoPill = (label: string) => {

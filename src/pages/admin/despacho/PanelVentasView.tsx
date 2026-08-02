@@ -25,7 +25,7 @@ import { useUsersStore } from '@/zustand/users';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
 
 // ─── Config badges (CRM claro) ──────────────────────────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const TIPO_CONFIG: Record<TipoVenta, { label: string; cls: string }> = {
     BOLETA:            { label: 'Boleta',    cls: 'bg-blue-50 text-blue-600' },

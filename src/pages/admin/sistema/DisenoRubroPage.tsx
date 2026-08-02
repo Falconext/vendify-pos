@@ -75,7 +75,7 @@ const TIPOGRAFIAS = [
   'Playfair Display'
 ];
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const ColorPicker = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
   <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">

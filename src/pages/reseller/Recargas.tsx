@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { BRAND } from '@/lib/branding';
 import { THEAD_TR, BODY_TR, EntityCell, EstadoPill } from './resellerTableUi';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 const money = (v: number) => `S/ ${Number(v ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function ResellerRecargas() {

@@ -11,7 +11,7 @@ import { ModalTrazabilidad } from './ModalTrazabilidad';
 import { useRepartidoresStore } from '@/zustand/repartidores';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const KPI_CHIP: Record<string, string> = {
     blue: 'bg-blue-50 text-blue-600',

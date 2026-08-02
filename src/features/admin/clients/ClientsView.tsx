@@ -9,7 +9,7 @@ import ModalClient from './shared/ModalClient';
 import DoctorsView from '@/features/admin/doctors/DoctorsView';
 import type { GrupoFarmacia } from './ClientsModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const GRUPO_TABS: { id: GrupoFarmacia; label: string; icon: string }[] = [
     { id: 'pacientes', label: 'Pacientes', icon: 'solar:user-heart-bold-duotone' },

@@ -20,7 +20,7 @@ import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function ProductsView() {
     const navigate = useNavigate();

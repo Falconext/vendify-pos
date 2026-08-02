@@ -9,7 +9,7 @@ import useAlertStore from '@/zustand/alert';
 import { useClientsStore } from '@/zustand/clients';
 
 // ── Estilo CRM claro (Brix UI) ──────────────────────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface FormData {
   ruc: string;

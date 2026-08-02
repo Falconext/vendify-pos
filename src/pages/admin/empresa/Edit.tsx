@@ -39,7 +39,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const EditEmpresa = () => {
   const navigate = useNavigate();

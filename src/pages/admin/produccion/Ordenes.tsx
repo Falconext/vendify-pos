@@ -12,7 +12,7 @@ import TableActionMenu from '@/components/TableActionMenu';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Calendar } from '@/components/Date';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 type Orden = {
   id: number;

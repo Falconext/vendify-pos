@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import { useResellerPanelStore } from '@/zustand/reseller-panel'
-import { useThemeStore, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
+import { SIDEBAR_COLOR_HEX, useThemeStore, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
 import Configurator from '@/components/ui/Configurator'
 import { BRAND } from '@/lib/branding'
 
@@ -26,6 +26,10 @@ export default function ResellerLayout() {
         sidebarColor, sidebarType, navbarFixed, zoomLevel, setZoomLevel,
         isDarkMode, toggleDarkMode, toggleConfigurator, initTheme,
     } = useThemeStore()
+
+    useEffect(() => {
+        document.documentElement.style.setProperty('--accent', SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF');
+    }, [sidebarColor]);
 
     // Marca blanca del reseller: su logo/nombre configurados en "Mi Marca".
     useEffect(() => {

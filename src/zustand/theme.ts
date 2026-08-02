@@ -2,6 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type SidebarColor = 'brand' | 'primary' | 'dark' | 'info' | 'success' | 'warning' | 'error';
+// Hex de cada color de acento del Configurador — fuente única para sidebar,
+// variable CSS --accent (botones) y swatches.
+export const SIDEBAR_COLOR_HEX: Record<SidebarColor, string> = {
+    brand: '#7551FF',
+    primary: '#C026D3',
+    dark: '#111827',
+    info: '#3B82F6',
+    success: '#10B981',
+    warning: '#F97316',
+    error: '#EF4444',
+};
+
 export type SidebarType = 'dark' | 'transparent' | 'white';
 export type ZoomLevel = 0 | 1 | 2 | 3;
 

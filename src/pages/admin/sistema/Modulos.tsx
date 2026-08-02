@@ -7,7 +7,7 @@ import ModalConfirm from '@/components/ModalConfirm';
 import { Icon } from '@iconify/react';
 import { ISubModulo } from '@/zustand/modulos';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
     <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">

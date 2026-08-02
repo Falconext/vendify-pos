@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import TrasladoPrintPage from './TrasladoPrintPage';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface SelectedProduct {
     id: number;

@@ -8,7 +8,7 @@ import ModuloSelector from "@/components/ModuloSelector";
 import { useAuthStore } from '@/zustand/auth';
 
 // ── Planes de suscripción — estilo CRM claro (Brix UI) ────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const Toggle = ({ label, value, onChange }: { label: string, value: boolean, onChange: (v: boolean) => void }) => (
     <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800 px-2 rounded -mx-2 transition-colors">

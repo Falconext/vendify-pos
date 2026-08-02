@@ -4,7 +4,7 @@ import Button from '@/components/Button';
 import { useDoctorsViewModel } from './useDoctorsViewModel';
 import { ESPECIALIDADES } from './DoctorsModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface Props {
   hideHeader?: boolean;

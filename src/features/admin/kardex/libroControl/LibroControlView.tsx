@@ -5,7 +5,7 @@ import { Calendar } from '@/components/Date';
 import Select from '@/components/Select';
 import moment from 'moment';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function LibroControlView() {
     const vm = useLibroControlViewModel();

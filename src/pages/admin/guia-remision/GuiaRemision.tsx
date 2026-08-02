@@ -20,7 +20,7 @@ import apiClient from "@/utils/apiClient";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 import ModalConfirm from "@/components/ModalConfirm";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Catálogo SUNAT N° 20 — Motivo de traslado (códigos oficiales).
 const MOTIVOS_TRASLADO: Record<string, string> = {

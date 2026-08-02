@@ -21,7 +21,7 @@ import IngresoFormModal from './components/IngresoFormModal';
 import HistorialFinancieroDrawer from './components/HistorialFinancieroDrawer';
 
 // ── Estilo CRM claro (Brix UI) — mismo lenguaje visual que el dashboard ──────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface RentabilidadViewProps {
     mesActual: number;

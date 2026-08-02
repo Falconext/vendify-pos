@@ -7,7 +7,7 @@ import { BRAND } from '@/lib/branding';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { THEAD_TR, BODY_TR, EntityCell, EstadoPill } from './resellerTableUi';
 
-const ACCENT = '#7551FF'; // indigo — acento del panel reseller
+const ACCENT = 'var(--accent, #7551FF)'; // indigo — acento del panel reseller
 const SERIES = ['#7551FF', '#a855f7', '#10b981', '#f59e0b', '#ec4899'];
 
 // Referencia de precios reseller Vendify (ajustable).

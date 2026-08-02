@@ -3,7 +3,7 @@ import { useCampanasViewModel } from './useCampanasViewModel';
 import CampanaFormModal from './CampanaFormModal';
 import { Campana, MESES, formatCurrency, PlataformaAds } from './CampanasModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const PLATAFORMA_CONFIG = {
   META: { label: 'META', color: '#1877f2', bg: 'bg-[#1877f2]' },
