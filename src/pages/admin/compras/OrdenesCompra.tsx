@@ -8,6 +8,9 @@ import { useDebounce } from '@/hooks/useDebounce';
 import Modal from '@/components/Modal';
 import ModalConfirm from '@/components/ModalConfirm';
 import TableSkeleton from '@/components/Skeletons/table';
+import InputPro from '@/components/InputPro';
+import Select from '@/components/Select';
+import { Calendar } from '@/components/Date';
 
 interface DetalleOC {
     productoId?: number;
@@ -154,22 +157,51 @@ export default function OrdenesCompraPage() {
 
             {/* Filtros */}
             <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#111827]">
-                <div className="flex flex-col gap-3 lg:flex-row">
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar por proveedor, RUC o N° de orden..."
-                        className={`${inputCls} flex-1`}
-                    />
-                    <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className={`${inputCls} lg:w-44`} />
-                    <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className={`${inputCls} lg:w-44`} />
-                    <select value={estado} onChange={(e) => setEstado(e.target.value)} className={`${inputCls} lg:w-44`}>
-                        <option value="TODOS">Todos los estados</option>
-                        <option value="BORRADOR">Borrador</option>
-                        <option value="EMITIDA">Emitida</option>
-                        <option value="RECIBIDA">Recibida</option>
-                        <option value="ANULADA">Anulada</option>
-                    </select>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <div className="flex-1">
+                        <InputPro
+                            name="search"
+                            label="Buscar por proveedor, RUC o N° de orden"
+                            isLabel
+                            value={search}
+                            onChange={(e: any) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="lg:w-44">
+                        <Calendar
+                            text="Fecha inicio"
+                            name="fechaInicio"
+                            value={fechaInicio ? moment(fechaInicio, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}
+                            onChange={(date: string) => { if (moment(date, 'DD/MM/YYYY', true).isValid()) setFechaInicio(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD')); }}
+                            portal
+                        />
+                    </div>
+                    <div className="lg:w-44">
+                        <Calendar
+                            text="Fecha fin"
+                            name="fechaFin"
+                            value={fechaFin ? moment(fechaFin, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}
+                            onChange={(date: string) => { if (moment(date, 'DD/MM/YYYY', true).isValid()) setFechaFin(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD')); }}
+                            portal
+                        />
+                    </div>
+                    <div className="lg:w-44">
+                        <Select
+                            name="estado"
+                            label="Estado"
+                            error={() => { }}
+                            withLabel
+                            value={estado}
+                            options={[
+                                { id: 'TODOS', value: 'Todos los estados' },
+                                { id: 'BORRADOR', value: 'Borrador' },
+                                { id: 'EMITIDA', value: 'Emitida' },
+                                { id: 'RECIBIDA', value: 'Recibida' },
+                                { id: 'ANULADA', value: 'Anulada' },
+                            ]}
+                            onChange={(id: any) => setEstado(String(id))}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -435,24 +467,46 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div>
-                        <label className={lblCls}>Fecha de entrega</label>
-                        <input type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} className={inputCls} />
+                        <Calendar
+                            text="Fecha de entrega"
+                            name="fechaEntrega"
+                            value={fechaEntrega ? moment(fechaEntrega, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}
+                            onChange={(date: string) => { if (moment(date, 'DD/MM/YYYY', true).isValid()) setFechaEntrega(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD')); }}
+                            portal
+                        />
                     </div>
                     <div>
-                        <label className={lblCls}>Condiciones de pago</label>
-                        <input value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} placeholder="Ej: Crédito 30 días" className={inputCls} />
+                        <InputPro
+                            name="condicionesPago"
+                            label="Condiciones de pago (Ej: Crédito 30 días)"
+                            isLabel
+                            value={condicionesPago}
+                            onChange={(e: any) => setCondicionesPago(e.target.value)}
+                        />
                     </div>
                     <div>
-                        <label className={lblCls}>Moneda</label>
-                        <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputCls}>
-                            <option value="PEN">Soles (S/)</option>
-                            <option value="USD">Dólares (US$)</option>
-                        </select>
+                        <Select
+                            name="moneda"
+                            label="Moneda"
+                            error={() => { }}
+                            withLabel
+                            value={moneda}
+                            options={[
+                                { id: 'PEN', value: 'Soles (S/)' },
+                                { id: 'USD', value: 'Dólares (US$)' },
+                            ]}
+                            onChange={(id: any) => setMoneda(String(id))}
+                        />
                     </div>
                 </div>
                 <div>
-                    <label className={lblCls}>Lugar de entrega</label>
-                    <input value={lugarEntrega} onChange={(e) => setLugarEntrega(e.target.value)} placeholder="Dirección o sede donde debe entregar el proveedor" className={inputCls} />
+                    <InputPro
+                        name="lugarEntrega"
+                        label="Lugar de entrega (dirección o sede donde debe entregar el proveedor)"
+                        isLabel
+                        value={lugarEntrega}
+                        onChange={(e: any) => setLugarEntrega(e.target.value)}
+                    />
                 </div>
 
                 {/* Ítems */}
@@ -602,37 +656,59 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label className={lblCls}>Documento</label>
-                        <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className={inputCls}>
-                            <option value="FACTURA">Factura</option>
-                            <option value="BOLETA">Boleta</option>
-                            <option value="GUIA">Guía</option>
-                            <option value="OTRO">Otro</option>
-                        </select>
+                        <Select
+                            name="tipoDoc"
+                            label="Documento"
+                            error={() => { }}
+                            withLabel
+                            value={tipoDoc}
+                            options={[
+                                { id: 'FACTURA', value: 'Factura' },
+                                { id: 'BOLETA', value: 'Boleta' },
+                                { id: 'GUIA', value: 'Guía' },
+                                { id: 'OTRO', value: 'Otro' },
+                            ]}
+                            onChange={(id: any) => setTipoDoc(String(id))}
+                        />
                     </div>
                     <div>
-                        <label className={lblCls}>Fecha emisión</label>
-                        <input type="date" value={fechaEmision} onChange={(e) => setFechaEmision(e.target.value)} className={inputCls} />
+                        <Calendar
+                            text="Fecha emisión"
+                            name="fechaEmision"
+                            value={fechaEmision ? moment(fechaEmision, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}
+                            onChange={(date: string) => { if (moment(date, 'DD/MM/YYYY', true).isValid()) setFechaEmision(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD')); }}
+                            portal
+                        />
                     </div>
                     <div>
-                        <label className={lblCls}>Serie *</label>
-                        <input value={serie} onChange={(e) => setSerie(e.target.value)} placeholder="F001" className={`${inputCls} uppercase`} />
+                        <InputPro name="serie" label="Serie *" isLabel uppercase value={serie} onChange={(e: any) => setSerie(e.target.value)} />
                     </div>
                     <div>
-                        <label className={lblCls}>Número *</label>
-                        <input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="000123" className={inputCls} />
+                        <InputPro name="numero" label="Número *" isLabel value={numero} onChange={(e: any) => setNumero(e.target.value)} />
                     </div>
                     <div>
-                        <label className={lblCls}>Forma de pago</label>
-                        <select value={formaPago} onChange={(e) => setFormaPago(e.target.value)} className={inputCls}>
-                            <option value="CONTADO">Contado</option>
-                            <option value="CREDITO">Crédito</option>
-                        </select>
+                        <Select
+                            name="formaPago"
+                            label="Forma de pago"
+                            error={() => { }}
+                            withLabel
+                            value={formaPago}
+                            options={[
+                                { id: 'CONTADO', value: 'Contado' },
+                                { id: 'CREDITO', value: 'Crédito' },
+                            ]}
+                            onChange={(id: any) => setFormaPago(String(id))}
+                        />
                     </div>
                     {formaPago === 'CREDITO' && (
                         <div>
-                            <label className={lblCls}>Vence el</label>
-                            <input type="date" value={fechaVencimiento} onChange={(e) => setFechaVencimiento(e.target.value)} className={inputCls} />
+                            <Calendar
+                                text="Vence el"
+                                name="fechaVencimiento"
+                                value={fechaVencimiento ? moment(fechaVencimiento, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}
+                                onChange={(date: string) => { if (moment(date, 'DD/MM/YYYY', true).isValid()) setFechaVencimiento(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD')); }}
+                                portal
+                            />
                         </div>
                     )}
                 </div>
