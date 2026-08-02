@@ -30,6 +30,15 @@ export const FacturacionNuevoView = () => {
     const shouldAskDocumentType = !vm.isQuotationRoute && !routeState?.fromCreditNote && !routeState?.fromNotaVenta && !routeState?.defaultType;
     const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(shouldAskDocumentType);
     const [isSaleConfigOpen, setIsSaleConfigOpen] = useState(false);
+    // Input rápido de cliente: DNI/RUC + Enter → busca/crea y setea el cliente
+    const [clienteDocInput, setClienteDocInput] = useState('');
+    const [editingClienteDoc, setEditingClienteDoc] = useState(false);
+    const submitClienteDoc = async () => {
+        if (!clienteDocInput.trim() || vm.clienteDocLookupLoading) return;
+        const ok = await vm.handleClienteDocLookup(clienteDocInput);
+        if (ok) { setClienteDocInput(''); setEditingClienteDoc(false); }
+    };
+
     const printSizes = useMemo(() => new Set(['A4', 'A5', 'TICKET']), []);
 
     const localDimensions = useMemo(() => {
@@ -207,24 +216,59 @@ export const FacturacionNuevoView = () => {
                     </div>
 
                     <div className="mt-3 grid grid-cols-1 gap-2">
-                        {/* Cliente — campo primario, siempre visible */}
+                        {/* Cliente — DNI/RUC + Enter lo busca en la empresa o lo crea desde el padrón */}
                         <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/50">
-                            <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
                                 <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300">
-                                    <Icon icon="solar:user-linear" className="text-base" />
+                                    <Icon icon={vm.clienteDocLookupLoading ? 'svg-spinners:180-ring' : 'solar:user-linear'} className="text-base" />
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Cliente</p>
-                                    <p className="truncate text-sm font-extrabold text-slate-800 dark:text-slate-100">{selectedClientLabel}</p>
+                                    {(editingClienteDoc || !vm.selectedClient) ? (
+                                        <input
+                                            value={clienteDocInput}
+                                            onChange={(e) => setClienteDocInput(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitClienteDoc(); } }}
+                                            inputMode="numeric"
+                                            autoFocus={editingClienteDoc}
+                                            disabled={vm.clienteDocLookupLoading}
+                                            placeholder="DNI o RUC + Enter"
+                                            className="w-full bg-transparent text-sm font-extrabold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 dark:text-slate-100"
+                                        />
+                                    ) : (
+                                        <p className="truncate text-sm font-extrabold text-slate-800 dark:text-slate-100">{selectedClientLabel}</p>
+                                    )}
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsSaleConfigOpen(true)}
-                                className="shrink-0 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-violet-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-violet-50 dark:bg-slate-800 dark:ring-slate-700"
-                            >
-                                Cambiar
-                            </button>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                                {(editingClienteDoc || !vm.selectedClient) ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => void submitClienteDoc()}
+                                        disabled={vm.clienteDocLookupLoading}
+                                        title="Buscar por documento (Enter)"
+                                        className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+                                    >
+                                        Buscar
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setEditingClienteDoc(true); setClienteDocInput(''); }}
+                                        className="rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-violet-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-violet-50 dark:bg-slate-800 dark:ring-slate-700"
+                                    >
+                                        Cambiar
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSaleConfigOpen(true)}
+                                    title="Buscar por nombre o crear cliente"
+                                    className="grid h-7 w-7 place-items-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:text-violet-600 dark:bg-slate-800 dark:ring-slate-700"
+                                >
+                                    <Icon icon="solar:magnifer-linear" className="text-sm" />
+                                </button>
+                            </div>
                         </div>
                         {/* Comprobante */}
                         <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/50">

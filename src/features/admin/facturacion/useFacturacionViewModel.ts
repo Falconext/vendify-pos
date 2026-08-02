@@ -170,7 +170,7 @@ export const useFacturacionViewModel = () => {
     const { zoomLevel } = useThemeStore();
     const { auth, sedeActiva } = useAuthStore();
     const { categories, getAllCategories }: ICategoriesState = useCategoriesStore();
-    const { getAllClients, clients }: IClientsState = useClientsStore();
+    const { getAllClients, clients, getClientFromDoc, addClients }: IClientsState = useClientsStore();
     const { getAllProducts, products, totalProducts }: IProductsState = useProductsStore();
     const { combos, fetchCombos } = useCombosStore();
     const { getCreditDebitNoteTypes, getCurrencies, creditDebitNoteTypes, getDocumentTypes }: IExtentionsState = useExtentionsStore();
@@ -1602,6 +1602,58 @@ export const useFacturacionViewModel = () => {
         }
     };
 
+    // Búsqueda directa por documento en el POS: escribe DNI/RUC + Enter y el
+    // cliente queda seteado. Si no existe en la empresa, se consulta el padrón
+    // (RENIEC/SUNAT) y se crea automáticamente.
+    const [clienteDocLookupLoading, setClienteDocLookupLoading] = useState(false);
+    const handleClienteDocLookup = async (docRaw: string): Promise<boolean> => {
+        const doc = String(docRaw || '').replace(/\D/g, '');
+        if (doc.length !== 8 && doc.length !== 11) {
+            useAlertStore.getState().alert('Ingresa un DNI (8 dígitos) o un RUC (11 dígitos)', 'warning');
+            return false;
+        }
+        const tipo = doc.length === 11 ? 'RUC' : 'DNI';
+        setClienteDocLookupLoading(true);
+        try {
+            // 1) ¿Ya está registrado en la empresa?
+            const resp: any = await get(`clientes?search=${doc}&limit=5`);
+            const lista = (resp as any)?.data?.clientes ?? (resp as any)?.data?.data ?? [];
+            const existente = Array.isArray(lista) ? lista.find((c: any) => String(c.nroDoc) === doc) : null;
+            if (existente) {
+                handleClienteCreado(existente);
+                useAlertStore.getState().alert(`Cliente: ${existente.nombre}`, 'success');
+                return true;
+            }
+            // 2) Consultar padrón y crear automáticamente
+            const info: any = await getClientFromDoc(doc, tipo);
+            if (!info) return false;
+            const nombre = info.nombre_completo || info.nombre_o_razon_social || '';
+            if (!nombre) {
+                useAlertStore.getState().alert('El padrón no devolvió el nombre; regístralo manualmente', 'warning');
+                return false;
+            }
+            const creado: any = await addClients({
+                tipoDoc: tipo,
+                nroDoc: doc,
+                nombre,
+                direccion: info.direccion || info.direccion_completa || '',
+                departamento: info.departamento || '',
+                provincia: info.provincia || '',
+                distrito: info.distrito || '',
+                ubigeo: info.ubigeo_sunat || '',
+                persona: 'CLIENTE',
+                estado: 'ACTIVO',
+            } as any);
+            if (creado) {
+                handleClienteCreado({ ...creado, nroDoc: doc, nombre });
+                return true;
+            }
+            return false;
+        } finally {
+            setClienteDocLookupLoading(false);
+        }
+    };
+
     // Al crear un cliente nuevo desde "Configurar venta", queda auto-seleccionado
     // (sin tener que buscarlo). Funciona igual para DNI o RUC.
     const handleClienteCreado = (client: any) => {
@@ -2327,6 +2379,8 @@ export const useFacturacionViewModel = () => {
         handleChangeSelect,
         handleGetDataClient,
         handleClienteCreado,
+        handleClienteDocLookup,
+        clienteDocLookupLoading,
         addInvoiceReceipt,
         closeModal,
         closeModalResponse,
