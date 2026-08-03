@@ -4,7 +4,7 @@ import Button from '@/components/Button';
 import { useDoctorsViewModel } from './useDoctorsViewModel';
 import { ESPECIALIDADES } from './DoctorsModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface Props {
   hideHeader?: boolean;
@@ -21,9 +21,9 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
         <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left border-collapse">
           <tbody>
             {Array.from({ length: 6 }).map((_, i) => (
-              <tr key={i} className="border-b border-slate-50">
+              <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                 <td className="py-3.5 px-5">
-                  <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                  <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 </td>
               </tr>
             ))}
@@ -31,14 +31,14 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
         </table></div>
       ) : vm.doctors.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Icon icon="solar:stethoscope-linear" width={48} className="mb-3 text-slate-200" />
-          <p className="font-semibold text-slate-500">No hay médicos registrados</p>
+          <Icon icon="solar:stethoscope-linear" width={48} className="mb-3 text-slate-200 dark:text-slate-700" />
+          <p className="font-semibold text-slate-500 dark:text-slate-400">No hay médicos registrados</p>
           <p className="text-sm text-slate-400 mt-1">Agrega el primer médico con el botón de arriba</p>
         </div>
       ) : (
         <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left border-collapse text-sm">
           <thead>
-            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
               <th className="py-3 pl-5 pr-3">Médico</th>
               <th className="py-3 px-3">CMP</th>
               <th className="py-3 px-3">Especialidad</th>
@@ -49,29 +49,29 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
           </thead>
           <tbody>
             {vm.doctors.map(doc => (
-              <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
+              <tr key={doc.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors group">
                 <td className="py-3 pl-5 pr-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center shrink-0">
                       <Icon icon="solar:stethoscope-bold-duotone" width={16} />
                     </div>
-                    <span className="font-semibold text-slate-700 truncate max-w-[200px]">Dr. {doc.nombre}</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[200px]">Dr. {doc.nombre}</span>
                   </div>
                 </td>
-                <td className="py-3 px-3 text-slate-500">{doc.cmp || '—'}</td>
+                <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{doc.cmp || '—'}</td>
                 <td className="py-3 px-3">
                   {doc.especialidad
-                    ? <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">{doc.especialidad}</span>
+                    ? <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300">{doc.especialidad}</span>
                     : <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 px-3 text-slate-500">
+                <td className="py-3 px-3 text-slate-500 dark:text-slate-400">
                   {doc.telefono && <div>{doc.telefono}</div>}
                   {doc.email && <div className="text-xs text-slate-400">{doc.email}</div>}
                   {!doc.telefono && !doc.email && '—'}
                 </td>
                 <td className="py-3 px-3">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    doc.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                    doc.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${doc.estado === 'ACTIVO' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                     {doc.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}
@@ -81,14 +81,14 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
                   <div className="flex items-center gap-1 justify-end">
                     <button
                       onClick={() => vm.openEdit(doc)}
-                      className="h-8 w-8 grid place-items-center rounded-lg text-violet-600 hover:bg-violet-50 transition-colors"
+                      className="h-8 w-8 grid place-items-center rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                       title="Editar"
                     >
                       <Icon icon="solar:pen-bold-duotone" width={16} />
                     </button>
                     <button
                       onClick={() => vm.confirmDelete(doc.id)}
-                      className="h-8 w-8 grid place-items-center rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                      className="h-8 w-8 grid place-items-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
                       title="Desactivar"
                     >
                       <Icon icon="solar:trash-bin-trash-bold-duotone" width={16} />
@@ -125,7 +125,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
               <input
                 value={vm.form.nombre}
                 onChange={e => vm.handleChange('nombre', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                 placeholder="Ej: Juan Pérez García"
               />
             </div>
@@ -136,7 +136,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
                 <input
                   value={vm.form.cmp ?? ''}
                   onChange={e => vm.handleChange('cmp', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                   placeholder="Ej: 12345"
                 />
               </div>
@@ -145,7 +145,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
                 <select
                   value={vm.form.especialidad ?? ''}
                   onChange={e => vm.handleChange('especialidad', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                 >
                   <option value="">Seleccionar...</option>
                   {ESPECIALIDADES.map(e => <option key={e} value={e}>{e}</option>)}
@@ -159,7 +159,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
                 <input
                   value={vm.form.telefono ?? ''}
                   onChange={e => vm.handleChange('telefono', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                   placeholder="+51 999 999 999"
                 />
               </div>
@@ -169,7 +169,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
                   type="email"
                   value={vm.form.email ?? ''}
                   onChange={e => vm.handleChange('email', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                   placeholder="doctor@clinica.pe"
                 />
               </div>
@@ -186,18 +186,18 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
 
       {vm.deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.15)] w-full max-w-sm p-6 space-y-4 border border-slate-100">
+          <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.15)] w-full max-w-sm p-6 space-y-4 border border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-rose-50 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
                 <Icon icon="solar:trash-bin-trash-bold-duotone" width={20} className="text-rose-500" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800">¿Desactivar médico?</h3>
+                <h3 className="font-bold text-slate-800 dark:text-white">¿Desactivar médico?</h3>
                 <p className="text-sm text-slate-400">Esta acción lo ocultará del directorio.</p>
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={vm.cancelDelete} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
+              <button onClick={vm.cancelDelete} className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
                 Cancelar
               </button>
               <button onClick={vm.handleDelete} className="px-4 py-2 text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-colors">
@@ -215,7 +215,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
     return (
       <div style={{ ['--accent' as any]: ACCENT }} className="font-jakarta">
         {/* Toolbar: igual al de ClientsView */}
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="relative flex-1 max-w-xs w-full">
             <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" width={16} />
             <input
@@ -223,7 +223,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
               placeholder="Buscar por nombre, CMP o especialidad..."
               value={vm.search}
               onChange={e => vm.setSearch(e.target.value)}
-              className="w-full h-11 pl-10 pr-4 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full h-11 pl-10 pr-4 text-sm rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
           <button
@@ -246,7 +246,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
 
   // ── Modo STANDALONE: página propia con header y card ─────────────────
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -261,7 +261,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
       {!hideHeader && (
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
           <div className="min-w-0">
-            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Médicos</h1>
+            <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Médicos</h1>
             <p className="text-sm text-slate-400 mt-0.5">
               Directorio de doctores vinculados a recetas y dispensación
             </p>
@@ -278,9 +278,9 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
       )}
 
       {/* Card contenedora */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800">
           <div className="relative max-w-xs w-full">
             <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" width={16} />
             <input
@@ -288,7 +288,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
               placeholder="Buscar por nombre, CMP o especialidad..."
               value={vm.search}
               onChange={e => vm.setSearch(e.target.value)}
-              className="w-full h-11 pl-10 pr-4 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full h-11 pl-10 pr-4 text-sm rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
         </div>

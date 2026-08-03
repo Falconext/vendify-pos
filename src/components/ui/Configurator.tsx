@@ -1,19 +1,11 @@
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { useThemeStore, SidebarColor, SidebarType } from '../../zustand/theme';
+import { useThemeStore, SidebarColor, SidebarType, SIDEBAR_COLOR_HEX } from '../../zustand/theme';
 import { BRAND, getBrandByKey } from '@/lib/branding';
 import { useAuthStore } from '../../zustand/auth';
 
-// Hex de cada color de acento — se usa tanto en los swatches como en el preview.
-const COLOR_HEX: Record<SidebarColor, string> = {
-    brand: '#7551FF',
-    primary: '#C026D3',
-    dark: '#111827',
-    info: '#3B82F6',
-    success: '#10B981',
-    warning: '#F97316',
-    error: '#EF4444',
-};
+// Hex de cada color de acento — fuente única en el theme store.
+const COLOR_HEX = SIDEBAR_COLOR_HEX;
 
 const COLORS: { name: string; value: SidebarColor }[] = [
     { name: 'Marca', value: 'brand' },

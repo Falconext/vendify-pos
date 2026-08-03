@@ -50,7 +50,7 @@ interface CreateFormData {
   usaDemo: boolean;
   usaCodigoBarrasManual?: boolean;
   brand?: string;
-  producto?: 'facturacion' | 'hotel';
+  producto?: 'facturacion' | 'hotel' | 'restaurante';
   usuario: {
     nombre: string;
     email: string;
@@ -94,7 +94,7 @@ interface EditFormData {
   cotizMostrarRazonSocial?: boolean;
   cotizMostrarDetraccion?: boolean;
   brand?: string;
-  producto?: 'facturacion' | 'hotel';
+  producto?: 'facturacion' | 'hotel' | 'restaurante';
   usuario?: {
     nombre?: string;
     email?: string;
@@ -546,7 +546,7 @@ export default function EmpresaFormModal({ open, mode, empresaId, onClose, onSav
       <div className="grid grid-cols-1 md:grid-cols-12 min-h-[600px]">
 
         {/* Sidebar */}
-        <aside className="md:col-span-3 border-r border-gray-100 dark:border-slate-700 p-6 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col">
+        <aside className="md:col-span-3 border-r border-gray-100 dark:border-slate-700 p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col">
           <div className="flex flex-col items-center text-center pb-5 border-b border-gray-100 dark:border-slate-700 mb-5">
             <div className="h-20 w-20 rounded-full bg-white dark:bg-slate-700 shadow-sm overflow-hidden mb-3 border border-gray-200 dark:border-slate-600 flex items-center justify-center">
               {logoPreview ? (
@@ -601,7 +601,7 @@ export default function EmpresaFormModal({ open, mode, empresaId, onClose, onSav
         <section className="md:col-span-9 bg-white dark:bg-[#111827] overflow-y-auto flex flex-col">
 
           {/* Demo Mode Banner — always visible at top */}
-          <div className={`px-8 pt-6 pb-0 transition-all duration-300`}>
+          <div className={`px-4 sm:px-8 pt-6 pb-0 transition-all duration-300`}>
             <div
               className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
                 currentUsaDemo
@@ -636,7 +636,7 @@ export default function EmpresaFormModal({ open, mode, empresaId, onClose, onSav
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-8 pb-6 pt-5 space-y-0">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-4 sm:px-8 pb-6 pt-5 space-y-0">
             <div className="flex-1">
 
               {activeTab === 'datos' && (
@@ -656,6 +656,7 @@ export default function EmpresaFormModal({ open, mode, empresaId, onClose, onSav
                             {([
                               { id: 'facturacion', label: 'Facturación', icon: 'solar:bill-list-bold-duotone', color: '#0EA5E9' },
                               { id: 'hotel', label: 'Hotel', icon: 'solar:bed-bold-duotone', color: '#F59E0B' },
+                              { id: 'restaurante', label: 'Restaurante', icon: 'solar:cup-hot-bold-duotone', color: '#10B981' },
                             ] as const).map((p) => {
                               const selectedProducto = isEdit ? editData.producto : createData.producto;
                               const sel = selectedProducto === p.id;

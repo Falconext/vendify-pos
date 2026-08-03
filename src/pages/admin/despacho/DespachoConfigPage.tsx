@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import { get, put } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface DespachoConfig {
     mensajeEnCamino: string;

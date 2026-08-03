@@ -14,7 +14,7 @@ const MESES = [
 const currentYear = new Date().getFullYear();
 const ANIOS = Array.from({ length: 6 }, (_, i) => currentYear - i).map((y) => ({ id: y, value: String(y) }));
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function LibroVentas() {
   const { alert, load } = useAlertStore();

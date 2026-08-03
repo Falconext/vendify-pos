@@ -4,7 +4,7 @@ import DataTable from "@/components/Datatable";
 import { Icon } from "@iconify/react";
 
 // ── Reporte Interno — estilo CRM claro (Brix UI) ──────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const ReportesComprobantesInformales = () => {
     const vm = useReporteInformalesViewModel();

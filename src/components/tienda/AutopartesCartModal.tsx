@@ -164,7 +164,7 @@ export default function AutopartesCartModal({
                   className="w-full py-4 rounded-xl flex items-center justify-center gap-2 text-white font-black text-lg transition-transform hover:scale-[1.02]"
                   style={{ backgroundColor: cp }}
                 >
-                  Ir al Checkout <Icon icon="solar:alt-arrow-right-bold" />
+                  Finalizar compra <Icon icon="solar:alt-arrow-right-bold" />
                 </button>
                 {puedeCotizarWhatsapp && (
                   <button

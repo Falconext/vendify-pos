@@ -161,7 +161,7 @@ export default function TecnologiaCartModal({
                   className="w-full py-4 rounded-xl flex items-center justify-center gap-2 text-white font-black text-lg shadow-lg shadow-black/5 transition-transform hover:scale-[1.02] hover:-translate-y-0.5"
                   style={{ backgroundColor: cp }}
                 >
-                  Ir al Checkout <Icon icon="solar:alt-arrow-right-bold" />
+                  Finalizar compra <Icon icon="solar:alt-arrow-right-bold" />
                 </button>
 
                 <button

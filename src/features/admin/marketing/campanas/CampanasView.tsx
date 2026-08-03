@@ -3,7 +3,7 @@ import { useCampanasViewModel } from './useCampanasViewModel';
 import CampanaFormModal from './CampanaFormModal';
 import { Campana, MESES, formatCurrency, PlataformaAds } from './CampanasModel';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const PLATAFORMA_CONFIG = {
   META: { label: 'META', color: '#1877f2', bg: 'bg-[#1877f2]' },
@@ -12,14 +12,14 @@ const PLATAFORMA_CONFIG = {
 
 function KpiCard({ label, value, icon, chipClass }: { label: string; value: string; icon: string; chipClass: string }) {
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+    <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${chipClass}`}>
           <Icon icon={icon} className="text-xl" />
         </div>
         <span className="text-xs text-slate-400 font-bold uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-2xl font-extrabold text-slate-800">{value}</p>
+      <p className="text-2xl font-extrabold text-slate-800 dark:text-white">{value}</p>
     </div>
   );
 }
@@ -30,14 +30,14 @@ function CampanaCard({ c, onEditar, onToggle }: { c: Campana; onEditar: () => vo
   const moneda = c.moneda;
 
   return (
-    <div className={`bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden transition-opacity ${!activa ? 'opacity-60' : ''}`}>
+    <div className={`bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden transition-opacity ${!activa ? 'opacity-60' : ''}`}>
       {/* Header de la card */}
       <div className="flex items-center gap-3 p-4">
         <div className={`${plat.bg} text-white rounded-xl px-3 py-1.5 text-xs font-black flex-shrink-0`}>
           {plat.label}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
+          <p className="text-sm font-bold text-slate-800 dark:text-white truncate flex items-center gap-1.5">
             {c.nombre}
             {c.esRecurrente && <span title="Bucle recurrente activo" className="inline-flex"><Icon icon="solar:refresh-circle-bold-duotone" className="text-violet-500" /></span>}
           </p>
@@ -45,22 +45,22 @@ function CampanaCard({ c, onEditar, onToggle }: { c: Campana; onEditar: () => vo
             <p className="text-xs text-indigo-500 truncate mt-0.5">{c.producto.descripcion}</p>
           )}
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${activa ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${activa ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${activa ? 'bg-emerald-500' : 'bg-slate-400'}`} />
           {activa ? 'ACTIVA' : 'PAUSADA'}
         </span>
         <div className="flex gap-1.5 flex-shrink-0">
-          <button onClick={onToggle} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${activa ? 'border border-slate-200 text-slate-600 hover:bg-slate-50' : 'text-white hover:brightness-105'}`} style={!activa ? { background: ACCENT } : undefined}>
+          <button onClick={onToggle} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${activa ? 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800' : 'text-white hover:brightness-105'}`} style={!activa ? { background: ACCENT } : undefined}>
             {activa ? 'Pausar' : 'Activar'}
           </button>
-          <button onClick={onEditar} className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 transition-colors">
+          <button onClick={onEditar} className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             <Icon icon="solar:pen-bold-duotone" className="text-base" />
           </button>
         </div>
       </div>
 
       {/* Métricas */}
-      <div className="grid grid-cols-4 gap-px bg-slate-100 border-t border-slate-100">
+      <div className="grid grid-cols-4 gap-px bg-slate-100 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800">
         {[
           {
             label: c.tipoPresupuesto === 'SEMANAL' ? 'Presup. Semanal' : c.tipoPresupuesto === 'MENSUAL' ? 'Presup. Mensual' : c.tipoPresupuesto === 'TOTAL' ? 'Presup. Total' : 'Presup./día',
@@ -70,9 +70,9 @@ function CampanaCard({ c, onEditar, onToggle }: { c: Campana; onEditar: () => vo
           { label: 'Invertido', value: formatCurrency(c.gastoEstimado, moneda), sub: `${c.diasActivos} días` },
           { label: 'Ventas', value: String(c.ventasAtribuidas), sub: 'unidades' },
         ].map((m, i) => (
-          <div key={i} className="bg-white px-3 py-3 text-center">
+          <div key={i} className="bg-white dark:bg-[#111827] px-3 py-3 text-center">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{m.label}</p>
-            <p className="text-sm font-bold text-slate-800 mt-0.5">{m.value}</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{m.value}</p>
             {m.sub && <p className="text-[9px] text-slate-400">{m.sub}</p>}
           </div>
         ))}
@@ -80,24 +80,24 @@ function CampanaCard({ c, onEditar, onToggle }: { c: Campana; onEditar: () => vo
 
       {/* Ganancia real por unidad vendida */}
       {c.pnlUnidad && (
-        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
+        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-1.5">
             ¿Cuánto gano por cada unidad vendida?
           </p>
           <div className="flex items-center gap-1.5 flex-wrap text-xs">
-            <span className="text-slate-600">{formatCurrency(c.pnlUnidad.precio, moneda)}</span>
+            <span className="text-slate-600 dark:text-slate-300">{formatCurrency(c.pnlUnidad.precio, moneda)}</span>
             <span className="text-slate-400 text-[10px]">precio neto (sin IGV)</span>
             <span className="text-slate-400 mx-0.5">−</span>
-            <span className="text-slate-600">{formatCurrency(c.pnlUnidad.costoProducto, moneda)}</span>
+            <span className="text-slate-600 dark:text-slate-300">{formatCurrency(c.pnlUnidad.costoProducto, moneda)}</span>
             <span className="text-slate-400 text-[10px]">costo producto</span>
             {c.pnlUnidad.costoFijo > 0 && <>
               <span className="text-slate-400 mx-0.5">−</span>
-              <span className="text-slate-600">{formatCurrency(c.pnlUnidad.costoFijo, moneda)}</span>
+              <span className="text-slate-600 dark:text-slate-300">{formatCurrency(c.pnlUnidad.costoFijo, moneda)}</span>
               <span className="text-slate-400 text-[10px]">costo fijo/envío</span>
             </>}
             {c.pnlUnidad.comisionVenta > 0 && <>
               <span className="text-slate-400 mx-0.5">−</span>
-              <span className="text-slate-600">{formatCurrency(c.pnlUnidad.comisionVenta, moneda)}</span>
+              <span className="text-slate-600 dark:text-slate-300">{formatCurrency(c.pnlUnidad.comisionVenta, moneda)}</span>
               <span className="text-slate-400 text-[10px]">comisión vendedor</span>
             </>}
             {c.cpa > 0 && <>
@@ -126,7 +126,7 @@ export default function CampanasView() {
   const resumen = data?.resumen;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -140,7 +140,7 @@ export default function CampanasView() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Campañas de Publicidad</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Campañas de Publicidad</h1>
           <p className="text-sm text-slate-400 mt-0.5">Controla tus inversiones en ads y cuánto ganas realmente por cada venta.</p>
         </div>
         <button onClick={abrirCrear}
@@ -152,20 +152,20 @@ export default function CampanasView() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard label="Gasté en publicidad" value={resumen ? formatCurrency(resumen.gastoTotalEstimado) : '—'} icon="solar:wallet-bold-duotone" chipClass="bg-violet-50 text-violet-600" />
-        <KpiCard label="Ventas logradas con ads" value={resumen ? `${resumen.ventasAtribuidas} ventas` : '—'} icon="solar:cart-large-4-bold-duotone" chipClass="bg-blue-50 text-blue-600" />
-        <KpiCard label="Cuánto me costó cada venta" value={resumen ? formatCurrency(resumen.cpaPromedio) : '—'} icon="solar:target-bold-duotone" chipClass="bg-amber-50 text-amber-600" />
-        <KpiCard label="Campañas activas" value={data ? `${data.campanas.filter(c => c.estado === 'ACTIVA').length} de ${data.campanas.length}` : '—'} icon="solar:play-circle-bold-duotone" chipClass="bg-emerald-50 text-emerald-600" />
+        <KpiCard label="Gasté en publicidad" value={resumen ? formatCurrency(resumen.gastoTotalEstimado) : '—'} icon="solar:wallet-bold-duotone" chipClass="bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400" />
+        <KpiCard label="Ventas logradas con ads" value={resumen ? `${resumen.ventasAtribuidas} ventas` : '—'} icon="solar:cart-large-4-bold-duotone" chipClass="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" />
+        <KpiCard label="Cuánto me costó cada venta" value={resumen ? formatCurrency(resumen.cpaPromedio) : '—'} icon="solar:target-bold-duotone" chipClass="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" />
+        <KpiCard label="Campañas activas" value={data ? `${data.campanas.filter(c => c.estado === 'ACTIVA').length} de ${data.campanas.length}` : '—'} icon="solar:play-circle-bold-duotone" chipClass="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" />
       </div>
 
       {/* Filtros + navegación mes */}
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div className="flex items-center gap-1.5 bg-white rounded-2xl p-1 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-1.5 bg-white dark:bg-[#111827] rounded-2xl p-1 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
           {(['TODAS', 'META', 'TIKTOK'] as const).map(p => (
             <button
               key={p}
               onClick={() => setFiltroPlataforma(p as PlataformaAds | 'TODAS')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${filtroPlataforma === p ? 'text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${filtroPlataforma === p ? 'text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
               style={filtroPlataforma === p ? { background: ACCENT } : undefined}
             >
               {p === 'META' ? <span><span style={{color:'#1877f2'}}>●</span> META</span> : p === 'TIKTOK' ? <span><span style={{color:'#ff0050'}}>●</span> TIKTOK</span> : 'Todas'}

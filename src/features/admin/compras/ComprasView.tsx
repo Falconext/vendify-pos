@@ -13,7 +13,7 @@ import ModalRegistrarPagoCompra from '@/pages/admin/compras/ModalRegistrarPagoCo
 import ModalHistorialPagosCompra from '@/pages/admin/compras/ModalHistorialPagosCompra';
 import ModalNuevaCompra from '@/pages/admin/compras/ModalNuevaCompra';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function ComprasView() {
     const vm = useComprasViewModel();

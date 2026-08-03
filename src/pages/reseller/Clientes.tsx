@@ -6,8 +6,9 @@ import { useResellerPanelStore } from '@/zustand/reseller-panel';
 import Select from '@/components/Select';
 import ClienteDetalleModal from '@/components/reseller/ClienteDetalleModal';
 import Modal from '@/components/Modal';
+import ModalConfirm from '@/components/ModalConfirm';
+import useAlertStore from '@/zustand/alert';
 import InputPro from '@/components/InputPro';
-import Button from '@/components/Button';
 import { BRAND } from '@/lib/branding';
 import { useExtentionsStore } from '@/zustand/extentions';
 
@@ -90,6 +91,7 @@ const initialFormData = {
     distrito: '',
     ubigeo: '',
     rubroId: '',
+    producto: 'facturacion', // sistema: 'facturacion' | 'restaurante' | 'hotel'
     representa: '',
     email: '',
     telefono: '',
@@ -166,8 +168,24 @@ export default function ResellerClientes() {
         }
     }, [auth]);
 
+    const [searchingDocEdit, setSearchingDocEdit] = useState(false);
+    const [confirm, setConfirm] = useState<null | {
+        title: string;
+        information: string;
+        children?: React.ReactNode;
+        confirmText: string;
+        confirmColor?: string;
+        onConfirm: () => Promise<void> | void;
+    }>(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const runConfirm = async () => {
+        if (!confirm) return;
+        setConfirmLoading(true);
+        try { await confirm.onConfirm(); } finally { setConfirmLoading(false); setConfirm(null); }
+    };
     const [editData, setEditData] = useState({
         planId: '',
+        ruc: '',
         razonSocial: '',
         nombreComercial: '',
         direccion: '',
@@ -191,6 +209,7 @@ export default function ResellerClientes() {
         setEditingCliente(raw);
         setEditData({
             planId: String(raw?.planId || ''),
+            ruc: raw?.ruc || '',
             razonSocial: raw?.razonSocial || '',
             nombreComercial: raw?.nombreComercial || '',
             direccion: raw?.direccion || '',
@@ -218,10 +237,10 @@ export default function ResellerClientes() {
         setIsEditModalOpen(true);
     };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const doEditSave = async (rucLimpio: string) => {
         if (!auth || !editingCliente) return;
         const payload: any = {
+            ruc: rucLimpio || undefined,
             razonSocial: editData.razonSocial,
             nombreComercial: editData.nombreComercial,
             direccion: editData.direccion,
@@ -246,6 +265,33 @@ export default function ResellerClientes() {
             setIsEditModalOpen(false);
             getClientes(auth.resellerId!);
         }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!auth || !editingCliente) return;
+        const rucLimpio = (editData.ruc || '').replace(/\D/g, '');
+        const rucCambia = rucLimpio && rucLimpio !== (editingCliente.ruc || '');
+        if (rucCambia && rucLimpio.length !== 11) {
+            useAlertStore.getState().alert('El RUC debe tener 11 dígitos.', 'error');
+            return;
+        }
+        if (rucCambia) {
+            setConfirm({
+                title: 'Cambiar el RUC del cliente',
+                information: 'Vas a cambiar el RUC de esta empresa.',
+                children: (
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                        Se <b>borrarán las credenciales QPSE actuales</b> del cliente; deberás volver a generarlas con el nuevo RUC desde <b>Ver → Configuración</b>.
+                    </p>
+                ),
+                confirmText: 'Cambiar RUC',
+                confirmColor: 'danger',
+                onConfirm: () => doEditSave(rucLimpio),
+            });
+            return;
+        }
+        await doEditSave(rucLimpio);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +341,38 @@ export default function ResellerClientes() {
         }
     };
 
+    const handleSearchDocumentEdit = async () => {
+        if (!auth?.resellerId || (editData.ruc || '').replace(/\D/g, '').length !== 11) {
+            alert('Ingresa un RUC válido de 11 dígitos.');
+            return;
+        }
+        setSearchingDocEdit(true);
+        try {
+            const data = await consultarDocumento(auth.resellerId, 'RUC', editData.ruc);
+            setEditData(prev => ({
+                ...prev,
+                razonSocial: data?.nombre_o_razon_social || data?.razonSocial || data?.nombre || prev.razonSocial,
+                nombreComercial: data?.nombre_comercial || data?.nombre_o_razon_social || prev.nombreComercial,
+                direccion: data?.direccion || prev.direccion,
+                departamento: data?.departamento || prev.departamento,
+                provincia: data?.provincia || prev.provincia,
+                distrito: data?.distrito || prev.distrito,
+                ubigeo: data?.ubigeo || prev.ubigeo,
+            }));
+        } catch (error: any) {
+            alert(error.message || 'No se pudo consultar el RUC.');
+        } finally {
+            setSearchingDocEdit(false);
+        }
+    };
+
     const rubrosOptions = Array.isArray(rubros) ? rubros as any[] : [];
+    // Sistema/producto que correrá la empresa. 'restaurante' aprovisiona un tenant
+    // en el sistema dedicado falconext-restaurante; 'facturacion' vive en este POS.
+    const productoOptions = [
+        { id: 'facturacion', value: 'Facturación' },
+        { id: 'restaurante', value: 'Restaurante' },
+    ];
     const ubigeosOptions = (Array.isArray(ubigeos) ? ubigeos as any[] : []).map((u: any) => ({
         id: u.codigo,
         value: `${u.departamento} - ${u.provincia} - ${u.distrito}`,
@@ -587,10 +664,15 @@ export default function ResellerClientes() {
                                                         </button>
                                                         {row.usaDemo && (
                                                             <button
-                                                                onClick={async () => {
-                                                                    const ok = window.confirm('Este cliente demo se ocultará del panel y sus usuarios quedarán inactivos. ¿Continuar?');
-                                                                    if (!ok || !auth?.resellerId) return;
-                                                                    await deleteDemoCliente(auth.resellerId, row.id);
+                                                                onClick={() => {
+                                                                    if (!auth?.resellerId) return;
+                                                                    setConfirm({
+                                                                        title: 'Eliminar cliente demo',
+                                                                        information: 'Este cliente demo se ocultará del panel y sus usuarios quedarán inactivos.',
+                                                                        confirmText: 'Eliminar',
+                                                                        confirmColor: 'danger',
+                                                                        onConfirm: async () => { await deleteDemoCliente(auth.resellerId!, row.id); },
+                                                                    });
                                                                 }}
                                                                 title="Eliminar demo" aria-label="Eliminar demo"
                                                                 className="h-8 w-8 grid place-items-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 transition-colors"
@@ -628,8 +710,18 @@ export default function ResellerClientes() {
                 width="500px"
                 height="auto"
             >
-                <form onSubmit={handleEditSubmit}>
-                    <div className="p-5 grid grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleEditSubmit} className="flex flex-col min-h-[calc(100dvh-56px)] md:block md:min-h-0">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-5 grid grid-cols-2 gap-3 md:flex-none md:max-h-[70vh]">
+                        <div className="col-span-2 grid grid-cols-[1fr_auto] items-end gap-2">
+                            <InputPro isLabel label="RUC" name="ruc" value={editData.ruc} onChange={(e: any) => setEditData(prev => ({ ...prev, ruc: e.target.value }))} placeholder="20100100100" maxLength={11} />
+                            <button type="button" onClick={handleSearchDocumentEdit} disabled={searchingDocEdit} className="h-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF]/10 px-4 text-sm font-bold text-[#7551FF] hover:bg-[#7551FF]/20 disabled:opacity-60">
+                                <Icon icon={searchingDocEdit ? 'svg-spinners:ring-resize' : 'solar:magnifer-linear'} width="16" />
+                                {searchingDocEdit ? '...' : 'Buscar'}
+                            </button>
+                        </div>
+                        <p className="col-span-2 -mt-1 text-[11px] text-amber-600">
+                            Cambiar el RUC borra las credenciales QPSE actuales; deberás volver a generarlas.
+                        </p>
                         <div className="col-span-2">
                             <InputPro isLabel label="Razón Social" name="razonSocial" value={editData.razonSocial} onChange={(e: any) => setEditData(prev => ({ ...prev, razonSocial: e.target.value }))} placeholder="Empresa SAC" />
                         </div>
@@ -697,8 +789,10 @@ export default function ResellerClientes() {
                                 readOnly={true}
                             />
                         </div>
-                        <InputPro isLabel label="Teléfono" name="telefono" value={editData.telefono} onChange={(e: any) => setEditData(prev => ({ ...prev, telefono: e.target.value }))} placeholder="999 999 999" />
-                        <InputPro isLabel label="Email Admin" name="adminEmail" type="email" value={editData.adminEmail} onChange={(e: any) => setEditData(prev => ({ ...prev, adminEmail: e.target.value }))} placeholder="admin@empresa.com" />
+                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <InputPro isLabel label="Teléfono" name="telefono" value={editData.telefono} onChange={(e: any) => setEditData(prev => ({ ...prev, telefono: e.target.value }))} placeholder="999 999 999" />
+                            <InputPro isLabel label="Email Admin" name="adminEmail" type="email" value={editData.adminEmail} onChange={(e: any) => setEditData(prev => ({ ...prev, adminEmail: e.target.value }))} placeholder="admin@empresa.com" />
+                        </div>
                         <div className="col-span-2">
                             <InputPro isLabel label="Nueva Contraseña (opcional)" name="adminPassword" type="password" value={editData.adminPassword} onChange={(e: any) => setEditData(prev => ({ ...prev, adminPassword: e.target.value }))} placeholder="Dejar vacío para no cambiar" />
                         </div>
@@ -751,28 +845,41 @@ export default function ResellerClientes() {
                         })()}
                         {editingCliente && (
                             <div className="col-span-2 bg-slate-50 rounded-xl p-3 text-xs text-slate-500 space-y-0.5">
-                                <p><span className="font-semibold">RUC:</span> {editingCliente.ruc}</p>
                                 <p><span className="font-semibold">Plan actual:</span> {editingCliente.plan?.nombre}</p>
                                 <p><span className="font-semibold">Estado:</span> {editingCliente.estado}</p>
                             </div>
                         )}
-                        {/* Producción SUNAT */}
-                        <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${!editData.usaDemo ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-100 bg-slate-50'}`}>
-                            <span className="flex items-center gap-3">
-                                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400'}`}>
-                                    <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:cloud-storage-bold-duotone'} width="20" />
+                        {/* Entorno de facturación */}
+                        {String(editingCliente?.billingProvider || 'QPSE').toUpperCase() === 'QPSE' ? (
+                            <div className="col-span-2 flex items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                <span className="flex items-center gap-3">
+                                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-white'}`}>
+                                        <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:test-tube-bold-duotone'} width="20" />
+                                    </span>
+                                    <span>
+                                        <strong className="block text-sm text-slate-800">Facturación: {!editData.usaDemo ? 'Producción' : 'Modo prueba'}</strong>
+                                        <span className="text-xs text-slate-500">Para pasar este cliente a <b>producción</b>, entra a <b>Ver&nbsp;👁&nbsp;→ Configuración → Pasar a producción</b>.</span>
+                                    </span>
                                 </span>
-                                <span>
-                                    <strong className="block text-sm text-slate-800">Producción SUNAT</strong>
-                                    <span className="text-xs text-slate-500">{!editData.usaDemo ? 'Emite comprobantes reales ante SUNAT.' : 'Apagado = entorno Demo (pruebas).'}</span>
+                            </div>
+                        ) : (
+                            <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${!editData.usaDemo ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-100 bg-slate-50'}`}>
+                                <span className="flex items-center gap-3">
+                                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${!editData.usaDemo ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400'}`}>
+                                        <Icon icon={!editData.usaDemo ? 'solar:cloud-check-bold-duotone' : 'solar:cloud-storage-bold-duotone'} width="20" />
+                                    </span>
+                                    <span>
+                                        <strong className="block text-sm text-slate-800">Producción SUNAT</strong>
+                                        <span className="text-xs text-slate-500">{!editData.usaDemo ? 'Emite comprobantes reales ante SUNAT.' : 'Apagado = entorno Demo (pruebas).'}</span>
+                                    </span>
                                 </span>
-                            </span>
-                            <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
-                                <input type="checkbox" className="peer sr-only" checked={!editData.usaDemo} onChange={(e) => setEditData(prev => ({ ...prev, usaDemo: !e.target.checked }))} />
-                                <span className="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500" />
-                                <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
-                            </span>
-                        </label>
+                                <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+                                    <input type="checkbox" className="peer sr-only" checked={!editData.usaDemo} onChange={(e) => setEditData(prev => ({ ...prev, usaDemo: !e.target.checked }))} />
+                                    <span className="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500" />
+                                    <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+                                </span>
+                            </label>
+                        )}
 
                         {/* Código de barras */}
                         <label className={`col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors ${editData.usaCodigoBarrasManual ? 'border-[#7551FF]/30 bg-[#7551FF]/[0.06]' : 'border-slate-100 bg-slate-50'}`}>
@@ -823,9 +930,9 @@ export default function ResellerClientes() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-3 px-5 pb-5">
-                        <Button type="button" onClick={() => setIsEditModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
-                        <Button type="submit" color="primary" className="flex-1">Guardar Cambios</Button>
+                    <div className="sticky bottom-0 z-20 mt-auto flex gap-3 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
+                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
+                        <button type="submit" className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105">Guardar Cambios</button>
                     </div>
                 </form>
             </Modal>
@@ -840,7 +947,7 @@ export default function ResellerClientes() {
                 width="580px"
                 height="auto"
             >
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="flex flex-col min-h-[calc(100dvh-56px)] md:block md:min-h-0">
                     <div className="flex gap-1 border-b border-slate-100 px-4 dark:border-slate-800">
                         {([
                             { id: 'empresa', label: 'Empresa', icon: 'solar:buildings-bold-duotone' },
@@ -859,7 +966,7 @@ export default function ResellerClientes() {
                         ))}
                     </div>
 
-                    <div className="p-5 max-h-[72vh] overflow-y-auto">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-5 md:flex-none md:max-h-[72vh]">
                         {activeTab === 'empresa' && (
                             <div className="space-y-5">
                                 {/* ── Sección: Datos de la empresa ── */}
@@ -872,7 +979,7 @@ export default function ResellerClientes() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="grid grid-cols-[1fr_auto] items-end gap-2">
                                                 <InputPro isLabel label="RUC" name="rut" value={formData.rut} onChange={handleChange as any} placeholder="20100100100" maxLength={11} />
                                                 <button type="button" onClick={handleSearchDocument} disabled={searchingDoc} className="h-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF]/10 px-4 text-sm font-bold text-[#7551FF] hover:bg-[#7551FF]/20 disabled:opacity-60">
@@ -907,7 +1014,7 @@ export default function ResellerClientes() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Razón Social" name="razonSocial" value={formData.razonSocial} onChange={handleChange as any} placeholder="Empresa SAC" />
                                             <InputPro isLabel label="Nombre Comercial" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange as any} placeholder="Nombre visible" />
                                         </div>
@@ -924,15 +1031,33 @@ export default function ResellerClientes() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange as any} placeholder="999 999 999" />
                                             <InputPro isLabel label="Representante" name="representa" value={formData.representa} onChange={handleChange as any} placeholder="Nombre del contacto" />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputPro isLabel label="Dirección fiscal" name="direccion" value={formData.direccion} onChange={handleChange as any} placeholder="Dirección completa" />
                                             <Select label="Ubicación" name="ubigeo" value={formatUbigeoValue(formData)} options={ubigeosOptions} onChange={(id: any) => applyUbigeoToForm(id, 'create')} error={null} isSearch withLabel />
                                         </div>
-                                        <Select label="Rubro" name="rubroId" value={(rubros as any[]).find((r: any) => String(r.id) === String(formData.rubroId))?.value || ''} options={rubrosOptions} onChange={(id: any) => setFormData(prev => ({ ...prev, rubroId: String(id) }))} error={null} readOnly={true} />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <Select label="Sistema" name="producto" value={productoOptions.find((o) => o.id === formData.producto)?.value || ''} options={productoOptions} onChange={(id: any) => setFormData(prev => {
+                                                const next = { ...prev, producto: String(id) };
+                                                if (String(id) === 'restaurante') {
+                                                    // El rubro es evidente: se fija a "Restaurantes y comida" y se bloquea.
+                                                    const rubroResto = (rubros as any[]).find((r: any) => /restauran|comida/i.test(String(r.value ?? r.nombre ?? '')));
+                                                    if (rubroResto) next.rubroId = String(rubroResto.id);
+                                                } else {
+                                                    next.rubroId = '';
+                                                }
+                                                return next;
+                                            })} error={null} />
+                                            <Select label="Rubro" name="rubroId" value={(rubros as any[]).find((r: any) => String(r.id) === String(formData.rubroId))?.value || ''} options={rubrosOptions} onChange={(id: any) => setFormData(prev => ({ ...prev, rubroId: String(id) }))} error={null} disabled={formData.producto === 'restaurante'} />
+                                        </div>
+                                        {formData.producto === 'restaurante' && (
+                                            <p className="mt-2 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+                                                Al crear, la empresa se aprovisiona en el sistema Restaurante (backend dedicado). El administrador ingresará al panel de restaurante, no al POS de facturación.
+                                            </p>
+                                        )}
                                     </div>
                                 </section>
 
@@ -945,11 +1070,11 @@ export default function ResellerClientes() {
                                             <p className="text-[11px] text-slate-400">Con estos datos el cliente inicia sesión.</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <InputPro isLabel label="Email (Admin)" name="email" type="email" value={formData.email} onChange={handleChange as any} placeholder="admin@empresa.com" />
                                         <InputPro isLabel label="Contraseña Inicial" name="password" value={formData.password} onChange={handleChange as any} placeholder="123456" />
                                     </div>
-                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-800/60">
                                             <span><strong className="block text-slate-700 text-xs dark:text-slate-100">Producción SUNAT</strong><span className="text-slate-400">Apagado = Demo</span></span>
                                             <input type="checkbox" checked={!formData.usaDemo} onChange={(e) => setFormData(prev => ({ ...prev, usaDemo: !e.target.checked }))} className="h-4 w-4 accent-[#7551FF]" />
@@ -1043,7 +1168,7 @@ export default function ResellerClientes() {
                                                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7551FF]/10 text-[#7551FF]">
                                                     <Icon icon="solar:tag-price-bold-duotone" width="18" />
                                                 </div>
-                                                <div className="flex items-center gap-4 flex-1">
+                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 flex-1">
                                                     <div className={`transition-opacity ${esAnual ? 'opacity-40' : ''}`}>
                                                         <div className="text-[10px] text-[#7551FF]/70 font-bold uppercase tracking-wide">Tu costo mensual</div>
                                                         <div className="text-lg font-black text-[#7551FF]">S/ {costoMensual.toFixed(2)}</div>
@@ -1132,8 +1257,10 @@ export default function ResellerClientes() {
                                         <div className="col-span-2">
                                             <InputPro isLabel label="Token API" name="billingApiToken" value={formData.billingApiToken} onChange={handleChange as any} placeholder="token (opcional si usas usuario/clave)" />
                                         </div>
-                                        <InputPro isLabel label="Usuario API" name="billingApiUser" value={formData.billingApiUser} onChange={handleChange as any} placeholder="usuario_api" />
-                                        <InputPro isLabel label="Clave API" name="billingApiPassword" type="password" value={formData.billingApiPassword} onChange={handleChange as any} placeholder="••••••••" />
+                                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <InputPro isLabel label="Usuario API" name="billingApiUser" value={formData.billingApiUser} onChange={handleChange as any} placeholder="usuario_api" />
+                                            <InputPro isLabel label="Clave API" name="billingApiPassword" type="password" value={formData.billingApiPassword} onChange={handleChange as any} placeholder="••••••••" />
+                                        </div>
                                     </>
                                 )}
                             </div>
@@ -1141,13 +1268,13 @@ export default function ResellerClientes() {
                         {activeTab === 'series' && (
                             <div className="space-y-3">
                                 {seriesData.map((item, index) => (
-                                    <div key={item.tipoDoc} className="grid grid-cols-[1fr_110px_110px_40px] items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-800">{item.nombre}</p>
+                                    <div key={item.tipoDoc} className="grid grid-cols-[minmax(0,1fr)_72px_72px_36px] sm:grid-cols-[1fr_110px_110px_40px] items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-800">{item.nombre}</p>
                                             <p className="text-[11px] text-slate-400">Tipo {item.tipoDoc}</p>
                                         </div>
-                                        <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold uppercase" value={item.serie} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, serie: e.target.value.toUpperCase() } : s))} />
-                                        <input className="rounded-lg border border-slate-200 px-3 py-2 text-sm" type="number" min={1} value={item.correlativo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, correlativo: Number(e.target.value || 1) } : s))} />
+                                        <input className="w-full min-w-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 text-sm font-bold uppercase" value={item.serie} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, serie: e.target.value.toUpperCase() } : s))} />
+                                        <input className="w-full min-w-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 text-sm" type="number" min={1} value={item.correlativo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, correlativo: Number(e.target.value || 1) } : s))} />
                                         <input type="checkbox" checked={item.activo} onChange={(e) => setSeriesData(prev => prev.map((s, i) => i === index ? { ...s, activo: e.target.checked } : s))} className="h-5 w-5 accent-[#7551FF]" />
                                     </div>
                                 ))}
@@ -1156,7 +1283,7 @@ export default function ResellerClientes() {
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-2 px-5 pb-5">
+                    <div className="sticky bottom-0 z-20 mt-auto flex flex-col gap-2 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
                         {(() => {
                             const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
                             const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesActivos || 0) + 1) : 0;
@@ -1172,8 +1299,8 @@ export default function ResellerClientes() {
                                         </div>
                                     )}
                                     <div className="flex gap-3">
-                                        <Button type="button" onClick={() => setIsModalOpen(false)} color="default" className="flex-1">Cancelar</Button>
-                                        <Button type="submit" color="primary" className="flex-1" disabled={saldoInsuf}>Crear Cliente</Button>
+                                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
+                                        <button type="submit" disabled={saldoInsuf} className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">Crear Cliente</button>
                                     </div>
                                 </>
                             );
@@ -1181,6 +1308,19 @@ export default function ResellerClientes() {
                     </div>
                 </form>
             </Modal>
+
+            <ModalConfirm
+                isOpenModal={!!confirm}
+                setIsOpenModal={(v) => { if (!v) setConfirm(null); }}
+                confirmSubmit={runConfirm}
+                title={confirm?.title || ''}
+                information={confirm?.information || ''}
+                confirmText={confirm?.confirmText || 'Confirmar'}
+                confirmColor={confirm?.confirmColor}
+                confirmLoading={confirmLoading}
+            >
+                {confirm?.children}
+            </ModalConfirm>
         </div>
     );
 }

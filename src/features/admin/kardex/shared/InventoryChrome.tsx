@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 // Chrome compartido para las vistas de inventario (kardex / kits).
 // Adaptado a la identidad "Vendify": fondo #F7F8FB, tipografía Jakarta,
 // acento violeta #7551FF y tarjetas rounded-3xl con sombra suave.
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface InventoryPageProps {
   children: ReactNode;

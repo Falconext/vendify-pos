@@ -907,7 +907,7 @@ export default function ModaProductoDetalle() {
                       >
                         {isSelected && (
                           <Icon
-                            icon="solar:check-bold"
+                            icon="mdi:check"
                             width={12}
                             className="absolute inset-0 m-auto text-white drop-shadow"
                           />

@@ -20,19 +20,24 @@ import apiClient from "@/utils/apiClient";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 import ModalConfirm from "@/components/ModalConfirm";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
+// Catálogo SUNAT N° 20 — Motivo de traslado (códigos oficiales).
 const MOTIVOS_TRASLADO: Record<string, string> = {
     "01": "VENTA",
     "02": "COMPRA",
-    "03": "CONSIGNACIÓN",
-    "04": "DEVOLUCIÓN",
-    "05": "TRASLADO ENTRE ESTABLECIMIENTOS DE LA MISMA EMPRESA",
-    "06": "TRASLADO PARA EXPORTACIÓN",
-    "07": "VENTA CON ENTREGA A TERCEROS",
-    "08": "VENTA SUJETA A CONFIRMACIÓN DEL COMPRADOR",
-    "09": "TRASLADO DE BIENES PARA TRANSFORMACIÓN",
+    "03": "VENTA CON ENTREGA A TERCEROS",
+    "04": "TRASLADO ENTRE ESTABLECIMIENTOS DE LA MISMA EMPRESA",
+    "05": "CONSIGNACIÓN",
+    "06": "DEVOLUCIÓN",
+    "07": "RECOJO DE BIENES TRANSFORMADOS",
+    "08": "IMPORTACIÓN",
+    "09": "EXPORTACIÓN",
     "13": "OTROS",
+    "14": "VENTA SUJETA A CONFIRMACIÓN DEL COMPRADOR",
+    "17": "TRASLADO DE BIENES PARA TRANSFORMACIÓN",
+    "18": "TRASLADO POR EMISOR ITINERANTE DE COMPROBANTES DE PAGO",
+    "19": "TRASLADO DE MERCANCÍA EXTRANJERA",
 };
 
 const GuiaRemision = () => {
@@ -50,6 +55,20 @@ const GuiaRemision = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [guiaToEdit, setGuiaToEdit] = useState<any>(null);
+    // Flujo "Generar guía" desde la lista de Comprobantes: abre el modal precargado
+    const [prefillComprobante, setPrefillComprobante] = useState<{ id: number; serie?: string; correlativo?: number } | null>(null);
+
+    useEffect(() => {
+        const origen = (location.state as any)?.generarDesdeComprobante;
+        if (origen?.id) {
+            setPrefillComprobante(origen);
+            setGuiaToEdit(null);
+            setIsModalOpen(true);
+            // Limpiar el state de navegación para no re-disparar al refrescar
+            navigate(location.pathname, { replace: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state]);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
     const [isProcessingSend, setIsProcessingSend] = useState(false);
@@ -64,6 +83,8 @@ const GuiaRemision = () => {
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: buildComprobantePrintPageStyle({ width: 210, height: 297 }),
+        // Nombre sugerido al "Guardar como PDF": serie-correlativo de la guía
+        documentTitle: guiaToPrint?.serie ? `${guiaToPrint.serie}-${guiaToPrint.correlativo}` : undefined,
     });
 
     const handlePrint = (guia: any) => {
@@ -468,9 +489,11 @@ const GuiaRemision = () => {
                 {isModalOpen && (
                     <ModalGuiaRemision
                         isOpen={isModalOpen}
+                        prefillComprobante={prefillComprobante}
                         onClose={() => {
                             setIsModalOpen(false);
                             setGuiaToEdit(null);
+                            setPrefillComprobante(null);
                         }}
                         onSuccess={() => {
                             getAllGuiasRemision({

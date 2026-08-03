@@ -1,6 +1,9 @@
 
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import Input from "@/components/Input";
+import DataTable from "@/components/Datatable";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import Pagination from "@/components/Pagination";
 import useAlertStore from "@/zustand/alert";
 import { IInvoicesState, useInvoiceStore } from "@/zustand/invoices";
 import { IInvoices } from "@/interfaces/invoices";
@@ -16,6 +19,7 @@ import { get, post } from "@/utils/fetch";
 import ModalConfirm from "@/components/ModalConfirm";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
+import InputPro from "@/components/InputPro";
 import ComprobantePrintPage from "./comprobanteImprimir";
 import { useReactToPrint } from "react-to-print";
 import ModalEnviarWhatsApp from "./ModalEnviarWhatsApp";
@@ -30,30 +34,6 @@ import { useUsersStore } from "@/zustand/users";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
-
-// ── Estilo canónico del dashboard (CRM claro / Brix UI) ──────────────────────
-const ACCENT = '#7551FF';
-
-// Pills de estado SUNAT/pago — punto de color + texto, mismo patrón del dashboard.
-function estadoPill(estado?: string) {
-    const e = String(estado ?? '').toUpperCase();
-    if (e.includes('CONCILIACION')) return { label: 'Conciliación SUNAT', dot: 'bg-sky-500', text: 'text-sky-600', bg: 'bg-sky-50' };
-    if (['ACEPTADO', 'APROBADO', 'EMITIDO', 'PAGADO', 'COMPLETADO'].some((k) => e.includes(k))) return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Aceptado', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' };
-    if (['PENDIENTE', 'ENVIANDO', 'EN_PROCESO', 'PROCESANDO', 'INDETERMINADO'].some((k) => e.includes(k))) return { label: e.includes('COBRAR') ? 'Por cobrar' : 'Pendiente', dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' };
-    if (['RECHAZADO', 'FALLIDO', 'ERROR', 'OBSERVADO'].some((k) => e.includes(k))) return { label: 'Rechazado', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' };
-    if (['ANULADO', 'BAJA'].some((k) => e.includes(k))) return { label: 'Anulado', dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100' };
-    return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Emitido', dot: 'bg-violet-500', text: 'text-violet-600', bg: 'bg-violet-50' };
-}
-
-const TIPO_TAG: Record<string, string> = {
-    FACTURA: 'Factura',
-    BOLETA: 'Boleta',
-    'NOTA DE CREDITO': 'N. Crédito',
-    'NOTA DE DEBITO': 'N. Débito',
-    COTIZACION: 'Cotización',
-};
-
-const PER_PAGE = [10, 20, 50, 100];
 
 const normalizeSunatEstado = (invoice: any) => {
     const rawEstado = String(invoice?.estadoEnvioSunat ?? '').toUpperCase();
@@ -123,8 +103,7 @@ const Comprobantes = () => {
     const [stateInvoice, setStateInvoice] = useState<string>("TODOS");
     const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
     const [selectedUsuarioId, setSelectedUsuarioId] = useState<number | null>(null);
-    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(true);
-    const [copied, setCopied] = useState<number | null>(null);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<string>("Efectivo");
     const [isOpenModalWhatsApp, setIsOpenModalWhatsApp] = useState(false);
     const [comprobanteWhatsApp, setComprobanteWhatsApp] = useState<any>(null);
@@ -134,6 +113,10 @@ const Comprobantes = () => {
     const [isOpenModalConfirmDescartar, setIsOpenModalConfirmDescartar] = useState(false);
     const [detalleComprobanteId, setDetalleComprobanteId] = useState<number | null>(null);
     const [errorSunatModal, setErrorSunatModal] = useState<{ titulo: string; mensaje: string } | null>(null);
+    const [soloPendientesSunat, setSoloPendientesSunat] = useState(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        return searchParams.get('soloPendientesSunat') === 'true';
+    });
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, row: any) => {
         setMenuAnchor(event.currentTarget);
@@ -156,14 +139,14 @@ const Comprobantes = () => {
         handleCloseMenu();
         const corr = String(row.correlativo || '').padStart(8, '0');
         setPdfName(`${row.serie}-${corr}.pdf`);
-        // Siempre regenerar (force) para que el PDF refleje el formato vigente,
-        // no una versión cacheada con un diseño anterior.
-        setPdfUrl('');
-        setPdfLoading(true);
+        setPdfUrl(row.s3PdfUrl || '');
+        setPdfLoading(!row.s3PdfUrl);
         setIsOpenModalPdf(true);
 
+        if (row.s3PdfUrl) return;
+
         try {
-            const res: any = await post(`comprobante/${row.id}/generar-pdf?force=true`, {});
+            const res: any = await post(`comprobante/${row.id}/generar-pdf`, {});
             if (res?.error) {
                 useAlertStore.getState().alert(res.error, 'error');
                 return;
@@ -329,8 +312,7 @@ const Comprobantes = () => {
             s3PdfUrl: item?.s3PdfUrl,
             client: item?.cliente?.nombre,
             vendedor: item?.usuario?.nombre || '-',
-            // El importe se muestra en la moneda del comprobante: US$ para dólares, S/ para soles.
-            total: `${String((item as any).tipoMoneda).toUpperCase() === 'USD' ? '$' : 'S/'} ${item.mtoImpVenta.toFixed(2)}`,
+            total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
             estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
                 ? item.estadoEnvioSunat
                 : item.estadoPago,
@@ -342,19 +324,45 @@ const Comprobantes = () => {
             sunatRetriesCount: (item as any).sunatRetriesCount ?? 0,
             sunatErrorMsg: item.sunatErrorMsg ?? null,
             documentoId: (item as any).documentoId,
-            tipoDoc: item.tipoDoc,
-            cotizIncluirImagenes: (item as any).cotizIncluirImagenes,
         };
 
-        return rowBase;
+        const canEmitirSunat = ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(rowBase.comprobante);
+
+        const acciones = (
+            <button
+                type="button"
+                onClick={(e) => handleOpenMenu(e, { ...rowBase, tipoDoc: item.tipoDoc, cotizIncluirImagenes: (item as any).cotizIncluirImagenes })}
+                className="px-2 py-1 text-xs rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+            >
+                <Icon icon="mdi:dots-vertical" width={18} height={18} />
+            </button>
+        );
+
+        return {
+            ...rowBase,
+            acciones,
+        };
     });
 
-    const copyDoc = (row: any) => {
-        const txt = `${row.serie}-${String(row.correlativo).padStart(8, '0')}`;
-        navigator.clipboard?.writeText(txt);
-        setCopied(row.id);
-        setTimeout(() => setCopied((c) => (c === row.id ? null : c)), 1200);
+    const renderEstadoBadge = (estado?: string) => {
+        const value = String(estado || 'SIN ESTADO').toUpperCase();
+        const tone = value.includes('ACEPTADO') || value.includes('EMITIDO') || value.includes('PAGADO')
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+            : value.includes('CONCILIACION')
+                ? 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20'
+            : value.includes('PENDIENTE')
+                ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+                : value.includes('ANULADO') || value.includes('RECHAZADO') || value.includes('FALLIDO')
+                    ? 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+                    : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+
+        return (
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${tone}`}>
+                {value === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT' : value}
+            </span>
+        );
     };
+
 
     const handleGetReceipt = async (data: any) => {
         console.log(data);
@@ -454,8 +462,8 @@ const Comprobantes = () => {
                 serie: formValues.serie,
                 correlativo: formValues.correlativo,
                 cliente: { nombre: formValues.client },
-                mtoImpVenta: parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0'),
-                saldo: parseFloat((formValues?.saldo || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0') || undefined,
+                mtoImpVenta: parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0'),
+                saldo: parseFloat((formValues?.saldo || '').toString().replace('S/ ', '') || '0') || undefined,
             },
             async (_comprobante: any, _medioPago: string, _monto: number, _observacion?: string, _referencia?: string, _cuentaBancariaId?: number) => {
                 // Reutiliza completePay del store (acepta monto opcional)
@@ -523,9 +531,10 @@ const Comprobantes = () => {
         setSelectedSedeId(Number(idValue));
     }
 
-    const handleSelectUsuario = (id: any) => {
+    const handleSelectUsuario = (event: ChangeEvent<HTMLSelectElement>) => {
+        const value = event.target.value;
         setcurrentPage(1);
-        setSelectedUsuarioId(id ? Number(id) : null);
+        setSelectedUsuarioId(value ? Number(value) : null);
     }
 
     const estadosInvoice = [{ id: 1, value: "TODOS" }, { id: 2, value: "EMITIDO" }, { id: 3, value: "PENDIENTE" }, { id: 4, value: "PENDIENTE_CONCILIACION" }, { id: 5, value: "ANULADO" }, { id: 6, value: "RECHAZADO" }]
@@ -534,10 +543,6 @@ const Comprobantes = () => {
         ...sedes.map((s: any) => ({ id: s.id, value: s.nombre }))
     ]
     const vendedoresOptions = usuarios.filter((u) => u.estado === 'ACTIVO');
-    const vendedoresSelectOptions = [
-        { id: '', value: 'Todos los vendedores' },
-        ...vendedoresOptions.map((u: any) => ({ id: u.id, value: u.nombre })),
-    ];
 
     const confirmCancelInvoice = () => {
         cancelInvoice(formValues?.id)
@@ -635,18 +640,6 @@ const Comprobantes = () => {
         selectedUsuarioId,
     ].filter(Boolean).length;
 
-    const totalPages = Math.max(1, Math.ceil(totalInvoicesList / itemsPerPage));
-    const fromRow = totalInvoicesList === 0 ? 0 : indexOfFirstItem + 1;
-    const toRow = Math.min(indexOfLastItem, totalInvoicesList);
-    const pageNumbers = useMemo(() => {
-        const nums: number[] = [];
-        const win = 2;
-        for (let i = Math.max(1, currentPage - win); i <= Math.min(totalPages, currentPage + win); i++) nums.push(i);
-        if (!nums.includes(1)) nums.unshift(1);
-        if (!nums.includes(totalPages)) nums.push(totalPages);
-        return [...new Set(nums)].sort((a, b) => a - b);
-    }, [currentPage, totalPages]);
-
     return (
         <>
             <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', visibility: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
@@ -674,76 +667,55 @@ const Comprobantes = () => {
                 quotationTerms={invoice?.cotizTerminos || ''}
                 quotationPaymentType={invoice?.cotizTipoPago || 'CONTADO'}
                 quotationAdvance={invoice?.cotizAdelanto || 0}
-                quotationCurrency={invoice?.cotizMoneda || 'PEN'}
             />
             </div>
 
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
-                <Icon icon="solar:home-smile-linear" className="text-base" />
-                <span>Panel</span>
-                <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
-                <span>Ventas</span>
-                <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
-                <span className="font-semibold" style={{ color: ACCENT }}>Comprobantes</span>
-            </div>
-
+        <div className="min-h-screen px-3 sm:px-4 pb-6 bg-gray-50 dark:bg-[#0A0D14]">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 sm:mb-6 pt-4">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Comprobantes Electrónicos</h1>
-                    <p className="text-sm text-slate-400 mt-0.5">Historial de boletas, facturas y notas de crédito.</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        <Icon icon="solar:bill-list-bold-duotone" className="text-blue-600 dark:text-blue-400" />
+                        Comprobantes Electrónicos
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Historial de boletas, facturas y notas de crédito</p>
                 </div>
-                <div className="flex items-center gap-2.5">
-                    <div className="relative flex-1 lg:w-72">
-                        <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            value={searchClient}
-                            onChange={handleChangeSearch}
-                            placeholder="Buscar serie, cliente o correlativo…"
-                            className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
-                        />
-                        {searchClient && (
-                            <button onClick={() => setSearchClient('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
-                                <Icon icon="solar:close-circle-bold" />
-                            </button>
-                        )}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
-                        className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
-                        style={{ background: ACCENT }}
-                    >
-                        <Icon icon="solar:add-circle-bold" className="text-lg" /> <span className="hidden sm:inline">Nuevo comprobante</span>
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                >
+                    <Icon icon="solar:add-circle-bold" className="text-lg" />
+                    Nuevo comprobante
+                </button>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
-                {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100">
-                    <button onClick={fetchFormalInvoices} className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors"
-                        style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
-                        <Icon icon="solar:refresh-linear" className={invoicesLoading ? 'animate-spin' : ''} /> Actualizar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                        className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50"
-                    >
-                        <Icon icon="solar:filter-linear" /> Filtros
-                        {activeFilterCount > 0 && <span className="ml-0.5 h-5 min-w-5 px-1 grid place-items-center rounded-full text-white text-[11px]" style={{ background: ACCENT }}>{activeFilterCount}</span>}
-                        <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-xs" />
-                    </button>
-                    <span className="text-sm text-slate-400 font-medium px-1">{totalInvoicesList.toLocaleString('es-PE')} resultados</span>
-                    <span className="ml-auto text-xs text-slate-400 hidden sm:inline">{moment(fechaInicio).format('DD/MM/YYYY')} — {moment(fechaFin).format('DD/MM/YYYY')}</span>
-                </div>
-
+            <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 {/* Filters Section */}
-                <div className={`${isMobileFiltersOpen ? 'block' : 'hidden'} p-4 sm:p-5 border-b border-slate-100 bg-slate-50/40`}>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
+                <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800">
+                    <div className="mb-4 flex items-center justify-between gap-3 px-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <Icon icon="solar:filter-bold-duotone" className="text-blue-600 dark:text-blue-400 text-xl" />
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-gray-800 dark:text-white uppercase tracking-wider text-xs">Filtros de búsqueda</h3>
+                                <p className="truncate text-xs text-gray-400 md:hidden">
+                                    {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsMobileFiltersOpen((value) => !value)}
+                            className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-lg shadow-blue-500/20 md:hidden"
+                        >
+                            {isMobileFiltersOpen ? 'Ocultar' : 'Ver filtros'}
+                            <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
+                        </button>
+                    </div>
+                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-3 sm:grid sm:grid-cols-2 sm:gap-4 xl:grid-cols-5`}>
+                        <div className="sm:col-span-2 xl:col-span-1">
+                            <InputPro name="" onChange={handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
+                        </div>
                         <div>
                             <Calendar text="Fecha inicio" name="fechaInicio" onChange={handleDate} className="admin-date-filter" portal />
                         </div>      
@@ -772,16 +744,17 @@ const Comprobantes = () => {
                         )}
                         {canFilterByUsuario && (
                             <div>
-                                <Select
+                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">Vendedor</label>
+                                <select
+                                    value={selectedUsuarioId ?? ''}
                                     onChange={handleSelectUsuario}
-                                    label="Vendedor"
-                                    name="vendedor"
-                                    options={vendedoresSelectOptions}
-                                    value={selectedUsuarioId
-                                        ? (vendedoresOptions.find((u: any) => u.id === selectedUsuarioId)?.nombre || 'Todos los vendedores')
-                                        : 'Todos los vendedores'}
-                                    error=""
-                                />
+                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                    <option value="">Todos los vendedores</option>
+                                    {vendedoresOptions.map((usuario) => (
+                                        <option key={usuario.id} value={usuario.id}>{usuario.nombre}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
                         <div className="sm:col-span-2 xl:col-span-1">
@@ -791,191 +764,100 @@ const Comprobantes = () => {
 
                 </div>
 
-                {/* Tabla (desktop) */}
-                <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
-                        <thead>
-                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
-                                <th className="py-3 pl-5 pr-3">Cliente</th>
-                                <th className="py-3 px-3">Documento</th>
-                                <th className="py-3 px-3">Comprobante</th>
-                                <th className="py-3 px-3">Importe</th>
-                                <th className="py-3 px-3">Sede</th>
-                                <th className="py-3 px-3">Vendedor</th>
-                                <th className="py-3 px-3">Estado</th>
-                                <th className="py-3 px-3">Fecha</th>
-                                <th className="py-3 px-3 pr-5 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {invoicesLoading ? (
-                                Array.from({ length: 8 }).map((_, i) => (
-                                    <tr key={i} className="border-b border-slate-50">
-                                        <td colSpan={9} className="py-3.5 px-5">
-                                            <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : productsTable?.length > 0 ? (
-                                productsTable.map((row: any) => {
-                                    const pill = estadoPill(row.estado);
-                                    const cliente = row.client || 'Cliente varios';
-                                    const tipo = TIPO_TAG[String(row.comprobante).toUpperCase()] || row.comprobante;
-                                    return (
-                                        <tr key={row.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
-                                            <td className="py-3 pl-5 pr-3">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
-                                                        {String(cliente).charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="font-semibold text-slate-700 text-sm truncate max-w-[180px]">{cliente}</p>
-                                                        {row.document && <p className="text-[11px] text-slate-400 truncate max-w-[180px]">{row.document}</p>}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm text-slate-600">{row.serie}-{String(row.correlativo).padStart(8, '0')}</span>
-                                                    <button onClick={() => copyDoc(row)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-slate-600 transition-opacity">
-                                                        <Icon icon={copied === row.id ? 'solar:check-read-linear' : 'solar:copy-linear'} className={copied === row.id ? 'text-emerald-500' : ''} />
-                                                    </button>
-                                                </div>
-                                                {row.documentoAfiliado && <p className="text-[11px] text-slate-400 mt-0.5">Afecta: {row.documentoAfiliado}</p>}
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600 whitespace-nowrap">{tipo}</span>
-                                            </td>
-                                            <td className="py-3 px-3 font-bold text-slate-800 text-sm whitespace-nowrap">{row.total}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[140px]">{row.sede || '—'}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[140px]">{row.vendedor || '—'}</td>
-                                            <td className="py-3 px-3">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pill.bg} ${pill.text}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} /> {pill.label}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 whitespace-nowrap">{row.fechaEmisión}</td>
-                                            <td className="py-3 px-3 pr-5 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleOpenMenu(e, row)}
-                                                    className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors ml-auto"
-                                                    aria-label="Acciones"
-                                                >
-                                                    <Icon icon="mdi:dots-vertical" width={18} height={18} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={9} className="py-16 text-center">
-                                        <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
-                                        <p className="text-slate-400 text-sm">No se encontraron comprobantes.</p>
-                                        <p className="text-slate-300 text-xs mt-1">Ajusta los filtros o el rango de fechas.</p>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Tarjetas (móvil) */}
-                <div className="md:hidden p-4 space-y-3">
+                {/* Table Content */}
+                <div className="p-3 sm:p-4">
                     {invoicesLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="h-28 rounded-2xl bg-slate-100 animate-pulse" />
-                        ))
+                        <div className="py-16 flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+                            <Icon icon="line-md:loading-twotone-loop" className="text-4xl text-blue-500" />
+                            <span className="text-sm">Cargando comprobantes...</span>
+                        </div>
                     ) : productsTable?.length > 0 ? (
-                        productsTable.map((row: any) => {
-                            const pill = estadoPill(row.estado);
-                            return (
-                                <article key={row.id} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.04)]">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{row.fechaEmisión}</p>
-                                            <h3 className="mt-1 text-base font-extrabold text-slate-800 truncate font-mono">
-                                                {row.serie}-{String(row.correlativo).padStart(8, '0')}
-                                            </h3>
-                                            <span className="mt-1 inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">{TIPO_TAG[String(row.comprobante).toUpperCase()] || row.comprobante}</span>
+                        <>
+                            <div className="hidden md:block overflow-x-auto">
+                                <DataTable bodyData={productsTable}
+                                    headerColumns={[
+                                        'Fecha',
+                                        'Sede',
+                                        'Serie',
+                                        'Nro.',
+                                        'Comprobante',
+                                        'Doc. Afiliado',
+                                        'Num doc',
+                                        'Cliente',
+                                        'Vendedor',
+                                        'Importe',
+                                        'Estado',
+                                        'Acciones'
+                                    ]} />
+                            </div>
+                            <div className="md:hidden space-y-3">
+                                {productsTable.map((row: any) => (
+                                    <article key={row.id} className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0F1623] p-4 shadow-sm">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">{row.fechaEmisión}</p>
+                                                <h3 className="mt-1 text-base font-black text-gray-900 dark:text-white truncate">
+                                                    {row.serie}-{String(row.correlativo).padStart(8, '0')}
+                                                </h3>
+                                                <p className="mt-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">{row.comprobante}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleOpenMenu(e, row)}
+                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-200"
+                                                aria-label="Acciones"
+                                            >
+                                                <Icon icon="mdi:dots-vertical" width={20} height={20} />
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => handleOpenMenu(e, row)}
-                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600"
-                                            aria-label="Acciones"
-                                        >
-                                            <Icon icon="mdi:dots-vertical" width={20} height={20} />
-                                        </button>
-                                    </div>
 
-                                    <div className="mt-3 flex items-center justify-between gap-3">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pill.bg} ${pill.text}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} /> {pill.label}
-                                        </span>
-                                        <p className="text-lg font-extrabold text-slate-800">{row.total}</p>
-                                    </div>
+                                        <div className="mt-3 flex items-center justify-between gap-3">
+                                            {renderEstadoBadge(row.estado)}
+                                            <p className="text-lg font-black text-gray-950 dark:text-white">{row.total}</p>
+                                        </div>
 
-                                    <div className="mt-4 grid grid-cols-2 gap-2.5 text-xs">
-                                        <div className="rounded-xl bg-slate-50 p-3">
-                                            <p className="font-bold uppercase tracking-wide text-slate-400">Cliente</p>
-                                            <p className="mt-1 font-semibold text-slate-700 line-clamp-2">{row.client || '-'}</p>
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                            <div className="rounded-xl bg-gray-50 dark:bg-slate-800/70 p-3">
+                                                <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">Cliente</p>
+                                                <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 line-clamp-2">{row.client || '-'}</p>
+                                            </div>
+                                            <div className="rounded-xl bg-gray-50 dark:bg-slate-800/70 p-3">
+                                                <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">Doc.</p>
+                                                <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 truncate">{row.document || '-'}</p>
+                                            </div>
+                                            <div className="rounded-xl bg-gray-50 dark:bg-slate-800/70 p-3">
+                                                <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">Sede</p>
+                                                <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 truncate">{row.sede || '-'}</p>
+                                            </div>
+                                            <div className="rounded-xl bg-gray-50 dark:bg-slate-800/70 p-3">
+                                                <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">Vendedor</p>
+                                                <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 truncate">{row.vendedor || '-'}</p>
+                                            </div>
                                         </div>
-                                        <div className="rounded-xl bg-slate-50 p-3">
-                                            <p className="font-bold uppercase tracking-wide text-slate-400">Doc.</p>
-                                            <p className="mt-1 font-semibold text-slate-700 truncate">{row.document || '-'}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-slate-50 p-3">
-                                            <p className="font-bold uppercase tracking-wide text-slate-400">Sede</p>
-                                            <p className="mt-1 font-semibold text-slate-700 truncate">{row.sede || '-'}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-slate-50 p-3">
-                                            <p className="font-bold uppercase tracking-wide text-slate-400">Vendedor</p>
-                                            <p className="mt-1 font-semibold text-slate-700 truncate">{row.vendedor || '-'}</p>
-                                        </div>
-                                    </div>
-                                </article>
-                            );
-                        })
+                                    </article>
+                                ))}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+                                <Pagination
+                                    data={productsTable}
+                                    optionSelect
+                                    currentPage={currentPage}
+                                    indexOfFirstItem={indexOfFirstItem}
+                                    indexOfLastItem={indexOfLastItem}
+                                    setcurrentPage={setcurrentPage}
+                                    setitemsPerPage={setitemsPerPage}
+                                    pages={pages}
+                                    total={totalInvoicesList}
+                                />
+                            </div>
+                        </>
                     ) : (
                         <div className="py-12 text-center">
-                            <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
-                            <p className="text-slate-400 text-sm">No se encontraron comprobantes.</p>
+                            <Icon icon="solar:document-text-linear" className="text-5xl text-gray-300 dark:text-slate-600 mx-auto mb-3" />
+                            <p className="text-gray-500 dark:text-gray-400">No se encontraron comprobantes</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Ajusta los filtros o selecciona un rango de fechas diferente</p>
                         </div>
                     )}
-                </div>
-
-                {/* Paginación */}
-                <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100">
-                    <span className="text-sm text-slate-400">{fromRow}-{toRow} de {totalInvoicesList.toLocaleString('es-PE')}</span>
-                    <div className="flex items-center gap-1">
-                        <button disabled={currentPage <= 1} onClick={() => setcurrentPage(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
-                        <button disabled={currentPage <= 1} onClick={() => setcurrentPage((p) => Math.max(1, p - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
-                        {pageNumbers.map((n, i) => {
-                            const prev = pageNumbers[i - 1];
-                            const gap = prev && n - prev > 1;
-                            return (
-                                <span key={n} className="flex items-center">
-                                    {gap && <span className="px-1 text-slate-300">…</span>}
-                                    <button onClick={() => setcurrentPage(n)}
-                                        className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === currentPage ? 'text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-                                        style={n === currentPage ? { background: ACCENT } : undefined}>
-                                        {n}
-                                    </button>
-                                </span>
-                            );
-                        })}
-                        <button disabled={currentPage >= totalPages} onClick={() => setcurrentPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
-                        <button disabled={currentPage >= totalPages} onClick={() => setcurrentPage(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <span>Filas/pág</span>
-                        <select value={itemsPerPage} onChange={(e) => { setitemsPerPage(Number(e.target.value)); setcurrentPage(1); }}
-                            className="h-8 w-[68px] rounded-lg border border-slate-200 bg-white pl-3 pr-6 text-slate-600 font-semibold focus:outline-none focus:border-[var(--accent)]">
-                            {PER_PAGE.map((n) => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -1066,14 +948,14 @@ const Comprobantes = () => {
                     isOpen={isOpenModalPagoParcial}
                     isLoading={paymentFlow.isLoading}
                     paymentType={paymentFlow.payment.tipo}
-                    saldoPendiente={parseFloat((formValues?.saldo || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0') || parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')}
-                    totalComprobante={parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')}
+                    saldoPendiente={parseFloat((formValues?.saldo || '').toString().replace('S/ ', '') || '0') || parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')}
+                    totalComprobante={parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')}
                     comprobanteInfo={{
                         id: formValues.id,
                         serie: formValues.serie,
                         correlativo: formValues.correlativo,
                         cliente: formValues.client,
-                        total: parseFloat((formValues?.total || '').toString().replace(/^(S\/|US\$)\s*/, '') || '0')
+                        total: parseFloat((formValues?.total || '').toString().replace('S/ ', '') || '0')
                     }}
                     onConfirm={handleConfirmPago}
                     onCancel={() => {

@@ -16,7 +16,7 @@ export interface ISubModulo {
 export interface IModulo {
     id: number;
     codigo: string;
-    producto?: 'facturacion' | 'hotel';
+    producto?: 'facturacion' | 'hotel' | 'restaurante';
     nombre: string;
     descripcion: string;
     icono: string;

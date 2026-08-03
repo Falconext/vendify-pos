@@ -15,6 +15,12 @@ interface TablaFerreteriaProps {
     pages: number[];
     setcurrentPage: (page: number) => void;
     setitemsPerPage: (items: number) => void;
+    /** Click en el header de una columna (ordenamiento controlado por el padre). */
+    onSort?: (column: string) => void;
+    /** Columna actualmente ordenada (key resuelta, p.ej. "Stock"). */
+    sortColumn?: string;
+    /** Dirección del ordenamiento activo. */
+    sortDirection?: 'asc' | 'desc';
 }
 
 const TablaFerreteria = ({
@@ -28,7 +34,10 @@ const TablaFerreteria = ({
     indexOfLastItem,
     pages,
     setcurrentPage,
-    setitemsPerPage
+    setitemsPerPage,
+    onSort,
+    sortColumn,
+    sortDirection
 }: TablaFerreteriaProps) => {
     if (!productsLoaded && (!productsTable || productsTable.length === 0)) {
         return <TableSkeleton />;
@@ -55,6 +64,9 @@ const TablaFerreteria = ({
                     key={`kardex-productos-${totalProducts}-${currentPage}-${visibleColumns.join('|')}`}
                     bodyData={productsTable}
                     headerColumns={visibleColumns}
+                    onSort={onSort}
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
                 />
             </div>
             <Pagination

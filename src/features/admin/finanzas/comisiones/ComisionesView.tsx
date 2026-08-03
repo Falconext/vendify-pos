@@ -29,7 +29,7 @@ interface ResumenMensual {
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 function formatCurrency(n: number | string) {
     return `S/ ${parseFloat(String(n || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -187,7 +187,7 @@ export default function ComisionesView() {
     const hayFiltrosActivos = filtroVendedor !== null || desde !== firstDayOfMonth(mes, anio) || hasta !== lastDayOfMonth(mes, anio);
 
     return (
-        <div className="min-h-0 -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-0 -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -201,22 +201,22 @@ export default function ComisionesView() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Comisiones de vendedores</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Comisiones de vendedores</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Liquida y controla las comisiones generadas por tus ventas.</p>
                 </div>
                 <div className="flex items-center gap-2.5">
                     {/* Navegación de mes */}
-                    <div className="flex items-center gap-1 h-11 rounded-2xl border-2 border-slate-200 bg-white px-2">
-                        <button onClick={() => navegarMes(-1)} className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-1 h-11 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2">
+                        <button onClick={() => navegarMes(-1)} className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                             <Icon icon="solar:alt-arrow-left-linear" />
                         </button>
-                        <span className="text-sm font-bold text-slate-700 px-2 min-w-[100px] text-center">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200 px-2 min-w-[100px] text-center">
                             {MESES[mes - 1]} {anio}
                         </span>
                         <button
                             onClick={() => navegarMes(1)}
                             disabled={mes === now.getMonth() + 1 && anio === now.getFullYear()}
-                            className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30"
+                            className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-30"
                         >
                             <Icon icon="solar:alt-arrow-right-linear" />
                         </button>
@@ -236,18 +236,18 @@ export default function ComisionesView() {
             {/* ── KPI Cards ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                 {[
-                    { label: 'Total Comisiones', value: totalGeneral, icon: 'solar:dollar-minimalistic-bold-duotone', color: 'text-violet-600', bg: 'bg-violet-50' },
-                    { label: 'Pendiente de Pago', value: totalPendiente, icon: 'solar:clock-circle-bold-duotone', color: 'text-amber-600', bg: 'bg-amber-50' },
-                    { label: 'Vendedores', value: vendedoresFiltrados.length, icon: 'solar:users-group-rounded-bold-duotone', color: 'text-blue-600', bg: 'bg-blue-50', isCurrency: false },
+                    { label: 'Total Comisiones', value: totalGeneral, icon: 'solar:dollar-minimalistic-bold-duotone', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20'},
+                    { label: 'Pendiente de Pago', value: totalPendiente, icon: 'solar:clock-circle-bold-duotone', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20'},
+                    { label: 'Vendedores', value: vendedoresFiltrados.length, icon: 'solar:users-group-rounded-bold-duotone', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20',isCurrency: false },
                 ].map((kpi, i) => (
-                    <div key={i} className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                    <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
                         <div className="flex items-center gap-3 mb-3">
                             <div className={`w-10 h-10 rounded-2xl ${kpi.bg} flex items-center justify-center`}>
                                 <Icon icon={kpi.icon} className={`text-xl ${kpi.color}`} />
                             </div>
                             <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">{kpi.label}</span>
                         </div>
-                        <p className="text-2xl font-extrabold text-slate-800">
+                        <p className="text-2xl font-extrabold text-slate-800 dark:text-white">
                             {(kpi as any).isCurrency === false ? kpi.value : formatCurrency(kpi.value as number)}
                         </p>
                     </div>
@@ -255,12 +255,12 @@ export default function ComisionesView() {
             </div>
 
             {/* ── Filtros ── */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 mb-5">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 mb-5">
                 <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-xl bg-violet-50 flex items-center justify-center">
-                        <Icon icon="solar:filter-bold-duotone" className="text-violet-600 text-sm" />
+                    <div className="w-7 h-7 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+                        <Icon icon="solar:filter-bold-duotone" className="text-violet-600 dark:text-violet-400 text-sm" />
                     </div>
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Filtros</span>
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Filtros</span>
                     {hayFiltrosActivos && (
                         <button
                             onClick={() => { setFiltroVendedor(null); applyPreset('mes'); }}
@@ -290,7 +290,7 @@ export default function ComisionesView() {
                                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
                                         preset === p.key
                                             ? 'text-white shadow-sm'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                     }`}
                                     style={preset === p.key ? { background: ACCENT } : undefined}
                                 >
@@ -311,7 +311,7 @@ export default function ComisionesView() {
                                 min={firstDayOfMonth(mes, anio)}
                                 max={hasta}
                                 onChange={e => { setDesde(e.target.value); setPreset('mes'); }}
-                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                             />
                             <Icon icon="solar:arrow-right-linear" className="text-slate-400 text-sm flex-shrink-0" />
                             <input
@@ -320,7 +320,7 @@ export default function ComisionesView() {
                                 min={desde}
                                 max={lastDayOfMonth(mes, anio)}
                                 onChange={e => { setHasta(e.target.value); setPreset('mes'); }}
-                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                             />
                         </div>
                     </div>
@@ -332,7 +332,7 @@ export default function ComisionesView() {
                             <select
                                 value={filtroVendedor ?? ''}
                                 onChange={e => setFiltroVendedor(e.target.value ? Number(e.target.value) : null)}
-                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors min-w-[160px]"
+                                className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors min-w-[160px]"
                             >
                                 <option value="">Todos los vendedores</option>
                                 {todosLosVendedores.map(v => (
@@ -345,10 +345,10 @@ export default function ComisionesView() {
 
                 {/* Resumen del período activo */}
                 {hayFiltrosActivos && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-[11px] text-slate-500">
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                         <Icon icon="solar:calendar-search-bold-duotone" className="text-violet-400 text-base flex-shrink-0" />
                         <span>
-                            Mostrando <strong className="text-slate-700">{desde === hasta ? desde : `${desde} → ${hasta}`}</strong>
+                            Mostrando <strong className="text-slate-700 dark:text-slate-200">{desde === hasta ? desde : `${desde} → ${hasta}`}</strong>
                             {filtroVendedor !== null && (
                                 <> · vendedor: <strong style={{ color: ACCENT }}>
                                     {todosLosVendedores.find(v => v.vendedor.id === filtroVendedor)?.vendedor.nombre}
@@ -363,21 +363,21 @@ export default function ComisionesView() {
             {isLoading ? (
                 <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4">
+                        <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse flex-shrink-0" />
+                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse flex-shrink-0" />
                                 <div className="flex-1 space-y-2">
-                                    <div className="h-4 w-40 rounded-lg bg-slate-100 animate-pulse" />
-                                    <div className="h-3 w-24 rounded-lg bg-slate-100 animate-pulse" />
+                                    <div className="h-4 w-40 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                                    <div className="h-3 w-24 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                                 </div>
-                                <div className="h-8 w-24 rounded-xl bg-slate-100 animate-pulse" />
+                                <div className="h-8 w-24 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                             </div>
                         </div>
                     ))}
                 </div>
             ) : !vendedoresFiltrados.length ? (
-                <div className="bg-white rounded-3xl p-12 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
-                    <Icon icon="solar:hand-money-linear" className="text-5xl text-slate-200 mx-auto mb-3" />
+                <div className="bg-white dark:bg-[#111827] rounded-3xl p-12 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
+                    <Icon icon="solar:hand-money-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-3" />
                     <p className="text-sm text-slate-400">
                         {hayFiltrosActivos
                             ? 'Sin comisiones para los filtros seleccionados'
@@ -395,35 +395,35 @@ export default function ComisionesView() {
                         const isExpanded = expandedId === v.vendedor.id;
                         const allPaid = v.totalPendiente === 0;
                         return (
-                            <div key={v.vendedor.id} className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+                            <div key={v.vendedor.id} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
                                 {/* Vendedor row */}
                                 <div className="flex items-center gap-4 p-4">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                         {v.vendedor.nombre.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-700 truncate">{v.vendedor.nombre}</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{v.vendedor.nombre}</p>
                                         <p className="text-xs text-slate-400">DNI {v.vendedor.dni} · {v.cantidadVentas} ventas</p>
                                         {/* Montos visibles en móvil */}
                                         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] sm:hidden">
-                                            <span className="font-bold text-slate-800">{formatCurrency(v.totalComision)}</span>
-                                            <span className="text-emerald-600">Pag. {formatCurrency(v.totalPagado)}</span>
-                                            <span className={v.totalPendiente > 0 ? 'text-amber-600' : 'text-slate-400'}>Pend. {formatCurrency(v.totalPendiente)}</span>
+                                            <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(v.totalComision)}</span>
+                                            <span className="text-emerald-600 dark:text-emerald-400">Pag. {formatCurrency(v.totalPagado)}</span>
+                                            <span className={v.totalPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}>Pend. {formatCurrency(v.totalPendiente)}</span>
                                         </div>
                                     </div>
 
                                     <div className="hidden sm:flex items-center gap-6 text-right">
                                         <div>
                                             <p className="text-[10px] text-slate-400 uppercase tracking-wide">Total</p>
-                                            <p className="text-sm font-bold text-slate-800">{formatCurrency(v.totalComision)}</p>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(v.totalComision)}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400 uppercase tracking-wide">Pagado</p>
-                                            <p className="text-sm font-bold text-emerald-600">{formatCurrency(v.totalPagado)}</p>
+                                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(v.totalPagado)}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400 uppercase tracking-wide">Pendiente</p>
-                                            <p className={`text-sm font-bold ${v.totalPendiente > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                            <p className={`text-sm font-bold ${v.totalPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
                                                 {formatCurrency(v.totalPendiente)}
                                             </p>
                                         </div>
@@ -443,14 +443,14 @@ export default function ComisionesView() {
                                             </button>
                                         )}
                                         {allPaid && (
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                 Pagado
                                             </span>
                                         )}
                                         <button
                                             onClick={() => setExpandedId(isExpanded ? null : v.vendedor.id)}
-                                            className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                                            className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                         >
                                             <Icon
                                                 icon="solar:alt-arrow-down-linear"
@@ -462,7 +462,7 @@ export default function ComisionesView() {
 
                                 {/* Detalle comisiones */}
                                 {isExpanded && (
-                                    <div className="border-t border-slate-100">
+                                    <div className="border-t border-slate-100 dark:border-slate-800">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
@@ -476,25 +476,25 @@ export default function ComisionesView() {
                                                 </thead>
                                                 <tbody>
                                                     {v.comisiones.map((c) => (
-                                                        <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                                                            <td className="py-3 px-4 text-sm text-slate-600 font-mono">
+                                                        <tr key={c.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+                                                            <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-300 font-mono">
                                                                 {c.comprobante.serie}-{String(c.comprobante.correlativo).padStart(8, '0')}
                                                                 <span className="text-slate-400 ml-1">
                                                                     · {new Date(c.comprobante.fechaEmision).toLocaleDateString('es-PE')}
                                                                 </span>
                                                             </td>
-                                                            <td className="py-3 px-4 text-sm text-slate-700 max-w-[200px] truncate">
+                                                            <td className="py-3 px-4 text-sm text-slate-700 dark:text-slate-200 max-w-[200px] truncate">
                                                                 {c.descripcion ?? '—'}
                                                             </td>
-                                                            <td className="py-3 px-4 text-right text-sm text-slate-600">{c.cantidad}</td>
-                                                            <td className="py-3 px-4 text-right font-bold text-slate-800 text-sm">
+                                                            <td className="py-3 px-4 text-right text-sm text-slate-600 dark:text-slate-300">{c.cantidad}</td>
+                                                            <td className="py-3 px-4 text-right font-bold text-slate-800 dark:text-white text-sm">
                                                                 {formatCurrency(c.montoComision)}
                                                             </td>
                                                             <td className="py-3 px-4 text-center">
                                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                                                                     c.estado === 'PAGADO'
-                                                                        ? 'bg-emerald-50 text-emerald-600'
-                                                                        : 'bg-amber-50 text-amber-600'
+                                                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                                                                        : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
                                                                 }`}>
                                                                     <span className={`w-1.5 h-1.5 rounded-full ${c.estado === 'PAGADO' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                                                     {c.estado === 'PAGADO' ? 'Pagado' : 'Pendiente'}

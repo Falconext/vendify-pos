@@ -16,7 +16,7 @@ import {
   InventoryToolbarButton,
 } from '@/features/admin/kardex/shared/InventoryChrome';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function CombosAdmin() {
   const vm = useCombosViewModel();

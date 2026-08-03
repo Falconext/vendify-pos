@@ -32,6 +32,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
         ? (vm.productsInvoice || []).filter((p: any) => p.pendienteReceta).length
         : 0;
     const hayRecetasPendientes = recetasPendientes > 0;
+    const hayProductos = Array.isArray(vm.productsInvoice) && vm.productsInvoice.length > 0;
 
     // Split payment helpers
     const splitTotal = (vm.splitPayments as PaymentLine[])
@@ -277,6 +278,24 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 </div>
                             </div>
                         )}
+
+                        {/* Descontar stock: solo para Nota de Pedido */}
+                        {vm.formValues.tipoDoc === 'NP' && (
+                            <label className="mt-3 flex items-start gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={vm.descontarStockNP}
+                                    onChange={(e) => vm.setDescontarStockNP(e.target.checked)}
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-slate-700 text-gray-900 focus:ring-gray-900"
+                                />
+                                <span className="text-xs text-gray-700 dark:text-gray-300">
+                                    Descontar del stock ahora
+                                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">
+                                        Si lo dejas sin marcar, el stock recién baja al convertir el pedido en boleta/factura.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
                     </div>
                 )}
             </div>
@@ -317,12 +336,22 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                     </button>
                 )}
                 <button
-                    onClick={() => { if (vm.isQuotationRoute) { vm.addInvoiceReceipt(); } else { setShowPago(true); } }}
-                    disabled={hayRecetasPendientes}
+                    onClick={() => {
+                        if (!hayProductos) return;
+                        if (vm.isQuotationRoute) {
+                            vm.addInvoiceReceipt();
+                        } else {
+                            setShowPago(true);
+                        }
+                    }}
+                    disabled={hayRecetasPendientes || !hayProductos}
                     className={`flex-1 py-3 md:py-3.5 text-white rounded-xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm ${hayRecetasPendientes
                         ? 'bg-gray-400 cursor-not-allowed'
+                        : !hayProductos
+                            ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-violet-600 shadow-sm border border-violet-700'
                         }`}
+                    title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
                     <Icon icon={vm.isQuotationRoute ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
                     <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : "CONTINUAR PAGO"}</span>

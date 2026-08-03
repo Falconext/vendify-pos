@@ -4,7 +4,7 @@ import Loading from '@/components/Loading';
 import ModalConfirm from '@/components/ModalConfirm';
 import SedeModal from './SedeModal';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const SedesIndex = () => {
     const vm = useSedesViewModel();

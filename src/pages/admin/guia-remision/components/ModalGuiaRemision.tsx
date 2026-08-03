@@ -18,6 +18,7 @@ import { useAuthStore } from "@/zustand/auth";
 import { useClientsStore } from "@/zustand/clients";
 import { useProductsStore } from "@/zustand/products";
 import useAlertStore from "@/zustand/alert";
+import ComprobanteSearchModal from "./ComprobanteSearchModal";
 
 const MODO_TRANSPORTE_OPTIONS = [
     { id: "01", value: "TRANSPORTE PÚBLICO" },
@@ -38,6 +39,9 @@ const TIPO_DOC_OPTIONS = [
 
 interface ModalGuiaRemisionProps {
     isOpen: boolean;
+    /** Comprobante (Factura/Boleta) desde el que se genera la guía: se importa
+     *  automáticamente al abrir (destinatario, dirección de llegada y bienes). */
+    prefillComprobante?: { id: number; serie?: string; correlativo?: number } | null;
     onClose: () => void;
     onSuccess?: () => void;
     guiaToEdit?: any;
@@ -63,6 +67,11 @@ const MOTIVO_HELP: Record<string, { title: string; description: string; tip: str
         title: "Traslado entre establecimientos",
         description: "Usa este motivo para mover stock entre sedes de la misma empresa.",
         tip: "Completa códigos de establecimiento en partida y llegada para evitar observaciones.",
+    },
+    "05": {
+        title: "Consignación",
+        description: "Usa este motivo cuando entregas bienes en consignación (el cliente aún no los compra).",
+        tip: "El destinatario es el consignatario; la venta se sustenta después con su comprobante.",
     },
     "14": {
         title: "Venta sujeta a confirmación",
@@ -94,9 +103,9 @@ const MODO_HELP: Record<string, { title: string; required: string[]; tip: string
     },
 };
 
-const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuiaRemisionProps) => {
+const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComprobante }: ModalGuiaRemisionProps) => {
     const { auth } = useAuthStore();
-    const { createGuiaRemision, updateGuiaRemision, getSiguienteCorrelativo, siguienteCorrelativo } = useGuiaRemisionStore();
+    const { createGuiaRemision, updateGuiaRemision, getSiguienteCorrelativo, siguienteCorrelativo, prefillDesdeComprobante, importarItemsExcel, descargarPlantillaItems } = useGuiaRemisionStore();
     const { getUbigeos, ubigeos } = useExtentionsStore();
     const { getClientFromDoc } = useClientsStore();
     const { getAllProducts, products, resetProducts } = useProductsStore();
@@ -161,6 +170,18 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
         unidadMedida: "NIU"
     });
     const [selectedProductValue, setSelectedProductValue] = useState<string>("");
+    const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(false);
+    // Referencia del comprobante importado (p.ej. "F001-00000333") para feedback visual
+    const [importedRef, setImportedRef] = useState<string | null>(null);
+
+    // Flujo "desde la factura": si el modal se abre con un comprobante origen,
+    // importar sus datos automáticamente (destinatario, llegada y bienes).
+    useEffect(() => {
+        if (isOpen && !guiaToEdit?.id && prefillComprobante?.id) {
+            void handleImportComprobante(prefillComprobante);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, prefillComprobante?.id]);
     const [isEditQtyModalOpen, setIsEditQtyModalOpen] = useState(false);
     const [editingQtyIndex, setEditingQtyIndex] = useState<number | null>(null);
     const [editingQtyValue, setEditingQtyValue] = useState<number>(1);
@@ -171,6 +192,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
             getUbigeos();
             resetProducts();
             setCurrentStep(1);
+            setImportedRef(null);
 
             if (guiaToEdit?.id) {
                 // Modo Edición
@@ -434,6 +456,75 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                 cantidad: 1
             });
         }
+    };
+
+    // ── Importar datos desde una Factura/Boleta emitida ──
+    const handleImportComprobante = async (comprobante: any) => {
+        if (!comprobante?.id) return;
+        const res = await prefillDesdeComprobante(comprobante.id);
+        if (!res.success || !res.data) return;
+        const d = res.data;
+        setFormValues(prev => {
+            // En COMPRA/traslado misma empresa el destinatario está bloqueado a la
+            // propia empresa; no lo sobre-escribimos con el cliente del comprobante.
+            const bloquearDestinatario = prev.tipoTraslado === "02" || prev.tipoTraslado === "04";
+            return {
+                ...prev,
+                ...(bloquearDestinatario ? {} : {
+                    destinatarioTipoDoc: d.destinatarioTipoDoc || prev.destinatarioTipoDoc,
+                    destinatarioNumDoc: d.destinatarioNumDoc || prev.destinatarioNumDoc,
+                    destinatarioRazonSocial: d.destinatarioRazonSocial || prev.destinatarioRazonSocial,
+                    clienteId: d.clienteId ?? prev.clienteId,
+                    llegadaDireccion: d.llegadaDireccion || prev.llegadaDireccion,
+                    llegadaUbigeo: d.llegadaUbigeo || prev.llegadaUbigeo,
+                }),
+                observaciones: d.observaciones || prev.observaciones,
+                detalles: (d.detalles || []).map((it: any) => ({
+                    productoId: it.productoId,
+                    codigoProducto: it.codigoProducto || "",
+                    descripcion: it.descripcion,
+                    cantidad: Number(it.cantidad) || 1,
+                    unidadMedida: it.unidadMedida || "NIU",
+                })),
+            };
+        });
+        if (comprobante.serie && comprobante.correlativo != null) {
+            setImportedRef(`${comprobante.serie}-${String(comprobante.correlativo).padStart(8, '0')}`);
+            useAlertStore.getState().alert(`Datos importados de ${comprobante.serie}-${comprobante.correlativo}`, "success");
+        } else {
+            setImportedRef('comprobante');
+            useAlertStore.getState().alert('Datos del comprobante importados', 'success');
+        }
+    };
+
+    // ── Importar ítems desde un archivo Excel/CSV ──
+    const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ""; // permite re-subir el mismo archivo
+        if (!file) return;
+        const base64: string = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        const res = await importarItemsExcel(base64);
+        if (!res.success || !res.items) return;
+        setFormValues(prev => ({
+            ...prev,
+            detalles: [...prev.detalles, ...res.items!.map((it: any) => ({
+                productoId: it.productoId,
+                codigoProducto: it.codigoProducto || "",
+                descripcion: it.descripcion,
+                cantidad: Number(it.cantidad) || 1,
+                unidadMedida: it.unidadMedida || "NIU",
+            }))],
+        }));
+        const nErr = res.errores?.length || 0;
+        useAlertStore.getState().alert(
+            `${res.items.length} ítem(s) importado(s)${nErr ? ` · ${nErr} fila(s) con error` : ""}`,
+            nErr ? "warning" : "success",
+        );
     };
 
     const addItem = () => {
@@ -747,7 +838,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                                                     ? 'border-emerald-500 bg-emerald-500 text-white'
                                                     : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-400'}`}>
                                             {currentStep > step.id
-                                                ? <Icon icon="solar:check-bold" />
+                                                ? <Icon icon="mdi:check" className="text-lg" />
                                                 : step.id}
                                         </div>
                                         <span className={`mt-1 text-[10px] font-semibold hidden sm:block whitespace-nowrap transition-colors
@@ -772,6 +863,29 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                         {/* ── PASO 1: DATOS GENERALES ── */}
                         {currentStep === 1 && (
                             <div className="space-y-5 animate-in fade-in duration-300">
+                                {!guiaToEdit?.id && (
+                                    importedRef ? (
+                                        <div className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/60 dark:bg-emerald-900/10">
+                                            <Icon icon="solar:check-circle-bold-duotone" className="text-emerald-600 dark:text-emerald-400 text-xl shrink-0" />
+                                            <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                                                <span className="font-bold">Basada en {importedRef}.</span> Destinatario, dirección de llegada y bienes precargados — solo completa los datos del traslado.
+                                            </p>
+                                            <button type="button" onClick={() => setIsComprobanteModalOpen(true)} className="ml-auto text-xs font-semibold text-emerald-700 dark:text-emerald-400 underline underline-offset-2 whitespace-nowrap">
+                                                Cambiar
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/40 dark:bg-indigo-900/10">
+                                            <Icon icon="solar:bill-list-bold-duotone" className="text-indigo-600 dark:text-indigo-400 text-xl shrink-0" />
+                                            <p className="text-xs text-indigo-800 dark:text-indigo-300 flex-1 min-w-[200px]">
+                                                <span className="font-bold">¿El traslado viene de una venta?</span> Importa la Factura/Boleta y precargamos destinatario, dirección de llegada y bienes.
+                                            </p>
+                                            <Button type="button" size="sm" outline color="primary" onClick={() => setIsComprobanteModalOpen(true)}>
+                                                <Icon icon="solar:magnifer-linear" className="mr-1" /> Buscar comprobante
+                                            </Button>
+                                        </div>
+                                    )
+                                )}
                                 <div className="flex items-center gap-3 mb-1">
                                     <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
                                         <Icon icon="solar:document-text-bold-duotone" className="text-blue-600 dark:text-blue-400 text-xl" />
@@ -1088,8 +1202,27 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                                     </div>
                                     <div>
                                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Bienes a Trasladar</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Agrega al menos un producto para generar la guía</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Agrega productos manualmente o impórtalos desde una factura o un Excel</p>
                                     </div>
+                                </div>
+
+                                {/* ── Importar datos (Factura / Excel) ── */}
+                                <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800/40 bg-indigo-50/40 dark:bg-indigo-900/10">
+                                    <span className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 flex items-center gap-1 mr-1">
+                                        <Icon icon="solar:import-bold-duotone" /> Importar:
+                                    </span>
+                                    <Button type="button" size="sm" outline color="primary" onClick={() => setIsComprobanteModalOpen(true)}>
+                                        <Icon icon="solar:bill-list-bold-duotone" className="mr-1" /> Desde Factura
+                                    </Button>
+                                    <label className="inline-flex">
+                                        <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelImport} />
+                                        <span className="inline-flex items-center cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                            <Icon icon="solar:file-download-bold-duotone" className="mr-1" /> Desde Excel
+                                        </span>
+                                    </label>
+                                    <button type="button" onClick={() => void descargarPlantillaItems()} className="text-xs text-gray-500 dark:text-gray-400 underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200">
+                                        Descargar plantilla
+                                    </button>
                                 </div>
 
                                 <div className="p-4 rounded-xl border border-gray-100 dark:border-transparent bg-white dark:bg-[#111827]">
@@ -1156,6 +1289,12 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit }: ModalGuia
                     </div>
                 </form>
             </Modal>
+
+            <ComprobanteSearchModal
+                isOpen={isComprobanteModalOpen}
+                onClose={() => setIsComprobanteModalOpen(false)}
+                onSelect={handleImportComprobante}
+            />
 
             <Modal
                 isOpenModal={isEditQtyModalOpen}

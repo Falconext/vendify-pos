@@ -98,6 +98,7 @@ export const LEGACY_SUBMODULE_ROUTES: Record<string, string> = {
   'cotizaciones:nueva': '/administrador/facturacion/cotizaciones/nuevo',
   'compras:gestion': '/administrador/compras',
   'compras:proveedores': '/administrador/compras/proveedores',
+  'compras:ordenes': '/administrador/compras/ordenes',
   'reportes:formal': '/administrador/contabilidad/reporte',
   'reportes:informal': '/administrador/contabilidad/reporte-informales',
   'reportes:finanzas': '/administrador/finanzas/dashboard',

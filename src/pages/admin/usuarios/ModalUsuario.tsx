@@ -22,7 +22,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
   const { sedes, listarSedes } = useSedesStore();
   const { modulos, getAllModulos } = useModulosStore();
   const { auth } = useAuthStore();
-  const productoEmpresa = (auth?.empresa?.producto || 'facturacion') as 'facturacion' | 'hotel';
+  const productoEmpresa = (auth?.empresa?.producto || 'facturacion') as 'facturacion' | 'hotel' | 'restaurante';
 
   const [formData, setFormData] = useState<IFormUsuario>({
     nombre: '',

@@ -6,7 +6,7 @@ import InputPro from '@/components/InputPro';
 import useEscapeKey from '@/hooks/useEscapeKey';
 import ModalRegistrarGasto from './ModalRegistrarGasto';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const CajaControl: React.FC = () => {
     const {
@@ -122,11 +122,11 @@ const CajaControl: React.FC = () => {
     if (loading && !estadoCaja) {
         return (
             <div className="font-jakarta space-y-6" style={{ ['--accent' as any]: ACCENT }}>
-                <div className="h-40 rounded-3xl bg-slate-100 animate-pulse" />
+                <div className="h-40 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="h-28 rounded-3xl bg-slate-100 animate-pulse" />
-                    <div className="h-28 rounded-3xl bg-slate-100 animate-pulse" />
-                    <div className="h-28 rounded-3xl bg-slate-100 animate-pulse" />
+                    <div className="h-28 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                    <div className="h-28 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                    <div className="h-28 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 </div>
             </div>
         );
@@ -154,7 +154,7 @@ const CajaControl: React.FC = () => {
 
             {/* Error global */}
             {error && (
-                <div className="flex items-center gap-3 bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-2xl">
+                <div className="flex items-center gap-3 bg-rose-50 border border-rose-100 text-rose-600 dark:bg-rose-900/20 dark:border-rose-900/40 dark:text-rose-300 px-4 py-3 rounded-2xl">
                     <Icon icon="solar:danger-circle-bold" className="text-xl flex-shrink-0" />
                     <span className="text-sm font-semibold flex-1">{error}</span>
                     <button onClick={clearError} className="text-rose-400 hover:text-rose-600">
@@ -164,10 +164,10 @@ const CajaControl: React.FC = () => {
             )}
 
             {/* Hero Status Card */}
-            <div className="relative overflow-hidden rounded-3xl p-8 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="relative overflow-hidden rounded-3xl p-8 bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-5">
-                        <div className={`h-16 w-16 grid place-items-center rounded-2xl ${isAbierta ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        <div className={`h-16 w-16 grid place-items-center rounded-2xl ${isAbierta ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
                             <Icon
                                 icon={isAbierta ? "solar:shop-2-bold-duotone" : "solar:lock-keyhole-minimalistic-bold-duotone"}
                                 className="text-4xl"
@@ -176,16 +176,16 @@ const CajaControl: React.FC = () => {
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-1">Estado del Turno</p>
                             <div className="flex items-center gap-2.5">
-                                <h2 className="text-[26px] font-extrabold tracking-tight text-slate-800">
+                                <h2 className="text-[26px] font-extrabold tracking-tight text-slate-800 dark:text-white">
                                     {isAbierta ? 'Turno Abierto' : 'Turno Cerrado'}
                                 </h2>
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAbierta ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAbierta ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${isAbierta ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                                     {isAbierta ? 'Activo' : 'Inactivo'}
                                 </span>
                             </div>
                             {isAbierta && estadoCaja?.movimiento && (
-                                <p className="mt-2 text-sm text-emerald-600 bg-emerald-50 inline-flex items-center px-3 py-1 rounded-full">
+                                <p className="mt-2 text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-300 inline-flex items-center px-3 py-1 rounded-full">
                                     <Icon icon="solar:clock-circle-linear" className="mr-1.5" />
                                     Abierto desde: {new Date(estadoCaja.movimiento.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
@@ -198,14 +198,14 @@ const CajaControl: React.FC = () => {
                             <div className="flex flex-wrap gap-2.5 justify-end">
                                 <button
                                     onClick={() => setShowGasto(true)}
-                                    className="h-11 px-5 rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-100 text-sm font-bold flex items-center gap-2 transition-colors"
+                                    className="h-11 px-5 rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/30 text-sm font-bold flex items-center gap-2 transition-colors"
                                 >
                                     <Icon icon="solar:wallet-money-bold-duotone" className="text-xl" />
                                     Registrar Gasto
                                 </button>
                                 <button
                                     onClick={handleOpenCierre}
-                                    className="h-11 px-5 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-sm font-bold flex items-center gap-2 transition-colors"
+                                    className="h-11 px-5 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 text-sm font-bold flex items-center gap-2 transition-colors"
                                 >
                                     <Icon icon="solar:stop-circle-bold" className="text-xl" />
                                     Cerrar Turno del Día
@@ -228,37 +228,37 @@ const CajaControl: React.FC = () => {
             {/* Stats Grid - Only visible when Open */}
             {isAbierta && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
-                        <div className="h-12 w-12 grid place-items-center bg-blue-50 text-blue-600 rounded-2xl">
+                    <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
+                        <div className="h-12 w-12 grid place-items-center bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300 rounded-2xl">
                             <Icon icon="solar:wallet-money-bold-duotone" className="text-2xl" />
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Monto Inicial</p>
-                            <p className="text-2xl font-extrabold text-slate-800 mt-0.5">
+                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
                                 {formatCurrency(Number(estadoCaja?.movimiento?.montoInicial || 0))}
                             </p>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
-                        <div className="h-12 w-12 grid place-items-center bg-emerald-50 text-emerald-600 rounded-2xl">
+                    <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
+                        <div className="h-12 w-12 grid place-items-center bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300 rounded-2xl">
                             <Icon icon="solar:hand-money-bold-duotone" className="text-2xl" />
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Ingresos del Turno</p>
-                            <p className="text-2xl font-extrabold text-slate-800 mt-0.5">
+                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
                                 {formatCurrency(Number(estadoCaja?.ventasDelDia?.totalIngresos || 0))}
                             </p>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
-                        <div className="h-12 w-12 grid place-items-center bg-amber-50 text-amber-600 rounded-2xl">
+                    <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
+                        <div className="h-12 w-12 grid place-items-center bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300 rounded-2xl">
                             <Icon icon="solar:bill-list-bold-duotone" className="text-2xl" />
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Gastos del Turno</p>
-                            <p className="text-2xl font-extrabold text-slate-800 mt-0.5">
+                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
                                 {formatCurrency(Number(estadoCaja?.totalEgresos || 0))}
                             </p>
                         </div>

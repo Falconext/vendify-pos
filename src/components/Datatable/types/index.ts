@@ -3,6 +3,10 @@ export interface ITableHeaderProps {
     colorFont?: string;
     actions?: IAction[];
     onSort: (column: string) => void;
+    /** Columna con ordenamiento activo (key resuelta). Muestra el indicador de dirección. */
+    sortColumn?: string;
+    /** Dirección del ordenamiento activo sobre `sortColumn`. */
+    sortDirection?: 'asc' | 'desc';
 }
 
 export interface ITableBodyProps {
@@ -32,6 +36,12 @@ export interface IDataTableProps {
     isCompact?: boolean;
     pageSize?: number;
     actions?: IAction[];
+    /** Ordenamiento controlado por el padre (opt-in). Si se omite, se usa el interno. */
+    onSort?: (column: string) => void;
+    /** Columna con ordenamiento activo (key resuelta). */
+    sortColumn?: string;
+    /** Dirección del ordenamiento activo. */
+    sortDirection?: 'asc' | 'desc';
 }
 
 export interface IAction {

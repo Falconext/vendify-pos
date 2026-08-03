@@ -25,34 +25,34 @@ import { useUsersStore } from '@/zustand/users';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
 
 // ─── Config badges (CRM claro) ──────────────────────────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const TIPO_CONFIG: Record<TipoVenta, { label: string; cls: string }> = {
-    BOLETA:            { label: 'Boleta',    cls: 'bg-blue-50 text-blue-600' },
-    FACTURA:           { label: 'Factura',   cls: 'bg-indigo-50 text-indigo-600' },
-    NOTA_CREDITO:      { label: 'N.Crédito', cls: 'bg-rose-50 text-rose-600' },
-    NOTA_DEBITO:       { label: 'N.Débito',  cls: 'bg-orange-50 text-orange-600' },
-    TICKET:            { label: 'Ticket',    cls: 'bg-teal-50 text-teal-600' },
-    NOTA_VENTA:        { label: 'N.Venta',   cls: 'bg-amber-50 text-amber-600' },
-    NOTA_PEDIDO:       { label: 'N.Pedido',  cls: 'bg-amber-50 text-amber-600' },
-    RECIBO_HONORARIOS: { label: 'R.Honor.',  cls: 'bg-amber-50 text-amber-600' },
-    COMP_PAGO:         { label: 'C.Pago',    cls: 'bg-amber-50 text-amber-600' },
-    OTRO:              { label: 'Otro',      cls: 'bg-slate-100 text-slate-600' },
-    PEDIDO_TIENDA:     { label: 'Tienda',    cls: 'bg-violet-50 text-violet-600' },
+    BOLETA:            { label: 'Boleta',    cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300' },
+    FACTURA:           { label: 'Factura',   cls: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300' },
+    NOTA_CREDITO:      { label: 'N.Crédito', cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
+    NOTA_DEBITO:       { label: 'N.Débito',  cls: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' },
+    TICKET:            { label: 'Ticket',    cls: 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400' },
+    NOTA_VENTA:        { label: 'N.Venta',   cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    NOTA_PEDIDO:       { label: 'N.Pedido',  cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    RECIBO_HONORARIOS: { label: 'R.Honor.',  cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    COMP_PAGO:         { label: 'C.Pago',    cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    OTRO:              { label: 'Otro',      cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
+    PEDIDO_TIENDA:     { label: 'Tienda',    cls: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' },
 };
 
 const PAGO_CONFIG: Record<string, { label: string; dot: string; cls: string }> = {
-    PAGADO:   { label: 'Pagado',    dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600' },
-    PARCIAL:  { label: 'Parcial',   dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600' },
-    PENDIENTE:{ label: 'Pendiente', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600' },
+    PAGADO:   { label: 'Pagado',    dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+    PARCIAL:  { label: 'Parcial',   dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    PENDIENTE:{ label: 'Pendiente', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
 };
 
 const SUNAT_CONFIG: Record<string, { label: string; dot: string; cls: string }> = {
-    ACEPTADO: { label: 'Aceptado',  dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600' },
-    PENDIENTE:{ label: 'Pendiente', dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600' },
-    RECHAZADO:{ label: 'Rechazado', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600' },
-    ANULADO:  { label: 'Anulado',   dot: 'bg-slate-400',   cls: 'bg-slate-100 text-slate-500' },
-    NO_APLICA:{ label: '—',         dot: 'bg-slate-300',   cls: 'bg-slate-50 text-slate-400' },
+    ACEPTADO: { label: 'Aceptado',  dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+    PENDIENTE:{ label: 'Pendiente', dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    RECHAZADO:{ label: 'Rechazado', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
+    ANULADO:  { label: 'Anulado',   dot: 'bg-slate-400',   cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+    NO_APLICA:{ label: '—',         dot: 'bg-slate-300',   cls: 'bg-slate-50 text-slate-400 dark:bg-slate-800/50 dark:text-slate-500' },
 };
 
 const ESTADOS_DESPACHO: { value: EstadoDespacho; label: string }[] = [
@@ -64,12 +64,12 @@ const ESTADOS_DESPACHO: { value: EstadoDespacho; label: string }[] = [
 ];
 
 const DESPACHO_CLS: Record<EstadoDespacho, string> = {
-    PREPARANDO: 'bg-amber-50 text-amber-600',
-    EN_CAMINO:  'bg-blue-50 text-blue-600',
-    EN_DESTINO: 'bg-indigo-50 text-indigo-600',
-    ENTREGADO:  'bg-emerald-50 text-emerald-600',
-    DEVUELTO:   'bg-rose-50 text-rose-600',
-    NO_APLICA:  'bg-slate-50 text-slate-400',
+    PREPARANDO: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+    EN_CAMINO:  'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
+    EN_DESTINO: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300',
+    ENTREGADO:  'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
+    DEVUELTO:   'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+    NO_APLICA:  'bg-slate-50 text-slate-400 dark:bg-slate-800/50 dark:text-slate-500',
 };
 
 // ─── Small components ─────────────────────────────────────────────────────────
@@ -107,12 +107,12 @@ function TabBtn({ active, onClick, label, count, variant = 'blue' }: {
             className={`flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
                 active
                     ? `text-white shadow-lg ${shadow}`
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700'
             }`}
         >
             {label}
             <span className={`min-w-[22px] h-5 px-1.5 flex items-center justify-center rounded-full text-xs font-bold ${
-                active ? activeBadgeCls : 'bg-slate-100 text-slate-500'
+                active ? activeBadgeCls : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
             }`}>
                 {count}
             </span>
@@ -128,18 +128,18 @@ function KpiCard({ label, value, detail, icon, tone }: {
     tone: 'emerald' | 'red' | 'amber' | 'blue';
 }) {
     const chip = {
-        emerald: 'bg-emerald-50 text-emerald-600',
-        red: 'bg-rose-50 text-rose-600',
-        amber: 'bg-amber-50 text-amber-600',
-        blue: 'bg-blue-50 text-blue-600',
+        emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
+        red: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+        amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+        blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
     }[tone];
 
     return (
-        <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none dark:border dark:border-slate-800">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-1.5 text-2xl font-extrabold text-slate-800">{value}</p>
+                    <p className="mt-1.5 text-2xl font-extrabold text-slate-800 dark:text-white">{value}</p>
                     <p className="mt-1 text-xs font-medium text-slate-400">{detail}</p>
                 </div>
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${chip}`}>
@@ -640,7 +640,7 @@ export default function PanelVentasView() {
     const colSpan = (mostrarProductos ? 18 : 17) + (vm.esPrincipalAdmin ? 1 : 0);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-transparent font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -654,15 +654,17 @@ export default function PanelVentasView() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Panel de Ventas</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Panel de Ventas</h1>
                     <p className="text-sm text-slate-400 mt-0.5">
-                        Resumen del día seleccionado y deuda pendiente acumulada.
+                        {vm.fechaFin && vm.fechaFin > vm.fecha
+                            ? 'Resumen del rango seleccionado y deuda pendiente acumulada.'
+                            : 'Resumen del día seleccionado y deuda pendiente acumulada.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
-                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 bg-white text-slate-400 hover:text-slate-600 transition-colors"
+                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-left-linear" className="text-lg" />
                     </button>
@@ -670,11 +672,29 @@ export default function PanelVentasView() {
                         type="date"
                         value={vm.fecha}
                         onChange={(e) => vm.setFecha(e.target.value)}
-                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
+                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-gray-200 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
                     />
+                    <span className="text-xs font-semibold text-slate-400">hasta</span>
+                    <input
+                        type="date"
+                        value={vm.fechaFin}
+                        min={vm.fecha}
+                        onChange={(e) => vm.setFechaFin(e.target.value)}
+                        title="Fecha final del rango (opcional) — déjalo vacío para ver un solo día"
+                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-gray-200 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
+                    />
+                    {vm.fechaFin && (
+                        <button
+                            onClick={() => vm.setFechaFin('')}
+                            className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
+                            title="Quitar rango (volver a un solo día)"
+                        >
+                            <Icon icon="solar:close-circle-linear" className="text-lg" />
+                        </button>
+                    )}
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
-                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 bg-white text-slate-400 hover:text-slate-600 transition-colors"
+                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-right-linear" className="text-lg" />
                     </button>
@@ -686,6 +706,24 @@ export default function PanelVentasView() {
                     >
                         <Icon icon="solar:refresh-linear" className={vm.loading ? 'animate-spin text-lg' : 'text-lg'} />
                         <span className="hidden sm:inline">Actualizar</span>
+                    </button>
+                    <button
+                        onClick={() => vm.exportarResumen('pdf')}
+                        disabled={vm.exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-50"
+                        title="Exportar el rango en PDF imprimible"
+                    >
+                        <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" />
+                        PDF
+                    </button>
+                    <button
+                        onClick={() => vm.exportarResumen('excel')}
+                        disabled={vm.exportando !== null}
+                        className="h-11 px-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all disabled:opacity-50"
+                        title="Exportar el rango en Excel"
+                    >
+                        <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
+                        Excel
                     </button>
                 </div>
             </div>
@@ -714,7 +752,7 @@ export default function PanelVentasView() {
                                 else if (v === 'sin') vm.setFiltroRepartidorId(null);
                                 else vm.setFiltroRepartidorId(Number(v));
                             }}
-                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                            className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-600 dark:text-gray-300 focus:outline-none focus:border-[var(--accent)] transition-colors"
                         >
                             <option value="">Todos los repartidores</option>
                             <option value="sin">Sin asignar</option>
@@ -729,7 +767,7 @@ export default function PanelVentasView() {
                         <select
                             value={vm.filtroUsuarioId ?? ''}
                             onChange={(e) => vm.setFiltroUsuarioId(e.target.value ? Number(e.target.value) : null)}
-                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                            className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-600 dark:text-gray-300 focus:outline-none focus:border-[var(--accent)] transition-colors"
                         >
                             <option value="">Todos los vendedores</option>
                             {vendedoresOptions.map((usuario) => (
@@ -743,8 +781,8 @@ export default function PanelVentasView() {
                         title={mostrarProductos ? 'Ocultar columna productos' : 'Mostrar columna productos'}
                         className={`flex items-center gap-1.5 h-9 px-3.5 rounded-xl border text-sm font-bold transition-all whitespace-nowrap ${
                             mostrarProductos
-                                ? 'bg-violet-50 border-violet-200 text-violet-600'
-                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                ? 'bg-violet-50 border-violet-200 text-violet-600 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-300'
+                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-400 dark:hover:bg-slate-700'
                         }`}
                     >
                         <Icon icon={mostrarProductos ? 'solar:box-bold-duotone' : 'solar:box-linear'} className="text-base" />
@@ -758,7 +796,7 @@ export default function PanelVentasView() {
                             placeholder="N° serie garantía"
                             value={vm.filtroSerie}
                             onChange={(e) => vm.setFiltroSerie(e.target.value.toUpperCase())}
-                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-40"
+                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-40"
                         />
                     </div>
                     {/* Filtro DNI */}
@@ -769,7 +807,7 @@ export default function PanelVentasView() {
                             placeholder="DNI / RUC"
                             value={vm.filtroDni}
                             onChange={(e) => vm.setFiltroDni(e.target.value)}
-                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-36"
+                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-36"
                         />
                     </div>
                     {/* Búsqueda */}
@@ -780,18 +818,18 @@ export default function PanelVentasView() {
                             placeholder="Buscar..."
                             value={vm.busqueda}
                             onChange={(e) => vm.setBusqueda(e.target.value)}
-                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-48"
+                            className="h-9 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors w-48"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Tabla */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none dark:border dark:border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                         <thead>
-                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                 <th className="px-3 py-3 text-left whitespace-nowrap">Fecha</th>
                                 <th className="px-3 py-3 text-left whitespace-nowrap">Referencia</th>
                                 <th className="px-3 py-3 text-left">Tipo</th>
@@ -825,35 +863,35 @@ export default function PanelVentasView() {
                         <tbody>
                             {vm.loading ? (
                                 Array.from({ length: 8 }).map((_, i) => (
-                                    <tr key={i} className="border-b border-slate-50">
+                                    <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                                         <td colSpan={colSpan} className="py-3.5 px-3">
-                                            <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                                            <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                                         </td>
                                     </tr>
                                 ))
                             ) : filasVisibles.length === 0 ? (
                                 <tr>
                                     <td colSpan={colSpan} className="py-16 text-center">
-                                        <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
+                                        <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
                                         <p className="text-slate-400 text-sm">No hay ventas para este día</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filasVisibles.map((item) => {
-                                    const tipoConf = TIPO_CONFIG[item.tipo] ?? { label: item.tipo, cls: 'bg-slate-100 text-slate-500' };
+                                    const tipoConf = TIPO_CONFIG[item.tipo] ?? { label: item.tipo, cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' };
                                     const pagoConf = PAGO_CONFIG[item.estadoPago] ?? PAGO_CONFIG.PENDIENTE;
                                     const sunatConf = SUNAT_CONFIG[item.estadoSunat] ?? SUNAT_CONFIG.NO_APLICA;
                                     const rowCls = item.esConvertida
-                                        ? 'opacity-50 bg-slate-50/60'
-                                        : 'hover:bg-slate-50/60';
+                                        ? 'opacity-50 bg-slate-50/60 dark:bg-slate-800/40'
+                                        : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40';
 
                                     return (
-                                        <tr key={`${item.tipo}-${item.id}`} className={`border-b border-slate-50 transition-colors ${rowCls}`}>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+                                        <tr key={`${item.tipo}-${item.id}`} className={`border-b border-slate-50 dark:border-slate-800 transition-colors ${rowCls}`}>
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                 <div>{moment(item.fecha).format('DD/MM/YY')}</div>
                                                 <div className="text-[10px] opacity-70">{moment(item.fecha).format('HH:mm')}</div>
                                             </td>
-                                            <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-600 whitespace-nowrap">
+                                            <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-600 dark:text-gray-300 whitespace-nowrap">
                                                 <span className={item.esConvertida ? 'line-through' : ''}>
                                                     {item.referencia}
                                                 </span>
@@ -872,12 +910,12 @@ export default function PanelVentasView() {
                                                 <div className="flex flex-col gap-0.5 items-start">
                                                     <Badge label={tipoConf.label} cls={tipoConf.cls} />
                                                     {item.esConvertida && (
-                                                        <Badge label="Convertida" cls="bg-slate-100 text-slate-500" />
+                                                        <Badge label="Convertida" cls="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" />
                                                     )}
                                                 </div>
                                             </td>
                                             {vm.esPrincipalAdmin && (
-                                                <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap max-w-[100px] truncate" title={item.sede}>
+                                                <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap max-w-[100px] truncate" title={item.sede}>
                                                     {item.sede}
                                                 </td>
                                             )}
@@ -886,13 +924,13 @@ export default function PanelVentasView() {
                                                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
                                                         {(item.cliente || '?').charAt(0).toUpperCase()}
                                                     </div>
-                                                    <span className="font-semibold text-slate-700 text-sm truncate" title={item.cliente}>
+                                                    <span className="font-semibold text-slate-700 dark:text-gray-200 text-sm truncate" title={item.cliente}>
                                                         {item.cliente}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="px-3 py-2.5 text-sm font-bold text-right whitespace-nowrap">
-                                                <span className={item.esConvertida ? 'line-through text-slate-400' : 'text-slate-800'}>
+                                                <span className={item.esConvertida ? 'line-through text-slate-400' : 'text-slate-800 dark:text-white'}>
                                                     S/ {Number(item.total ?? 0).toFixed(2)}
                                                 </span>
                                             </td>
@@ -902,10 +940,10 @@ export default function PanelVentasView() {
                                                         S/ {Number(item.saldo ?? 0).toFixed(2)}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-300">—</span>
+                                                    <span className="text-slate-300 dark:text-slate-600">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                 {item.metodoPago}
                                             </td>
                                             <td className="px-3 py-2.5">
@@ -917,10 +955,10 @@ export default function PanelVentasView() {
                                                         <div className="space-y-1">
                                                             {item.productos.slice(0, 3).map((prod, idx) => (
                                                                 <div key={idx} className="flex items-center gap-1.5">
-                                                                    <span className="flex-shrink-0 min-w-[22px] h-[18px] flex items-center justify-center rounded-md bg-violet-50 text-[9px] font-black text-violet-600 px-1">
+                                                                    <span className="flex-shrink-0 min-w-[22px] h-[18px] flex items-center justify-center rounded-md bg-violet-50 dark:bg-violet-900/20 text-[9px] font-black text-violet-600 dark:text-violet-300 px-1">
                                                                         {prod.cantidad}x
                                                                     </span>
-                                                                    <span className="text-[10px] text-slate-600 truncate leading-tight" title={prod.nombre}>
+                                                                    <span className="text-[10px] text-slate-600 dark:text-gray-300 truncate leading-tight" title={prod.nombre}>
                                                                         {prod.nombre}
                                                                     </span>
                                                                 </div>
@@ -932,7 +970,7 @@ export default function PanelVentasView() {
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-slate-300 text-xs">—</span>
+                                                        <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>
                                                     )}
                                                 </td>
                                             )}
@@ -942,22 +980,22 @@ export default function PanelVentasView() {
                                             <td className="px-3 py-2.5">
                                                 <EstadoDespachoSelector item={item} onChange={vm.actualizarEstado} />
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                 {item.estadoDespacho !== 'NO_APLICA' ? (item.turnoEnvio ?? '—') : '—'}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                 {item.estadoDespacho !== 'NO_APLICA' ? (item.celularDest ?? '—') : '—'}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[120px] truncate" title={item.agenciaDestino}>
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 max-w-[120px] truncate" title={item.agenciaDestino}>
                                                 {item.estadoDespacho !== 'NO_APLICA' ? (item.agenciaDestino ?? '—') : '—'}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-center text-slate-500">
+                                            <td className="px-3 py-2.5 text-xs text-center text-slate-500 dark:text-gray-400">
                                                 {item.estadoDespacho !== 'NO_APLICA' ? (item.nroPaquetes ?? '—') : '—'}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap max-w-[100px] truncate" title={item.repartidor}>
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap max-w-[100px] truncate" title={item.repartidor}>
                                                 {item.estadoDespacho !== 'NO_APLICA' ? item.repartidor : '—'}
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[100px] truncate" title={item.vendedor}>
+                                            <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 max-w-[100px] truncate" title={item.vendedor}>
                                                 {item.vendedor}
                                             </td>
                                             <td className="px-3 py-2.5 text-center">
@@ -1025,6 +1063,9 @@ export default function PanelVentasView() {
                         comprobante: TIPO_CONFIG[waItem.tipo]?.label ?? waItem.tipo,
                         total: waItem.total,
                         clienteNombre: waItem.cliente,
+                        // Prefill del número: teléfono del cliente; si no tiene, el celular del despacho
+                        clienteCelular: waItem.clienteTelefono || (waItem.celularDest && waItem.celularDest !== '—' ? waItem.celularDest : ''),
+                        clienteEmail: waItem.clienteEmail || '',
                     }}
                 />
             )}

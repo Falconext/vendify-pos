@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import TrasladoPrintPage from './TrasladoPrintPage';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface SelectedProduct {
     id: number;
@@ -220,7 +220,7 @@ export default function TrasladoSedesView() {
     const hasStockIssues = selectedProducts.some(p => p.cantidad > p.stockActual);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
 
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
@@ -235,17 +235,17 @@ export default function TrasladoSedesView() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 grid place-items-center shrink-0">
+                    <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300 grid place-items-center shrink-0">
                         <Icon icon="solar:transfer-horizontal-bold" width={22} />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">Traslado entre Sedes</h1>
+                        <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Traslado entre Sedes</h1>
                         <p className="text-sm text-slate-400 mt-0.5">Mueve mercadería de forma segura entre sucursales</p>
                     </div>
                 </div>
                 <button
                     onClick={() => navigate('/administrador/kardex')}
-                    className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors shrink-0"
+                    className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors shrink-0"
                 >
                     <Icon icon="solar:alt-arrow-left-linear" width={16} />
                     Volver al Kardex
@@ -253,13 +253,13 @@ export default function TrasladoSedesView() {
             </div>
 
             {isSuccess && transferData ? (
-                <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-10 flex flex-col items-center justify-center min-h-[400px]">
-                    <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mb-5">
+                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-10 flex flex-col items-center justify-center min-h-[400px]">
+                    <div className="w-20 h-20 bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-3xl flex items-center justify-center mb-5">
                         <Icon icon="solar:check-circle-bold" width={44} />
                     </div>
-                    <h2 className="text-xl font-extrabold text-slate-800 mb-2">Traslado completado</h2>
+                    <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">Traslado completado</h2>
                     <p className="text-sm text-slate-400 mb-8 text-center max-w-md">
-                        Los productos han sido descontados de <span className="font-semibold text-slate-600">{transferData.sedeOrigen?.nombre}</span> y agregados a <span className="font-semibold text-slate-600">{transferData.sedeDestino?.nombre}</span>.
+                        Los productos han sido descontados de <span className="font-semibold text-slate-600 dark:text-slate-300">{transferData.sedeOrigen?.nombre}</span> y agregados a <span className="font-semibold text-slate-600 dark:text-slate-300">{transferData.sedeDestino?.nombre}</span>.
                     </p>
                     <div className="flex gap-3">
                         <button
@@ -278,7 +278,7 @@ export default function TrasladoSedesView() {
                                 setObservacion('');
                                 setTransferData(null);
                             }}
-                            className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                            className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors"
                         >
                             Nuevo Traslado
                         </button>
@@ -302,23 +302,23 @@ export default function TrasladoSedesView() {
                     <div className="lg:col-span-1 space-y-5">
 
                         {/* Configuración */}
-                        <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5">
+                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5">
                             <div className="flex items-center gap-2.5 mb-4">
                                 <span className="w-6 h-6 text-white text-[11px] font-bold rounded-full flex items-center justify-center shrink-0" style={{ background: ACCENT }}>1</span>
                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Configuración del Traslado</span>
                             </div>
 
                             {/* Route visualizer */}
-                            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl mb-4">
+                            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl mb-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Origen</p>
-                                    <div className="px-2.5 py-1.5 bg-white border border-violet-200 rounded-xl">
-                                        <span className="text-xs font-semibold text-slate-700 truncate block">{sedeActiva?.nombre}</span>
+                                    <div className="px-2.5 py-1.5 bg-white border border-violet-200 dark:bg-slate-800 dark:border-violet-800 rounded-xl">
+                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate block">{sedeActiva?.nombre}</span>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center pt-3 shrink-0">
-                                    <div className={`w-4 h-px ${destinationSedeId ? 'bg-violet-400' : 'bg-slate-200'} transition-colors`} />
+                                    <div className={`w-4 h-px ${destinationSedeId ? 'bg-violet-400' : 'bg-slate-200 dark:bg-slate-700'} transition-colors`} />
                                     <Icon
                                         icon="solar:arrow-right-bold"
                                         width={13}
@@ -331,8 +331,8 @@ export default function TrasladoSedesView() {
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Destino</p>
                                     <div className={`px-2.5 py-1.5 rounded-xl border transition-all duration-200 ${
                                         destinationSedeId
-                                            ? 'bg-violet-50 border-violet-200'
-                                            : 'bg-white border-dashed border-slate-200'
+                                            ? 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800'
+                                            : 'bg-white border-dashed border-slate-200 dark:bg-slate-800 dark:border-slate-700'
                                     }`}>
                                         <span className="text-xs font-semibold truncate block transition-colors" style={{ color: destinationSedeId ? ACCENT : '#94a3b8' }}>
                                             {sedeDestino?.nombre ?? 'Por seleccionar'}
@@ -361,7 +361,7 @@ export default function TrasladoSedesView() {
                         </div>
 
                         {/* Buscador */}
-                        <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 relative" ref={searchRef}>
+                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5 relative" ref={searchRef}>
                             <div className="flex items-center gap-2.5 mb-4">
                                 <span className="w-6 h-6 text-white text-[11px] font-bold rounded-full flex items-center justify-center shrink-0" style={{ background: ACCENT }}>2</span>
                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Agregar Productos</span>
@@ -392,16 +392,16 @@ export default function TrasladoSedesView() {
                             </div>
 
                             {searchResults.length > 0 && (
-                                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto mx-5">
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-100 dark:bg-slate-800 dark:border-slate-700 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto mx-5">
                                     {searchResults.map((p) => {
                                         const stockOrigen = p.stocks?.find((s: any) => s.sedeId === sedeActiva?.id)?.stock ?? p.stock ?? 0;
                                         return (
                                             <button
                                                 key={p.id}
                                                 onClick={() => addProduct(p)}
-                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-colors border-b border-slate-50 last:border-0 text-left"
+                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-slate-700 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0 text-left"
                                             >
-                                                <div className="h-10 w-10 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                                                <div className="h-10 w-10 rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
                                                     {p.imagenUrl ? (
                                                         <img src={p.imagenUrl} alt={p.descripcion} className="h-full w-full object-cover" loading="lazy" />
                                                     ) : (

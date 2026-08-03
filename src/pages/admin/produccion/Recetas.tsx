@@ -396,14 +396,14 @@ export default function ProduccionRecetasPage() {
   if (!esFabricacion) {
     return (
       <div
-        className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta"
+        className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta"
         style={{ ['--accent' as any]: ACCENT }}
       >
-        <div className="max-w-xl mx-auto mt-10 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-amber-50 text-amber-500 grid place-items-center mx-auto mb-4">
+        <div className="max-w-xl mx-auto mt-10 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
+          <div className="h-14 w-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 grid place-items-center mx-auto mb-4">
             <Icon icon="solar:lock-keyhole-minimalistic-linear" className="text-3xl" />
           </div>
-          <h2 className="text-[18px] font-extrabold text-slate-800">
+          <h2 className="text-[18px] font-extrabold text-slate-800 dark:text-white">
             Módulo no disponible
           </h2>
           <p className="text-sm text-slate-400 mt-1">
@@ -416,7 +416,7 @@ export default function ProduccionRecetasPage() {
 
   return (
     <div
-      className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta"
+      className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta"
       style={{ ['--accent' as any]: ACCENT }}
     >
       {/* Breadcrumb */}
@@ -434,7 +434,7 @@ export default function ProduccionRecetasPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">
             Recetas de Producción
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">
@@ -445,7 +445,7 @@ export default function ProduccionRecetasPage() {
           <button
             onClick={() => void descargarPlantilla()}
             disabled={descargandoPlantilla}
-            className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
           >
             <Icon icon="solar:download-minimalistic-linear" />
             {descargandoPlantilla ? 'Descargando…' : 'Descargar plantilla'}
@@ -460,7 +460,7 @@ export default function ProduccionRecetasPage() {
           <button
             onClick={() => inputPlantillaRef.current?.click()}
             disabled={importandoPlantilla}
-            className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
           >
             <Icon icon="solar:upload-minimalistic-linear" />
             {importandoPlantilla ? 'Importando…' : 'Importar Excel'}
@@ -480,26 +480,26 @@ export default function ProduccionRecetasPage() {
       </div>
 
       {/* Banner de ayuda */}
-      <div className="flex items-start gap-3 bg-white rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 mb-5">
-        <div className="h-9 w-9 rounded-xl bg-violet-50 text-violet-600 grid place-items-center shrink-0">
+      <div className="flex items-start gap-3 bg-white dark:bg-[#111827] rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 mb-5">
+        <div className="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
           <Icon icon="solar:lightbulb-bolt-linear" className="text-lg" />
         </div>
-        <p className="text-sm text-slate-500 leading-relaxed">
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
           Flujo rápido: 1) Descarga plantilla, 2) completa hojas{' '}
-          <strong className="text-slate-700">PRODUCTOS</strong> y{' '}
-          <strong className="text-slate-700">RECETAS</strong>, 3) opcional hoja{' '}
-          <strong className="text-slate-700">ORDENES</strong>, 4) importa el
+          <strong className="text-slate-700 dark:text-slate-200">PRODUCTOS</strong> y{' '}
+          <strong className="text-slate-700 dark:text-slate-200">RECETAS</strong>, 3) opcional hoja{' '}
+          <strong className="text-slate-700 dark:text-slate-200">ORDENES</strong>, 4) importa el
           archivo para crear todo de una vez.
         </p>
       </div>
 
       {/* Card: Nueva Receta */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 space-y-4 mb-5">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 space-y-4 mb-5">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-violet-50 text-violet-600 grid place-items-center">
+          <div className="h-8 w-8 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 grid place-items-center">
             <Icon icon="solar:add-square-linear" className="text-lg" />
           </div>
-          <h2 className="text-base font-bold text-slate-800">Nueva Receta</h2>
+          <h2 className="text-base font-bold text-slate-800 dark:text-white">Nueva Receta</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="md:col-span-2">
@@ -567,24 +567,24 @@ export default function ProduccionRecetasPage() {
 
         <div className="space-y-2.5 pt-1">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-slate-700">Componentes</p>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Componentes</p>
             <button
               onClick={agregarComponente}
-              className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors hover:bg-violet-50"
+              className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors hover:bg-violet-50 dark:hover:bg-violet-900/20"
               style={{ borderColor: `${ACCENT}55`, color: ACCENT }}
             >
               <Icon icon="solar:add-circle-linear" /> Agregar componente
             </button>
           </div>
           {chipsInsumos.length > 0 && (
-            <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-3">
+            <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/50 p-3">
               {chipsInsumos.map((chip) => (
                 <div
                   key={`${chip.id}-${chip.index}`}
                   className={`inline-flex items-center gap-2 pl-3 pr-1.5 py-1 rounded-full text-xs font-semibold ${
                     chip.duplicado || chip.esProductoFinal
-                      ? 'bg-rose-50 text-rose-600'
-                      : 'bg-indigo-50 text-indigo-600'
+                      ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'
+                      : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
                   }`}
                 >
                   <span>{chip.label}</span>
@@ -599,7 +599,7 @@ export default function ProduccionRecetasPage() {
                         e.target.value,
                       )
                     }
-                    className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-700 focus:outline-none focus:border-[var(--accent)]"
+                    className="w-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)]"
                     title="Cantidad base"
                   />
                   <input
@@ -612,13 +612,13 @@ export default function ProduccionRecetasPage() {
                         e.target.value.toUpperCase(),
                       )
                     }
-                    className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] uppercase text-slate-700 focus:outline-none focus:border-[var(--accent)]"
+                    className="w-16 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] uppercase text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)]"
                     title="Unidad base"
                   />
                   <button
                     onClick={() => quitarComponente(chip.index)}
                     disabled={componentes.length === 1}
-                    className="h-5 w-5 grid place-items-center rounded-full hover:bg-black/10 disabled:opacity-50"
+                    className="h-5 w-5 grid place-items-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
                   >
                     <Icon icon="solar:close-circle-bold" />
                   </button>
@@ -694,7 +694,7 @@ export default function ProduccionRecetasPage() {
               <button
                 onClick={() => quitarComponente(index)}
                 disabled={componentes.length === 1}
-                className="h-11 mt-7 px-3.5 rounded-xl border border-rose-200 text-sm font-semibold text-rose-600 flex items-center justify-center gap-1.5 hover:bg-rose-50 disabled:opacity-50 transition-colors"
+                className="h-11 mt-7 px-3.5 rounded-xl border border-rose-200 dark:border-rose-900/50 text-sm font-semibold text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 transition-colors"
               >
                 <Icon icon="solar:trash-bin-trash-linear" /> Quitar
               </button>
@@ -716,12 +716,12 @@ export default function ProduccionRecetasPage() {
       </div>
 
       {/* Card: Recetas registradas */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
-          <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 grid place-items-center">
             <Icon icon="solar:notebook-linear" className="text-lg" />
           </div>
-          <h2 className="text-base font-bold text-slate-800">
+          <h2 className="text-base font-bold text-slate-800 dark:text-white">
             Recetas registradas
           </h2>
           <span className="ml-auto text-sm text-slate-400 font-medium">
@@ -732,7 +732,7 @@ export default function ProduccionRecetasPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[820px]">
             <thead>
-              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                 <th className="py-3 pl-5 pr-3">Código</th>
                 <th className="py-3 px-3">Nombre</th>
                 <th className="py-3 px-3">Producto Final</th>
@@ -744,9 +744,9 @@ export default function ProduccionRecetasPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-slate-50">
+                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                     <td colSpan={6} className="py-3.5 px-5">
-                      <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                      <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </td>
                   </tr>
                 ))
@@ -755,7 +755,7 @@ export default function ProduccionRecetasPage() {
                   <td colSpan={6} className="py-16 text-center">
                     <Icon
                       icon="solar:notebook-linear"
-                      className="text-5xl text-slate-200 mx-auto mb-2"
+                      className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2"
                     />
                     <p className="text-slate-400 text-sm">
                       Aún no hay recetas.
@@ -766,10 +766,10 @@ export default function ProduccionRecetasPage() {
                 recetas.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                    className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
                   >
                     <td className="py-3 pl-5 pr-3">
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                         {item.codigo}
                       </span>
                     </td>
@@ -778,28 +778,28 @@ export default function ProduccionRecetasPage() {
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
                           {String(item.nombre || '?').charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-semibold text-slate-700 text-sm truncate max-w-[200px]">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[200px]">
                           {item.nombre}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[220px]">
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
                       {item.productoFinal?.descripcion || '—'}
                     </td>
-                    <td className="py-3 px-3 font-bold text-slate-800 text-sm">
+                    <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm">
                       {item.rendimientoObjetivo} {item.unidadRendimiento}
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500">
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">
                       {item._count?.componentes || 0}
                     </td>
                     <td className="py-3 px-3 pr-5">
                       {item.activo ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           Activa
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                           Inactiva
                         </span>

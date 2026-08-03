@@ -109,6 +109,9 @@ export interface IGuiaRemisionState {
     deleteGuiaRemision: (id: number) => Promise<{ success: boolean; error?: string }>;
     enviarSunat: (id: number) => Promise<{ success: boolean; error?: string }>;
     getSiguienteCorrelativo: (serie: string) => Promise<{ success: boolean; error?: string }>;
+    prefillDesdeComprobante: (comprobanteId: number) => Promise<{ success: boolean; data?: any; error?: string }>;
+    importarItemsExcel: (archivoBase64: string) => Promise<{ success: boolean; items?: IDetalleGuiaRemision[]; errores?: { fila: number; motivo: string }[]; error?: string }>;
+    descargarPlantillaItems: () => Promise<{ success: boolean; error?: string }>;
     downloadPdf: (id: number) => Promise<{ success: boolean; error?: string }>;
     enviarWhatsApp: (id: number, numero: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -300,6 +303,70 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
         } catch (error: any) {
             useAlertStore.getState().alert(error.message || 'Error al obtener el siguiente correlativo', 'error');
             return { success: false, error: error.message || 'Error al obtener el siguiente correlativo' };
+        }
+    },
+
+    prefillDesdeComprobante: async (comprobanteId: number) => {
+        try {
+            useAlertStore.setState({ loading: true });
+            const resp: any = await fetchGet(`guia-remision/desde-comprobante/${comprobanteId}`);
+            useAlertStore.setState({ loading: false });
+            if (resp?.success === false) {
+                useAlertStore.getState().alert(resp.error || 'No se pudo importar el comprobante', 'error');
+                return { success: false, error: resp.error };
+            }
+            // fetch.ts entrega el body completo; el payload va en `data`.
+            const data = resp?.data ?? resp;
+            if (data && (data.detalles || data.destinatarioNumDoc)) {
+                return { success: true, data };
+            }
+            useAlertStore.getState().alert('No se pudieron cargar los datos del comprobante', 'error');
+            return { success: false, error: 'Comprobante sin datos' };
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error.message || 'Error al importar el comprobante', 'error');
+            return { success: false, error: error.message || 'Error al importar el comprobante' };
+        }
+    },
+
+    importarItemsExcel: async (archivoBase64: string) => {
+        try {
+            useAlertStore.setState({ loading: true });
+            const resp: any = await post('guia-remision/importar-items', { archivo: archivoBase64 });
+            useAlertStore.setState({ loading: false });
+            if (resp?.success === false) {
+                useAlertStore.getState().alert(resp.error || 'Error al importar el Excel', 'error');
+                return { success: false, error: resp.error };
+            }
+            const data = resp?.data ?? resp;
+            const items = (data?.items || []) as IDetalleGuiaRemision[];
+            const errores = data?.errores || [];
+            if (items.length === 0) {
+                useAlertStore.getState().alert('El archivo no contiene ítems válidos', 'warning');
+                return { success: false, items, errores };
+            }
+            return { success: true, items, errores };
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error.message || 'Error al importar el Excel', 'error');
+            return { success: false, error: error.message || 'Error al importar el Excel' };
+        }
+    },
+
+    descargarPlantillaItems: async () => {
+        try {
+            const response = await apiClient.get('guia-remision/plantilla-items', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'plantilla_items_guia.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            return { success: true };
+        } catch (error: any) {
+            useAlertStore.getState().alert(error.message || 'Error al descargar la plantilla', 'error');
+            return { success: false, error: error.message || 'Error al descargar la plantilla' };
         }
     },
 

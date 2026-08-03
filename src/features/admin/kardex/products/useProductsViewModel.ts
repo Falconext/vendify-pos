@@ -16,10 +16,10 @@ const REQUIRED_VISIBLE_COLUMNS = ['Valor Inventario', 'Costo Total Fijo'];
 const FALLBACK_VISIBLE_COLUMNS = [
     'Producto',
     'Precio Venta',
+    'Stock',
     'Costo',
     'Valor Inventario',
     'Costo Total Fijo',
-    'Stock',
     'Sede',
     'Estado',
     'Acciones',
@@ -115,8 +115,8 @@ export const useProductsViewModel = () => {
     const allColumns = useMemo(() => {
         // Rubros farmacéuticos: "Lotes" (próximo vencimiento) al costado de Producto, sin U.M/%Venta/%Provisión
         const base = esFarmaceuticoRubro
-            ? ['Img', 'Producto', 'Lotes', 'Categoria', 'Marca', 'Precio Venta', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Stock', 'Localización', 'Estado', 'Tienda', 'Acciones']
-            : ['Img', 'Producto', 'Categoria', 'Marca', 'Precio Venta', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Stock', 'Localización', '% Venta', '% Provisión', 'U.M', 'Estado', 'Tienda', 'Acciones'];
+            ? ['Img', 'Producto', 'Lotes', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Localización', 'Estado', 'Tienda', 'Acciones']
+            : ['Img', 'Producto', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Localización', '% Venta', '% Provisión', 'U.M', 'Estado', 'Tienda', 'Acciones'];
         return base.filter(c => {
             if (COLUMNAS_CORPORATIVAS.includes(c) && !tieneGestionProvisiones) return false;
             if (COLUMNAS_ECOMMERCE.includes(c) && !tieneTienda) return false;
@@ -168,7 +168,11 @@ export const useProductsViewModel = () => {
         visibleColumns: initialVisibleColumns,
         showColumnFilter: false,
         vistaActual: isRestaurante ? 'cards' : 'tabla',
-        marcaIdFilter: undefined
+        marcaIdFilter: undefined,
+        soloStockBajo: (() => {
+            const searchParams = new URLSearchParams(window.location.search);
+            return searchParams.get('soloStockBajo') === 'true';
+        })()
     });
 
     const debounce = useDebounce(state.searchClient, 600);
@@ -176,6 +180,12 @@ export const useProductsViewModel = () => {
     const [totalProducts, setTotalProducts] = useState(0);
     const [productsLoaded, setProductsLoaded] = useState(false);
     const [productsLoading, setProductsLoading] = useState(false);
+    // Ordenamiento por stock (client-side sobre la lista mostrada).
+    // Ciclo al hacer click en el header "Stock": null → desc → asc → null.
+    const [stockSort, setStockSort] = useState<'asc' | 'desc' | null>(null);
+    const toggleStockSort = useCallback(() => {
+        setStockSort(prev => (prev === null ? 'desc' : prev === 'desc' ? 'asc' : null));
+    }, []);
     const columnsStorageKey = `datatable:${auth?.empresaId || 'default'}:productos:visibleColumns`;
     const vistaStorageKey = `productos:vista:${auth?.empresaId || 'default'}`;
 
@@ -226,6 +236,10 @@ export const useProductsViewModel = () => {
                             }
                         });
                         if (!restored.includes('Acciones')) restored = [...restored, 'Acciones'];
+                        // Normaliza el orden al canónico de allColumns. Así columnas agregadas
+                        // luego (p.ej. "Stock") quedan en su posición correcta y no al final por
+                        // preferencias antiguas guardadas en localStorage.
+                        restored = allColumns.filter(c => restored.includes(c));
                         // Evita dejar la grilla "en blanco" por configuración inválida/corrupta.
                         if (restored.length < 2) {
                             restored = [...fallbackVisibleColumns];
@@ -273,6 +287,7 @@ export const useProductsViewModel = () => {
             };
             if (state.marcaIdFilter) params.marcaId = String(state.marcaIdFilter);
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
+            if (state.soloStockBajo) params.soloStockBajo = 'true';
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos?${query}`);
             if (resp?.code === 1) {
@@ -291,7 +306,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -457,6 +472,9 @@ export const useProductsViewModel = () => {
                             ...prev.formValues,
                             descripcionLarga: full.descripcionLarga ?? (prev.formValues as any).descripcionLarga ?? '',
                             atributosTecnicos: full.atributosTecnicos ?? (prev.formValues as any).atributosTecnicos,
+                            codigosBarrasExtra: Array.isArray(full.codigosBarrasExtra)
+                                ? full.codigosBarrasExtra
+                                : ((prev.formValues as any).codigosBarrasExtra ?? []),
                             ...(fullVariantes
                                 ? {
                                     variantes: fullVariantes,
@@ -657,9 +675,19 @@ export const useProductsViewModel = () => {
         handleToggleClientState,
         confirmToggleroduct,
         togglePublicarTienda,
+        toggleStockSort,
         exportProducts: () => exportProductsAction(debounce, effectiveSedeId),
         refreshProducts: async () => {
             await fetchProductsList();
+        },
+        setSoloStockBajo: (val: boolean) => {
+            setState(prev => ({ ...prev, soloStockBajo: val, currentPage: 1 }));
+            // Optional: update URL to remove the parameter if disabled
+            if (!val) {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('soloStockBajo');
+                window.history.replaceState({}, '', url);
+            }
         }
     };
 
@@ -686,6 +714,7 @@ export const useProductsViewModel = () => {
         isRestaurante,
         isCodigoBarrasEnabled,
         safeVisibleColumns,
+        stockSort,
         actions,
         // Sede filtering
         isAdmin,

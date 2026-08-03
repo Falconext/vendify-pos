@@ -39,7 +39,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const EditEmpresa = () => {
   const navigate = useNavigate();
@@ -361,7 +361,7 @@ const EditEmpresa = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
         <Loading />
       </div>
     );
@@ -369,13 +369,13 @@ const EditEmpresa = () => {
 
   if (!empresa) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
-        <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-10">
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-10">
           <div className="text-center py-10">
-            <div className="mx-auto mb-4 h-16 w-16 grid place-items-center rounded-2xl bg-rose-50 text-rose-500">
+            <div className="mx-auto mb-4 h-16 w-16 grid place-items-center rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400">
               <Icon icon="solar:danger-triangle-linear" className="text-4xl" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">Empresa no encontrada</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Empresa no encontrada</h3>
             <p className="text-slate-400 mb-4">La empresa que intentas editar no existe.</p>
             <button
               type="button"
@@ -394,7 +394,7 @@ const EditEmpresa = () => {
   console.log("EL FORMDATA DEL FORMULARIO", formData)
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -410,19 +410,19 @@ const EditEmpresa = () => {
         <button
           type="button"
           onClick={() => navigate('/administrador/empresas')}
-          className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+          className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors shrink-0"
         >
           <Icon icon="solar:alt-arrow-left-linear" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">Editar Empresa</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Editar Empresa</h1>
           <p className="text-sm text-slate-400 mt-0.5 truncate">Modifica los datos de la empresa: {empresa.razonSocial}</p>
         </div>
       </div>
 
       {/* Mostrar error si existe */}
       {error && (
-        <div className="mb-5 p-4 rounded-2xl bg-rose-50 text-rose-600 text-sm font-medium flex items-center gap-2">
+        <div className="mb-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-sm font-medium flex items-center gap-2">
           <Icon icon="solar:danger-circle-linear" className="text-lg shrink-0" />
           {error}
         </div>
@@ -430,7 +430,7 @@ const EditEmpresa = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Datos de la Empresa */}
-        <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-6">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 text-violet-600">
               <Icon icon="solar:buildings-2-linear" className="text-xl" />
@@ -634,7 +634,7 @@ const EditEmpresa = () => {
 
           {/* Integración SUNAT - Solo para empresas FORMALES */}
           {formData.tipoEmpresa === 'FORMAL' && (
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-6">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="h-10 w-10 grid place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Icon icon="solar:shield-check-linear" className="text-xl" />
@@ -675,7 +675,7 @@ const EditEmpresa = () => {
           )}
 
           {/* Información adicional */}
-          <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-6">
+          <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-10 w-10 grid place-items-center rounded-2xl bg-blue-50 text-blue-600">
                 <Icon icon="solar:card-linear" className="text-xl" />
@@ -704,7 +704,7 @@ const EditEmpresa = () => {
 
           {/* Tarjetas de planes (solo precios) */}
           {planes && planes.length > 0 && (
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-6">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 grid place-items-center rounded-2xl bg-amber-50 text-amber-600">
                   <Icon icon="solar:crown-linear" className="text-xl" />

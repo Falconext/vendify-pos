@@ -19,12 +19,12 @@ type FiltroEstado = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const EMPTY_FORM: RepartidorFormData = { nombre: '', celular: '', tipo: 'EVENTUAL', activo: true };
 
 const INPUT_CLASS =
-  'w-full rounded-2xl border-2 border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition focus:border-[var(--accent)]';
+  'w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition focus:border-[var(--accent)]';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,8 +53,8 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
 
   return (
     <div
-      className={`relative flex flex-col rounded-3xl bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)] transition-all hover:shadow-[0_6px_28px_rgba(15,23,42,0.08)] overflow-hidden ${
-        repartidor.activo ? 'border border-slate-100' : 'border border-dashed border-slate-200 opacity-70'
+      className={`relative flex flex-col rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none transition-all hover:shadow-[0_6px_28px_rgba(15,23,42,0.08)] overflow-hidden ${
+        repartidor.activo ? 'border border-slate-100 dark:border-slate-800' : 'border border-dashed border-slate-200 dark:border-slate-700 opacity-70'
       }`}
     >
       {/* Tipo stripe */}
@@ -71,7 +71,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-800 truncate leading-snug">{repartidor.nombre}</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-snug">{repartidor.nombre}</p>
             {repartidor.sede?.nombre && (
               <div className="flex items-center gap-1 mt-0.5">
                 <Icon icon="solar:map-point-linear" className="text-slate-400 shrink-0" width={11} />
@@ -81,7 +81,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                  isPlanilla ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+                  isPlanilla ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-300'
                 }`}
               >
                 {repartidor.tipo}
@@ -90,7 +90,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
                 type="button"
                 onClick={() => onToggleActive(repartidor)}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition hover:opacity-75 ${
-                  repartidor.activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                  repartidor.activo ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                 }`}
               >
                 <span className={`inline-block h-1.5 w-1.5 rounded-full ${repartidor.activo ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -101,10 +101,10 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
         </div>
 
         {/* Celular row */}
-        <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+        <div className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 px-3 py-2">
           <div className="flex items-center gap-2">
             <Icon icon="solar:phone-linear" className="text-slate-400 shrink-0" width={14} />
-            <span className="text-sm text-slate-700 font-medium tabular-nums">
+            <span className="text-sm text-slate-700 dark:text-slate-200 font-medium tabular-nums">
               {repartidor.celular || '—'}
             </span>
           </div>
@@ -125,7 +125,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
         </div>
 
         {/* Despachos hoy */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 p-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 flex items-center gap-1">
               <Icon icon="solar:calendar-linear" width={12} />
@@ -146,21 +146,21 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
           ) : stats && stats.total > 0 ? (
             <>
               <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-                <div className="flex flex-col items-center rounded-xl bg-amber-50 px-1.5 py-1.5">
-                  <span className="text-lg font-extrabold text-amber-600 leading-none">{stats.preparando}</span>
+                <div className="flex flex-col items-center rounded-xl bg-amber-50 dark:bg-amber-900/20 px-1.5 py-1.5">
+                  <span className="text-lg font-extrabold text-amber-600 dark:text-amber-400 leading-none">{stats.preparando}</span>
                   <span className="text-[9px] text-amber-500 mt-0.5 font-semibold">Prep.</span>
                 </div>
-                <div className="flex flex-col items-center rounded-xl bg-blue-50 px-1.5 py-1.5">
-                  <span className="text-lg font-extrabold text-blue-600 leading-none">{stats.enCamino}</span>
+                <div className="flex flex-col items-center rounded-xl bg-blue-50 dark:bg-blue-900/20 px-1.5 py-1.5">
+                  <span className="text-lg font-extrabold text-blue-600 dark:text-blue-400 leading-none">{stats.enCamino}</span>
                   <span className="text-[9px] text-blue-500 mt-0.5 font-semibold">Tráns.</span>
                 </div>
-                <div className="flex flex-col items-center rounded-xl bg-emerald-50 px-1.5 py-1.5">
-                  <span className="text-lg font-extrabold text-emerald-600 leading-none">{stats.entregado}</span>
+                <div className="flex flex-col items-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-1.5">
+                  <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">{stats.entregado}</span>
                   <span className="text-[9px] text-emerald-500 mt-0.5 font-semibold">Entr.</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div className="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
                     style={{ width: `${tasaEntrega}%` }}
@@ -181,11 +181,11 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center gap-1.5 border-t border-slate-100 px-4 py-3 shrink-0">
+      <div className="flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-800 px-4 py-3 shrink-0">
         <button
           type="button"
           onClick={() => onViewDespachos(repartidor)}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100 text-xs font-bold transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30 text-xs font-bold transition-colors"
         >
           <Icon icon="solar:route-linear" width={14} />
           Ver despachos
@@ -193,7 +193,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
         <button
           type="button"
           onClick={() => onEdit(repartidor)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           title="Editar"
         >
           <Icon icon="solar:pen-linear" width={14} />
@@ -201,7 +201,7 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
         <button
           type="button"
           onClick={() => onDelete(repartidor)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors"
           title="Eliminar"
         >
           <Icon icon="solar:trash-bin-trash-linear" width={14} />
@@ -342,7 +342,7 @@ export default function RepartidoresView() {
   const isBusy = loading || despachoLoading;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
 
       {/* ── Breadcrumb ──────────────────────────────────────────── */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
@@ -357,7 +357,7 @@ export default function RepartidoresView() {
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Repartidores</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Repartidores</h1>
           <p className="text-sm text-slate-400 mt-0.5">Equipo de reparto propio · rendimiento del día</p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -367,7 +367,7 @@ export default function RepartidoresView() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nombre, celular o sede…"
-              className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
@@ -379,7 +379,7 @@ export default function RepartidoresView() {
             type="button"
             onClick={handleRefresh}
             disabled={isBusy}
-            className="h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition disabled:opacity-50 shrink-0"
+            className="h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50 shrink-0"
             title="Actualizar"
           >
             <Icon icon="solar:refresh-linear" width={18} className={isBusy ? 'animate-spin' : ''} />
@@ -399,18 +399,18 @@ export default function RepartidoresView() {
       {/* ── KPIs — Repartidores ─────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total', value: stats.total, icon: 'solar:users-group-rounded-linear', colorClass: 'bg-violet-50 text-violet-600' },
-          { label: 'Activos', value: stats.activos, icon: 'solar:check-circle-linear', colorClass: 'bg-emerald-50 text-emerald-600' },
-          { label: 'Planilla', value: stats.planilla, icon: 'solar:user-id-linear', colorClass: 'bg-indigo-50 text-indigo-600' },
-          { label: 'Eventuales', value: stats.eventual, icon: 'solar:user-hand-up-linear', colorClass: 'bg-amber-50 text-amber-600' },
+          { label: 'Total', value: stats.total, icon: 'solar:users-group-rounded-linear', colorClass: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' },
+          { label: 'Activos', value: stats.activos, icon: 'solar:check-circle-linear', colorClass: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
+          { label: 'Planilla', value: stats.planilla, icon: 'solar:user-id-linear', colorClass: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' },
+          { label: 'Eventuales', value: stats.eventual, icon: 'solar:user-hand-up-linear', colorClass: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
         ].map((k) => (
-          <div key={k.label} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+          <div key={k.label} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
             <div className="flex items-center gap-3">
               <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${k.colorClass}`}>
                 <Icon icon={k.icon} width={22} />
               </div>
               <div>
-                <p className="text-2xl font-extrabold text-slate-800 leading-none">{k.value}</p>
+                <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none">{k.value}</p>
                 <p className="text-xs text-slate-400 uppercase tracking-wide mt-1">{k.label}</p>
               </div>
             </div>
@@ -420,7 +420,7 @@ export default function RepartidoresView() {
 
       {/* ── KPIs — Despacho hoy ──────────────────────────────────── */}
       {(globalDespacho.total > 0 || despachoLoading) && (
-        <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] mb-5">
+        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none mb-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
               <Icon icon="solar:calendar-linear" width={14} style={{ color: ACCENT }} />
@@ -435,10 +435,10 @@ export default function RepartidoresView() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             {[
-              { label: 'Total', value: globalDespacho.total, textColor: 'text-violet-600', bg: 'bg-violet-50' },
-              { label: 'Por preparar', value: globalDespacho.preparando, textColor: 'text-amber-600', bg: 'bg-amber-50' },
-              { label: 'En tránsito', value: globalDespacho.enCamino, textColor: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'Entregados', value: globalDespacho.entregado, textColor: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Total', value: globalDespacho.total, textColor: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+              { label: 'Por preparar', value: globalDespacho.preparando, textColor: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+              { label: 'En tránsito', value: globalDespacho.enCamino, textColor: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+              { label: 'Entregados', value: globalDespacho.entregado, textColor: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
             ].map((k) => (
               <div key={k.label} className={`rounded-2xl ${k.bg} px-3 py-2.5`}>
                 <p className={`text-2xl font-extrabold leading-none ${k.textColor}`}>
@@ -450,7 +450,7 @@ export default function RepartidoresView() {
           </div>
 
           {globalDespacho.total > 0 && (
-            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500 transition-all duration-700"
                 style={{ width: `${globalTasa}%` }}
@@ -471,7 +471,7 @@ export default function RepartidoresView() {
               className={`h-9 px-3.5 rounded-xl text-xs font-bold transition ${
                 filtroTipo === t
                   ? 'text-white shadow-lg shadow-violet-500/30'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
               style={filtroTipo === t ? { background: ACCENT } : undefined}
             >
@@ -493,7 +493,7 @@ export default function RepartidoresView() {
               className={`h-9 px-3.5 rounded-xl text-xs font-bold transition ${
                 filtroEstado === f.value
                   ? 'text-white shadow-lg shadow-violet-500/30'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
               style={filtroEstado === f.value ? { background: ACCENT } : undefined}
             >
@@ -509,22 +509,22 @@ export default function RepartidoresView() {
       {loading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div key={i} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-slate-100 animate-pulse" />
+                <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-2/3 rounded bg-slate-100 animate-pulse" />
-                  <div className="h-3 w-1/3 rounded bg-slate-100 animate-pulse" />
+                  <div className="h-4 w-2/3 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 </div>
               </div>
-              <div className="h-10 mt-3 rounded-2xl bg-slate-100 animate-pulse" />
-              <div className="h-20 mt-3 rounded-2xl bg-slate-100 animate-pulse" />
+              <div className="h-10 mt-3 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              <div className="h-20 mt-3 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
             </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-slate-200 bg-white text-slate-400">
-          <Icon icon="solar:delivery-linear" width={48} className="text-slate-300" />
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-400">
+          <Icon icon="solar:delivery-linear" width={48} className="text-slate-300 dark:text-slate-600" />
           <p className="text-sm font-medium">
             {repartidores.length === 0 ? 'Aún no hay repartidores registrados' : 'Sin resultados para los filtros actuales'}
           </p>
@@ -571,7 +571,7 @@ export default function RepartidoresView() {
       {modalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <button className="absolute inset-0 bg-slate-900/40" onClick={() => setModalOpen(false)} aria-label="Cerrar" />
-          <form onSubmit={handleSubmit} className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <form onSubmit={handleSubmit} className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-[#111827] shadow-2xl">
             <div className="flex items-center justify-between px-6 py-5" style={{ background: ACCENT }}>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-white">
@@ -628,8 +628,8 @@ export default function RepartidoresView() {
                     onClick={() => setForm((p) => ({ ...p, activo: !p.activo }))}
                     className={`flex h-11 w-full items-center justify-between rounded-2xl border-2 px-3.5 text-sm font-bold transition ${
                       form.activo
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                        : 'border-slate-200 bg-slate-50 text-slate-500'
+                        ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     <span>{form.activo ? 'Activo' : 'Inactivo'}</span>
@@ -639,11 +639,11 @@ export default function RepartidoresView() {
               </div>
             </div>
 
-            <div className="flex gap-3 border-t border-slate-100 px-6 py-4">
+            <div className="flex gap-3 border-t border-slate-100 dark:border-slate-800 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="h-11 flex-1 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+                className="h-11 flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 Cancelar
               </button>
@@ -664,11 +664,11 @@ export default function RepartidoresView() {
       {confirmDelete && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <button className="absolute inset-0 bg-slate-900/40" onClick={() => setConfirmDelete(null)} aria-label="Cerrar" />
-          <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#111827] p-6 shadow-2xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
               <Icon icon="solar:trash-bin-trash-bold-duotone" width={24} />
             </div>
-            <h3 className="text-lg font-extrabold text-slate-800">Eliminar repartidor</h3>
+            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">Eliminar repartidor</h3>
             <p className="mt-2 text-sm text-slate-500">
               Se desactivará a <strong>{confirmDelete.nombre}</strong>. Podrás reactivarlo editándolo cuando lo necesites.
             </p>
@@ -676,7 +676,7 @@ export default function RepartidoresView() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="h-10 flex-1 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                className="h-10 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
               >
                 Cancelar
               </button>

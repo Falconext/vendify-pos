@@ -15,7 +15,7 @@ import InputPro from '@/components/InputPro';
 import { usePaymentFlow } from '@/hooks/usePaymentFlow';
 import { NavLink } from 'react-router-dom';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const tabs = [
   { label: 'Historial de Pagos', to: '/administrador/pagos', icon: 'solar:wallet-money-bold-duotone' },

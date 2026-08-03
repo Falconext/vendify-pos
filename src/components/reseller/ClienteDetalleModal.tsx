@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useResellerPanelStore } from '@/zustand/reseller-panel';
 import Modal from '@/components/Modal';
+import ModalConfirm from '@/components/ModalConfirm';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
 import Select from '@/components/Select';
@@ -14,11 +15,27 @@ interface Props {
 }
 
 export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onClose }: Props) {
-    const { getClienteDetalle, toggleEstadoCliente, updateClienteConfig, aprovisionarQpse } = useResellerPanelStore();
+    const { getClienteDetalle, toggleEstadoCliente, updateClienteConfig, aprovisionarQpse, pasarProduccionCliente } = useResellerPanelStore();
     const [cliente, setCliente] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<'info' | 'config'>('info');
+    // Plan de facturación QPSE por defecto (la afiliación es a nivel Vendify).
+    const qpsePlanType: '01' | '02' = '01';
+    const [confirm, setConfirm] = useState<null | {
+        title: string;
+        information: string;
+        children?: React.ReactNode;
+        confirmText: string;
+        confirmColor?: string;
+        onConfirm: () => Promise<void> | void;
+    }>(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const runConfirm = async () => {
+        if (!confirm) return;
+        setConfirmLoading(true);
+        try { await confirm.onConfirm(); } finally { setConfirmLoading(false); setConfirm(null); }
+    };
     const [configForm, setConfigForm] = useState<any>({
         billingProvider: 'QPSE',
         providerId: '',
@@ -82,28 +99,72 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
         setSaving(false);
     };
 
-    const handleToggleEstado = async () => {
+    const doToggleEstado = async (nuevoEstado: 'ACTIVO' | 'INACTIVO') => {
+        const result = await toggleEstadoCliente(resellerId, clienteId, nuevoEstado);
+        if (result.success && cliente) setCliente({ ...cliente, estado: nuevoEstado });
+    };
+    const handleToggleEstado = () => {
         if (!cliente) return;
         const nuevoEstado = cliente.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-        if (!window.confirm(`¿Estás seguro de ${nuevoEstado === 'ACTIVO' ? 'ACTIVAR' : 'SUSPENDER'} a este cliente?`)) return;
-        const result = await toggleEstadoCliente(resellerId, clienteId, nuevoEstado);
-        if (result.success) setCliente({ ...cliente, estado: nuevoEstado });
+        setConfirm({
+            title: nuevoEstado === 'ACTIVO' ? 'Activar cliente' : 'Suspender cliente',
+            information: `¿Seguro que quieres ${nuevoEstado === 'ACTIVO' ? 'activar' : 'suspender'} a este cliente?`,
+            confirmText: nuevoEstado === 'ACTIVO' ? 'Activar' : 'Suspender',
+            confirmColor: nuevoEstado === 'ACTIVO' ? 'success' : 'danger',
+            onConfirm: () => doToggleEstado(nuevoEstado),
+        });
     };
 
-    const handleAprovisionarQpse = async (forzar = false) => {
-        if (forzar && !window.confirm('Esto generará NUEVAS credenciales QPSE y reemplazará las actuales. ¿Continuar?')) return;
+    const doAprovisionar = async (forzar: boolean) => {
         const result = await aprovisionarQpse(resellerId, clienteId, forzar);
         if (result.success) {
             const updated = await getClienteDetalle(resellerId, clienteId);
             setCliente(updated);
-            setConfigForm((prev: any) => ({ ...prev, usuarioPse: updated?.usuarioPse || '', contrasenaPse: updated?.contrasenaPse || '' }));
+            setConfigForm((prev: any) => ({ ...prev, usuarioPse: updated?.usuarioPse || '', contrasenaPse: updated?.contrasenaPse || '', usaDemo: Boolean(updated?.usaDemo) }));
         }
+    };
+    const handleAprovisionarQpse = (forzar = false) => {
+        if (!forzar) { void doAprovisionar(false); return; }
+        setConfirm({
+            title: 'Regenerar credenciales QPSE',
+            information: 'Esto generará NUEVAS credenciales QPSE y reemplazará las actuales del cliente.',
+            confirmText: 'Regenerar',
+            confirmColor: 'danger',
+            onConfirm: () => doAprovisionar(true),
+        });
+    };
+
+    const doPasarProduccion = async () => {
+        const result = await pasarProduccionCliente(resellerId, clienteId, qpsePlanType);
+        if (result.success) {
+            const updated = await getClienteDetalle(resellerId, clienteId);
+            setCliente(updated);
+            setConfigForm((prev: any) => ({ ...prev, usaDemo: Boolean(updated?.usaDemo) }));
+        }
+    };
+    const handlePasarProduccion = () => {
+        setConfirm({
+            title: 'Pasar a producción',
+            information: 'Vas a pasar este cliente a PRODUCCIÓN para que emita comprobantes reales ante SUNAT.',
+            children: (
+                <ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2"><Icon icon="solar:wallet-money-bold-duotone" className="mt-0.5 shrink-0 text-slate-400" width="16" /> Se descuenta la activación de tu saldo (según el plan del cliente).</li>
+                    <li className="flex gap-2"><Icon icon="solar:shield-check-bold-duotone" className="mt-0.5 shrink-0 text-emerald-500" width="16" /> El costo por comprobante lo cubre Vendify.</li>
+                    <li className="flex gap-2"><Icon icon="solar:danger-triangle-bold-duotone" className="mt-0.5 shrink-0 text-amber-500" width="16" /> Es irreversible: no se puede volver a modo prueba.</li>
+                </ul>
+            ),
+            confirmText: 'Pasar a producción',
+            confirmColor: 'success',
+            onConfirm: doPasarProduccion,
+        });
     };
 
     const tieneQpse = Boolean(configForm.usuarioPse && configForm.contrasenaPse);
+    const esProduccion = tieneQpse && configForm.usaDemo === false;
     const isActive = cliente?.estado === 'ACTIVO';
 
     return (
+        <>
         <Modal
             isOpenModal={isOpen}
             closeModal={onClose}
@@ -285,6 +346,39 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                                             <p className="mt-2 text-[11px] leading-snug text-slate-400">
                                                 Vendify gestiona la facturación QPSE de este cliente. Las credenciales se generan automáticamente desde el RUC (consulta SUNAT); no es necesario ingresarlas a mano.
                                             </p>
+
+                                            {tieneQpse && (esProduccion ? (
+                                                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/20">
+                                                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white">
+                                                        <Icon icon="solar:check-circle-bold" width="22" />
+                                                    </span>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Cliente en Producción</p>
+                                                        <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Ya emite comprobantes reales y válidos ante SUNAT.</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400 text-white">
+                                                            <Icon icon="solar:test-tube-bold-duotone" width="18" />
+                                                        </span>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Este cliente está en modo prueba</p>
+                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Los comprobantes que emita <b>no son válidos</b> ante SUNAT. Pásalo a producción para que emita comprobantes reales.</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <p className="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                                        Al pasar a producción se <b>descuenta la activación de tu saldo</b> (según el plan del cliente). El costo por comprobante lo cubre Vendify. Es <b>irreversible</b> (no se puede volver a modo prueba).
+                                                    </p>
+
+                                                    <button type="button" onClick={handlePasarProduccion} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white hover:brightness-110 transition-all">
+                                                        <Icon icon="solar:rocket-2-bold-duotone" width="18" />
+                                                        Pasar a producción
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
 
@@ -386,5 +480,19 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                 </>
             )}
         </Modal>
+
+        <ModalConfirm
+            isOpenModal={!!confirm}
+            setIsOpenModal={(v) => { if (!v) setConfirm(null); }}
+            confirmSubmit={runConfirm}
+            title={confirm?.title || ''}
+            information={confirm?.information || ''}
+            confirmText={confirm?.confirmText || 'Confirmar'}
+            confirmColor={confirm?.confirmColor}
+            confirmLoading={confirmLoading}
+        >
+            {confirm?.children}
+        </ModalConfirm>
+        </>
     );
 }

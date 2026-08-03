@@ -12,7 +12,7 @@ import TableActionMenu from '@/components/TableActionMenu';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Calendar } from '@/components/Date';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 type Orden = {
   id: number;
@@ -337,13 +337,13 @@ export default function ProduccionOrdenesPage() {
 
   const obtenerAlertaMerma = (orden: Orden) => {
     if (orden.estado !== 'FINALIZADA') {
-      return { label: 'Sin cierre', className: 'bg-slate-100 text-slate-500' };
+      return { label: 'Sin cierre', className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-gray-400' };
     }
     const producida = Number(orden.cantidadProducida || 0);
     if (producida <= 0) {
       return {
         label: 'Finalizada sin producción',
-        className: 'bg-amber-50 text-amber-600',
+        className: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
       };
     }
     const mermaPct = (Number(orden.mermaTotal || 0) / producida) * 100;
@@ -351,31 +351,31 @@ export default function ProduccionOrdenesPage() {
     if (mermaPct <= objetivo) {
       return {
         label: `OK ${mermaPct.toFixed(2)}% / Obj ${objetivo.toFixed(2)}%`,
-        className: 'bg-emerald-50 text-emerald-600',
+        className: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
       };
     }
     if (mermaPct <= objetivo * 1.2 || objetivo === 0) {
       return {
         label: `Alerta ${mermaPct.toFixed(2)}% / Obj ${objetivo.toFixed(2)}%`,
-        className: 'bg-amber-50 text-amber-600',
+        className: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
       };
     }
     return {
       label: `Crítica ${mermaPct.toFixed(2)}% / Obj ${objetivo.toFixed(2)}%`,
-      className: 'bg-rose-50 text-rose-600',
+      className: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
     };
   };
 
   const estadoPill = (estado: string) => {
     const map: Record<string, { bg: string; text: string; dot: string }> = {
-      BORRADOR: { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
-      PLANIFICADA: { bg: 'bg-blue-50', text: 'text-blue-600', dot: 'bg-blue-500' },
-      EN_PROCESO: { bg: 'bg-amber-50', text: 'text-amber-600', dot: 'bg-amber-500' },
-      FINALIZADA: { bg: 'bg-emerald-50', text: 'text-emerald-600', dot: 'bg-emerald-500' },
-      ANULADA: { bg: 'bg-rose-50', text: 'text-rose-600', dot: 'bg-rose-500' },
+      BORRADOR: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-gray-300', dot: 'bg-slate-400' },
+      PLANIFICADA: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', dot: 'bg-blue-500' },
+      EN_PROCESO: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+      FINALIZADA: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+      ANULADA: { bg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' },
     };
     return (
-      map[estado] || { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' }
+      map[estado] || { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-gray-300', dot: 'bg-slate-400' }
     );
   };
 
@@ -669,7 +669,7 @@ export default function ProduccionOrdenesPage() {
   const componentesEjecucionRows = ejecucionForm.componentes.map((item, index) => ({
     Componente: (
       <div>
-        <div className="font-semibold text-slate-800">{item.codigo}</div>
+        <div className="font-semibold text-slate-800 dark:text-white">{item.codigo}</div>
         <div className="text-xs text-slate-400">{item.descripcion}</div>
       </div>
     ),
@@ -713,14 +713,14 @@ export default function ProduccionOrdenesPage() {
   if (!esFabricacion) {
     return (
       <div
-        className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta"
+        className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta"
         style={{ ['--accent' as any]: ACCENT }}
       >
-        <div className="max-w-xl mx-auto mt-16 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
-          <div className="h-14 w-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 grid place-items-center mb-4">
+        <div className="max-w-xl mx-auto mt-16 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
+          <div className="h-14 w-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 grid place-items-center mb-4">
             <Icon icon="solar:factory-linear" width={28} />
           </div>
-          <h2 className="text-[18px] font-extrabold text-slate-800">
+          <h2 className="text-[18px] font-extrabold text-slate-800 dark:text-white">
             Módulo no disponible
           </h2>
           <p className="text-sm text-slate-400 mt-1">
@@ -733,7 +733,7 @@ export default function ProduccionOrdenesPage() {
 
   return (
     <div
-      className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta"
+      className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta"
       style={{ ['--accent' as any]: ACCENT }}
     >
       {/* Breadcrumb */}
@@ -751,7 +751,7 @@ export default function ProduccionOrdenesPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">
             Órdenes de Producción
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">
@@ -761,7 +761,7 @@ export default function ProduccionOrdenesPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsHistorialModalOpen(true)}
-            className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+            className="h-11 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <Icon icon="solar:history-linear" className="text-lg" /> Historial
           </button>
@@ -780,14 +780,14 @@ export default function ProduccionOrdenesPage() {
       </div>
 
       {/* Método de salida */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 mb-5">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 mb-5">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 grid place-items-center">
+            <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 grid place-items-center">
               <Icon icon="solar:box-linear" width={22} />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-sm font-bold text-slate-800 dark:text-white">
                 Método de salida de lotes
               </p>
               <p className="text-xs text-slate-400">
@@ -817,7 +817,7 @@ export default function ProduccionOrdenesPage() {
       </div>
 
       {/* Ayuda de estados */}
-      <div className="rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 mb-5 flex gap-3">
+      <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/20 p-4 text-sm text-blue-900 dark:text-blue-300 mb-5 flex gap-3">
         <Icon
           icon="solar:info-circle-linear"
           className="text-lg text-blue-500 shrink-0 mt-0.5"
@@ -830,12 +830,12 @@ export default function ProduccionOrdenesPage() {
       </div>
 
       {/* Nueva Orden */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 mb-5">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 mb-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center">
+          <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 grid place-items-center">
             <Icon icon="solar:add-square-linear" width={20} />
           </div>
-          <h2 className="text-[15px] font-bold text-slate-800">Nueva Orden</h2>
+          <h2 className="text-[15px] font-bold text-slate-800 dark:text-white">Nueva Orden</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Select
@@ -896,9 +896,9 @@ export default function ProduccionOrdenesPage() {
       </div>
 
       {/* Órdenes registradas */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-100">
-          <h2 className="text-[15px] font-bold text-slate-800">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-[15px] font-bold text-slate-800 dark:text-white">
             Órdenes registradas
           </h2>
           <div className="w-full sm:w-auto sm:min-w-[240px]">
@@ -920,7 +920,7 @@ export default function ProduccionOrdenesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[960px]">
             <thead>
-              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                 <th className="py-3 pl-5 px-3">Lote</th>
                 <th className="py-3 px-3">Receta</th>
                 <th className="py-3 px-3">Producto Final</th>
@@ -935,9 +935,9 @@ export default function ProduccionOrdenesPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-slate-50">
+                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                     <td colSpan={9} className="py-3.5 px-5">
-                      <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                      <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </td>
                   </tr>
                 ))
@@ -946,7 +946,7 @@ export default function ProduccionOrdenesPage() {
                   <td colSpan={9} className="py-16 text-center">
                     <Icon
                       icon="solar:clipboard-list-linear"
-                      className="text-5xl text-slate-200 mx-auto mb-2"
+                      className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2"
                     />
                     <p className="text-slate-400 text-sm">Aún no hay órdenes.</p>
                   </td>
@@ -958,23 +958,23 @@ export default function ProduccionOrdenesPage() {
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                      className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800 transition-colors"
                     >
                       <td className="py-3 pl-5 px-3">
-                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
                           {item.loteProduccion}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-500">
+                      <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">
                         {item.receta?.codigo || '—'}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-600 truncate max-w-[200px]">
+                      <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-300 truncate max-w-[200px]">
                         {item.productoFinal?.descripcion || '—'}
                       </td>
-                      <td className="py-3 px-3 font-bold text-slate-800 text-sm">
+                      <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm">
                         {item.cantidadObjetivo}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-600">
+                      <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-300">
                         {item.cantidadProducida || 0}
                       </td>
                       <td className="py-3 px-3">
@@ -1009,7 +1009,7 @@ export default function ProduccionOrdenesPage() {
                                 nextId ? (e.currentTarget as HTMLElement) : null,
                               );
                             }}
-                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 transition-colors"
+                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 p-1.5 text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                           >
                             <Icon icon="solar:menu-dots-bold" width={18} />
                           </button>
@@ -1025,9 +1025,9 @@ export default function ProduccionOrdenesPage() {
       </div>
 
       {resumenOrdenId && (
-        <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden mt-5">
-          <div className="flex items-center justify-between gap-3 p-4 border-b border-slate-100">
-            <h3 className="text-[15px] font-bold text-slate-800">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden mt-5">
+          <div className="flex items-center justify-between gap-3 p-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-[15px] font-bold text-slate-800 dark:text-white">
               Resumen de Materiales{' '}
               <span className="text-slate-400 font-semibold">
                 · Orden #{resumenOrdenId}
@@ -1039,7 +1039,7 @@ export default function ProduccionOrdenesPage() {
                 setResumenMateriales([]);
                 setResumenTotales(null);
               }}
-              className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+              className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <Icon icon="solar:close-circle-linear" /> Cerrar
             </button>
@@ -1048,7 +1048,7 @@ export default function ProduccionOrdenesPage() {
             {resumenMateriales.length > 0 ? (
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                  <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                     <th className="py-3 pl-5 px-3">Componente</th>
                     <th className="py-3 px-3">Teórico</th>
                     <th className="py-3 px-3">Consumido</th>
@@ -1062,27 +1062,27 @@ export default function ProduccionOrdenesPage() {
                   {resumenMateriales.map((item) => (
                     <tr
                       key={item.componenteId}
-                      className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                      className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800 transition-colors"
                     >
-                      <td className="py-3 pl-5 px-3 text-sm text-slate-700">
-                        <span className="font-semibold text-slate-700">
+                      <td className="py-3 pl-5 px-3 text-sm text-slate-700 dark:text-gray-200">
+                        <span className="font-semibold text-slate-700 dark:text-gray-200">
                           {item.codigo}
                         </span>
                         <span className="text-slate-400"> · {item.descripcion}</span>
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-500">
+                      <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">
                         {item.cantidadTeorica} {item.unidad}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-600">
+                      <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-300">
                         {item.cantidadConsumida} {item.unidad}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-500">
+                      <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">
                         {item.cantidadSobrante} {item.unidad}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-600">
+                      <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-300">
                         {item.mermaCantidad} {item.unidad}
                       </td>
-                      <td className="py-3 px-3 text-sm text-slate-500">
+                      <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">
                         {formatSoles(item.costoUnitario)}
                       </td>
                       <td className="py-3 px-3 pr-5 font-bold text-rose-600 text-sm">
@@ -1096,7 +1096,7 @@ export default function ProduccionOrdenesPage() {
               <div className="py-12 text-center">
                 <Icon
                   icon="solar:box-minimalistic-linear"
-                  className="text-4xl text-slate-200 mx-auto mb-2"
+                  className="text-4xl text-slate-200 dark:text-slate-700 mx-auto mb-2"
                 />
                 <p className="text-slate-400 text-sm">
                   No hay detalle de materiales para esta orden.
@@ -1105,14 +1105,14 @@ export default function ProduccionOrdenesPage() {
             )}
           </div>
           {resumenTotales && (
-            <div className="p-4 border-t border-slate-100 text-sm flex flex-wrap gap-6">
-              <span className="text-slate-500">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-sm flex flex-wrap gap-6">
+              <span className="text-slate-500 dark:text-gray-400">
                 Merma total:{' '}
-                <strong className="text-slate-800">
+                <strong className="text-slate-800 dark:text-white">
                   {resumenTotales.merma.toFixed(4)}
                 </strong>
               </span>
-              <span className="text-slate-500">
+              <span className="text-slate-500 dark:text-gray-400">
                 Merma valorizada:{' '}
                 <strong className="text-rose-600">
                   {formatSoles(resumenTotales.mermaValorizada)}
@@ -1136,9 +1136,9 @@ export default function ProduccionOrdenesPage() {
               {historialConfig.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
+                  className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 p-3"
                 >
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-slate-700 dark:text-gray-200">
                     {item.detalle || 'Sin detalle'}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
@@ -1207,7 +1207,7 @@ export default function ProduccionOrdenesPage() {
                     setOpenAccionesId(null);
                     setAnchorEl(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   <Icon icon="solar:clipboard-list-bold" width={16} />
                   <span>{orden.estado === 'ANULADA' ? 'Reactivar' : 'Planificar'}</span>
@@ -1221,7 +1221,7 @@ export default function ProduccionOrdenesPage() {
                     setOpenAccionesId(null);
                     setAnchorEl(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   <Icon icon="solar:play-bold" width={16} />
                   <span>Iniciar</span>
@@ -1235,7 +1235,7 @@ export default function ProduccionOrdenesPage() {
                     setOpenAccionesId(null);
                     setAnchorEl(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Icon icon="solar:close-circle-bold" width={16} />
                   <span>Anular</span>
@@ -1249,7 +1249,7 @@ export default function ProduccionOrdenesPage() {
                     setOpenAccionesId(null);
                     setAnchorEl(null);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                 >
                   <Icon icon="solar:check-circle-bold" width={16} />
                   <span>Finalizar orden</span>
@@ -1262,7 +1262,7 @@ export default function ProduccionOrdenesPage() {
                   setOpenAccionesId(null);
                   setAnchorEl(null);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 <Icon icon="solar:document-text-bold" width={16} />
                 <span>Ver resumen</span>
@@ -1336,7 +1336,7 @@ export default function ProduccionOrdenesPage() {
                   label="Merma total (automática)"
                   value={Number(mermaTotalCalculada.toFixed(4))}
                   readOnly
-                  className="bg-slate-50"
+                  className="bg-slate-50 dark:bg-slate-800"
                 />
               </div>
 
@@ -1353,8 +1353,8 @@ export default function ProduccionOrdenesPage() {
                 }
               />
 
-              <div className="rounded-xl border border-slate-100 overflow-hidden">
-                <div className="px-4 py-2 border-b border-slate-100 text-sm font-semibold text-slate-700">
+              <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-gray-200">
                   Componentes consumidos
                 </div>
                 <div className="overflow-x-auto">

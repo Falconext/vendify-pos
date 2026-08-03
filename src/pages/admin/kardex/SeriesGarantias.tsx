@@ -59,10 +59,10 @@ const daysUntil = (v?: string | null) =>
 
 // Pills CRM claro — fondo pastel + punto de color
 const serieBadge: Record<string, string> = {
-  DISPONIBLE: 'bg-emerald-50 text-emerald-600',
-  VENDIDO: 'bg-indigo-50 text-indigo-600',
-  RESERVADO: 'bg-amber-50 text-amber-600',
-  BAJA: 'bg-slate-100 text-slate-500',
+  DISPONIBLE: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300',
+  VENDIDO: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300',
+  RESERVADO: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300',
+  BAJA: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
 };
 const serieDot: Record<string, string> = {
   DISPONIBLE: 'bg-emerald-500',
@@ -72,9 +72,9 @@ const serieDot: Record<string, string> = {
 };
 
 const garantiaBadge: Record<string, string> = {
-  VIGENTE: 'bg-emerald-50 text-emerald-600',
-  VENCIDA: 'bg-rose-50 text-rose-600',
-  SIN_GARANTIA: 'bg-slate-100 text-slate-500',
+  VIGENTE: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300',
+  VENCIDA: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300',
+  SIN_GARANTIA: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
 };
 const garantiaDot: Record<string, string> = {
   VIGENTE: 'bg-emerald-500',
@@ -83,10 +83,10 @@ const garantiaDot: Record<string, string> = {
 };
 
 const reclamoBadge: Record<string, string> = {
-  ABIERTO: 'bg-rose-50 text-rose-600',
-  EN_PROCESO: 'bg-amber-50 text-amber-600',
-  RESUELTO: 'bg-emerald-50 text-emerald-600',
-  CERRADO: 'bg-slate-100 text-slate-500',
+  ABIERTO: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300',
+  EN_PROCESO: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300',
+  RESUELTO: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300',
+  CERRADO: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
 };
 
 const estadoOptions = [
@@ -336,10 +336,10 @@ export default function SeriesGarantias() {
   };
 
   const cards = useMemo(() => [
-    { label: 'Series registradas', value: response.resumen.total, icon: 'solar:hashtag-square-bold-duotone', chip: 'bg-violet-50 text-violet-600' },
-    { label: 'Garantías vigentes', value: response.resumen.garantias.VIGENTE ?? 0, icon: 'solar:shield-check-bold-duotone', chip: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Garantías vencidas', value: response.resumen.garantias.VENCIDA ?? 0, icon: 'solar:shield-cross-bold-duotone', chip: 'bg-rose-50 text-rose-600' },
-    { label: 'Vendidos con serie', value: response.resumen.estados.VENDIDO ?? 0, icon: 'solar:cart-check-bold-duotone', chip: 'bg-blue-50 text-blue-600' },
+    { label: 'Series registradas', value: response.resumen.total, icon: 'solar:hashtag-square-bold-duotone', chip: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' },
+    { label: 'Garantías vigentes', value: response.resumen.garantias.VIGENTE ?? 0, icon: 'solar:shield-check-bold-duotone', chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' },
+    { label: 'Garantías vencidas', value: response.resumen.garantias.VENCIDA ?? 0, icon: 'solar:shield-cross-bold-duotone', chip: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' },
+    { label: 'Vendidos con serie', value: response.resumen.estados.VENDIDO ?? 0, icon: 'solar:cart-check-bold-duotone', chip: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300' },
   ], [response.resumen]);
 
   const seriesTable = useMemo(() => response.data.map((item) => {
@@ -351,7 +351,7 @@ export default function SeriesGarantias() {
     return {
       serie: (
         <div>
-          <div className="font-mono text-xs font-bold uppercase tracking-wide text-slate-800">{item.numeroSerie}</div>
+          <div className="font-mono text-xs font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100">{item.numeroSerie}</div>
           <div className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${serieBadge[item.estado]}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${serieDot[item.estado]}`} />{item.estado}
           </div>
@@ -360,7 +360,7 @@ export default function SeriesGarantias() {
       ),
       producto: (
         <div>
-          <div className="max-w-[260px] truncate text-sm font-semibold text-slate-700" title={item.producto.descripcion}>{item.producto.descripcion}</div>
+          <div className="max-w-[260px] truncate text-sm font-semibold text-slate-700 dark:text-slate-200" title={item.producto.descripcion}>{item.producto.descripcion}</div>
           <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">{item.producto.codigo}</div>
         </div>
       ),
@@ -370,7 +370,7 @@ export default function SeriesGarantias() {
             {(item.comprobante?.cliente.nombre ?? '—').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <div className="max-w-[180px] truncate text-sm font-semibold text-slate-700">{item.comprobante?.cliente.nombre ?? 'Sin venta'}</div>
+            <div className="max-w-[180px] truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{item.comprobante?.cliente.nombre ?? 'Sin venta'}</div>
             <div className="mt-0.5 text-[11px] text-slate-400">{item.comprobante?.cliente.nroDoc ?? '—'}</div>
           </div>
         </div>
@@ -386,15 +386,15 @@ export default function SeriesGarantias() {
       acciones: (
         <div className="flex gap-1.5">
           <button onClick={() => abrirDetalle(item)} title="Ver detalle y reclamos"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50">
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
             <Icon icon="solar:eye-linear" width={16} />
           </button>
           <button onClick={() => abrirEditar(item)} title="Editar"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50">
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
             <Icon icon="solar:pen-new-square-linear" width={16} />
           </button>
           <button onClick={() => confirmarEliminar(item)} title="Eliminar"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500 transition hover:bg-rose-100">
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500 transition hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/30">
             <Icon icon="solar:trash-bin-trash-linear" width={16} />
           </button>
         </div>
@@ -409,12 +409,12 @@ export default function SeriesGarantias() {
 
   if (!canUse) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
-        <div className="mx-auto mt-10 grid max-w-xl place-items-center rounded-3xl bg-white px-8 py-14 text-center shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-          <div className="grid h-20 w-20 place-items-center rounded-2xl bg-slate-100 text-slate-400">
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="mx-auto mt-10 grid max-w-xl place-items-center rounded-3xl bg-white dark:bg-[#111827] px-8 py-14 text-center shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+          <div className="grid h-20 w-20 place-items-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
             <Icon icon="solar:lock-keyhole-linear" className="text-4xl" />
           </div>
-          <h1 className="mt-5 text-[22px] font-extrabold text-slate-800">No disponible para este rubro</h1>
+          <h1 className="mt-5 text-[22px] font-extrabold text-slate-800 dark:text-white">No disponible para este rubro</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
             Series y garantías solo aparece cuando el rubro tiene activa la característica de control por serie.
           </p>
@@ -424,7 +424,7 @@ export default function SeriesGarantias() {
   }
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta text-slate-900" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta text-slate-900 dark:text-slate-100" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="mb-5 flex items-center gap-2 text-sm text-slate-400">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -438,7 +438,7 @@ export default function SeriesGarantias() {
       {/* Header */}
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold tracking-tight text-slate-800">Series y Garantías</h1>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-slate-800 dark:text-white">Series y Garantías</h1>
           <p className="mt-0.5 text-sm text-slate-400">Trazabilidad completa de productos vendidos por número de serie.</p>
         </div>
         <button onClick={abrirNueva}
@@ -451,30 +451,30 @@ export default function SeriesGarantias() {
       {/* KPI cards */}
       <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+          <div key={card.label} className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-400">{card.label}</span>
               <span className={`grid h-11 w-11 place-items-center rounded-2xl ${card.chip}`}>
                 <Icon icon={card.icon} className="text-2xl" />
               </span>
             </div>
-            <div className="mt-5 text-3xl font-extrabold text-slate-800">{card.value}</div>
+            <div className="mt-5 text-3xl font-extrabold text-slate-800 dark:text-white">{card.value}</div>
           </div>
         ))}
       </div>
 
       <div className="flex gap-4">
         {/* Card contenedora — tabla principal */}
-        <div className="min-w-0 flex-1 overflow-hidden rounded-3xl bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="min-w-0 flex-1 overflow-hidden rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
           {/* Toolbar / filtros */}
-          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 dark:border-slate-800 p-4">
             <div className="relative min-w-0 flex-1 lg:max-w-xs">
               <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Serie, producto, cliente…"
-                className="h-11 w-full rounded-2xl border-2 border-slate-200 bg-white pl-10 pr-9 text-sm text-slate-700 placeholder:text-slate-400 transition-colors focus:border-[var(--accent)] focus:outline-none"
+                className="h-11 w-full rounded-2xl border-2 border-slate-200 bg-white pl-10 pr-9 text-sm text-slate-700 placeholder:text-slate-400 transition-colors focus:border-[var(--accent)] focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
@@ -501,12 +501,12 @@ export default function SeriesGarantias() {
           </div>
 
           <div className="p-4">
-            {error && <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">{error}</div>}
+            {error && <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">{error}</div>}
 
             {loading ? (
               <div className="space-y-2.5">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100" />
+                  <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
                 ))}
               </div>
             ) : seriesTable.length > 0 ? (
@@ -520,7 +520,7 @@ export default function SeriesGarantias() {
                     { label: 'Acciones', key: 'acciones' },
                   ]} />
                 </div>
-                <div className="mt-4 border-t border-slate-100 pt-4">
+                <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
                   <Pagination data={seriesTable} optionSelect currentPage={page}
                     indexOfFirstItem={response.paginacion.total === 0 ? 0 : (page - 1) * itemsPerPage}
                     indexOfLastItem={Math.min(page * itemsPerPage, response.paginacion.total)}
@@ -530,8 +530,8 @@ export default function SeriesGarantias() {
               </>
             ) : (
               <div className="py-16 text-center">
-                <Icon icon="solar:shield-minimalistic-linear" className="mx-auto mb-3 text-5xl text-slate-200" />
-                <p className="font-semibold text-slate-500">Sin series registradas</p>
+                <Icon icon="solar:shield-minimalistic-linear" className="mx-auto mb-3 text-5xl text-slate-200 dark:text-slate-700" />
+                <p className="font-semibold text-slate-500 dark:text-slate-400">Sin series registradas</p>
                 <p className="mt-1 text-sm text-slate-400">Usa el botón "Nueva serie" para registrar manualmente, o registra desde una compra.</p>
               </div>
             )}
@@ -540,10 +540,10 @@ export default function SeriesGarantias() {
 
         {/* Panel lateral — detalle + reclamos */}
         {selectedSerie && (
-          <div className="w-80 shrink-0 rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+          <div className="w-80 shrink-0 rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <div className="font-mono text-sm font-bold text-slate-800">{selectedSerie.numeroSerie}</div>
+                <div className="font-mono text-sm font-bold text-slate-800 dark:text-slate-100">{selectedSerie.numeroSerie}</div>
                 <div className="mt-0.5 truncate text-xs text-slate-400">{selectedSerie.producto.descripcion}</div>
               </div>
               <button onClick={() => setSelectedSerie(null)} className="text-slate-400 hover:text-slate-600">
@@ -552,7 +552,7 @@ export default function SeriesGarantias() {
             </div>
 
             {/* Info rápida */}
-            <div className="mb-4 space-y-1.5 rounded-2xl bg-slate-50 p-3 text-xs">
+            <div className="mb-4 space-y-1.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Estado</span>
                 <span className={`rounded-full px-2 py-0.5 font-semibold ${serieBadge[selectedSerie.estado]}`}>{selectedSerie.estado}</span>
@@ -563,24 +563,24 @@ export default function SeriesGarantias() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Hasta</span>
-                <span className="font-semibold text-slate-700">{fmt(selectedSerie.garantiaHasta)}</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-200">{fmt(selectedSerie.garantiaHasta)}</span>
               </div>
               {selectedSerie.comprobante && (
                 <div className="flex justify-between">
                   <span className="text-slate-400">Comprobante</span>
-                  <span className="font-semibold text-slate-700">{selectedSerie.comprobante.numero}</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedSerie.comprobante.numero}</span>
                 </div>
               )}
               {selectedSerie.comprobante?.cliente && (
                 <div className="flex justify-between">
                   <span className="text-slate-400">Cliente</span>
-                  <span className="max-w-[130px] truncate font-semibold text-slate-700">{selectedSerie.comprobante.cliente.nombre}</span>
+                  <span className="max-w-[130px] truncate font-semibold text-slate-700 dark:text-slate-200">{selectedSerie.comprobante.cliente.nombre}</span>
                 </div>
               )}
               {selectedSerie.observacion && (
-                <div className="border-t border-slate-200 pt-1.5">
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5">
                   <span className="text-slate-400">Observación: </span>
-                  <span className="text-slate-700">{selectedSerie.observacion}</span>
+                  <span className="text-slate-700 dark:text-slate-200">{selectedSerie.observacion}</span>
                 </div>
               )}
             </div>
@@ -588,7 +588,7 @@ export default function SeriesGarantias() {
             <button
               onClick={() => abrirConstancia(selectedSerie)}
               disabled={generatingConstanciaId === selectedSerie.id}
-              className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-50 px-3 py-2.5 text-xs font-bold text-violet-600 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-50 px-3 py-2.5 text-xs font-bold text-violet-600 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/30"
             >
               <Icon
                 icon={generatingConstanciaId === selectedSerie.id ? 'line-md:loading-twotone-loop' : 'solar:document-text-bold-duotone'}
@@ -599,7 +599,7 @@ export default function SeriesGarantias() {
 
             {/* Reclamos */}
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-800">Reclamos / Atenciones</h4>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Reclamos / Atenciones</h4>
               <button onClick={() => { setShowReclamoForm(true); setEditReclamo(null); setReclamoForm(EMPTY_RECLAMO); }}
                 className="inline-flex items-center gap-1 rounded-lg bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-rose-600">
                 <Icon icon="solar:add-circle-bold" width={13} />
@@ -608,15 +608,15 @@ export default function SeriesGarantias() {
             </div>
 
             {showReclamoForm && (
-              <div className="mb-4 space-y-2 rounded-2xl border border-rose-100 bg-rose-50 p-3">
+              <div className="mb-4 space-y-2 rounded-2xl border border-rose-100 bg-rose-50 p-3 dark:border-rose-900/40 dark:bg-rose-900/20">
                 <textarea
-                  className="w-full rounded-lg border border-rose-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  className="w-full rounded-lg border border-rose-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:border-rose-900/40 dark:bg-slate-900 dark:text-slate-100"
                   rows={3} placeholder="Descripción del problema..."
                   value={reclamoForm.descripcion}
                   onChange={(e) => setReclamoForm((p) => ({ ...p, descripcion: e.target.value }))}
                 />
                 <input
-                  className="w-full rounded-lg border border-rose-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  className="w-full rounded-lg border border-rose-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:border-rose-900/40 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Técnico responsable (opcional)"
                   value={reclamoForm.tecnico}
                   onChange={(e) => setReclamoForm((p) => ({ ...p, tecnico: e.target.value }))}
@@ -637,7 +637,7 @@ export default function SeriesGarantias() {
                     {savingReclamo ? 'Guardando...' : editReclamo ? 'Actualizar' : 'Registrar'}
                   </button>
                   <button onClick={() => { setShowReclamoForm(false); setEditReclamo(null); }}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50">
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                     Cancelar
                   </button>
                 </div>
@@ -651,7 +651,7 @@ export default function SeriesGarantias() {
             ) : (
               <div className="max-h-72 space-y-2 overflow-y-auto">
                 {reclamos.map((r) => (
-                  <div key={r.id} className="rounded-2xl border border-slate-100 p-3">
+                  <div key={r.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${reclamoBadge[r.estadoReclamo]}`}>{r.estadoReclamo}</span>
                       <div className="flex gap-1">
@@ -660,9 +660,9 @@ export default function SeriesGarantias() {
                         <button onClick={() => setReclamoToDelete(r)} className="text-rose-400 hover:text-rose-600"><Icon icon="solar:trash-bin-2-linear" width={14} /></button>
                       </div>
                     </div>
-                    <p className="mt-1.5 text-xs text-slate-700">{r.descripcion}</p>
+                    <p className="mt-1.5 text-xs text-slate-700 dark:text-slate-300">{r.descripcion}</p>
                     {r.tecnico && <p className="mt-1 text-[11px] text-slate-400">Técnico: {r.tecnico}</p>}
-                    {r.resolucion && <p className="mt-1 text-[11px] text-emerald-600">Resolución: {r.resolucion}</p>}
+                    {r.resolucion && <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">Resolución: {r.resolucion}</p>}
                     <p className="mt-1 text-[10px] text-slate-400">{fmt(r.fechaReclamo)}</p>
                   </div>
                 ))}
@@ -675,9 +675,9 @@ export default function SeriesGarantias() {
       {/* Modal nueva / editar serie */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#111827] p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-slate-800">{editSerie ? 'Editar serie' : 'Registrar nueva serie'}</h2>
+              <h2 className="text-lg font-extrabold text-slate-800 dark:text-white">{editSerie ? 'Editar serie' : 'Registrar nueva serie'}</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <Icon icon="solar:close-circle-bold" width={22} />
               </button>
@@ -688,9 +688,9 @@ export default function SeriesGarantias() {
                 <div className="relative" ref={productoDropdownRef}>
                   <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-slate-400">Producto *</label>
                   {productoSelected ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5">
+                    <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 dark:border-violet-800 dark:bg-violet-900/20">
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-bold text-slate-800">{productoSelected.descripcion}</div>
+                        <div className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{productoSelected.descripcion}</div>
                         <div className="font-mono text-[11px] uppercase text-slate-400">{productoSelected.codigo}</div>
                       </div>
                       <button type="button" onClick={() => { setProductoSelected(null); setProductoSearch(''); }}
@@ -701,19 +701,19 @@ export default function SeriesGarantias() {
                   ) : (
                     <>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                         placeholder="Buscar producto por nombre o código..."
                         value={productoSearch}
                         onChange={(e) => { setProductoSearch(e.target.value); setShowProductoDropdown(true); }}
                         onFocus={() => productoOptions.length > 0 && setShowProductoDropdown(true)}
                       />
                       {showProductoDropdown && productoOptions.length > 0 && (
-                        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
                           {productoOptions.map((p) => (
                             <button key={p.id} type="button"
-                              className="w-full border-b border-slate-50 px-3 py-2.5 text-left transition last:border-0 hover:bg-violet-50"
+                              className="w-full border-b border-slate-50 px-3 py-2.5 text-left transition last:border-0 hover:bg-violet-50 dark:border-slate-700 dark:hover:bg-slate-700"
                               onClick={() => { setProductoSelected(p); setProductoSearch(''); setShowProductoDropdown(false); setForm((f) => ({ ...f, productoId: String(p.id) })); }}>
-                              <div className="text-sm font-bold text-slate-800">{p.descripcion}</div>
+                              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{p.descripcion}</div>
                               <div className="font-mono text-[11px] uppercase text-slate-400">{p.codigo} · ID:{p.id}</div>
                             </button>
                           ))}
@@ -728,7 +728,7 @@ export default function SeriesGarantias() {
                 <div>
                   <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-slate-400">Series *</label>
                   <textarea rows={4}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm font-bold uppercase text-slate-800 placeholder:font-normal placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm font-bold uppercase text-slate-800 placeholder:font-normal placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     placeholder={"Una serie por línea o separadas por coma:\nSN123ABC\nSN456DEF\nSN789GHI"}
                     value={bulkSeries}
                     onChange={(e) => setBulkSeries(e.target.value.toUpperCase())}
@@ -757,7 +757,7 @@ export default function SeriesGarantias() {
               <div>
                 <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-slate-400">Meses de garantía</label>
                 <input type="number" min={0} max={120}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Ej. 12"
                   value={form.garantiaMeses}
                   onChange={(e) => setForm((p) => ({ ...p, garantiaMeses: e.target.value }))} />
@@ -766,7 +766,7 @@ export default function SeriesGarantias() {
               <div>
                 <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-widest text-slate-400">Observación</label>
                 <textarea rows={2}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Notas adicionales..."
                   value={form.observacion}
                   onChange={(e) => setForm((p) => ({ ...p, observacion: e.target.value }))} />
@@ -775,7 +775,7 @@ export default function SeriesGarantias() {
 
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowModal(false)}
-                className="flex-1 rounded-2xl border border-slate-200 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50">
+                className="flex-1 rounded-2xl border border-slate-200 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                 Cancelar
               </button>
               <button onClick={guardarSerie} disabled={saving}

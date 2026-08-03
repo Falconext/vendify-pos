@@ -67,6 +67,7 @@ export type IProduct = {
   refrigerado?: boolean
   // Campos Bodega/Supermercado
   codigoBarras?: string
+  codigosBarrasExtra?: string[]
   codProdSunat?: string
   unidadCompra?: string
   unidadVenta?: string
@@ -130,6 +131,7 @@ export type IFormProduct = {
   refrigerado?: boolean
   // Campos Bodega/Supermercado
   codigoBarras?: string
+  codigosBarrasExtra?: string[]
   codProdSunat?: string
   unidadCompra?: string
   unidadVenta?: string

@@ -195,7 +195,9 @@
 }
 
 :global(.dark) .table tbody tr:hover {
-    background-color: #131620 !important;
+    /* Overlay sutil: aclara la fila sobre cualquier fondo navy del tema dark
+       (un color fijo oscuro se veía como un bloque negro). */
+    background-color: rgba(148, 163, 184, 0.08) !important;
 }
 
 :global(.dark) .table tbody tr td {

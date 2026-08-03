@@ -35,10 +35,10 @@ const estadoLabel: Record<EstadoContrato, string> = {
 };
 // Pills de estado estilo CRM — punto de color + fondo pastel.
 const estadoPillCfg: Record<EstadoContrato, { dot: string; text: string; bg: string }> = {
-    VIGENTE: { dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' },
-    POR_VENCER: { dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' },
-    VENCIDO: { dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' },
-    CANCELADO: { dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100' },
+    VIGENTE: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+    POR_VENCER: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    VENCIDO: { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+    CANCELADO: { dot: 'bg-slate-400', text: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' },
 };
 const NIVEL_OPTS = (['LLENO', '3/4', '1/2', '1/4', 'VACIO'] as NivelCombustible[]).map((n) => ({ id: n, value: n }));
 
@@ -324,7 +324,7 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
                                             <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contrato</span>
                                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${estadoBadge[ultimoContrato.estado]}`}>{estadoLabel[ultimoContrato.estado]}</span>
                                         </div>
-                                        <p className="text-xs text-slate-500">Vence: {fmt(ultimoContrato.fechaFin)} · <span className={`font-semibold ${diasRestantes(ultimoContrato.fechaFin) < 0 ? 'text-red-600' : diasRestantes(ultimoContrato.fechaFin) <= 30 ? 'text-amber-600' : 'text-emerald-600'}`}>{diasRestantes(ultimoContrato.fechaFin) < 0 ? `Venció hace ${Math.abs(diasRestantes(ultimoContrato.fechaFin))}d` : `${diasRestantes(ultimoContrato.fechaFin)} días`}</span></p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Vence: {fmt(ultimoContrato.fechaFin)} · <span className={`font-semibold ${diasRestantes(ultimoContrato.fechaFin) < 0 ? 'text-red-600' : diasRestantes(ultimoContrato.fechaFin) <= 30 ? 'text-amber-600' : 'text-emerald-600'}`}>{diasRestantes(ultimoContrato.fechaFin) < 0 ? `Venció hace ${Math.abs(diasRestantes(ultimoContrato.fechaFin))}d` : `${diasRestantes(ultimoContrato.fechaFin)} días`}</span></p>
                                     </div>
                                     {ultimoContrato.producto && <p className="ml-6 mt-1 text-xs text-slate-600 dark:text-slate-400">{ultimoContrato.producto.descripcion}</p>}
                                 </div>
@@ -332,7 +332,7 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
                             <div>
                                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200"><Icon icon="solar:clipboard-list-bold" className="text-slate-500" />Historial de actas<span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">{detalle.actas?.length ?? 0}</span></h3>
                                 {(detalle.actas?.length ?? 0) === 0 ? (
-                                    <div className="rounded-xl bg-slate-50 py-8 text-center dark:bg-slate-800"><Icon icon="solar:clipboard-bold" className="mx-auto mb-2 text-4xl text-slate-300" /><p className="text-sm text-slate-400">Sin actas registradas</p></div>
+                                    <div className="rounded-xl bg-slate-50 py-8 text-center dark:bg-slate-800"><Icon icon="solar:clipboard-bold" className="mx-auto mb-2 text-4xl text-slate-300 dark:text-slate-600" /><p className="text-sm text-slate-400">Sin actas registradas</p></div>
                                 ) : (
                                     <div className="space-y-2">
                                         {detalle.actas?.map((acta) => (
@@ -340,7 +340,7 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
                                                 <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${acta.tipo === 'INGRESO' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/20'}`}><Icon icon={acta.tipo === 'INGRESO' ? 'solar:arrow-right-down-bold' : 'solar:arrow-left-up-bold'} className="text-lg" /></div>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center justify-between"><span className={`text-xs font-semibold ${acta.tipo === 'INGRESO' ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}`}>{acta.tipo === 'INGRESO' ? 'Ingreso' : 'Retiro'}</span><div className="flex items-center gap-1.5"><span className="text-xs text-slate-400">{fmt(acta.creadoEn)}</span><button type="button" title="Imprimir / PDF" onClick={() => imprimirActa(acta)} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"><Icon icon="solar:printer-bold" className="text-sm" /></button></div></div>
-                                                    <div className="mt-0.5 flex gap-4 text-xs text-slate-500">
+                                                    <div className="mt-0.5 flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                                                         {acta.km != null && <span>🚗 {acta.km.toLocaleString()} km</span>}
                                                         {acta.nivelCombustible && <span>⛽ {acta.nivelCombustible}</span>}
                                                         {acta.usuario && <span>👤 {acta.usuario.nombre}</span>}
@@ -428,7 +428,7 @@ export default function VehiculosPage() {
     }, [page, totalPages]);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -442,7 +442,7 @@ export default function VehiculosPage() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Vehículos</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Vehículos</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Trazabilidad vehicular · {total} vehículo{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="flex items-center gap-2.5">
@@ -452,7 +452,7 @@ export default function VehiculosPage() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Buscar por placa, marca, propietario…"
-                            className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                            className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
                         />
                         {search && (
                             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
@@ -469,9 +469,9 @@ export default function VehiculosPage() {
             </div>
 
             {/* Card contenedora */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100">
+                <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100 dark:border-slate-800">
                     <button onClick={cargar} className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors"
                         style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
                         <Icon icon="solar:refresh-linear" className={loading ? 'animate-spin' : ''} /> Actualizar
@@ -483,7 +483,7 @@ export default function VehiculosPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[820px]">
                         <thead>
-                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                 <th className="py-3 pl-5 pr-3">Placa</th>
                                 <th className="py-3 px-3">Vehículo</th>
                                 <th className="py-3 px-3">Propietario</th>
@@ -494,16 +494,16 @@ export default function VehiculosPage() {
                         <tbody>
                             {loading ? (
                                 Array.from({ length: 8 }).map((_, i) => (
-                                    <tr key={i} className="border-b border-slate-50">
+                                    <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                                         <td colSpan={5} className="py-3.5 px-5">
-                                            <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                                            <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                                         </td>
                                     </tr>
                                 ))
                             ) : data.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="py-16 text-center">
-                                        <Icon icon="solar:cardholder-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
+                                        <Icon icon="solar:cardholder-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
                                         <p className="text-slate-400 text-sm">No hay vehículos registrados. ¡Agrega el primero!</p>
                                     </td>
                                 </tr>
@@ -512,12 +512,12 @@ export default function VehiculosPage() {
                                 const dias = contrato ? diasRestantes(contrato.fechaFin) : null;
                                 const pill = contrato ? estadoPillCfg[contrato.estado] : null;
                                 return (
-                                    <tr key={v.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+                                    <tr key={v.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
                                         <td className="py-3 pl-5 pr-3">
-                                            <span className="inline-block rounded-lg bg-slate-100 px-3 py-1 font-mono text-sm font-bold tracking-widest text-slate-800">{v.placa}</span>
+                                            <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-1 font-mono text-sm font-bold tracking-widest text-slate-800 dark:text-slate-100">{v.placa}</span>
                                         </td>
                                         <td className="py-3 px-3">
-                                            <p className="text-sm font-semibold text-slate-800">{v.marca} {v.modelo || ''}</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{v.marca} {v.modelo || ''}</p>
                                             <p className="text-xs text-slate-400">{v.color} {v.anio ? `· ${v.anio}` : ''}</p>
                                         </td>
                                         <td className="py-3 px-3">
@@ -527,12 +527,12 @@ export default function VehiculosPage() {
                                                         {(v.cliente.nombre || '?').charAt(0).toUpperCase()}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-semibold text-slate-700 truncate max-w-[160px]">{v.cliente.nombre}</p>
+                                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[160px]">{v.cliente.nombre}</p>
                                                         {v.cliente.email && <p className="text-xs text-slate-400 truncate max-w-[160px]">{v.cliente.email}</p>}
                                                         <p className="text-xs text-slate-400">{v.cliente.telefono || '—'}</p>
                                                     </div>
                                                 </div>
-                                            ) : <span className="text-sm text-slate-300">—</span>}
+                                            ) : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
                                         </td>
                                         <td className="py-3 px-3">
                                             {contrato && pill ? (
@@ -546,10 +546,10 @@ export default function VehiculosPage() {
                                         </td>
                                         <td className="py-3 px-3 pr-5">
                                             <div className="flex items-center justify-end gap-1">
-                                                <button title="Ver detalle" onClick={() => setVehiculoDetalle(v)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100"><Icon icon="solar:eye-bold" className="text-lg" /></button>
-                                                <button title="Acta de inspección" onClick={() => setVehiculoActa(v)} className="grid h-8 w-8 place-items-center rounded-lg text-blue-500 transition hover:bg-blue-50"><Icon icon="solar:clipboard-add-bold" className="text-lg" /></button>
-                                                <button title="Editar" onClick={() => setVehiculoEditar(v)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100"><Icon icon="solar:pen-bold" className="text-lg" /></button>
-                                                <button title="Eliminar" onClick={() => setVehiculoEliminar(v)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-400 transition hover:bg-rose-50"><Icon icon="solar:trash-bin-trash-bold" className="text-lg" /></button>
+                                                <button title="Ver detalle" onClick={() => setVehiculoDetalle(v)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800"><Icon icon="solar:eye-bold" className="text-lg" /></button>
+                                                <button title="Acta de inspección" onClick={() => setVehiculoActa(v)} className="grid h-8 w-8 place-items-center rounded-lg text-blue-500 transition hover:bg-blue-50 dark:hover:bg-blue-900/20"><Icon icon="solar:clipboard-add-bold" className="text-lg" /></button>
+                                                <button title="Editar" onClick={() => setVehiculoEditar(v)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800"><Icon icon="solar:pen-bold" className="text-lg" /></button>
+                                                <button title="Eliminar" onClick={() => setVehiculoEliminar(v)} className="grid h-8 w-8 place-items-center rounded-lg text-rose-400 transition hover:bg-rose-50 dark:hover:bg-rose-900/20"><Icon icon="solar:trash-bin-trash-bold" className="text-lg" /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -561,11 +561,11 @@ export default function VehiculosPage() {
 
                 {/* Paginación */}
                 {!loading && data.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100 dark:border-slate-800">
                         <span className="text-sm text-slate-400">{fromRow}-{toRow} de {data.length.toLocaleString('es-PE')}</span>
                         <div className="flex items-center gap-1">
-                            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
-                            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
+                            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
+                            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
                             {pageNumbers.map((n, i) => {
                                 const prev = pageNumbers[i - 1];
                                 const gap = prev && n - prev > 1;
@@ -573,15 +573,15 @@ export default function VehiculosPage() {
                                     <span key={n} className="flex items-center">
                                         {gap && <span className="px-1 text-slate-300">…</span>}
                                         <button onClick={() => setPage(n)}
-                                            className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                                            className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                             style={n === page ? { background: ACCENT } : undefined}>
                                             {n}
                                         </button>
                                     </span>
                                 );
                             })}
-                            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
-                            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
+                            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
+                            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-400">
                             <span>Filas/pág</span>

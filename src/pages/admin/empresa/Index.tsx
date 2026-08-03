@@ -27,32 +27,32 @@ const PER_PAGE = [10, 20, 50];
 // Pill de ambiente de facturación
 function ambientePill(ambiente?: string) {
   const a = String(ambiente ?? '').toUpperCase();
-  if (a.includes('PROD')) return { label: 'Producción', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' };
-  if (a.includes('DEMO')) return { label: 'Demo', dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' };
-  return { label: ambiente || '—', dot: 'bg-violet-500', text: 'text-violet-600', bg: 'bg-violet-50' };
+  if (a.includes('PROD')) return { label: 'Producción', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
+  if (a.includes('DEMO')) return { label: 'Demo', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' };
+  return { label: ambiente || '—', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' };
 }
 
 // Pill del estado de la tienda virtual
 function tiendaPill(estado?: string) {
   const e = String(estado ?? '');
-  if (e === 'Activa') return { label: 'Activa', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' };
-  if (e === 'Disponible') return { label: 'Disponible', dot: 'bg-violet-500', text: 'text-violet-600', bg: 'bg-violet-50' };
-  return { label: 'No disponible', dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100' };
+  if (e === 'Activa') return { label: 'Activa', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
+  if (e === 'Disponible') return { label: 'Disponible', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' };
+  return { label: 'No disponible', dot: 'bg-slate-400', text: 'text-slate-500 dark:text-gray-400', bg: 'bg-slate-100 dark:bg-slate-800' };
 }
 
 // Pill de estado de la empresa
 function estadoPill(estado?: string) {
   const e = String(estado ?? '').toUpperCase();
-  if (e === 'ACTIVO') return { label: 'Activo', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' };
-  return { label: 'Inactivo', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' };
+  if (e === 'ACTIVO') return { label: 'Activo', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
+  return { label: 'Inactivo', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' };
 }
 
 // Color del texto "Vence en"
 function venceClass(texto?: string) {
   const t = String(texto ?? '').toLowerCase();
-  if (t.startsWith('vencido')) return 'text-rose-600';
-  if (t.includes('hoy')) return 'text-amber-600';
-  return 'text-slate-500';
+  if (t.startsWith('vencido')) return 'text-rose-600 dark:text-rose-400';
+  if (t.includes('hoy')) return 'text-amber-600 dark:text-amber-400';
+  return 'text-slate-500 dark:text-gray-400';
 }
 
 const EmpresasIndex = () => {
@@ -104,7 +104,7 @@ const EmpresasIndex = () => {
   if (vm.loading && vm.empresas.length === 0) return <TableSkeleton />;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -118,7 +118,7 @@ const EmpresasIndex = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Empresas</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Empresas</h1>
           <p className="text-sm text-slate-400 mt-0.5">Administra las empresas registradas en el sistema.</p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -128,7 +128,7 @@ const EmpresasIndex = () => {
               value={vm.searchTerm}
               onChange={vm.handleSearch}
               placeholder="Buscar por RUC o razón social…"
-              className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
             {vm.searchTerm && (
               <button onClick={() => vm.handleSearch({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
@@ -136,6 +136,22 @@ const EmpresasIndex = () => {
               </button>
             )}
           </div>
+          <button
+            onClick={() => vm.exportarEmpresas('pdf')}
+            disabled={vm.exportando !== null}
+            className="h-11 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-50 shrink-0"
+            title="Exportar el listado filtrado en PDF"
+          >
+            <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" /> <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            onClick={() => vm.exportarEmpresas('excel')}
+            disabled={vm.exportando !== null}
+            className="h-11 px-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all disabled:opacity-50 shrink-0"
+            title="Exportar el listado filtrado en Excel"
+          >
+            <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" /> <span className="hidden sm:inline">Excel</span>
+          </button>
           <button onClick={openCreate}
             className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
             style={{ background: ACCENT }}>
@@ -145,9 +161,9 @@ const EmpresasIndex = () => {
       </div>
 
       {/* Card contenedora */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100">
+        <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100 dark:border-slate-800">
           <button onClick={vm.refreshEmpresas} className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors"
             style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
             <Icon icon="solar:refresh-linear" className={vm.loading ? 'animate-spin' : ''} /> Actualizar
@@ -156,15 +172,15 @@ const EmpresasIndex = () => {
           {/* Filtro tipo */}
           <div className="relative">
             <button onClick={() => { setShowTipo((v) => !v); setShowEstado(false); }}
-              className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+              className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800">
               <Icon icon="solar:filter-linear" /> {tipoLabel}
               {vm.tipoFiltro && <span className="ml-0.5 h-5 min-w-5 px-1 grid place-items-center rounded-full text-white text-[11px]" style={{ background: ACCENT }}>1</span>}
             </button>
             {showTipo && (
-              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 bg-white shadow-xl p-1.5">
+              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-1.5">
                 {TIPO_OPTIONS.map((o) => (
                   <button key={o.id} onClick={() => { vm.setTipoFiltro(o.id); vm.setCurrentPageState(1); setShowTipo(false); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${vm.tipoFiltro === o.id ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${vm.tipoFiltro === o.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                     {o.value} {vm.tipoFiltro === o.id && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
                   </button>
                 ))}
@@ -175,14 +191,14 @@ const EmpresasIndex = () => {
           {/* Filtro estado */}
           <div className="relative">
             <button onClick={() => { setShowEstado((v) => !v); setShowTipo(false); }}
-              className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+              className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800">
               <Icon icon="solar:tuning-2-linear" /> {estadoLabel}
             </button>
             {showEstado && (
-              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 bg-white shadow-xl p-1.5">
+              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-1.5">
                 {ESTADO_OPTIONS.map((o) => (
                   <button key={o.id} onClick={() => { vm.setEstadoFiltro(o.id); vm.setCurrentPageState(1); setShowEstado(false); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${vm.estadoFiltro === o.id ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${vm.estadoFiltro === o.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                     {o.value} {vm.estadoFiltro === o.id && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
                   </button>
                 ))}
@@ -195,7 +211,7 @@ const EmpresasIndex = () => {
 
         {/* Error */}
         {vm.error && (
-          <div className="mx-4 mt-4 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl flex items-center gap-2 font-medium text-sm">
+          <div className="mx-4 mt-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 text-rose-600 dark:text-rose-300 rounded-2xl flex items-center gap-2 font-medium text-sm">
             <Icon icon="solar:danger-circle-bold" className="text-xl" />{vm.error}
           </div>
         )}
@@ -204,7 +220,7 @@ const EmpresasIndex = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
-              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                 <th className="py-3 pl-5 pr-3">Empresa</th>
                 <th className="py-3 px-3">Reseller</th>
                 <th className="py-3 px-3">Ambiente</th>
@@ -220,17 +236,17 @@ const EmpresasIndex = () => {
             <tbody>
               {vm.loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} className="border-b border-slate-50">
+                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
                     <td colSpan={10} className="py-3.5 px-5">
-                      <div className="h-6 rounded-lg bg-slate-100 animate-pulse" />
+                      <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-16 text-center">
-                    <Icon icon="solar:buildings-3-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
-                    <p className="text-slate-500 text-sm font-medium">No se encontraron empresas</p>
+                    <Icon icon="solar:buildings-3-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
+                    <p className="text-slate-500 dark:text-gray-400 text-sm font-medium">No se encontraron empresas</p>
                     <p className="text-slate-400 text-xs mt-1">{vm.searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no tienes empresas registradas'}</p>
                     <button onClick={openCreate}
                       className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-white text-sm font-bold shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
@@ -245,14 +261,14 @@ const EmpresasIndex = () => {
                 const tie = tiendaPill(row['Tienda Virtual']);
                 const est = estadoPill(row.estado);
                 return (
-                  <tr key={row.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+                  <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
                     <td className="py-3 pl-5 pr-3">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
                           {String(razon).charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-700 text-sm truncate max-w-[220px]">{razon}</p>
+                          <p className="font-semibold text-slate-700 dark:text-gray-200 text-sm truncate max-w-[220px]">{razon}</p>
                           <p className="font-mono text-xs text-slate-400">{row['RUC'] || '—'}</p>
                         </div>
                       </div>
@@ -260,7 +276,7 @@ const EmpresasIndex = () => {
                     <td className="py-3 px-3">
                       {row['Reseller'] ? (
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-600 truncate max-w-[160px]">{row['Reseller']}</p>
+                          <p className="text-sm font-semibold text-slate-600 dark:text-gray-300 truncate max-w-[160px]">{row['Reseller']}</p>
                           {row.resellerCodigo && <p className="font-mono text-[11px] text-slate-400">{row.resellerCodigo}</p>}
                         </div>
                       ) : (
@@ -272,16 +288,16 @@ const EmpresasIndex = () => {
                         <span className={`w-1.5 h-1.5 rounded-full ${amb.dot}`} /> {amb.label}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[160px]">{row['Rubro'] || '—'}</td>
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[160px]">{row['Rubro'] || '—'}</td>
                     <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">{row['Plan'] || '—'}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300">{row['Plan'] || '—'}</span>
                     </td>
                     <td className="py-3 px-3">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${tie.bg} ${tie.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${tie.dot}`} /> {tie.label}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500">{row.fechaExpiracion || '—'}</td>
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">{row.fechaExpiracion || '—'}</td>
                     <td className={`py-3 px-3 text-sm font-semibold ${venceClass(row['Vence en'])}`}>{row['Vence en'] || '—'}</td>
                     <td className="py-3 px-3">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${est.bg} ${est.text}`}>
@@ -292,7 +308,7 @@ const EmpresasIndex = () => {
                       <button
                         type="button"
                         onClick={(event) => handleOpenMenu(event, row)}
-                        className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors ml-auto"
+                        className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-gray-200 transition-colors ml-auto"
                       >
                         <Icon icon="mdi:dots-vertical" width={18} height={18} />
                       </button>
@@ -306,11 +322,11 @@ const EmpresasIndex = () => {
 
         {/* Paginación */}
         {rows.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100 dark:border-slate-800">
             <span className="text-sm text-slate-400">{fromRow}-{toRow} de {total.toLocaleString('es-PE')}</span>
             <div className="flex items-center gap-1">
-              <button disabled={page <= 1} onClick={() => vm.setCurrentPageState(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
-              <button disabled={page <= 1} onClick={() => vm.setCurrentPageState(Math.max(1, page - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
+              <button disabled={page <= 1} onClick={() => vm.setCurrentPageState(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
+              <button disabled={page <= 1} onClick={() => vm.setCurrentPageState(Math.max(1, page - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
               {pageNumbers.map((n, i) => {
                 const prev = pageNumbers[i - 1];
                 const gap = prev && n - prev > 1;
@@ -318,15 +334,15 @@ const EmpresasIndex = () => {
                   <span key={n} className="flex items-center">
                     {gap && <span className="px-1 text-slate-300">…</span>}
                     <button onClick={() => vm.setCurrentPageState(n)}
-                      className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                      className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                       style={n === page ? { background: ACCENT } : undefined}>
                       {n}
                     </button>
                   </span>
                 );
               })}
-              <button disabled={page >= totalPages} onClick={() => vm.setCurrentPageState(Math.min(totalPages, page + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
-              <button disabled={page >= totalPages} onClick={() => vm.setCurrentPageState(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
+              <button disabled={page >= totalPages} onClick={() => vm.setCurrentPageState(Math.min(totalPages, page + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
+              <button disabled={page >= totalPages} onClick={() => vm.setCurrentPageState(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <span>Filas/pág</span>
@@ -360,11 +376,11 @@ const EmpresasIndex = () => {
       >
         {selectedMenuRow && (
           <>
-            <button type="button" onClick={() => runMenuAction(vm.handleViewDetails)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={() => runMenuAction(vm.handleViewDetails)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700">
               <Icon icon="solar:eye-bold-duotone" width={16} height={16} />
               <span>Ver detalles</span>
             </button>
-            <button type="button" onClick={() => runMenuAction(vm.handleEdit)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={() => runMenuAction(vm.handleEdit)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700">
               <Icon icon="material-symbols:edit" width={16} height={16} />
               <span>Editar</span>
             </button>

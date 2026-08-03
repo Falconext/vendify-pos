@@ -12,7 +12,7 @@ import { useMovementsViewModel } from './useMovementsViewModel';
 import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Pills de tipo de movimiento — punto de color + texto, estilo CRM claro.
 function tipoPill(tipo: string) {

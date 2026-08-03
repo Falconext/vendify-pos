@@ -9,7 +9,7 @@ import moment from 'moment';
 import { useAuthStore } from '@/zustand/auth';
 import { useSedesStore } from '@/zustand/sedes';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 // Config visual de cada tipo de movimiento (pill con punto de color + icono).
 const tipoConfig = (tipo?: string) => {

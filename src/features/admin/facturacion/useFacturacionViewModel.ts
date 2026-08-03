@@ -170,7 +170,7 @@ export const useFacturacionViewModel = () => {
     const { zoomLevel } = useThemeStore();
     const { auth, sedeActiva } = useAuthStore();
     const { categories, getAllCategories }: ICategoriesState = useCategoriesStore();
-    const { getAllClients, clients }: IClientsState = useClientsStore();
+    const { getAllClients, clients, getClientFromDoc, addClients }: IClientsState = useClientsStore();
     const { getAllProducts, products, totalProducts }: IProductsState = useProductsStore();
     const { combos, fetchCombos } = useCombosStore();
     const { getCreditDebitNoteTypes, getCurrencies, creditDebitNoteTypes, getDocumentTypes }: IExtentionsState = useExtentionsStore();
@@ -193,6 +193,9 @@ export const useFacturacionViewModel = () => {
     // trazar receta de psicotrópicos/estupefacientes también a nivel mayorista)
     const habilitaRecetaMedica = isFarmaciaRetail || esDrogueria;
     const usarPrecioLoteFefo = Boolean((auth?.empresa as any)?.usarPrecioLoteFefo);
+    // Sobreventa: si la empresa lo habilitó, el POS permite agregar/vender productos
+    // aunque el stock sea 0 o insuficiente (solo se muestra una advertencia).
+    const permitirVentaSinStock = Boolean((auth?.empresa as any)?.permitirVentaSinStock);
     const [togglingPrecioLote, setTogglingPrecioLote] = useState(false);
     // Toggle rápido (solo rubros con lotes) — persiste el flag de empresa y actualiza el estado
     const togglePrecioLoteFefo = async () => {
@@ -289,6 +292,9 @@ export const useFacturacionViewModel = () => {
     ]);
     const [adelanto, setAdelanto] = useState<number>(0);
     const [fechaRecojo, setFechaRecojo] = useState<string>('');
+    // Nota de Pedido: si el usuario marca esto, la NP descuenta stock al emitirse.
+    // Por defecto false → la NP no toca stock hasta convertirse en comprobante formal.
+    const [descontarStockNP, setDescontarStockNP] = useState<boolean>(false);
     const [adelantoError, _setAdelantoError] = useState<string>('');
 
     // ID del comprobante informal de origen (cuando se convierte NV/Ticket → Formal)
@@ -1097,7 +1103,7 @@ export const useFacturacionViewModel = () => {
             const qtyActualEnCarrito = getCartQtyByProductId(Number(producto.id));
             const stockDisponible = Number(producto?.stock || 0);
             // Los servicios no tienen stock: solo se valida stock para productos físicos.
-            if (!esServicioTecnico(producto) && qtyActualEnCarrito + qtyRequerida > stockDisponible) {
+            if (!permitirVentaSinStock && !esServicioTecnico(producto) && qtyActualEnCarrito + qtyRequerida > stockDisponible) {
                 return useAlertStore.getState().alert(
                     `Stock insuficiente para ${String(producto.descripcion || "producto").toUpperCase()} al agregar el kit`,
                     "warning",
@@ -1278,16 +1284,22 @@ export const useFacturacionViewModel = () => {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!esServicio && stockDisponible < newQty) {
+            if (!permitirVentaSinStock && !esServicio && stockDisponible < newQty) {
                 return useAlertStore.getState().alert("Stock insuficiente", "warning");
+            }
+            if (permitirVentaSinStock && !esServicio && stockDisponible < newQty) {
+                useAlertStore.getState().alert("Vendiendo sin stock disponible", "warning");
             }
             updateProductInvoice(existingIndex, calculateLineItem(currentItem, newQty));
         } else {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!esServicio && stockDisponible < 1) {
+            if (!permitirVentaSinStock && !esServicio && stockDisponible < 1) {
                 return useAlertStore.getState().alert("Sin stock", "warning");
+            }
+            if (permitirVentaSinStock && !esServicio && stockDisponible < 1) {
+                useAlertStore.getState().alert("Vendiendo sin stock disponible", "warning");
             }
             const base = precioBaseSeleccionado;
             addProductsInvoice({
@@ -1590,6 +1602,58 @@ export const useFacturacionViewModel = () => {
         }
     };
 
+    // Búsqueda directa por documento en el POS: escribe DNI/RUC + Enter y el
+    // cliente queda seteado. Si no existe en la empresa, se consulta el padrón
+    // (RENIEC/SUNAT) y se crea automáticamente.
+    const [clienteDocLookupLoading, setClienteDocLookupLoading] = useState(false);
+    const handleClienteDocLookup = async (docRaw: string): Promise<boolean> => {
+        const doc = String(docRaw || '').replace(/\D/g, '');
+        if (doc.length !== 8 && doc.length !== 11) {
+            useAlertStore.getState().alert('Ingresa un DNI (8 dígitos) o un RUC (11 dígitos)', 'warning');
+            return false;
+        }
+        const tipo = doc.length === 11 ? 'RUC' : 'DNI';
+        setClienteDocLookupLoading(true);
+        try {
+            // 1) ¿Ya está registrado en la empresa?
+            const resp: any = await get(`clientes?search=${doc}&limit=5`);
+            const lista = (resp as any)?.data?.clientes ?? (resp as any)?.data?.data ?? [];
+            const existente = Array.isArray(lista) ? lista.find((c: any) => String(c.nroDoc) === doc) : null;
+            if (existente) {
+                handleClienteCreado(existente);
+                useAlertStore.getState().alert(`Cliente: ${existente.nombre}`, 'success');
+                return true;
+            }
+            // 2) Consultar padrón y crear automáticamente
+            const info: any = await getClientFromDoc(doc, tipo);
+            if (!info) return false;
+            const nombre = info.nombre_completo || info.nombre_o_razon_social || '';
+            if (!nombre) {
+                useAlertStore.getState().alert('El padrón no devolvió el nombre; regístralo manualmente', 'warning');
+                return false;
+            }
+            const creado: any = await addClients({
+                tipoDoc: tipo,
+                nroDoc: doc,
+                nombre,
+                direccion: info.direccion || info.direccion_completa || '',
+                departamento: info.departamento || '',
+                provincia: info.provincia || '',
+                distrito: info.distrito || '',
+                ubigeo: info.ubigeo_sunat || '',
+                persona: 'CLIENTE',
+                estado: 'ACTIVO',
+            } as any);
+            if (creado) {
+                handleClienteCreado({ ...creado, nroDoc: doc, nombre });
+                return true;
+            }
+            return false;
+        } finally {
+            setClienteDocLookupLoading(false);
+        }
+    };
+
     // Al crear un cliente nuevo desde "Configurar venta", queda auto-seleccionado
     // (sin tener que buscarlo). Funciona igual para DNI o RUC.
     const handleClienteCreado = (client: any) => {
@@ -1689,17 +1753,14 @@ export const useFacturacionViewModel = () => {
 
     const validatePaymentDetails = () => {
         if (isQuotationRoute || formValues.medioPago === 'Crédito') return true;
-        const requiresReference = (method?: string) => ['TRANSFERENCIA', 'TARJETA'].includes(normalizePaymentMethod(method));
+        // El N° de operación/voucher es opcional: no bloquea la emisión (se puede
+        // registrar después). Solo se exige la cuenta bancaria para transferencias.
         const requiresAccount = (method?: string) => normalizePaymentMethod(method) === 'TRANSFERENCIA';
         const details = buildPaymentDetails();
         const lines: PaymentLine[] = details.mode === 'MIXTO' ? (details.splitPayments ?? []) : [details as PaymentLine];
 
         for (const line of lines) {
             if (Number(line.amount || 0) <= 0) continue;
-            if (requiresReference(line.method) && !cleanText(line.referencia)) {
-                useAlertStore.getState().alert(`Ingresa el número de operación/voucher para ${line.method}.`, "error");
-                return false;
-            }
             if (requiresAccount(line.method) && !line.cuentaBancariaId) {
                 useAlertStore.getState().alert("Selecciona la cuenta bancaria donde ingresó la transferencia.", "error");
                 return false;
@@ -1982,6 +2043,7 @@ export const useFacturacionViewModel = () => {
                 return adelantoFinal > 0 ? adelantoFinal : undefined;
             })(),
             fechaRecojo: (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") && fechaRecojoFinal ? fechaRecojoFinal : undefined,
+            descontarStock: formValues.tipoDoc === "NP" ? descontarStockNP : undefined,
             cotizIncluirImagenes: isQuotationRoute ? includeProductImages : undefined,
             cotizDescuento: isQuotationRoute ? quotationDiscount : undefined,
             cotizVigencia: isQuotationRoute ? quotationValidity : undefined,
@@ -2229,6 +2291,7 @@ export const useFacturacionViewModel = () => {
         splitPayments, setSplitPayments,
         adelanto, setAdelanto,
         fechaRecojo, setFechaRecojo,
+        descontarStockNP, setDescontarStockNP,
         fechaEmisionManual, setFechaEmisionManual,
         fechaEmisionMinDate: (() => {
             const tipoDoc = (formValues as any)?.tipoDoc;
@@ -2316,6 +2379,8 @@ export const useFacturacionViewModel = () => {
         handleChangeSelect,
         handleGetDataClient,
         handleClienteCreado,
+        handleClienteDocLookup,
+        clienteDocLookupLoading,
         addInvoiceReceipt,
         closeModal,
         closeModalResponse,

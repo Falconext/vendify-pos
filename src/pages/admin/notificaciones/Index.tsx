@@ -1,7 +1,7 @@
 import { useNotificacionesViewModel } from '@/features/admin/notificaciones/useNotificacionesViewModel';
 import { Icon } from '@iconify/react';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 const NotificacionesPage = () => {
   const vm = useNotificacionesViewModel();

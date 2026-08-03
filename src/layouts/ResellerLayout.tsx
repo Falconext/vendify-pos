@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import { useResellerPanelStore } from '@/zustand/reseller-panel'
-import { useThemeStore, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
+import { SIDEBAR_COLOR_HEX, useThemeStore, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
 import Configurator from '@/components/ui/Configurator'
 import { BRAND } from '@/lib/branding'
 
@@ -27,6 +27,10 @@ export default function ResellerLayout() {
         isDarkMode, toggleDarkMode, toggleConfigurator, initTheme,
     } = useThemeStore()
 
+    useEffect(() => {
+        document.documentElement.style.setProperty('--accent', SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF');
+    }, [sidebarColor]);
+
     // Marca blanca del reseller: su logo/nombre configurados en "Mi Marca".
     useEffect(() => {
         if (auth?.resellerId) getBranding(auth.resellerId)
@@ -45,7 +49,20 @@ export default function ResellerLayout() {
     const userMenuRef = useRef<HTMLDivElement | null>(null)
     const zoomMenuRef = useRef<HTMLDivElement | null>(null)
 
-    useEffect(() => { initTheme() }, [initTheme])
+    // El portal reseller arranca en modo CLARO por defecto (marca blanca de cara
+    // al cliente). Se fuerza una sola vez por navegador; si el reseller luego
+    // activa el modo oscuro, su preferencia se respeta en las siguientes visitas.
+    useEffect(() => {
+        const KEY = 'reseller-theme-defaulted-light'
+        if (!localStorage.getItem(KEY)) {
+            localStorage.setItem(KEY, '1')
+            if (useThemeStore.getState().isDarkMode) {
+                useThemeStore.getState().toggleDarkMode() // -> claro + quita clase 'dark'
+                return
+            }
+        }
+        initTheme()
+    }, [initTheme])
 
     // Usa la misma tipografía y scope de estilos que el panel del cliente (admin):
     // Plus Jakarta Sans forzado por `html.is-admin` en index.css.

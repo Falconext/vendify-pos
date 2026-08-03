@@ -2,10 +2,37 @@ import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Pagination from "@/components/Pagination";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import apiClient from "@/utils/apiClient";
+import ModalAnticipos from "./ModalAnticipos";
 
-export const POSCatalogLayout = ({ vm }: { vm: any }) => {
+export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?: 'CATALOGO' | 'CAJA' }) => {
+    const compacto = layout === 'CAJA';
     const [infoProduct, setInfoProduct] = useState<any | null>(null);
     const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+    // Subir/cambiar imagen del producto directo desde la card del POS
+    const [uploadingId, setUploadingId] = useState<number | null>(null);
+    const [uploadedImages, setUploadedImages] = useState<Record<number, string>>({});
+    const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+    const handleImageUpload = async (productoId: number, file: File) => {
+        setUploadingId(productoId);
+        try {
+            const form = new FormData();
+            form.append('file', file);
+            const { data } = await apiClient.post(`/productos/${productoId}/imagen`, form, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const url = data?.data?.imagenUrl ?? data?.imagenUrl;
+            if (url) {
+                setUploadedImages(prev => ({ ...prev, [productoId]: url }));
+                setBrokenImages(prev => { const n = { ...prev }; delete n[`PRODUCTO-${productoId}`]; return n; });
+            }
+        } catch {
+
+        } finally {
+            setUploadingId(null);
+        }
+    };
     const searchRef = useRef<HTMLInputElement | null>(null);
 
     // Captura de anticipos previos a descontar (solo facturas)
@@ -81,10 +108,47 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
         return Math.max(0, Math.min(...stockByItem));
     };
     const esServicio = (item: any) => String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+    const categoryFilter = useMemo(() => {
+        const visibleCounts = new Map<number, number>();
+
+        (vm.catalogItems || []).forEach((item: any) => {
+            if (item?.__catalogType === 'COMBO') {
+                const comboCategoryIds = new Set<number>(
+                    (item?.items || [])
+                        .map((comboItem: any) => Number(comboItem?.producto?.categoria?.id || comboItem?.producto?.categoriaId || 0))
+                        .filter((id: number) => id > 0),
+                );
+                comboCategoryIds.forEach((id) => visibleCounts.set(id, (visibleCounts.get(id) || 0) + 1));
+                return;
+            }
+
+            const categoryId = Number(item?.categoria?.id || item?.categoriaId || 0);
+            if (categoryId > 0) visibleCounts.set(categoryId, (visibleCounts.get(categoryId) || 0) + 1);
+        });
+
+        const tabs = (Array.isArray(vm.categories) ? vm.categories : [])
+            .map((category: any) => {
+                const id = Number(category?.id || 0);
+                const inventoryCount = Number(
+                    category?._count?.productos
+                    ?? category?.productosCount
+                    ?? category?.totalProductos
+                    ?? category?.cantidadProductos
+                    ?? NaN,
+                );
+                const count = Number.isFinite(inventoryCount) ? inventoryCount : (visibleCounts.get(id) || 0);
+                return { id, name: String(category?.nombre || 'Sin categoria'), count };
+            })
+            .filter((category: any) => category.id > 0 && (category.count > 0 || Number(vm.selectedCategoryId || 0) === category.id))
+            .sort((a: any, b: any) => a.name.localeCompare(b.name, 'es'));
+
+        const total = tabs.reduce((sum: number, category: any) => sum + Number(category.count || 0), 0) || Number(vm.totalProducts || vm.catalogItems?.length || 0);
+        return { tabs, total };
+    }, [vm.catalogItems, vm.categories, vm.selectedCategoryId, vm.totalProducts]);
 
     return (
         <>
-        <div className="w-full md:w-[65%] flex flex-col gap-4 bg-white dark:bg-[#111827] rounded-[24px] shadow-gray-200/50 h-auto min-h-[500px] md:h-full overflow-hidden border border-white dark:border-transparent">
+        <div className={`w-full ${compacto ? 'md:w-[45%]' : 'md:w-[65%]'} flex flex-col gap-4 bg-white dark:bg-[#111827] rounded-[24px] shadow-gray-200/50 h-auto min-h-[500px] md:h-full overflow-hidden border border-white dark:border-transparent`}>
             {/* Header: Search & Categories */}
             <div className="p-4 md:p-5 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-[#111827]">
                 <div className="flex gap-2 mb-3">
@@ -132,7 +196,19 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
 
                 {vm.showFreeQuoteItemForm && (
                     <div className="mb-4 rounded-2xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/10 p-3">
-                        <div className="flex flex-col lg:flex-row gap-2">
+                        <div className="flex flex-col gap-2">
+                            {/* El nombre del ítem es el dato principal: fila propia a todo el ancho */}
+                            <input
+                                value={vm.freeQuoteItem.descripcion}
+                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, descripcion: e.target.value }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
+                                }}
+                                autoFocus
+                                placeholder="Nombre del producto o servicio — Ej: Instalación de Windows, mantenimiento, producto a pedido..."
+                                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
+                            />
+                            <div className="flex flex-col lg:flex-row gap-2">
                             <div className="flex rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-1">
                                 {(['SERVICIO', 'PRODUCTO'] as const).map((tipo) => (
                                     <button
@@ -173,15 +249,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                             >
                                 Anticipo
                             </button>
-                            <input
-                                value={vm.freeQuoteItem.descripcion}
-                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, descripcion: e.target.value }))}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
-                                }}
-                                placeholder="Ej: Instalación de Windows, mantenimiento, producto a pedido..."
-                                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
-                            />
+                            <div className="flex-1" />
                             <input
                                 type="number"
                                 min="0.001"
@@ -221,6 +289,7 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                     <Icon icon="solar:close-circle-bold-duotone" className="text-lg" />
                                 </button>
                             </div>
+                            </div>
                         </div>
                         <p className="mt-2 text-xs text-violet-700/80 dark:text-violet-300/80 font-semibold">
                             No se creará en inventario ni descontará stock; solo quedará como línea temporal para este comprobante.
@@ -233,90 +302,30 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                     <div className="mb-4">
                         <button
                             type="button"
-                            onClick={() => setShowAnticipos((v) => !v)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-sm transition-all"
+                            onClick={() => setShowAnticipos(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-bold text-sm transition-all hover:bg-indigo-100 dark:hover:bg-indigo-950/50"
                             title="Descontar anticipos previos en esta factura"
                         >
                             <Icon icon="solar:hand-money-bold-duotone" className="text-lg" />
                             Anticipos a descontar
                             {vm.anticipos?.length > 0 && (
-                                <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black">
+                                <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-black">
                                     {vm.anticipos.length} · {String(vm.formValues?.tipoMoneda === 'USD' || vm.quotationCurrency === 'USD' ? 'US$' : 'S/')} {Number(vm.totalAnticipos || 0).toFixed(2)}
                                 </span>
                             )}
                         </button>
 
-                        {showAnticipos && (
-                            <div className="mt-3 rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/10 p-3">
-                                <div className="flex flex-col lg:flex-row gap-2">
-                                    <select
-                                        value={anticipoForm.tipoDoc}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, tipoDoc: e.target.value }))}
-                                        title="Tipo de comprobante del anticipo"
-                                        className="px-3 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    >
-                                        <option value="01">Factura</option>
-                                        <option value="03">Boleta</option>
-                                    </select>
-                                    <input
-                                        value={anticipoForm.serie}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, serie: e.target.value }))}
-                                        placeholder="Serie (ej: FX02)"
-                                        className="w-full lg:w-32 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300 uppercase"
-                                    />
-                                    <input
-                                        value={anticipoForm.numero}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, numero: e.target.value }))}
-                                        placeholder="Número (ej: 000024)"
-                                        className="w-full lg:w-36 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <input
-                                        type="number" min="0.01" step="0.01"
-                                        value={anticipoForm.monto}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, monto: e.target.value }))}
-                                        placeholder="Monto"
-                                        className="w-full lg:w-28 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <input
-                                        type="date"
-                                        value={anticipoForm.fecha}
-                                        onChange={(e) => setAnticipoForm((p) => ({ ...p, fecha: e.target.value }))}
-                                        title="Fecha del anticipo (opcional)"
-                                        className="w-full lg:w-40 px-3 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-300"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleAddAnticipo}
-                                        className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                                    >
-                                        <Icon icon="solar:add-circle-bold" className="text-lg" />
-                                        Agregar
-                                    </button>
-                                </div>
-
-                                {vm.anticipos?.length > 0 && (
-                                    <div className="mt-3 space-y-1.5">
-                                        {vm.anticipos.map((a: any, i: number) => (
-                                            <div key={`${a.serie}-${a.numero}-${i}`} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30">
-                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
-                                                    {a.tipoDoc === '03' ? 'Boleta' : 'Factura'} {a.serie}-{a.numero}
-                                                    {a.fecha ? <span className="text-xs text-gray-400 ml-2">{a.fecha}</span> : null}
-                                                </span>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">{Number(a.monto).toFixed(2)}</span>
-                                                    <button type="button" onClick={() => vm.eliminarAnticipo(i)} className="text-red-400 hover:text-red-600" title="Quitar anticipo">
-                                                        <Icon icon="solar:trash-bin-trash-bold" className="text-base" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-300/80 font-semibold">
-                                    El total del anticipo se descuenta como PrepaidAmount en la factura (importe a pagar = total − anticipos). La moneda debe coincidir con la del comprobante.
-                                </p>
-                            </div>
-                        )}
+                        <ModalAnticipos
+                            isOpen={showAnticipos}
+                            onClose={() => setShowAnticipos(false)}
+                            form={anticipoForm}
+                            setForm={setAnticipoForm}
+                            onAdd={handleAddAnticipo}
+                            anticipos={vm.anticipos || []}
+                            totalAnticipos={Number(vm.totalAnticipos || 0)}
+                            currencySymbol={String(vm.formValues?.tipoMoneda === 'USD' || vm.quotationCurrency === 'USD' ? 'US$' : 'S/')}
+                            onRemove={(i: number) => vm.eliminarAnticipo(i)}
+                        />
                     </div>
                 )}
 
@@ -344,10 +353,81 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                         </button>
                     </div>
                 )}
+
+                {categoryFilter.tabs.length > 0 && (
+                    <div className="mt-4 -mx-1">
+                        <div className="flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-thin">
+                            {[
+                                { id: 0, name: 'Todos', count: categoryFilter.total },
+                                ...categoryFilter.tabs,
+                            ].map((category: any) => {
+                                const active = Number(vm.selectedCategoryId || 0) === category.id;
+                                return (
+                                    <button
+                                        key={category.id}
+                                        type="button"
+                                        onClick={() => vm.setSelectedCategoryId(category.id)}
+                                        className={`group inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition-all ${
+                                            active
+                                                ? 'border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-violet-800 dark:hover:bg-violet-950/30'
+                                        }`}
+                                    >
+                                        <span className="max-w-[150px] truncate">{category.name}</span>
+                                        <span className={`rounded-lg px-1.5 py-0.5 text-[10px] font-black ${
+                                            active
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-gray-100 text-gray-500 group-hover:bg-violet-100 group-hover:text-violet-700 dark:bg-slate-800 dark:text-slate-400'
+                                        }`}>
+                                            {category.count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Product Grid */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 scrollbar-thin">
+                {compacto ? (
+                <div className="flex flex-col gap-1.5">
+                    {vm.catalogItems?.map((item: any, itemIndex: number) => {
+                        const isExpired = vm.usaLotesFarmacia && item.__catalogType === 'PRODUCTO' && item?.loteFefo?.diasAlVencimiento !== undefined && item?.loteFefo?.diasAlVencimiento < 0;
+                        const precio = item.__catalogType === 'COMBO'
+                            ? Number(item.precioCombo)
+                            : Number(item.precioUnitario);
+                        const simbolo = String(item.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
+                        const stockTxt = esServicio(item) ? 'Servicio' : `Stock: ${item.__catalogType === 'COMBO' ? getComboStock(item) : (item.stock ?? 0)}`;
+                        return (
+                            <button
+                                key={`c-${item.__catalogType}-${item.id}-${itemIndex}`}
+                                type="button"
+                                disabled={isExpired}
+                                onClick={() => { if (isExpired) return; item.__catalogType === 'COMBO' ? vm.handleComboClick(item) : vm.handleProductClick(item); }}
+                                className="group flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2 text-left transition-all hover:border-violet-300 hover:bg-violet-50/40 active:scale-[0.99] disabled:opacity-50 dark:border-slate-800 dark:bg-[#1E2435] dark:hover:bg-slate-800"
+                            >
+                                <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-gray-50 dark:bg-slate-800">
+                                    {(uploadedImages[item.id] || item.imagenUrl) && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
+                                        <img src={uploadedImages[item.id] ?? item.imagenUrl} alt="" className="h-full w-full object-contain" loading="lazy" onError={() => setBrokenImages((prev) => ({ ...prev, [`${item.__catalogType}-${item.id}`]: true }))} />
+                                    ) : (
+                                        <Icon icon="solar:box-minimalistic-linear" className="text-lg text-gray-300 dark:text-slate-600" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[13px] font-bold uppercase text-gray-800 dark:text-gray-200">{item.__catalogType === 'COMBO' ? item.nombre : item.descripcion}</p>
+                                    <p className="text-[11px] font-semibold text-gray-400">{stockTxt}{item.__catalogType === 'COMBO' ? ' · KIT' : ''}</p>
+                                </div>
+                                <span className="shrink-0 text-sm font-black text-gray-900 dark:text-white">{simbolo}{precio.toFixed(2)}</span>
+                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white shadow-sm transition group-hover:bg-violet-700">
+                                    <Icon icon="solar:add-circle-bold" className="text-lg" />
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+                ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
                     {vm.catalogItems?.map((item: any, itemIndex: number) => (
                         <div
@@ -363,9 +443,9 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                     item.__catalogType === 'COMBO' ? vm.handleComboClick(item) : vm.handleProductClick(item);
                                 }}
                             >
-                                {item.imagenUrl && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
+                                {(uploadedImages[item.id] || item.imagenUrl) && !brokenImages[`${item.__catalogType}-${item.id}`] ? (
                                     <img
-                                        src={item.imagenUrl}
+                                        src={uploadedImages[item.id] ?? item.imagenUrl}
                                         alt={item.descripcion || "Producto"}
                                         className="w-full h-full object-contain"
                                         loading="lazy"
@@ -466,20 +546,45 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                         })()}
                                     </div>
 
-                                    {/* Acciones — fila a todo el ancho para que "Agregar" nunca se corte */}
+                                    {/* Acciones ocultas temporalmente: detalle, cámara y botón Agregar. */}
                                     <div className="mt-2 flex items-center gap-1.5">
-                                        {/* Ver detalle */}
-                                        <button
+                                        {/* <button
                                             onClick={(e) => { e.stopPropagation(); setInfoProduct(item); }}
                                             className="shrink-0 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 rounded-lg transition-all active:scale-95 flex items-center justify-center"
                                             title="Ver detalle"
                                             aria-label="Ver detalle"
                                         >
                                             <Icon icon="solar:info-circle-linear" className="text-lg" />
-                                        </button>
+                                        </button> */}
 
-                                        {/* Agregar al comprobante — acción principal, siempre visible */}
-                                        {(() => {
+                                        {/* {item.__catalogType === 'PRODUCTO' && (
+                                            <>
+                                                <input
+                                                    ref={el => { fileInputRefs.current[item.id] = el; }}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) handleImageUpload(item.id, f);
+                                                        e.target.value = '';
+                                                    }}
+                                                />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); fileInputRefs.current[item.id]?.click(); }}
+                                                    disabled={uploadingId === item.id}
+                                                    className="shrink-0 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    title={(uploadedImages[item.id] || item.imagenUrl) ? "Cambiar imagen" : "Subir imagen"}
+                                                >
+                                                    {uploadingId === item.id
+                                                        ? <Icon icon="eos-icons:loading" className="text-lg animate-spin" />
+                                                        : <Icon icon={uploadedImages[item.id] || item.imagenUrl ? "solar:camera-rotate-bold-duotone" : "solar:camera-add-bold-duotone"} className="text-lg" />
+                                                    }
+                                                </button>
+                                            </>
+                                        )} */}
+
+                                        {/* {(() => {
                                             const isExpired = vm.usaLotesFarmacia && item.__catalogType === 'PRODUCTO' && item?.loteFefo?.diasAlVencimiento !== undefined && item?.loteFefo?.diasAlVencimiento < 0;
                                             return (
                                                 <button
@@ -497,13 +602,14 @@ export const POSCatalogLayout = ({ vm }: { vm: any }) => {
                                                     Agregar
                                                 </button>
                                             );
-                                        })()}
+                                        })()} */}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
+                )}
                 {!vm.catalogItems?.length && (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
                         <Icon icon="solar:sad-square-linear" className="text-6xl mb-2 opacity-50" />

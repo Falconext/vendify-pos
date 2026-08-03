@@ -6,7 +6,7 @@ import TableActionMenu from '@/components/TableActionMenu';
 import { useProveedoresViewModel } from './useProveedoresViewModel';
 import ModalProveedor from '@/pages/admin/compras/ModalProveedor';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function ProveedoresView() {
     const vm = useProveedoresViewModel();

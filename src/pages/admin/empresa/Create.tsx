@@ -9,7 +9,7 @@ import useAlertStore from '@/zustand/alert';
 import { useClientsStore } from '@/zustand/clients';
 
 // ── Estilo CRM claro (Brix UI) ──────────────────────────────────────────────
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 interface FormData {
   ruc: string;
@@ -309,11 +309,11 @@ const CreateEmpresa = () => {
 
   const sectionClass = (hasError: boolean) =>
     `p-6 rounded-3xl border transition-colors ${hasError
-      ? 'bg-rose-50/60 border-rose-200'
-      : 'bg-white border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)]'}`;
+      ? 'bg-rose-50/60 border-rose-200 dark:bg-rose-900/10 dark:border-rose-900/50'
+      : 'bg-white dark:bg-[#111827] border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)]'}`;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
@@ -330,19 +330,19 @@ const CreateEmpresa = () => {
         <button
           type="button"
           onClick={() => navigate('/administrador/empresas')}
-          className="h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors shrink-0"
+          className="h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shrink-0"
         >
           <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Nueva empresa</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Nueva empresa</h1>
           <p className="text-sm text-slate-400 mt-0.5">Completa todos los campos obligatorios <span style={{ color: ACCENT }}>*</span></p>
         </div>
       </div>
 
       {/* Error global del servidor */}
       {error && (
-        <div className="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl flex items-start gap-3">
+        <div className="mb-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 rounded-2xl flex items-start gap-3">
           <Icon icon="solar:danger-triangle-bold" className="text-xl mt-0.5 flex-shrink-0" />
           <span className="text-sm font-medium">{error}</span>
         </div>
@@ -350,16 +350,16 @@ const CreateEmpresa = () => {
 
       {/* Resumen de errores al intentar enviar */}
       {submitAttempted && totalErrors > 0 && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl">
+        <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <Icon icon="solar:close-circle-bold" className="text-rose-500 text-lg" />
-            <p className="text-sm font-bold text-rose-700">
+            <p className="text-sm font-bold text-rose-700 dark:text-rose-300">
               Hay {totalErrors} campo{totalErrors !== 1 ? 's' : ''} con error. Corrígelos antes de continuar.
             </p>
           </div>
           <ul className="space-y-1 pl-6 list-disc">
             {Object.entries(errors).map(([, msg]) => (
-              <li key={msg} className="text-xs text-rose-600">{msg}</li>
+              <li key={msg} className="text-xs text-rose-600 dark:text-rose-400">{msg}</li>
             ))}
           </ul>
         </div>
@@ -371,10 +371,10 @@ const CreateEmpresa = () => {
             {/* ── Datos de la Empresa ── */}
             <div className={sectionClass(empresaErrorCount > 0)}>
               <div className="flex items-center gap-3 mb-5">
-                <span className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 shrink-0">
+                <span className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 shrink-0">
                   <Icon icon="solar:buildings-bold-duotone" className="text-xl" />
                 </span>
-                <h2 className="text-base font-bold text-slate-800">
+                <h2 className="text-base font-bold text-slate-800 dark:text-white">
                   Datos de la Empresa
                 </h2>
                 <SectionBadge count={empresaErrorCount} />
@@ -501,7 +501,7 @@ const CreateEmpresa = () => {
                 {/* Plan */}
                 <div className="md:col-span-2">
                   <div className="flex items-center gap-2 mb-3">
-                    <label className="text-sm font-semibold text-slate-700">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                       Plan *
                     </label>
                     {errors.planId && (
@@ -518,13 +518,13 @@ const CreateEmpresa = () => {
                         key={plan.id}
                         onClick={() => handlePlanSelect(plan.id)}
                         className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 ${active
-                          ? 'bg-violet-50 ring-2 shadow-[0_2px_20px_rgba(117,81,255,0.12)]'
-                          : 'border border-slate-200 hover:border-slate-300 bg-white'
+                          ? 'bg-violet-50 dark:bg-violet-900/20 ring-2 shadow-[0_2px_20px_rgba(117,81,255,0.12)]'
+                          : 'border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                         }`}
                         style={active ? { ['--tw-ring-color' as any]: ACCENT } : undefined}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-slate-800">{plan.nombre}</span>
+                          <span className="font-bold text-slate-800 dark:text-white">{plan.nombre}</span>
                           {active && (
                             <Icon icon="solar:check-circle-bold" className="text-lg" style={{ color: ACCENT }} />
                           )}
@@ -536,16 +536,16 @@ const CreateEmpresa = () => {
                             <span className="text-xs text-slate-400 ml-1 font-normal">/ {plan.tipoFacturacion.toLowerCase()}</span>
                           )}
                         </div>
-                        <div className="flex justify-between text-xs text-slate-500 mt-1 font-medium">
+                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
                           {plan.limiteUsuarios && <span>Usuarios: {plan.limiteUsuarios}</span>}
                           {plan.duracionDias && <span>{plan.duracionDias} días</span>}
                         </div>
-                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
-                          {plan.tieneTienda && <div className="flex items-center text-xs text-slate-600"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Tienda Virtual</div>}
-                          {plan.tieneCulqi && <div className="flex items-center text-xs text-slate-600"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Pagos con Culqi</div>}
-                          {plan.tieneDeliveryGPS && <div className="flex items-center text-xs text-slate-600"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Delivery con GPS</div>}
-                          {plan.tieneGaleria && <div className="flex items-center text-xs text-slate-600"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Galería de Imágenes</div>}
-                          {plan.tieneBanners && <div className="flex items-center text-xs text-slate-600"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Banners Promocionales</div>}
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1">
+                          {plan.tieneTienda && <div className="flex items-center text-xs text-slate-600 dark:text-slate-300"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Tienda Virtual</div>}
+                          {plan.tieneCulqi && <div className="flex items-center text-xs text-slate-600 dark:text-slate-300"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Pagos con Culqi</div>}
+                          {plan.tieneDeliveryGPS && <div className="flex items-center text-xs text-slate-600 dark:text-slate-300"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Delivery con GPS</div>}
+                          {plan.tieneGaleria && <div className="flex items-center text-xs text-slate-600 dark:text-slate-300"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Galería de Imágenes</div>}
+                          {plan.tieneBanners && <div className="flex items-center text-xs text-slate-600 dark:text-slate-300"><Icon icon="solar:check-circle-bold" className="text-emerald-500 mr-1.5" /> Banners Promocionales</div>}
                         </div>
                       </div>
                       );
@@ -555,15 +555,15 @@ const CreateEmpresa = () => {
 
                 {/* Versión prueba */}
                 <div className="md:col-span-2">
-                  <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-2xl border border-slate-200 hover:bg-slate-50 transition-colors">
+                  <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.esPrueba}
                       onChange={handleEsPruebaChange}
-                      className="w-5 h-5 rounded accent-violet-600 border-slate-300 bg-white"
+                      className="w-5 h-5 rounded accent-violet-600 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
                     />
                     <div>
-                      <span className="text-sm font-semibold text-slate-700">Versión de prueba (sin costo)</span>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Versión de prueba (sin costo)</span>
                       <p className="text-xs text-slate-400 mt-0.5">Duración de 15 días. El cliente puede actualizar al plan completo en cualquier momento.</p>
                     </div>
                   </label>
@@ -576,10 +576,10 @@ const CreateEmpresa = () => {
                     type="file"
                     accept="image/*"
                     onChange={handleLogoChange}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                    className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 dark:file:bg-violet-900/30 file:text-violet-700 dark:file:text-violet-300 hover:file:bg-violet-100 dark:hover:file:bg-violet-900/50"
                   />
                   {logoPreview && (
-                    <img src={logoPreview} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-2xl border border-slate-200" />
+                    <img src={logoPreview} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-2xl border border-slate-200 dark:border-slate-700" />
                   )}
                 </div>
 
@@ -603,13 +603,13 @@ const CreateEmpresa = () => {
 
             {/* ── Integración SUNAT ── */}
             {formData.tipoEmpresa === 'FORMAL' && !formData.esPrueba && (
-              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+              <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="h-10 w-10 grid place-items-center rounded-2xl bg-blue-50 text-blue-600 shrink-0">
+                  <span className="h-10 w-10 grid place-items-center rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shrink-0">
                     <Icon icon="solar:document-bold-duotone" className="text-xl" />
                   </span>
-                  <h2 className="text-base font-bold text-slate-800">Integración SUNAT</h2>
-                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Opcional</span>
+                  <h2 className="text-base font-bold text-slate-800 dark:text-white">Integración SUNAT</h2>
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-full">Opcional</span>
                 </div>
                 <p className="text-sm text-slate-400 mb-4">
                   Credenciales del proveedor de facturación electrónica (QPSE). Puedes agregarlas después del registro desde la configuración de la empresa.
@@ -624,10 +624,10 @@ const CreateEmpresa = () => {
             {/* ── Administrador ── */}
             <div className={sectionClass(usuarioErrorCount > 0)}>
               <div className="flex items-center gap-3 mb-5">
-                <span className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 shrink-0">
+                <span className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 shrink-0">
                   <Icon icon="solar:user-bold-duotone" className="text-xl" />
                 </span>
-                <h2 className="text-base font-bold text-slate-800">
+                <h2 className="text-base font-bold text-slate-800 dark:text-white">
                   Administrador de la Empresa
                 </h2>
                 <SectionBadge count={usuarioErrorCount} />
@@ -712,7 +712,7 @@ const CreateEmpresa = () => {
                           <div key={i} className={`h-1 w-8 rounded-full transition-colors ${
                             formData.usuario.password.length >= i * 3
                               ? i <= 1 ? 'bg-rose-400' : i <= 2 ? 'bg-amber-400' : i <= 3 ? 'bg-blue-400' : 'bg-emerald-500'
-                              : 'bg-slate-100'
+                              : 'bg-slate-100 dark:bg-slate-700'
                           }`} />
                         ))}
                       </div>
@@ -732,7 +732,7 @@ const CreateEmpresa = () => {
               <button
                 type="button"
                 onClick={() => navigate('/administrador/empresas')}
-                className="h-11 px-5 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="h-11 px-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 Cancelar
               </button>

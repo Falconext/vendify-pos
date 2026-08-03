@@ -20,7 +20,7 @@ import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
 
 export default function ProductsView() {
     const navigate = useNavigate();
@@ -118,8 +118,21 @@ export default function ProductsView() {
             return CAT_PALETTE[Math.abs(h) % CAT_PALETTE.length];
         };
 
+        // Ordenamiento por stock (client-side, solo la lista mostrada de la tabla).
+        // Los servicios (sin stock real) se envían al final en ambas direcciones.
+        const tableSource = vm.stockSort
+            ? [...productsSource].sort((a: any, b: any) => {
+                const esServicioA = String(a?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+                const esServicioB = String(b?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+                if (esServicioA && !esServicioB) return 1;
+                if (!esServicioA && esServicioB) return -1;
+                const diff = Number(a?.stock || 0) - Number(b?.stock || 0);
+                return vm.stockSort === 'asc' ? diff : -diff;
+            })
+            : productsSource;
+
         // Prepare table data for TablaFerreteria
-        const productsTable = productsSource.map((item) => {
+        const productsTable = tableSource.map((item) => {
             const itemAny = item as any;
             const unidadNombre =
                 item?.unidadMedida?.nombre ||
@@ -365,6 +378,9 @@ export default function ProductsView() {
                         pages={vm.pages}
                         setcurrentPage={actions.setcurrentPage}
                         setitemsPerPage={actions.setitemsPerPage}
+                        onSort={(key) => { if (key === 'Stock') actions.toggleStockSort(); }}
+                        sortColumn={vm.stockSort ? 'Stock' : undefined}
+                        sortDirection={vm.stockSort ?? undefined}
                     />
                 );
         }
@@ -614,8 +630,25 @@ export default function ProductsView() {
                         </div>
                     </div>
                 </div>
-
                 <div className="p-3 sm:p-4">
+                    {vm.soloStockBajo && (
+                        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-rose-50 border border-rose-100 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600">
+                                <Icon icon="solar:box-minimalistic-bold-duotone" width={18} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-rose-700">Filtro de Stock Bajo Activo</p>
+                                <p className="text-xs text-rose-600/70">Mostrando productos con stock igual o menor al mínimo establecido.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => actions.setSoloStockBajo(false)}
+                                className="ml-4 p-1.5 hover:bg-rose-200/50 rounded-lg text-rose-500 transition-colors shrink-0"
+                            >
+                                <Icon icon="solar:close-circle-bold" width={20} />
+                            </button>
+                        </div>
+                    )}
                     <input
                         type="file"
                         accept="image/*"

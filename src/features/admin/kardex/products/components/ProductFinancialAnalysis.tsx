@@ -13,8 +13,13 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
 
     const precioUnitario = Number(formValues?.precioUnitario || 0);
     const costoUnitario = Number(formValues?.costoUnitario || 0);
-    const ganancia = precioUnitario - costoUnitario;
-    const margen = precioUnitario > 0 && costoUnitario > 0 ? (ganancia / precioUnitario) * 100 : 0;
+    // El precio de venta se digita CON IGV, pero el IGV no es ganancia (va a
+    // SUNAT): la rentabilidad se calcula sobre el valor de venta SIN IGV.
+    // Solo los productos gravados (afectación 10) llevan 18%.
+    const esGravado = String(formValues?.tipoAfectacionIGV ?? '10') === '10';
+    const precioSinIgv = esGravado ? precioUnitario / 1.18 : precioUnitario;
+    const ganancia = precioSinIgv - costoUnitario;
+    const margen = precioSinIgv > 0 && costoUnitario > 0 ? (ganancia / precioSinIgv) * 100 : 0;
 
     const stockParaProyeccion = isEdit && tipoAjusteStock !== 'ninguno'
         ? (tipoAjusteStock === 'reemplazar' ? cantidadAjuste
@@ -59,7 +64,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                         </div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {precioUnitario.toFixed(2)}</p>
-                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Precio</p>
+                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Precio{esGravado ? ` · sin IGV S/ ${precioSinIgv.toFixed(2)}` : ''}</p>
                     </div>
 
                     {/* Costo */}
@@ -94,7 +99,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
             </div>
 
             {/* Proyección con stock */}
-            {stockParaProyeccion > 0 && precioUnitario > 0 && costoUnitario > 0 && (
+            {stockParaProyeccion > 0 && precioSinIgv > 0 && costoUnitario > 0 && (
                 <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3 mt-auto">
                     <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Icon icon="solar:layers-bold" width={10} />
@@ -102,8 +107,8 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div className="text-center">
-                            <p className="text-xs font-bold text-gray-700 dark:text-gray-200">S/ {(precioUnitario * stockParaProyeccion).toFixed(2)}</p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Venta</p>
+                            <p className="text-xs font-bold text-gray-700 dark:text-gray-200">S/ {(precioSinIgv * stockParaProyeccion).toFixed(2)}</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">Venta (sin IGV)</p>
                         </div>
                         <div className="text-center border-x border-blue-100/50 dark:border-blue-900/30">
                             <p className="text-xs font-bold text-red-500 dark:text-red-400">S/ {(costoUnitario * stockParaProyeccion).toFixed(2)}</p>
