@@ -388,7 +388,8 @@ export const useFacturacionViewModel = () => {
     const [fechaVencimientoCredito, setFechaVencimientoCredito] = useState<string>('')
     const [errors, setErrors] = useState({ observaciones: "" });
     const [errorsProduct, setErrorsProduct] = useState({ codigo: "", descripcion: "", categoriaId: 0, description: "", precioUnitario: "", stock: "", unidadMedida: "" });
-    const [errorsClient, setErrorsClient] = useState({ nombre: "", nroDoc: "", direccion: "", departamento: "", distrito: "", provincia: "", ubigeo: "", email: "", telefono: "", estado: "", tipoDocumentoId: 0, empresaId: 0 });
+    const initialErrorsClient = { nombre: "", nroDoc: "", direccion: "", departamento: "", distrito: "", provincia: "", ubigeo: "", email: "", telefono: "", estado: "", tipoDocumentoId: 0, empresaId: 0 };
+    const [errorsClient, setErrorsClient] = useState(initialErrorsClient);
 
     // DETRACCION STATES
     const [tiposOperacion, setTiposOperacion] = useState<any[]>([]);
@@ -408,6 +409,9 @@ export const useFacturacionViewModel = () => {
     const [retencionData, setRetencionData] = useState<any>(null);
 
     const [isOpenModalClient, setIsOpenModalClient] = useState<boolean>(false);
+    const [isOpenClientLookupConfirm, setIsOpenClientLookupConfirm] = useState(false);
+    const [pendingClientLookup, setPendingClientLookup] = useState<any>(null);
+    const [clientLookupConfirmLoading, setClientLookupConfirmLoading] = useState(false);
     const [isOpenModalProduct, setIsOpenModalProduct] = useState<boolean>(false);
     const [editingIndex, setEditingIndex] = useState<number>(-1);
 
@@ -1626,13 +1630,16 @@ export const useFacturacionViewModel = () => {
             }
             // 2) Consultar padrón y crear automáticamente
             const info: any = await getClientFromDoc(doc, tipo);
-            if (!info) return false;
+            if (!info) {
+                useAlertStore.getState().alert('No encontramos información para ese documento', 'warning');
+                return false;
+            }
             const nombre = info.nombre_completo || info.nombre_o_razon_social || '';
             if (!nombre) {
                 useAlertStore.getState().alert('El padrón no devolvió el nombre; regístralo manualmente', 'warning');
                 return false;
             }
-            const creado: any = await addClients({
+            setPendingClientLookup({
                 tipoDoc: tipo,
                 nroDoc: doc,
                 nombre,
@@ -1644,10 +1651,7 @@ export const useFacturacionViewModel = () => {
                 persona: 'CLIENTE',
                 estado: 'ACTIVO',
             } as any);
-            if (creado) {
-                handleClienteCreado({ ...creado, nroDoc: doc, nombre });
-                return true;
-            }
+            setIsOpenClientLookupConfirm(true);
             return false;
         } finally {
             setClienteDocLookupLoading(false);
@@ -1656,6 +1660,11 @@ export const useFacturacionViewModel = () => {
 
     // Al crear un cliente nuevo desde "Configurar venta", queda auto-seleccionado
     // (sin tener que buscarlo). Funciona igual para DNI o RUC.
+    const openClientModal = () => {
+        setFormValuesClient({ ...initialFormClient });
+        setErrorsClient({ ...initialErrorsClient });
+        setIsOpenModalClient(true);
+    };
     const handleClienteCreado = (client: any) => {
         if (!client) return;
         setSelectedClient(client);
@@ -1665,6 +1674,32 @@ export const useFacturacionViewModel = () => {
             clienteId: Number(client.id) || 0,
             clienteNombre: `${client.nroDoc}-${client.nombre}`,
         }));
+    };
+
+    const handleConfirmPendingClientLookup = async () => {
+        if (!pendingClientLookup || clientLookupConfirmLoading) return false;
+        setClientLookupConfirmLoading(true);
+        try {
+            const creado: any = await addClients({
+                ...pendingClientLookup,
+                estado: 'ACTIVO',
+            } as any);
+            if (creado) {
+                handleClienteCreado({ ...creado, ...pendingClientLookup });
+                setPendingClientLookup(null);
+                setIsOpenClientLookupConfirm(false);
+                return true;
+            }
+            useAlertStore.getState().alert('No se pudo guardar el cliente', 'error');
+            return false;
+        } finally {
+            setClientLookupConfirmLoading(false);
+        }
+    };
+
+    const handleCancelPendingClientLookup = () => {
+        setPendingClientLookup(null);
+        setIsOpenClientLookupConfirm(false);
     };
 
     const handleDeleteProduct = (row: any) => {
@@ -2332,6 +2367,12 @@ export const useFacturacionViewModel = () => {
 
         // Modal triggers
         isOpenModalClient, setIsOpenModalClient,
+        openClientModal,
+        isOpenClientLookupConfirm,
+        pendingClientLookup,
+        clientLookupConfirmLoading,
+        handleConfirmPendingClientLookup,
+        handleCancelPendingClientLookup,
         isOpenModalProduct, setIsOpenModalProduct,
         isModalDetraccionOpen, setIsModalDetraccionOpen,
         isModalCuotasOpen, setIsModalCuotasOpen,

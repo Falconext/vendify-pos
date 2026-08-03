@@ -381,10 +381,10 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -32, scale: 0.985 }}
                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="flex flex-col"
+                        className="flex flex-col flex-1 min-h-0"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-white/10">
+                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-white/10 shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-violet-500/30">
                                     <Icon icon="solar:card-send-bold" width={18} />
@@ -400,7 +400,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         </div>
 
                         {/* Body: split */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 overflow-y-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 overflow-y-auto flex-1 min-h-0">
                             {/* IZQUIERDA: métodos de pago */}
                             <div className="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/10">
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Método de pago</h4>

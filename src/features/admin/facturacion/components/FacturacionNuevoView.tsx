@@ -10,6 +10,7 @@ import { POSCalculations } from "./POSCalculations";
 
 import ModalProduct from "@/pages/admin/inventario/modal-productos";
 import ModalClient from "@/features/admin/clients/shared/ModalClient";
+import ModalConfirm from "@/components/ModalConfirm";
 import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
 import ModalEditLineItem from "@/pages/admin/facturacion/ModalEditLineItem";
 import ModalDetraccion from "@/pages/admin/facturacion/ModalDetraccion";
@@ -42,6 +43,7 @@ export const FacturacionNuevoView = () => {
     const selectedClientLabel = vm.selectedClient?.nombre || vm.formValues?.clienteNombre || 'Cliente por definir';
     const [clienteSearchTerm, setClienteSearchTerm] = useState('');
     const [clienteSearchOpen, setClienteSearchOpen] = useState(false);
+    const lastSelectedClientIdRef = useRef<number | null>(null);
     const normalizeSearch = (value: string) =>
         String(value || '')
             .toLowerCase()
@@ -74,11 +76,12 @@ export const FacturacionNuevoView = () => {
         }
     }, [clienteSearchOpen, selectedClientLabel]);
     useEffect(() => {
-        const query = normalizeSearch(clienteSearchTerm);
-        if (query.length >= 3) {
-            vm.handleGetDataClient(query, () => {});
-        }
-    }, [clienteSearchTerm, vm.handleGetDataClient]);
+        const currentId = vm.selectedClient?.id ? Number(vm.selectedClient.id) : null;
+        if (!currentId || currentId === lastSelectedClientIdRef.current) return;
+        lastSelectedClientIdRef.current = currentId;
+        setClienteSearchOpen(false);
+        setClienteSearchTerm(selectedClientLabel);
+    }, [selectedClientLabel, vm.selectedClient?.id]);
     const handleSelectClienteSuggestion = (client: any) => {
         if (!client) return;
         vm.handleClienteCreado(client);
@@ -314,7 +317,7 @@ export const FacturacionNuevoView = () => {
                                 <div className="min-w-0 flex-1 relative">
                                     <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Cliente</p>
                                     <input
-                                        value={clienteSearchTerm}
+                                        value={clienteSearchOpen ? clienteSearchTerm : selectedClientLabel}
                                         onFocus={() => {
                                             setClienteSearchOpen(true);
                                             if (clienteSearchTerm === selectedClientLabel) {
@@ -368,16 +371,8 @@ export const FacturacionNuevoView = () => {
                             <div className="flex shrink-0 items-center gap-1.5">
                                 <button
                                     type="button"
-                                    onClick={() => void submitClienteDoc()}
-                                    disabled={vm.clienteDocLookupLoading}
-                                    title="Buscar por documento o nombre (Enter)"
-                                    className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
-                                >
-                                    Buscar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => vm.setIsOpenModalClient(true)}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => vm.openClientModal()}
                                     title="Agregar cliente"
                                     className="grid h-7 w-7 place-items-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:text-violet-600 dark:bg-slate-800 dark:ring-slate-700"
                                 >
@@ -478,6 +473,25 @@ export const FacturacionNuevoView = () => {
                     closeModal={vm.closeModal}
                     onCreated={vm.handleClienteCreado}
                 />
+            )}
+
+            {vm.isOpenClientLookupConfirm && vm.pendingClientLookup && (
+                <ModalConfirm
+                    isOpenModal={vm.isOpenClientLookupConfirm}
+                    setIsOpenModal={(open) => {
+                        if (!open) vm.handleCancelPendingClientLookup();
+                    }}
+                    confirmSubmit={vm.handleConfirmPendingClientLookup}
+                    title="Cliente no encontrado"
+                    information={`No encontramos ${vm.pendingClientLookup.nroDoc} en el sistema. ¿Quieres agregarlo ahora para usarlo en este comprobante y guardarlo para después?`}
+                    confirmText="Agregar cliente"
+                    confirmLoading={vm.clientLookupConfirmLoading}
+                >
+                    <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <p className="font-semibold text-slate-900 dark:text-white">{vm.pendingClientLookup.nombre}</p>
+                        <p>{vm.pendingClientLookup.nroDoc}</p>
+                    </div>
+                </ModalConfirm>
             )}
 
             {vm.editingIndex !== -1 && (
