@@ -262,26 +262,6 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                 </div>
             )}
 
-            {/* Cliente */}
-            {vm.formValues?.comprobante !== "NOTA DE CREDITO" && vm.formValues?.comprobante !== "NOTA DE DEBITO" && (
-                <div className="mt-2 flex gap-2 justify-between items-center">
-                    <div className="flex-1">
-                        <Select
-                            handleGetData={vm.handleGetDataClient}
-                            value={vm.formValues?.clienteNombre}
-                            isSearch options={vm.clients?.map((item: any) => ({ id: item?.id, value: `${item?.nroDoc}-${item.nombre}` }))}
-                            id="clienteId" name="clienteNombre"
-                            error=""
-                            onChange={vm.handleChangeSelect}
-                            label="Cliente" isIcon icon="solar:user-linear"
-                        />
-                    </div>
-                    <button onClick={() => vm.setIsOpenModalClient(true)} className="px-4 py-3 relative top-2 bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl hover:bg-gray-200 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-700 transition-colors shadow-sm">
-                        <Icon icon="solar:user-plus-bold" className="text-xl" />
-                    </button>
-                </div>
-            )}
-
             {/* Fecha de Emisión retroactiva */}
             {vm.fechaEmisionDiasAtras > 0 && !vm.isQuotationRoute && (
                 <div className="mt-2">

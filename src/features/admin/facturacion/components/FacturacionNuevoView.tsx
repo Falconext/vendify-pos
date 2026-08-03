@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useReactToPrint } from "react-to-print";
 import { Icon } from "@iconify/react";
 import { useLocation } from "react-router-dom";
@@ -38,13 +38,75 @@ export const FacturacionNuevoView = () => {
         setPosLayout(l);
         localStorage.setItem('POS_LAYOUT', l);
     };
-    // Input rápido de cliente: DNI/RUC + Enter → busca/crea y setea el cliente
-    const [clienteDocInput, setClienteDocInput] = useState('');
-    const [editingClienteDoc, setEditingClienteDoc] = useState(false);
+    const [clienteSearchTerm, setClienteSearchTerm] = useState('');
+    const [clienteSearchOpen, setClienteSearchOpen] = useState(false);
+    const normalizeSearch = (value: string) =>
+        String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    const clienteSearchResults = useMemo(() => {
+        const query = normalizeSearch(clienteSearchTerm);
+        if (query.length < 3) return [];
+        const compactQuery = query.replace(/[^a-z0-9]/g, '');
+        const items = Array.isArray(vm.clients) ? vm.clients : [];
+        return items.filter((client: any) => {
+            const fullName = normalizeSearch([
+                client?.nombre,
+                client?.apellidoPaterno,
+                client?.apellidoMaterno,
+                client?.razonSocial,
+            ].filter(Boolean).join(' '));
+            const doc = String(client?.nroDoc || '').replace(/\D/g, '');
+            return (
+                fullName.includes(query)
+                || doc.includes(compactQuery)
+                || normalizeSearch(client?.nroDoc).includes(query)
+            );
+        }).slice(0, 6);
+    }, [clienteSearchTerm, vm.clients]);
+    useEffect(() => {
+        if (!clienteSearchOpen) {
+            setClienteSearchTerm(selectedClientLabel);
+        }
+    }, [clienteSearchOpen, selectedClientLabel]);
+    useEffect(() => {
+        const query = normalizeSearch(clienteSearchTerm);
+        if (query.length >= 3) {
+            vm.handleGetDataClient(query, () => {});
+        }
+    }, [clienteSearchTerm, vm.handleGetDataClient]);
+    const handleSelectClienteSuggestion = (client: any) => {
+        if (!client) return;
+        vm.handleClienteCreado(client);
+        setClienteSearchTerm(`${client.nroDoc}-${client.nombre}`);
+        setClienteSearchOpen(false);
+    };
     const submitClienteDoc = async () => {
-        if (!clienteDocInput.trim() || vm.clienteDocLookupLoading) return;
-        const ok = await vm.handleClienteDocLookup(clienteDocInput);
-        if (ok) { setClienteDocInput(''); setEditingClienteDoc(false); }
+        const query = clienteSearchTerm.trim();
+        if (!query || vm.clienteDocLookupLoading) return;
+        const ok = await vm.handleClienteDocLookup(query);
+        if (ok) {
+            setClienteSearchOpen(false);
+        }
+    };
+    const handleClienteSearchKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const raw = normalizeSearch(clienteSearchTerm);
+        const digits = raw.replace(/\D/g, '');
+        if (digits.length === 8 || digits.length === 11) {
+            await submitClienteDoc();
+            return;
+        }
+        if (clienteSearchResults.length === 1) {
+            handleSelectClienteSuggestion(clienteSearchResults[0]);
+            return;
+        }
+        if (clienteSearchResults.length > 1) {
+            handleSelectClienteSuggestion(clienteSearchResults[0]);
+        }
     };
     const printSizes = useMemo(() => new Set(['A4', 'A5', 'TICKET']), []);
 
@@ -250,51 +312,77 @@ export const FacturacionNuevoView = () => {
                                 <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300">
                                     <Icon icon={vm.clienteDocLookupLoading ? 'svg-spinners:180-ring' : 'solar:user-linear'} className="text-base" />
                                 </div>
-                                <div className="min-w-0 flex-1">
+                                <div className="min-w-0 flex-1 relative">
                                     <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Cliente</p>
-                                    {(editingClienteDoc || !vm.selectedClient) ? (
-                                        <input
-                                            value={clienteDocInput}
-                                            onChange={(e) => setClienteDocInput(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitClienteDoc(); } }}
-                                            inputMode="numeric"
-                                            autoFocus={editingClienteDoc}
-                                            disabled={vm.clienteDocLookupLoading}
-                                            placeholder="DNI o RUC + Enter"
-                                            className="w-full bg-transparent text-sm font-extrabold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 dark:text-slate-100"
-                                        />
-                                    ) : (
-                                        <p className="truncate text-sm font-extrabold text-slate-800 dark:text-slate-100">{selectedClientLabel}</p>
+                                    <input
+                                        value={clienteSearchTerm}
+                                        onFocus={() => {
+                                            setClienteSearchOpen(true);
+                                            if (clienteSearchTerm === selectedClientLabel) {
+                                                setClienteSearchTerm('');
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            window.setTimeout(() => setClienteSearchOpen(false), 120);
+                                        }}
+                                        onChange={(e) => {
+                                            const next = e.target.value;
+                                            setClienteSearchTerm(next);
+                                            setClienteSearchOpen(true);
+                                            if (next.trim().length >= 3) {
+                                                vm.handleGetDataClient(next.trim(), () => {});
+                                            }
+                                        }}
+                                        onKeyDown={handleClienteSearchKeyDown}
+                                        inputMode="search"
+                                        disabled={vm.clienteDocLookupLoading}
+                                        placeholder="DNI, RUC o nombre"
+                                        className="w-full bg-transparent text-sm font-extrabold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 dark:text-slate-100"
+                                    />
+                                    {clienteSearchOpen && clienteSearchTerm.trim().length >= 3 && clienteSearchResults.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                                            {clienteSearchResults.map((client: any) => (
+                                                <button
+                                                    key={client.id}
+                                                    type="button"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => handleSelectClienteSuggestion(client)}
+                                                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                                            {client?.nombre || client?.razonSocial || 'Cliente'}
+                                                        </p>
+                                                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                                                            {client?.nroDoc || '-'}
+                                                        </p>
+                                                    </div>
+                                                    <span className="shrink-0 text-[10px] font-black uppercase text-violet-600 dark:text-violet-400">
+                                                        Elegir
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1.5">
-                                {(editingClienteDoc || !vm.selectedClient) ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => void submitClienteDoc()}
-                                        disabled={vm.clienteDocLookupLoading}
-                                        title="Buscar por documento (Enter)"
-                                        className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
-                                    >
-                                        Buscar
-                                    </button>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setEditingClienteDoc(true); setClienteDocInput(''); }}
-                                        className="rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-violet-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-violet-50 dark:bg-slate-800 dark:ring-slate-700"
-                                    >
-                                        Cambiar
-                                    </button>
-                                )}
                                 <button
                                     type="button"
-                                    onClick={() => setIsSaleConfigOpen(true)}
-                                    title="Buscar por nombre o crear cliente"
+                                    onClick={() => void submitClienteDoc()}
+                                    disabled={vm.clienteDocLookupLoading}
+                                    title="Buscar por documento o nombre (Enter)"
+                                    className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+                                >
+                                    Buscar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => vm.setIsOpenModalClient(true)}
+                                    title="Agregar cliente"
                                     className="grid h-7 w-7 place-items-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:text-violet-600 dark:bg-slate-800 dark:ring-slate-700"
                                 >
-                                    <Icon icon="solar:magnifer-linear" className="text-sm" />
+                                    <Icon icon="solar:user-plus-bold" className="text-sm" />
                                 </button>
                             </div>
                         </div>
