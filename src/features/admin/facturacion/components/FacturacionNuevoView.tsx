@@ -38,6 +38,8 @@ export const FacturacionNuevoView = () => {
         setPosLayout(l);
         localStorage.setItem('POS_LAYOUT', l);
     };
+    const documentLabel = vm.formValues?.comprobante || 'Seleccionar comprobante';
+    const selectedClientLabel = vm.selectedClient?.nombre || vm.formValues?.clienteNombre || 'Cliente por definir';
     const [clienteSearchTerm, setClienteSearchTerm] = useState('');
     const [clienteSearchOpen, setClienteSearchOpen] = useState(false);
     const normalizeSearch = (value: string) =>
@@ -146,9 +148,6 @@ export const FacturacionNuevoView = () => {
         vm.handleChangeSelect(option.id, option.value, 'comprobante', 'tipoDoc');
         setIsComprobanteModalOpen(false);
     };
-
-    const documentLabel = vm.formValues?.comprobante || 'Seleccionar comprobante';
-    const selectedClientLabel = vm.selectedClient?.nombre || vm.formValues?.clienteNombre || 'Cliente por definir';
 
     const isCreditSale = String(vm.formValues?.medioPago || '')
         .normalize('NFD')
