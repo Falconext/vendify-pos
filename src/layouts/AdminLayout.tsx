@@ -335,7 +335,7 @@ export default function AdminLayout() {
 
   return (
     <motion.div
-      className="flex overflow-hidden bg-[#F0F2FA] transition-all duration-300"
+      className="flex overflow-hidden bg-[#F0F2FA] dark:bg-slate-950 transition-all duration-300"
       style={{
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         zoom: String(ZOOM_OPTIONS[zoomLevel]?.zoom ?? 1),
@@ -807,7 +807,7 @@ export default function AdminLayout() {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 type="button"
-                className={`flex items-center gap-2.5 rounded-2xl outline-none focus:outline-none pl-1.5 pr-2.5 py-1.5 transition-all border ${isUserMenuOpen ? 'border-[#7551FF]/30 bg-[#7551FF]/[0.06]' : 'border-slate-200/60 bg-slate-100/50 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'}`}
+                className={`flex items-center gap-2.5 rounded-2xl outline-none focus:outline-none pl-1.5 pr-2.5 py-1.5 transition-all border ${isUserMenuOpen ? 'border-[#7551FF]/30 bg-[#7551FF]/[0.06] dark:bg-[#7551FF]/20' : 'border-slate-200/60 bg-slate-100/50 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'}`}
                 onClick={() => setIsUserMenuOpen((p) => !p)}
                 aria-haspopup="menu"
                 aria-expanded={isUserMenuOpen}

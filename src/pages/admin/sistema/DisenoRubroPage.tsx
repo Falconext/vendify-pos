@@ -78,13 +78,13 @@ const TIPOGRAFIAS = [
 const ACCENT = 'var(--accent, #7551FF)';
 
 const ColorPicker = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
     <label className="relative cursor-pointer flex-shrink-0">
       <input type="color" value={value} onChange={e => onChange(e.target.value)} className="sr-only" />
-      <div className="w-9 h-9 rounded-xl shadow-inner border-2 border-white ring-1 ring-slate-200" style={{ background: value }} />
+      <div className="w-9 h-9 rounded-xl shadow-inner border-2 border-white dark:border-slate-700 ring-1 ring-slate-200 dark:ring-slate-600" style={{ background: value }} />
     </label>
     <div className="min-w-0">
-      <p className="text-xs font-semibold text-slate-600">{label}</p>
+      <p className="text-xs font-semibold text-slate-600 dark:text-gray-300">{label}</p>
       <p className="text-xs font-mono text-slate-400">{value}</p>
     </div>
   </div>
@@ -371,14 +371,14 @@ export default function DisenoRubroPage() {
   const plantillasActuales = (form.plantillaId ?? 'moderna').split(',').filter(Boolean) as PlantillaId[];
   if (loading) {
     return (
-      <div className="-m-5 p-5 bg-[#F7F8FB] font-jakarta min-h-[calc(100vh-64px)] flex items-center justify-center" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)] flex items-center justify-center" style={{ ['--accent' as any]: ACCENT }}>
         <Icon icon="svg-spinners:ring-resize" className="text-3xl" style={{ color: ACCENT }} />
       </div>
     );
   }
 
   return (
-    <div className="-m-5 p-5 bg-[#F7F8FB] font-jakarta min-h-[calc(100vh-64px)]" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)]" style={{ ['--accent' as any]: ACCENT }}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -391,15 +391,15 @@ export default function DisenoRubroPage() {
 
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Diseño por Rubro</h1>
+        <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Diseño por Rubro</h1>
         <p className="text-sm text-slate-400 mt-0.5">Configura plantillas, colores y tipografías para cada rubro de negocio.</p>
       </div>
 
       <div className="flex gap-4 h-[calc(100vh-190px)] min-h-[520px]">
       {/* ── Rubros sidebar ── */}
-      <div className="w-64 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-y-auto flex-shrink-0">
-        <div className="p-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 className="text-sm font-extrabold text-slate-800">Rubros</h2>
+      <div className="w-64 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-y-auto flex-shrink-0">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#111827] z-10">
+          <h2 className="text-sm font-extrabold text-slate-800 dark:text-white">Rubros</h2>
           <p className="text-xs text-slate-400 mt-0.5">{rubros.length} rubros disponibles</p>
         </div>
         <div className="p-2 space-y-1">
@@ -412,7 +412,7 @@ export default function DisenoRubroPage() {
               <button
                 key={rubro.id}
                 onClick={() => abrirRubro(rubro)}
-                className={`w-full text-left px-3 py-2.5 rounded-2xl transition-all flex items-center gap-3 border ${isActive ? 'bg-violet-50 border-violet-200' : 'hover:bg-slate-50 border-transparent'}`}
+                className={`w-full text-left px-3 py-2.5 rounded-2xl transition-all flex items-center gap-3 border ${isActive ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent'}`}
               >
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -421,7 +421,7 @@ export default function DisenoRubroPage() {
                   <Icon icon={plantilla?.icon ?? 'solar:shop-2-bold'} className="text-sm" style={{ color: d?.colorPrimario ?? ACCENT }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-semibold capitalize truncate ${isActive ? 'text-[var(--accent)]' : 'text-slate-700'}`}>{rubro.nombre}</p>
+                  <p className={`text-sm font-semibold capitalize truncate ${isActive ? 'text-[var(--accent)]' : 'text-slate-700 dark:text-gray-200'}`}>{rubro.nombre}</p>
                   <p className="text-xs text-slate-400">{rubro._count?.empresas ?? 0} negocios</p>
                 </div>
                 {d && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />}
@@ -433,10 +433,10 @@ export default function DisenoRubroPage() {
 
       {/* ── Main area ── */}
       {!selected ? (
-        <div className="flex-1 flex items-center justify-center text-center p-8 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="flex-1 flex items-center justify-center text-center p-8 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
           <div>
-            <Icon icon="solar:palette-linear" className="text-slate-200 text-6xl mb-4 mx-auto" />
-            <p className="font-semibold text-slate-500">Selecciona un rubro para diseñar su tienda</p>
+            <Icon icon="solar:palette-linear" className="text-slate-200 dark:text-slate-700 text-6xl mb-4 mx-auto" />
+            <p className="font-semibold text-slate-500 dark:text-gray-400">Selecciona un rubro para diseñar su tienda</p>
             <p className="text-sm text-slate-400 mt-1">Los cambios aplican a todas las tiendas de ese rubro</p>
           </div>
         </div>
@@ -444,14 +444,14 @@ export default function DisenoRubroPage() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* ── Config panel ── */}
-          <div className="flex-1 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-y-auto flex flex-col">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0 sticky top-0 bg-white z-10">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0 sticky top-0 bg-white dark:bg-[#111827] z-10">
               <div>
-                <h2 className="font-extrabold text-slate-800 capitalize text-base">{rubroSeleccionado?.nombre}</h2>
+                <h2 className="font-extrabold text-slate-800 dark:text-white capitalize text-base">{rubroSeleccionado?.nombre}</h2>
                 <p className="text-xs text-slate-400">{rubroSeleccionado?._count?.empresas ?? 0} negocios</p>
               </div>
-              <button onClick={() => setSelected(null)} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+              <button onClick={() => setSelected(null)} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <Icon icon="solar:close-circle-linear" className="text-lg" />
               </button>
             </div>
@@ -482,7 +482,7 @@ export default function DisenoRubroPage() {
                           }
                           return { ...f, plantillaId: nuevas.join(',') };
                         })}
-                        className={`relative text-left p-4 rounded-2xl border-2 transition-all group ${isOn ? 'border-[var(--accent)] bg-violet-50/60 shadow-sm' : 'border-slate-100 hover:border-slate-200 bg-white'}`}
+                        className={`relative text-left p-4 rounded-2xl border-2 transition-all group ${isOn ? 'border-[var(--accent)] bg-violet-50/60 dark:bg-violet-900/20 shadow-sm' : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 bg-white dark:bg-slate-800'}`}
                       >
                         {isOn && (
                           <span className="absolute top-3 right-3">
@@ -492,10 +492,10 @@ export default function DisenoRubroPage() {
                         <div className="w-12 h-12 rounded-2xl mb-3 flex items-center justify-center" style={{ backgroundColor: plantilla.accentColor + '18' }}>
                           <Icon icon={plantilla.icon} className="text-2xl" style={{ color: plantilla.accentColor }} />
                         </div>
-                        <p className="text-sm font-bold text-slate-800">{plantilla.label}</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{plantilla.label}</p>
                         <p className="text-xs text-slate-400 mt-1 line-clamp-3 mb-6">{plantilla.description}</p>
                         {isPremium && (
-                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-amber-600">
+                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/20 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-amber-600 dark:text-amber-400">
                             <Icon icon="solar:crown-bold" className="text-xs" />
                             S/ {Number(plantilla.precioSoles || 0).toFixed(2)}
                           </span>
@@ -504,7 +504,7 @@ export default function DisenoRubroPage() {
                         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
                           <span
                             title="Vista previa"
-                            className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1.5 text-[10px] font-bold text-slate-600 transition-colors hover:bg-slate-200"
+                            className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 px-2 py-1.5 text-[10px] font-bold text-slate-600 dark:text-gray-300 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"
                             onClick={(e) => {
                               e.stopPropagation();
                               abrirPreviewCompleto(plantilla.id);
@@ -515,7 +515,7 @@ export default function DisenoRubroPage() {
                           </span>
                           <span
                             title="Configurar"
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDrawerPlantillaId(plantilla.id);
@@ -523,7 +523,7 @@ export default function DisenoRubroPage() {
                               setDrawerOpen(true);
                             }}
                           >
-                            <Icon icon="solar:settings-bold-duotone" className="text-slate-600 text-sm" />
+                            <Icon icon="solar:settings-bold-duotone" className="text-slate-600 dark:text-gray-300 text-sm" />
                           </span>
                         </div>
                       </button>
@@ -533,9 +533,9 @@ export default function DisenoRubroPage() {
               </div>
 
               {/* Guardar asignación de plantillas al rubro */}
-              <div className="sticky bottom-0 -mx-5 px-5 py-4 bg-white/90 backdrop-blur border-t border-slate-100 flex items-center justify-between">
+              <div className="sticky bottom-0 -mx-5 px-5 py-4 bg-white/90 dark:bg-[#111827]/90 backdrop-blur border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <p className="text-xs text-slate-400">
-                  {plantillasActuales.length} plantilla{plantillasActuales.length === 1 ? '' : 's'} habilitada{plantillasActuales.length === 1 ? '' : 's'} para <span className="font-semibold capitalize text-slate-600">{rubroSeleccionado?.nombre}</span>
+                  {plantillasActuales.length} plantilla{plantillasActuales.length === 1 ? '' : 's'} habilitada{plantillasActuales.length === 1 ? '' : 's'} para <span className="font-semibold capitalize text-slate-600 dark:text-gray-300">{rubroSeleccionado?.nombre}</span>
                 </p>
                 <button
                   onClick={guardar}

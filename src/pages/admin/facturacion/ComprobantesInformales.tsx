@@ -42,14 +42,14 @@ const ACCENT = 'var(--accent, #7551FF)';
 const estadoPill = (estado?: string) => {
     const e = String(estado ?? '').toUpperCase();
     if (['COMPLETADO', 'PAGADO', 'ACEPTADO', 'APROBADO'].includes(e))
-        return { label: 'Completado', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' };
+        return { label: 'Completado', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
     if (['PENDIENTE_PAGO', 'PENDIENTE', 'ENVIANDO', 'EN_PROCESO', 'PROCESANDO'].includes(e))
-        return { label: e === 'PENDIENTE_PAGO' ? 'Pend. pago' : 'En proceso', dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' };
+        return { label: e === 'PENDIENTE_PAGO' ? 'Pend. pago' : 'En proceso', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' };
     if (['ANULADO', 'BAJA'].includes(e))
-        return { label: 'Anulado', dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100' };
+        return { label: 'Anulado', dot: 'bg-slate-400', text: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
     if (['RECHAZADO', 'FALLIDO_ENVIO', 'ERROR', 'OBSERVADO'].includes(e))
-        return { label: 'Rechazado', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' };
-    return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Emitido', dot: 'bg-violet-500', text: 'text-violet-600', bg: 'bg-violet-50' };
+        return { label: 'Rechazado', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' };
+    return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Emitido', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' };
 };
 
 const hasDespachoCompleto = (item: IInvoices) => {
@@ -178,7 +178,7 @@ const ComprobantesInformales = () => {
             <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); setSelectedMenuRow({ ...rowBase, _item: item, despachoCompleto, despachoFecha }); }}
-                className="px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 flex items-center gap-1 hover:bg-slate-50 transition-colors"
+                className="px-2 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
                 <Icon icon="mdi:dots-vertical" width={18} height={18} />
             </button>
@@ -521,7 +521,7 @@ const ComprobantesInformales = () => {
     ].filter(Boolean).length;
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
             <ComprobantePrintPage
                 company={auth}
                 componentRef={componentRef}
@@ -557,7 +557,7 @@ const ComprobantesInformales = () => {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Notas de venta</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Notas de venta</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Historial de notas de pedido</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 shrink-0">
@@ -565,7 +565,7 @@ const ComprobantesInformales = () => {
                         type="button"
                         onClick={() => handleExportarResumen('pdf')}
                         disabled={exportando !== null}
-                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-500 flex items-center justify-center gap-1.5 hover:bg-rose-50 transition-all disabled:opacity-50"
+                        className="h-11 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-rose-500 dark:text-rose-400 flex items-center justify-center gap-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-50"
                     >
                         <Icon icon={exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" />
                         Exportar PDF
@@ -574,7 +574,7 @@ const ComprobantesInformales = () => {
                         type="button"
                         onClick={() => handleExportarResumen('excel')}
                         disabled={exportando !== null}
-                        className="h-11 px-4 rounded-2xl border border-emerald-200 bg-white text-sm font-bold text-emerald-600 flex items-center justify-center gap-1.5 hover:bg-emerald-50 transition-all disabled:opacity-50"
+                        className="h-11 px-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all disabled:opacity-50"
                     >
                         <Icon icon={exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
                         Exportar Excel
@@ -582,7 +582,7 @@ const ComprobantesInformales = () => {
                     <button
                         type="button"
                         onClick={() => setIsOpenModalImportarNV(true)}
-                        className="h-11 px-4 rounded-2xl border border-violet-200 bg-white text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-violet-50 transition-all"
+                        className="h-11 px-4 rounded-2xl border border-violet-200 dark:border-violet-900/50 bg-white dark:bg-slate-800 text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
                         style={{ color: ACCENT }}
                     >
                         <Icon icon="solar:import-bold-duotone" className="text-lg" />
@@ -601,16 +601,16 @@ const ComprobantesInformales = () => {
             </div>
 
             {/* Card contenedora */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
                 {/* Filtros */}
-                <div className="border-b border-slate-100 p-4 sm:p-5">
+                <div className="border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="h-9 w-9 rounded-xl bg-violet-50 text-violet-600 grid place-items-center shrink-0">
+                            <div className="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
                                 <Icon icon="solar:filter-bold-duotone" className="text-lg" />
                             </div>
                             <div className="min-w-0">
-                                <h3 className="font-bold text-slate-800 text-sm">Filtros</h3>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Filtros</h3>
                                 <p className="truncate text-xs text-slate-400 md:hidden">
                                     {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
                                 </p>
@@ -662,7 +662,7 @@ const ComprobantesInformales = () => {
                                 <select
                                     value={selectedUsuarioId ?? ''}
                                     onChange={handleSelectUsuario}
-                                    className="w-full h-11 px-3 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                                    className="w-full h-11 px-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
                                 >
                                     <option value="">Todos los vendedores</option>
                                     {vendedoresOptions.map((usuario) => (
@@ -685,39 +685,39 @@ const ComprobantesInformales = () => {
                             {productsTable.map((row: any) => {
                                 const pill = estadoPill(row.estado);
                                 return (
-                                    <article key={row.id} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                                    <article key={row.id} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
                                         <div className="mb-3 flex items-start justify-between gap-3">
                                             <div className="min-w-0">
                                                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{row.sede}</p>
                                                 <div className="mt-1 flex items-center gap-1.5">
-                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">{row.comprobante}</span>
-                                                    <span className="font-mono text-sm font-bold text-slate-800">{row.serie}-{row.correlativo}</span>
+                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">{row.comprobante}</span>
+                                                    <span className="font-mono text-sm font-bold text-slate-800 dark:text-white">{row.serie}-{row.correlativo}</span>
                                                 </div>
                                                 <p className="text-xs font-medium text-slate-400 mt-0.5">{row.fechaEmisión}</p>
                                             </div>
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); setSelectedMenuRow(row); }}
-                                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-700"
                                             >
                                                 <Icon icon="mdi:dots-vertical" width={20} height={20} />
                                             </button>
                                         </div>
 
-                                        <div className="mb-3 flex items-center gap-2.5 rounded-2xl bg-slate-50 p-3">
+                                        <div className="mb-3 flex items-center gap-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
                                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
                                                 {(row.client || 'C').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-slate-800">{row.client || 'Cliente no registrado'}</p>
+                                                <p className="truncate text-sm font-bold text-slate-800 dark:text-white">{row.client || 'Cliente no registrado'}</p>
                                                 <p className="truncate text-xs text-slate-400">{row.document || '-'} · {row.vendedor || 'Sin vendedor'}</p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3">
+                                        <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
                                             <div>
                                                 <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Importe</p>
-                                                <p className="text-sm font-extrabold text-slate-800">{row.total}</p>
+                                                <p className="text-sm font-extrabold text-slate-800 dark:text-white">{row.total}</p>
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Saldo</p>
@@ -739,7 +739,7 @@ const ComprobantesInformales = () => {
                         <div className="hidden overflow-x-auto md:block">
                             <table className="w-full text-left border-collapse min-w-[1100px]">
                                 <thead>
-                                    <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                                    <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                         <th className="py-3 pl-5 pr-3">Fecha</th>
                                         <th className="py-3 px-3">Sede</th>
                                         <th className="py-3 px-3">Serie</th>
@@ -759,26 +759,26 @@ const ComprobantesInformales = () => {
                                     {productsTable.map((row: any) => {
                                         const pill = estadoPill(row.estado);
                                         return (
-                                            <tr key={row.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                                                <td className="py-3 pl-5 pr-3 text-sm text-slate-500 whitespace-nowrap">{row.fechaEmisión}</td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[140px]">{row.sede}</td>
-                                                <td className="py-3 px-3 font-mono text-sm text-slate-600">{row.serie}</td>
-                                                <td className="py-3 px-3 font-mono text-sm text-slate-600">{row.correlativo}</td>
+                                            <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+                                                <td className="py-3 pl-5 pr-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{row.fechaEmisión}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{row.sede}</td>
+                                                <td className="py-3 px-3 font-mono text-sm text-slate-600 dark:text-slate-300">{row.serie}</td>
+                                                <td className="py-3 px-3 font-mono text-sm text-slate-600 dark:text-slate-300">{row.correlativo}</td>
                                                 <td className="py-3 px-3">
-                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600 whitespace-nowrap">{row.comprobante}</span>
+                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{row.comprobante}</span>
                                                 </td>
-                                                <td className="py-3 px-3 text-sm text-slate-500">{row.documentoAfiliado || '-'}</td>
-                                                <td className="py-3 px-3 text-sm text-slate-500">{row.document || '-'}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">{row.documentoAfiliado || '-'}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">{row.document || '-'}</td>
                                                 <td className="py-3 px-3">
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
                                                             {(row.client || 'C').charAt(0).toUpperCase()}
                                                         </div>
-                                                        <span className="font-semibold text-slate-700 text-sm truncate max-w-[160px]">{row.client || 'Cliente varios'}</span>
+                                                        <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[160px]">{row.client || 'Cliente varios'}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[140px]">{row.vendedor}</td>
-                                                <td className="py-3 px-3 font-bold text-slate-800 text-sm whitespace-nowrap">{row.total}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{row.vendedor}</td>
+                                                <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{row.total}</td>
                                                 <td className="py-3 px-3 font-bold text-amber-600 text-sm whitespace-nowrap">{row.saldo}</td>
                                                 <td className="py-3 px-3">
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${pill.bg} ${pill.text}`}>
@@ -789,7 +789,7 @@ const ComprobantesInformales = () => {
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); setSelectedMenuRow(row); }}
-                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50"
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
                                                     >
                                                         <Icon icon="mdi:dots-vertical" width={18} height={18} />
                                                     </button>
@@ -801,7 +801,7 @@ const ComprobantesInformales = () => {
                             </table>
                         </div>
 
-                        <div className="border-t border-slate-100 p-4">
+                        <div className="border-t border-slate-100 dark:border-slate-800 p-4">
                             <Pagination
                                 data={productsTable}
                                 optionSelect
@@ -817,8 +817,8 @@ const ComprobantesInformales = () => {
                     </>
                 ) : (
                     <div className="py-16 text-center">
-                        <Icon icon="solar:document-text-linear" className="text-5xl text-slate-200 mx-auto mb-3" />
-                        <p className="text-slate-500 text-sm font-semibold">No se encontraron comprobantes</p>
+                        <Icon icon="solar:document-text-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">No se encontraron comprobantes</p>
                         <p className="text-sm text-slate-400 mt-1">Ajusta los filtros o selecciona un rango de fechas diferente</p>
                     </div>
                 )}
@@ -880,9 +880,9 @@ const ComprobantesInformales = () => {
                     </div>
                     <div className="h-[80vh]">
                         {pdfUrl ? (
-                            <iframe src={pdfUrl} className="w-full h-full rounded-lg border" />
+                            <iframe src={pdfUrl} className="w-full h-full rounded-lg border dark:border-slate-700" />
                         ) : (
-                            <div className="text-center text-gray-500 text-sm">No hay PDF disponible</div>
+                            <div className="text-center text-gray-500 dark:text-gray-400 text-sm">No hay PDF disponible</div>
                         )}
                     </div>
                 </div>
@@ -922,68 +922,68 @@ const ComprobantesInformales = () => {
                     return (
                         <>
                             <button type="button" onClick={() => { setDetalleComprobanteId(row.id); handleCloseMenu(); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50">
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                 <Icon icon="solar:document-text-bold-duotone" width={16} height={16} />
                                 <span>Ver detalle</span>
                             </button>
                             <button type="button" onClick={() => { handleGetReceipt(row); handleCloseMenu(); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50">
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
                                 <Icon icon="mingcute:print-line" width={16} height={16} />
                                 <span>Imprimir</span>
                             </button>
                             <button type="button" disabled={!row.s3PdfUrl}
                                 onClick={() => { if (row.s3PdfUrl) { setPdfUrl(row.s3PdfUrl); setPdfName(`${row.serie}-${String(row.correlativo || '').padStart(8, '0')}.pdf`); setIsOpenModalPdf(true); } handleCloseMenu(); }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 ${row.s3PdfUrl ? 'text-slate-600' : 'text-slate-300 cursor-not-allowed'}`}>
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${row.s3PdfUrl ? 'text-slate-600 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'}`}>
                                 <Icon icon="mdi:file-pdf-box" width={16} height={16} />
                                 <span>Ver PDF</span>
                             </button>
                             <button type="button" onClick={() => { handleAbrirModal(row, 'email'); handleCloseMenu(); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50">
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
                                 <Icon icon="solar:letter-bold" width={16} height={16} />
                                 <span>Enviar Email</span>
                             </button>
                             <button type="button" onClick={() => { handleAbrirModal(row, 'whatsapp'); handleCloseMenu(); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50">
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
                                 <Icon icon="mdi:whatsapp" width={16} height={16} />
                                 <span>Enviar WhatsApp</span>
                             </button>
                             {row.despachoCompleto && (
                                 <button type="button" onClick={() => { navigate(`/administrador/ventas?fecha=${row.despachoFecha}&comprobanteId=${row.id}`); handleCloseMenu(); }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 hover:bg-indigo-50">
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                     <Icon icon="solar:delivery-bold-duotone" width={16} height={16} />
                                     <span>Ver despacho</span>
                                 </button>
                             )}
                             <>
-                                <div className="border-t border-slate-100 my-1" />
+                                <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
                                 {row.estadoEnvioSunat !== 'ANULADO' && (
                                     <button type="button" onClick={() => { handleAnular(row); handleCloseMenu(); }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50">
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                                         <Icon icon="mdi:cancel" width={16} height={16} />
                                         <span>Anular</span>
                                     </button>
                                 )}
                                 <button type="button" onClick={() => { handleEliminar(row); handleCloseMenu(); }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50">
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                                     <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} />
                                     <span>Eliminar</span>
                                 </button>
                             </>
                             {item?.comprobante === 'NOTA DE VENTA' && (
                                 <>
-                                    <div className="border-t border-slate-100 my-1" />
+                                    <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
                                     <button type="button" onClick={() => {
                                         const esRuc = item.cliente?.nroDoc?.length === 11;
                                         navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, cliente: esRuc ? item.cliente : null, clienteId: esRuc ? item.clienteId : null, observaciones: item.observaciones, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
                                         handleCloseMenu();
-                                    }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-600 hover:bg-blue-50">
+                                    }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                         <Icon icon="mdi:file-document-edit-outline" width={16} height={16} />
                                         <span>Convertir a Factura</span>
                                     </button>
                                     <button type="button" onClick={() => {
                                         navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'BOLETA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
                                         handleCloseMenu();
-                                    }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-violet-600 hover:bg-violet-50">
+                                    }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20">
                                         <Icon icon="mdi:receipt-outline" width={16} height={16} />
                                         <span>Hacer Boleta</span>
                                     </button>

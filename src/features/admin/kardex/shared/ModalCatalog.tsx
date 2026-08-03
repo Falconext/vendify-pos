@@ -168,12 +168,12 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                     type="checkbox"
                     checked={selectedIds.includes(p.id)}
                     onChange={() => toggleSelect(p.id)}
-                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-700 dark:bg-slate-900 focus:ring-blue-500 cursor-pointer"
                 />
             </div>
         ),
         'Imagen': (
-            <div className="flex items-center justify-center h-10 w-10 bg-gray-100 rounded overflow-hidden border border-gray-200">
+            <div className="flex items-center justify-center h-10 w-10 bg-gray-100 dark:bg-slate-800 rounded overflow-hidden border border-gray-200 dark:border-slate-700">
                 {p.imagenUrl ? (
                     <img
                         src={p.imagenUrl}
@@ -187,11 +187,11 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                 )}
             </div>
         ),
-        'Nombre': <span className="text-xs font-medium text-gray-900">{p.nombre}</span>,
-        'Descripción': <span className="text-xs text-gray-500 line-clamp-1" title={p.descripcion}>{p.descripcion}</span>,
-        'Precio': <span className="font-semibold text-gray-900 text-xs">S/ {Number(p.precioSugerido).toFixed(2)}</span>,
-        'Categoría': <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">{p.categoria || 'Sin Categoría'}</span>,
-        'U. Medida': <span className="text-xs text-gray-500">{p.unidadConteo || 'NIU'}</span>
+        'Nombre': <span className="text-xs font-medium text-gray-900 dark:text-white">{p.nombre}</span>,
+        'Descripción': <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1" title={p.descripcion}>{p.descripcion}</span>,
+        'Precio': <span className="font-semibold text-gray-900 dark:text-white text-xs">S/ {Number(p.precioSugerido).toFixed(2)}</span>,
+        'Categoría': <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-300">{p.categoria || 'Sin Categoría'}</span>,
+        'U. Medida': <span className="text-xs text-gray-500 dark:text-gray-400">{p.unidadConteo || 'NIU'}</span>
     }));
 
     // Image Preview State
@@ -207,17 +207,17 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
 
     const modalContent = (
         <div className="fixed inset-0 z-[1000000] flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-none md:rounded-lg shadow-xl w-full h-full md:max-w-7xl md:h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="bg-white dark:bg-[#111827] rounded-none md:rounded-lg shadow-xl w-full h-full md:max-w-7xl md:h-[90vh] flex flex-col overflow-hidden relative">
                 {/* Header with Tabs */}
-                <div className="bg-gray-50 border-b">
+                <div className="bg-gray-50 dark:bg-slate-800/50 border-b dark:border-slate-700">
                     <div className="flex justify-between items-center p-4 pb-0">
                         <div>
-                            <h2 className="text-xl font-bold text-gray-800">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
                                 Catálogo de Productos
                             </h2>
-                            <p className="text-sm text-gray-500 mb-3">Gestiona tu inventario de {auth?.empresa?.rubro?.nombre}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Gestiona tu inventario de {auth?.empresa?.rubro?.nombre}</p>
                         </div>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 mb-3">
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-3">
                             <Icon icon="mdi:close" width={28} />
                         </button>
                     </div>
@@ -228,7 +228,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                             onClick={() => setActiveTab('catalogo')}
                             className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'catalogo'
                                 ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                 }`}
                         >
                             <Icon icon="solar:box-bold" className="inline mr-2" />
@@ -238,21 +238,21 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                             onClick={() => setActiveTab('generador')}
                             className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'generador'
                                 ? 'border-purple-600 text-purple-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                 }`}
                         >
                             <Icon icon="solar:magic-stick-3-bold" className="inline mr-2" />
-                            Generador con IA <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded ml-1">Beta</span>
+                            Generador con IA <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded ml-1">Beta</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-hidden bg-gray-50">
+                <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-slate-900">
                     {activeTab === 'catalogo' ? (
                         <div className="flex flex-col h-full">
                             {/* Filters */}
-                            <div className="p-4 border-b bg-white flex flex-col md:flex-row gap-4 items-center justify-between">
+                            <div className="p-4 border-b dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between">
                                 <div className="w-full md:w-1/3 mb-3 md:mb-0">
                                     <InputPro
                                         name="search"
@@ -263,7 +263,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 font-medium">
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                                         {selectedIds.length} seleccionados
                                     </span>
                                     {selectedIds.length > 0 && (
@@ -279,9 +279,9 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
 
                             {/* Table */}
                             <div className="flex-1 overflow-hidden p-4">
-                                <div className="bg-white rounded-lg border shadow-sm h-full overflow-hidden relative flex flex-col">
+                                <div className="bg-white dark:bg-slate-800 rounded-lg border dark:border-slate-700 shadow-sm h-full overflow-hidden relative flex flex-col">
                                     {loading && (
-                                        <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 z-10 flex items-center justify-center">
                                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                                         </div>
                                     )}
@@ -294,7 +294,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                                             />
                                         ) : (
                                             !loading && (
-                                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                                <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                                                     <Icon icon="mdi:package-variant-closed" width={48} className="mb-2 opacity-50" />
                                                     <p>No se encontraron productos en el catálogo</p>
                                                 </div>
@@ -306,7 +306,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
 
                             {/* Pagination */}
                             {total > limit && (
-                                <div className="p-2 bg-white border-t flex justify-center">
+                                <div className="p-2 bg-white dark:bg-slate-800 border-t dark:border-slate-700 flex justify-center">
                                     <Pagination
                                         pages={Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1)}
                                         currentPage={page}
@@ -319,7 +319,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                             )}
 
                             {/* Footer Actions */}
-                            <div className="p-4 border-t flex flex-col md:flex-row justify-between gap-3 bg-white">
+                            <div className="p-4 border-t dark:border-slate-700 flex flex-col md:flex-row justify-between gap-3 bg-white dark:bg-slate-800">
                                 <div>
                                     <Button
                                         onClick={handleImportAllClick}
@@ -372,7 +372,7 @@ export default function ModalCatalog({ isOpen, onClose, onSuccess }: Props) {
                 title="¿Importar TODO el catálogo?"
                 information="Esta acción importará todos los productos disponibles para tu rubro."
             >
-                <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-gray-600">
+                <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-300">
                     <li>Se omitirán los productos ya registrados (por código).</li>
                     <li>Se actualizarán imágenes faltantes.</li>
                     <li>Solo se agregarán nuevos productos.</li>

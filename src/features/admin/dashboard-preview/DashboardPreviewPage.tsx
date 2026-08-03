@@ -53,7 +53,7 @@ const Trend = ({ trend }: { trend: number }) => {
   return (
     <span
       className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
-        pos ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+        pos ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
       }`}
     >
       <Icon icon={pos ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'} />
@@ -65,9 +65,9 @@ const Trend = ({ trend }: { trend: number }) => {
 const AreaTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
-      <p className="mb-0.5 font-semibold text-gray-500">{label}</p>
-      <p className="font-bold text-gray-900">{formatMoney(payload[0].value)}</p>
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg dark:border-slate-700 dark:bg-slate-800">
+      <p className="mb-0.5 font-semibold text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="font-bold text-gray-900 dark:text-white">{formatMoney(payload[0].value)}</p>
     </div>
   )
 }
@@ -118,7 +118,7 @@ export default function DashboardPreviewPage() {
     .toUpperCase()
 
   return (
-    <div className="min-h-screen bg-[#eef0f5] font-inter text-gray-900">
+    <div className="min-h-screen bg-[#eef0f5] font-inter text-gray-900 dark:bg-slate-950 dark:text-white">
       {/* ===== Header azul marino ===== */}
       <header style={{ background: HEADER_BG }} className="text-white">
         <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-4 px-5">
@@ -194,13 +194,13 @@ export default function DashboardPreviewPage() {
         {/* Título + filtros */}
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span className="flex items-center gap-1 font-medium">
               Todas las sedes <Icon icon="solar:alt-arrow-down-linear" />
             </span>
-            <span className="flex items-center gap-1 font-medium text-gray-700">
+            <span className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-200">
               Últimos 90 días:{' '}
-              <span className="text-gray-500">
+              <span className="text-gray-500 dark:text-gray-400">
                 {moment(fechaInicio).format('D MMM')} – {moment(fechaFin).format('D MMM YYYY')}
               </span>
               <Icon icon="solar:alt-arrow-down-linear" />
@@ -210,13 +210,13 @@ export default function DashboardPreviewPage() {
 
         {/* Fila 1: Ventas (área) + Donut canales */}
         <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#111827] dark:shadow-none lg:col-span-2">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-bold text-gray-900">Ventas totales</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Ventas totales</h3>
                 <p className="text-xs text-gray-400">Últimos 90 días</p>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1">
                   <span className="h-2 w-2 rounded-full" style={{ background: brand }} /> Ventas netas
                 </span>
@@ -278,8 +278,8 @@ export default function DashboardPreviewPage() {
           </div>
 
           {/* Donut canales */}
-          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h3 className="mb-1 text-sm font-bold text-gray-900">Ventas por canal</h3>
+          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#111827] dark:shadow-none">
+            <h3 className="mb-1 text-sm font-bold text-gray-900 dark:text-white">Ventas por canal</h3>
             <p className="mb-2 text-xs text-gray-400">Distribución del periodo</p>
             <div className="relative mx-auto h-40 w-40">
               {chartCanales.length > 0 ? (
@@ -310,7 +310,7 @@ export default function DashboardPreviewPage() {
                 </div>
               )}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-extrabold text-gray-900">{formatShort(canalTotal)}</span>
+                <span className="text-lg font-extrabold text-gray-900 dark:text-white">{formatShort(canalTotal)}</span>
                 <span className="text-[10px] font-medium text-gray-400">total</span>
               </div>
             </div>
@@ -323,9 +323,9 @@ export default function DashboardPreviewPage() {
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ background: SERIES[i % SERIES.length] }}
                     />
-                    <span className="truncate font-medium text-gray-600">{c.name}</span>
+                    <span className="truncate font-medium text-gray-600 dark:text-gray-300">{c.name}</span>
                   </span>
-                  <span className="shrink-0 font-bold text-gray-500">
+                  <span className="shrink-0 font-bold text-gray-500 dark:text-gray-400">
                     {(c.percentage ?? 0).toFixed(1)}%
                   </span>
                 </div>
@@ -335,7 +335,7 @@ export default function DashboardPreviewPage() {
         </div>
 
         {/* Fila 2: Strip de stats */}
-        <div className="mb-4 grid grid-cols-2 divide-gray-100 rounded-xl border border-gray-100 bg-white shadow-sm md:grid-cols-4 md:divide-x">
+        <div className="mb-4 grid grid-cols-2 divide-gray-100 rounded-xl border border-gray-100 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-[#111827] dark:shadow-none md:grid-cols-4 md:divide-x">
           {[
             { label: 'COMPROBANTES', value: kpis.pedidos.value.toLocaleString() },
             { label: 'TICKET PROMEDIO', value: formatMoney(kpis.conversion.value), accent: true },
@@ -359,32 +359,32 @@ export default function DashboardPreviewPage() {
         </div>
 
         {/* Fila 3: Ingresos / Utilidad / Clientes */}
-        <div className="mb-4 grid grid-cols-1 gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm md:grid-cols-3 md:divide-x md:divide-gray-100">
+        <div className="mb-4 grid grid-cols-1 gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#111827] dark:shadow-none md:grid-cols-3 md:divide-x md:divide-gray-100 md:dark:divide-slate-800">
           <div className="md:pr-5">
-            <p className="text-sm font-bold text-gray-500">Ingresos totales</p>
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Ingresos totales</p>
             <p className="text-xs text-gray-400">Últimos 90 días</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-2xl font-extrabold text-gray-900">
+              <span className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {formatShort(financiero.ingresos.value)}
               </span>
               <Trend trend={financiero.ingresos.trend} />
             </div>
           </div>
           <div className="md:px-5">
-            <p className="text-sm font-bold text-gray-500">Utilidad</p>
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Utilidad</p>
             <p className="text-xs text-gray-400">Margen {financiero.margen?.toFixed(0)}%</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-2xl font-extrabold text-gray-900">
+              <span className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {formatShort(financiero.ganancias.value)}
               </span>
               <Trend trend={financiero.ganancias.trend} />
             </div>
           </div>
           <div className="md:pl-5">
-            <p className="text-sm font-bold text-gray-500">Clientes nuevos</p>
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Clientes nuevos</p>
             <p className="text-xs text-gray-400">Últimos 90 días</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-2xl font-extrabold text-gray-900">
+              <span className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {kpis.clientes.value.toLocaleString()}
               </span>
               <Trend trend={kpis.clientes.trend} />
@@ -393,9 +393,9 @@ export default function DashboardPreviewPage() {
         </div>
 
         {/* Fila 4: Top productos (barras) */}
-        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#111827] dark:shadow-none">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Productos más vendidos</h3>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Productos más vendidos</h3>
             <span className="text-xs text-gray-400">Últimos 90 días</span>
           </div>
           <div className="space-y-4">
@@ -414,15 +414,15 @@ export default function DashboardPreviewPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-baseline justify-between gap-2">
-                        <span className="truncate text-[13px] font-semibold text-gray-800">
+                        <span className="truncate text-[13px] font-semibold text-gray-800 dark:text-gray-200">
                           {p.producto?.descripcion || 'Producto sin nombre'}
                         </span>
-                        <span className="shrink-0 text-[13px] font-bold text-gray-700">
+                        <span className="shrink-0 text-[13px] font-bold text-gray-700 dark:text-gray-200">
                           {formatMoney(p.total)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${pct}%`, background: color }}

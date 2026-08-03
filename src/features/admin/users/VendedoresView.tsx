@@ -8,7 +8,7 @@ import { MEDALLAS } from './VendedoresModel';
 const ACCENT = 'var(--accent, #7551FF)';
 
 function CrecimientoBadge({ pct }: { pct: number | null }) {
-    if (pct === null) return <span className="text-xs text-slate-300">—</span>;
+    if (pct === null) return <span className="text-xs text-slate-300 dark:text-slate-600">—</span>;
     const positivo = pct >= 0;
     return (
         <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${positivo ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>

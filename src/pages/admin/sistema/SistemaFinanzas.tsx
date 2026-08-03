@@ -58,14 +58,14 @@ function KpiCard({
 }) {
     const up = (trend ?? 0) >= 0;
     return (
-        <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
             <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</span>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '20' }}>
                     <Icon icon={icon} width={20} style={{ color }} />
                 </div>
             </div>
-            <p className="text-2xl font-extrabold text-slate-800 leading-none mb-1">{value}</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none mb-1">{value}</p>
             {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
             {trend !== undefined && (
                 <div className={`flex items-center gap-1 mt-2 text-xs font-semibold ${up ? 'text-emerald-600' : 'text-rose-500'}`}>
@@ -82,12 +82,12 @@ function KpiCard({
 function CustomTooltip({ active, payload, label }: any) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="bg-white border border-slate-100 rounded-xl shadow-xl p-3 text-[13px] font-inter min-w-[160px]">
-            <p className="font-bold text-slate-700 mb-2">{label}</p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl p-3 text-[13px] font-inter min-w-[160px]">
+            <p className="font-bold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
             {payload.map((p: any) => (
                 <div key={p.name} className="flex items-center justify-between gap-4">
                     <span style={{ color: p.color }} className="font-semibold">{p.name}</span>
-                    <span className="font-bold text-slate-800">{fmt(p.value)}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{fmt(p.value)}</span>
                 </div>
             ))}
         </div>
@@ -101,25 +101,25 @@ function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel>
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40" onClick={() => vm.setShowModal(false)} />
-            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                    <h3 className="text-base font-bold text-slate-800">
+            <div className="relative bg-white dark:bg-[#111827] rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-base font-bold text-slate-800 dark:text-white">
                         {vm.editingId ? 'Editar gasto' : 'Registrar gasto'}
                     </h3>
-                    <button onClick={() => vm.setShowModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+                    <button onClick={() => vm.setShowModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
                         <Icon icon="solar:close-bold" width={18} />
                     </button>
                 </div>
                 <div className="p-6 space-y-4">
                     {/* Concepto */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Concepto *</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Concepto *</label>
                         <input
                             type="text"
                             value={vm.form.concepto}
                             onChange={(e) => vm.setFormField('concepto', e.target.value)}
                             placeholder="ej. Servidor AWS, Dominio, etc."
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                         />
                     </div>
 
@@ -135,7 +135,7 @@ function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel>
                             readOnly
                         />
                         <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Monto (S/) *</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Monto (S/) *</label>
                             <input
                                 type="number"
                                 min="0"
@@ -143,7 +143,7 @@ function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel>
                                 value={vm.form.monto}
                                 onChange={(e) => vm.setFormField('monto', e.target.value)}
                                 placeholder="0.00"
-                                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                             />
                         </div>
                     </div>
@@ -157,15 +157,15 @@ function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel>
                     />
 
                     {/* Recurrente */}
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                         <button
                             type="button"
                             onClick={() => vm.setFormField('recurrente', !vm.form.recurrente)}
-                            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${vm.form.recurrente ? 'bg-[var(--accent)]' : 'bg-slate-300'}`}
+                            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${vm.form.recurrente ? 'bg-[var(--accent)]' : 'bg-slate-300 dark:bg-slate-600'}`}
                         >
                             <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${vm.form.recurrente ? 'translate-x-5' : 'translate-x-0.5'}`} />
                         </button>
-                        <span className="text-sm font-medium text-slate-700">Gasto recurrente</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Gasto recurrente</span>
                         {vm.form.recurrente && (
                             <div className="ml-auto w-40">
                                 <Select
@@ -183,18 +183,18 @@ function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel>
 
                     {/* Descripción */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Descripción (opcional)</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Descripción (opcional)</label>
                         <textarea
                             value={vm.form.descripcion}
                             onChange={(e) => vm.setFormField('descripcion', e.target.value)}
                             rows={2}
                             placeholder="Notas adicionales..."
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 resize-none"
+                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 resize-none"
                         />
                     </div>
                 </div>
-                <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-                    <button onClick={() => vm.setShowModal(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+                <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                    <button onClick={() => vm.setShowModal(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                         Cancelar
                     </button>
                     <button
@@ -219,26 +219,26 @@ function ModalIngreso({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40" onClick={() => vm.setShowModalIngreso(false)} />
-            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <div className="relative bg-white dark:bg-[#111827] rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <Icon icon="solar:wallet-money-bold-duotone" width={20} className="text-emerald-500" />
                         {vm.editingIdIngreso ? 'Editar ingreso' : 'Registrar ingreso'}
                     </h3>
-                    <button onClick={() => vm.setShowModalIngreso(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+                    <button onClick={() => vm.setShowModalIngreso(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
                         <Icon icon="solar:close-bold" width={18} />
                     </button>
                 </div>
                 <div className="p-6 space-y-4">
                     {/* Concepto */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Concepto *</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Concepto *</label>
                         <input
                             type="text"
                             value={vm.formIngreso.concepto}
                             onChange={(e) => vm.setFormIngresoField('concepto', e.target.value)}
                             placeholder="ej. Pago mensualidad Empresa X, Activación plan Pro..."
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
                     </div>
 
@@ -254,7 +254,7 @@ function ModalIngreso({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                             readOnly
                         />
                         <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Monto (S/) *</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Monto (S/) *</label>
                             <input
                                 type="number"
                                 min="0"
@@ -262,7 +262,7 @@ function ModalIngreso({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                                 value={vm.formIngreso.monto}
                                 onChange={(e) => vm.setFormIngresoField('monto', e.target.value)}
                                 placeholder="0.00"
-                                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                             />
                         </div>
                     </div>
@@ -277,18 +277,18 @@ function ModalIngreso({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
 
                     {/* Descripción */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 block">Descripción (opcional)</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Descripción (opcional)</label>
                         <textarea
                             value={vm.formIngreso.descripcion}
                             onChange={(e) => vm.setFormIngresoField('descripcion', e.target.value)}
                             rows={2}
                             placeholder="Notas adicionales..."
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
                         />
                     </div>
                 </div>
-                <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-                    <button onClick={() => vm.setShowModalIngreso(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+                <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                    <button onClick={() => vm.setShowModalIngreso(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                         Cancelar
                     </button>
                     <button
@@ -395,15 +395,15 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
             {/* Charts row */}
             <div className="grid lg:grid-cols-3 gap-5">
                 {/* Area chart ingresos vs gastos */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                <div className="lg:col-span-2 bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-slate-800">Ingresos vs Gastos</h3>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">Ingresos vs Gastos</h3>
                         <div className="flex gap-1">
                             {[6, 12].map((m) => (
                                 <button
                                     key={m}
                                     onClick={() => vm.setMesesTendencia(m)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${vm.mesesTendencia === m ? 'text-white' : 'text-slate-400 hover:bg-slate-100'}`}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${vm.mesesTendencia === m ? 'text-white' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                     style={vm.mesesTendencia === m ? { background: ACCENT } : undefined}
                                 >
                                     {m}M
@@ -435,8 +435,8 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                 </div>
 
                 {/* Pie distribución planes */}
-                <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                    <h3 className="text-sm font-bold text-slate-800 mb-4">Clientes por plan</h3>
+                <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Clientes por plan</h3>
                     {pieData.length > 0 ? (
                         <>
                             <ResponsiveContainer width="100%" height={160}>
@@ -454,7 +454,7 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                                     <div key={p.name} className="flex items-center gap-2">
                                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                                         <span className="text-xs text-slate-500 flex-1 truncate">{p.name}</span>
-                                        <span className="text-xs font-bold text-slate-800">{p.value}</span>
+                                        <span className="text-xs font-bold text-slate-800 dark:text-white">{p.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -466,8 +466,8 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
             </div>
 
             {/* Ganancia neta mensual bar */}
-            <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                <h3 className="text-sm font-bold text-slate-800 mb-4">Ganancia neta mensual</h3>
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Ganancia neta mensual</h3>
                 <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={vm.tendencia} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
@@ -495,7 +495,7 @@ function TabMovimientos({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMo
         <div className="space-y-6">
 
             {/* ── Filtros compartidos ── */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-white rounded-3xl border border-slate-100 px-4 py-3 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 px-4 py-3 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                 <div className="flex items-center gap-2 flex-1 flex-wrap">
                     <div className="w-40">
                         <Calendar
@@ -544,30 +544,30 @@ function TabMovimientos({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMo
 
             {/* ── Tarjetas resumen ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <span className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                         <Icon icon="solar:wallet-money-bold-duotone" width={18} /> Total ingresos
                     </span>
-                    <span className="text-lg font-extrabold text-emerald-700">{fmt(vm.totalIngresos)}</span>
+                    <span className="text-lg font-extrabold text-emerald-700 dark:text-emerald-300">{fmt(vm.totalIngresos)}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-3 bg-rose-50 rounded-2xl border border-rose-100">
-                    <span className="text-sm font-bold text-rose-600 flex items-center gap-2">
+                <div className="flex items-center justify-between px-4 py-3 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-900/40">
+                    <span className="text-sm font-bold text-rose-600 dark:text-rose-300 flex items-center gap-2">
                         <Icon icon="solar:card-bold-duotone" width={18} /> Total gastos
                     </span>
-                    <span className="text-lg font-extrabold text-rose-600">{fmt(vm.totalGastos)}</span>
+                    <span className="text-lg font-extrabold text-rose-600 dark:text-rose-300">{fmt(vm.totalGastos)}</span>
                 </div>
-                <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${balance >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
-                    <span className={`text-sm font-bold flex items-center gap-2 ${balance >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${balance >= 0 ? 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/40' : 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-900/40'}`}>
+                    <span className={`text-sm font-bold flex items-center gap-2 ${balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-amber-700 dark:text-amber-300'}`}>
                         <Icon icon={balance >= 0 ? 'solar:graph-up-bold-duotone' : 'solar:graph-down-bold-duotone'} width={18} /> Balance neto
                     </span>
-                    <span className={`text-lg font-extrabold ${balance >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>{fmt(balance)}</span>
+                    <span className={`text-lg font-extrabold ${balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-amber-700 dark:text-amber-300'}`}>{fmt(balance)}</span>
                 </div>
             </div>
 
             {/* ── Tabla Ingresos ── */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-emerald-50/50">
-                    <h3 className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                         <Icon icon="solar:wallet-money-bold-duotone" width={17} /> Ingresos
                         <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-extrabold">{vm.ingresos.length}</span>
                     </h3>
@@ -636,7 +636,7 @@ function TabMovimientos({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMo
             </div>
 
             {/* ── Tabla Gastos ── */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-violet-50/50">
                     <h3 className="text-sm font-bold text-violet-700 flex items-center gap-2">
                         <Icon icon="solar:card-bold-duotone" width={17} /> Gastos
@@ -738,9 +738,9 @@ function TabClientes({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel
             </div>
 
             {/* Buscador + lista de empresas */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-                    <h3 className="text-sm font-bold text-slate-800 flex-1">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex-1">
                         Empresas activas
                         <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
                             {vm.empresasFiltradas.length}
@@ -836,12 +836,12 @@ function TabClientes({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel
             </div>
 
             {/* Chart nuevos vs bajas */}
-            <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-slate-800">Adquisición vs Bajas (histórico)</h3>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white">Adquisición vs Bajas (histórico)</h3>
                     <div className="flex gap-1">
                         {[6, 12].map((m) => (
-                            <button key={m} onClick={() => vm.setMesesTendencia(m)} className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${vm.mesesTendencia === m ? 'text-white' : 'text-slate-400 hover:bg-slate-100'}`} style={vm.mesesTendencia === m ? { background: ACCENT } : undefined}>{m}M</button>
+                            <button key={m} onClick={() => vm.setMesesTendencia(m)} className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${vm.mesesTendencia === m ? 'text-white' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`} style={vm.mesesTendencia === m ? { background: ACCENT } : undefined}>{m}M</button>
                         ))}
                     </div>
                 </div>
@@ -890,7 +890,7 @@ export default function SistemaFinanzas() {
                     <Icon icon="solar:chart-square-bold-duotone" className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Finanzas del Sistema</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Finanzas del Sistema</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Panel financiero exclusivo para los socios — ingresos, gastos, caja y crecimiento de clientes</p>
                 </div>
                 <button
@@ -903,14 +903,14 @@ export default function SistemaFinanzas() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 bg-white p-1 rounded-2xl border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)] w-fit">
+            <div className="flex gap-1 mb-6 bg-white dark:bg-[#111827] p-1 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none w-fit">
                 {TABS.map((t) => (
                     <button
                         key={t.key}
                         onClick={() => vm.setTab(t.key)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${vm.tab === t.key
                             ? 'text-white shadow-md shadow-violet-500/25'
-                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                             }`}
                         style={vm.tab === t.key ? { background: ACCENT } : undefined}
                     >

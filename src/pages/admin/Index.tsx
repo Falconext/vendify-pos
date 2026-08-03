@@ -65,11 +65,11 @@ const TIPO_DOC_LABEL: Record<string, string> = {
 
 function estadoPill(estado?: string) {
   const e = String(estado ?? '').toUpperCase()
-  if (['ACEPTADO', 'APROBADO'].includes(e)) return { label: 'Aceptado', dot: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' }
-  if (['PENDIENTE', 'ENVIANDO', 'EN_PROCESO', 'PROCESANDO'].includes(e)) return { label: 'En proceso', dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' }
-  if (['RECHAZADO', 'FALLIDO_ENVIO', 'ERROR', 'OBSERVADO'].includes(e)) return { label: 'Rechazado', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' }
-  if (['ANULADO', 'BAJA'].includes(e)) return { label: 'Anulado', dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100' }
-  return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Emitido', dot: 'bg-violet-500', text: 'text-violet-600', bg: 'bg-violet-50' }
+  if (['ACEPTADO', 'APROBADO'].includes(e)) return { label: 'Aceptado', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' }
+  if (['PENDIENTE', 'ENVIANDO', 'EN_PROCESO', 'PROCESANDO'].includes(e)) return { label: 'En proceso', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' }
+  if (['RECHAZADO', 'FALLIDO_ENVIO', 'ERROR', 'OBSERVADO'].includes(e)) return { label: 'Rechazado', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' }
+  if (['ANULADO', 'BAJA'].includes(e)) return { label: 'Anulado', dot: 'bg-slate-400', text: 'text-slate-500 dark:text-gray-400', bg: 'bg-slate-100 dark:bg-slate-800' }
+  return { label: e ? e.charAt(0) + e.slice(1).toLowerCase() : 'Emitido', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' }
 }
 
 const SORTS = [
@@ -176,7 +176,7 @@ function resolveRubroUI(nombreRaw?: string | null): RubroUI {
 const Trend = ({ trend }: { trend: number }) => {
   const pos = (trend ?? 0) >= 0
   return (
-    <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${pos ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+    <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${pos ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
       <Icon icon={pos ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'} />
       {Math.abs(trend ?? 0).toFixed(1)}%
     </span>
@@ -241,20 +241,20 @@ export default function AdminIndex() {
     const sunatN = alertas?.sunatPendientes?.count ?? 0
     const cobrar = alertas?.cuentasCobrar?.total ?? 0
     const pedidos = alertas?.pedidosTiendaPendientes ?? 0
-    if (stockN > 0) items.push({ key: 'stock', icon: 'solar:box-minimalistic-bold-duotone', label: 'Productos con stock bajo', value: String(stockN), to: '/administrador/kardex/productos', tone: 'rose' })
-    if (sunatN > 0) items.push({ key: 'sunat', icon: 'solar:document-add-bold-duotone', label: 'Comprobantes pendientes en SUNAT', value: String(sunatN), to: '/administrador/facturacion/comprobantes', tone: 'amber' })
-    if (cobrar > 0) items.push({ key: 'cobrar', icon: 'solar:wallet-money-bold-duotone', label: `Por cobrar${alertas?.cuentasCobrar?.cantidad ? ` (${alertas.cuentasCobrar.cantidad})` : ''}`, value: formatShort(cobrar), to: '/administrador/ventas/pagos/cuentas-cobrar', tone: 'violet' })
-    if (pedidos > 0) items.push({ key: 'pedidos', icon: 'solar:cart-large-2-bold-duotone', label: 'Pedidos de tienda por atender', value: String(pedidos), to: '/administrador/tienda/pedidos', tone: 'sky' })
+    if (stockN > 0) items.push({ key: 'stock', icon: 'solar:box-minimalistic-bold-duotone', label: 'Productos con stock bajo', value: String(stockN), to: '/administrador/kardex/productos?soloStockBajo=true', tone: 'rose' })
+    if (sunatN > 0) items.push({ key: 'sunat', icon: 'solar:document-add-bold-duotone', label: 'Comprobantes pendientes en SUNAT', value: String(sunatN), to: '/administrador/facturacion/comprobantes?soloPendientesSunat=true', tone: 'amber' })
+    if (cobrar > 0) items.push({ key: 'cobrar', icon: 'solar:wallet-money-bold-duotone', label: `Por cobrar${alertas?.cuentasCobrar?.cantidad ? ` (${alertas.cuentasCobrar.cantidad})` : ''}`, value: formatShort(cobrar), to: '/administrador/ventas/pagos/cuentas-cobrar?soloPendientesCobro=true', tone: 'violet' })
+    if (pedidos > 0) items.push({ key: 'pedidos', icon: 'solar:cart-large-2-bold-duotone', label: 'Pedidos de tienda por atender', value: String(pedidos), to: '/administrador/tienda/pedidos?soloPendientesAtencion=true', tone: 'sky' })
     // Rubro reordena: farmacia/droguería priorizan el stock (ya va primero).
     return items
   }, [alertas])
 
   const toneMap: Record<string, { bg: string; text: string; ring: string }> = {
-    rose: { bg: 'bg-rose-50', text: 'text-rose-600', ring: 'ring-rose-100' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-600', ring: 'ring-amber-100' },
-    violet: { bg: 'bg-violet-50', text: 'text-violet-600', ring: 'ring-violet-100' },
-    sky: { bg: 'bg-sky-50', text: 'text-sky-600', ring: 'ring-sky-100' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', ring: 'ring-emerald-100' },
+    rose: { bg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-600 dark:text-rose-400', ring: 'ring-rose-100 dark:ring-rose-900/40' },
+    amber: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', ring: 'ring-amber-100 dark:ring-amber-900/40' },
+    violet: { bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-600 dark:text-violet-400', ring: 'ring-violet-100 dark:ring-violet-900/40' },
+    sky: { bg: 'bg-sky-50 dark:bg-sky-900/20', text: 'text-sky-600 dark:text-sky-400', ring: 'ring-sky-100 dark:ring-sky-900/40' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-100 dark:ring-emerald-900/40' },
   }
 
   // ── Tabla de comprobantes (sección inferior) ──
@@ -347,12 +347,12 @@ export default function AdminIndex() {
   ]
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-transparent font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
       {/* ── Header ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">Hola, {nombre} 👋</h1>
+            <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Hola, {nombre} 👋</h1>
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white shrink-0" style={{ background: ACCENT }}>En vivo</span>
           </div>
           <p className="text-sm text-slate-400 mt-0.5">
@@ -361,10 +361,10 @@ export default function AdminIndex() {
         </div>
         <div className="flex items-center gap-2.5">
           {/* Selector de periodo */}
-          <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1">
+          <div className="flex items-center gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
             {PERIODS.map((p) => (
               <button key={p.key} onClick={() => setPeriod(p.key)}
-                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-colors ${period === p.key ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-colors ${period === p.key ? 'text-white' : 'text-slate-500 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
                 style={period === p.key ? { background: ACCENT } : undefined}>
                 {p.label}
               </button>
@@ -381,18 +381,18 @@ export default function AdminIndex() {
       {/* ── KPIs hero ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {kpiCards.map((c) => (
-          <div key={c.label} className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100">
+          <div key={c.label} className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <div className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 text-violet-600">
+              <div className="h-10 w-10 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300">
                 <Icon icon={c.icon} className="text-xl" />
               </div>
               {!ovLoading && <Trend trend={c.trend} />}
             </div>
             <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{c.label}</p>
             {ovLoading ? (
-              <div className="mt-1 h-7 w-24 rounded-lg bg-slate-100 animate-pulse" />
+              <div className="mt-1 h-7 w-24 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
             ) : (
-              <p className="mt-0.5 text-2xl font-extrabold text-slate-800">{c.value}</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-slate-800 dark:text-white">{c.value}</p>
             )}
             {c.spark && chartVentas.length > 1 ? (
               <div className="mt-2 h-8">
@@ -420,20 +420,20 @@ export default function AdminIndex() {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2.5">
             <Icon icon="solar:danger-triangle-bold-duotone" className="text-amber-500 text-lg" />
-            <h2 className="text-sm font-extrabold text-slate-700">Requiere tu atención</h2>
+            <h2 className="text-sm font-extrabold text-slate-700 dark:text-gray-200">Requiere tu atención</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {atencion.map((a) => {
               const t = toneMap[a.tone]
               return (
                 <button key={a.key} onClick={() => navigate(a.to)}
-                  className={`group flex items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-[0_2px_14px_rgba(15,23,42,0.05)] border border-slate-100 ring-1 ${t.ring} hover:shadow-md transition-all`}>
+                  className={`group flex items-center gap-3 rounded-2xl bg-white dark:bg-[#111827] p-4 text-left shadow-[0_2px_14px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 ring-1 ${t.ring} hover:shadow-md transition-all`}>
                   <div className={`h-11 w-11 shrink-0 grid place-items-center rounded-xl ${t.bg} ${t.text}`}>
                     <Icon icon={a.icon} className="text-2xl" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className={`text-lg font-extrabold ${t.text}`}>{a.value}</p>
-                    <p className="text-xs font-semibold text-slate-500 leading-tight">{a.label}</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 leading-tight">{a.label}</p>
                   </div>
                   <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 group-hover:text-slate-500 transition-colors" />
                 </button>
@@ -443,12 +443,12 @@ export default function AdminIndex() {
               const t = toneMap[rubroUI.focus.tone]
               return (
                 <button onClick={() => navigate(rubroUI.focus!.to)}
-                  className={`group flex items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-[0_2px_14px_rgba(15,23,42,0.05)] border border-slate-100 ring-1 ${t.ring} hover:shadow-md transition-all`}>
+                  className={`group flex items-center gap-3 rounded-2xl bg-white dark:bg-[#111827] p-4 text-left shadow-[0_2px_14px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 ring-1 ${t.ring} hover:shadow-md transition-all`}>
                   <div className={`h-11 w-11 shrink-0 grid place-items-center rounded-xl ${t.bg} ${t.text}`}>
                     <Icon icon={rubroUI.focus.icon} className="text-2xl" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-slate-700 leading-tight">{rubroUI.focus.label}</p>
+                    <p className="text-sm font-extrabold text-slate-700 dark:text-gray-200 leading-tight">{rubroUI.focus.label}</p>
                     <p className="text-xs font-medium text-slate-400 leading-tight">{rubroUI.focus.hint}</p>
                   </div>
                   <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 group-hover:text-slate-500 transition-colors" />
@@ -463,7 +463,7 @@ export default function AdminIndex() {
       <div className="flex flex-wrap gap-2 mb-4">
         {rubroUI.quickActions.map((q) => (
           <button key={q.label} onClick={() => navigate(q.to)}
-            className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all border ${q.primary ? 'text-white border-transparent shadow-md shadow-violet-500/25 hover:brightness-105' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-violet-600'}`}
+            className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all border ${q.primary ? 'text-white border-transparent shadow-md shadow-violet-500/25 hover:brightness-105' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-violet-600 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-violet-300'}`}
             style={q.primary ? { background: ACCENT } : undefined}>
             <Icon icon={q.icon} className="text-lg" /> {q.label}
           </button>
@@ -472,13 +472,13 @@ export default function AdminIndex() {
 
       {/* ── Gráficos: ventas por día + canales ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 lg:col-span-2">
+        <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 lg:col-span-2">
           <div className="mb-3 flex items-start justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800">Ventas por día</h3>
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Ventas por día</h3>
               <p className="text-xs text-slate-400">{periodLabel}</p>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-gray-400">
               <span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} /> Ventas netas
             </div>
           </div>
@@ -510,8 +510,8 @@ export default function AdminIndex() {
         </div>
 
         {/* Donut canales */}
-        <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100">
-          <h3 className="text-sm font-extrabold text-slate-800">Cómo te pagan</h3>
+        <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Cómo te pagan</h3>
           <p className="mb-2 text-xs text-slate-400">Canales del periodo</p>
           <div className="relative mx-auto h-36 w-36">
             {chartCanales.length > 0 ? (
@@ -527,7 +527,7 @@ export default function AdminIndex() {
               <div className="flex h-full items-center justify-center text-center text-sm text-slate-300">Sin datos</div>
             )}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-base font-extrabold text-slate-800">{formatShort(canalTotal)}</span>
+              <span className="text-base font-extrabold text-slate-800 dark:text-white">{formatShort(canalTotal)}</span>
               <span className="text-[10px] font-medium text-slate-400">total</span>
             </div>
           </div>
@@ -536,9 +536,9 @@ export default function AdminIndex() {
               <div key={c.name} className="flex items-center justify-between gap-2 text-sm">
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SERIES[i % SERIES.length] }} />
-                  <span className="truncate font-medium text-slate-600">{c.name}</span>
+                  <span className="truncate font-medium text-slate-600 dark:text-gray-300">{c.name}</span>
                 </span>
-                <span className="shrink-0 font-bold text-slate-500">{(c.percentage ?? 0).toFixed(0)}%</span>
+                <span className="shrink-0 font-bold text-slate-500 dark:text-gray-400">{(c.percentage ?? 0).toFixed(0)}%</span>
               </div>
             ))}
             {chartCanales.length === 0 && <p className="text-center text-xs text-slate-400 py-2">Aún no hay pagos registrados</p>}
@@ -547,10 +547,10 @@ export default function AdminIndex() {
       </div>
 
       {/* ── Top productos ── */}
-      <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 mb-4">
+      <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-extrabold text-slate-800">{rubroUI.productosLabel}</h3>
-          <button onClick={() => navigate('/administrador/kardex/productos')} className="text-xs font-bold text-violet-600 hover:underline">Ver todos</button>
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">{rubroUI.productosLabel}</h3>
+          <button onClick={() => navigate('/administrador/kardex/productos')} className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">Ver todos</button>
         </div>
         <div className="space-y-4">
           {topProductos.length > 0 ? topProductos.slice(0, 5).map((p, i) => {

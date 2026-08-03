@@ -168,7 +168,11 @@ export const useProductsViewModel = () => {
         visibleColumns: initialVisibleColumns,
         showColumnFilter: false,
         vistaActual: isRestaurante ? 'cards' : 'tabla',
-        marcaIdFilter: undefined
+        marcaIdFilter: undefined,
+        soloStockBajo: (() => {
+            const searchParams = new URLSearchParams(window.location.search);
+            return searchParams.get('soloStockBajo') === 'true';
+        })()
     });
 
     const debounce = useDebounce(state.searchClient, 600);
@@ -283,6 +287,7 @@ export const useProductsViewModel = () => {
             };
             if (state.marcaIdFilter) params.marcaId = String(state.marcaIdFilter);
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
+            if (state.soloStockBajo) params.soloStockBajo = 'true';
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos?${query}`);
             if (resp?.code === 1) {
@@ -301,7 +306,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -674,6 +679,15 @@ export const useProductsViewModel = () => {
         exportProducts: () => exportProductsAction(debounce, effectiveSedeId),
         refreshProducts: async () => {
             await fetchProductsList();
+        },
+        setSoloStockBajo: (val: boolean) => {
+            setState(prev => ({ ...prev, soloStockBajo: val, currentPage: 1 }));
+            // Optional: update URL to remove the parameter if disabled
+            if (!val) {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('soloStockBajo');
+                window.history.replaceState({}, '', url);
+            }
         }
     };
 

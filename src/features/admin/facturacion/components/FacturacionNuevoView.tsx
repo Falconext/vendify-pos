@@ -524,16 +524,20 @@ function ComprobanteTypeModal({
                                 onClick={() => onSelect(option)}
                                 className={`group flex items-start gap-3 rounded-2xl border p-4 text-left transition-all ${
                                     active
-                                        ? 'border-violet-300 bg-violet-50 shadow-[0_14px_35px_rgba(117,81,255,0.14)]'
+                                        ? 'border-violet-400 bg-violet-100 shadow-[0_14px_35px_rgba(117,81,255,0.18)] ring-1 ring-violet-300/70 dark:border-violet-400/70 dark:bg-violet-500/15 dark:shadow-[0_18px_40px_rgba(99,102,241,0.22)] dark:ring-violet-400/30'
                                         : 'border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900'
                                 }`}
                             >
-                                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${meta.tone}`}>
+                                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-colors ${
+                                    active
+                                        ? 'bg-white text-violet-700 dark:bg-violet-400/20 dark:text-violet-100'
+                                        : meta.tone
+                                }`}>
                                     <Icon icon={meta.icon} className="text-xl" />
                                 </span>
                                 <span className="min-w-0">
-                                    <span className="block text-sm font-extrabold text-slate-900 dark:text-white">{option.value}</span>
-                                    <span className="mt-0.5 block text-xs font-medium text-slate-400">{meta.help}</span>
+                                    <span className={`block text-sm font-extrabold ${active ? 'text-violet-950 dark:text-white' : 'text-slate-900 dark:text-white'}`}>{option.value}</span>
+                                    <span className={`mt-0.5 block text-xs font-medium ${active ? 'text-violet-700/80 dark:text-violet-100/80' : 'text-slate-400'}`}>{meta.help}</span>
                                 </span>
                             </button>
                         );

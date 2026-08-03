@@ -108,6 +108,43 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
         return Math.max(0, Math.min(...stockByItem));
     };
     const esServicio = (item: any) => String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+    const categoryFilter = useMemo(() => {
+        const visibleCounts = new Map<number, number>();
+
+        (vm.catalogItems || []).forEach((item: any) => {
+            if (item?.__catalogType === 'COMBO') {
+                const comboCategoryIds = new Set<number>(
+                    (item?.items || [])
+                        .map((comboItem: any) => Number(comboItem?.producto?.categoria?.id || comboItem?.producto?.categoriaId || 0))
+                        .filter((id: number) => id > 0),
+                );
+                comboCategoryIds.forEach((id) => visibleCounts.set(id, (visibleCounts.get(id) || 0) + 1));
+                return;
+            }
+
+            const categoryId = Number(item?.categoria?.id || item?.categoriaId || 0);
+            if (categoryId > 0) visibleCounts.set(categoryId, (visibleCounts.get(categoryId) || 0) + 1);
+        });
+
+        const tabs = (Array.isArray(vm.categories) ? vm.categories : [])
+            .map((category: any) => {
+                const id = Number(category?.id || 0);
+                const inventoryCount = Number(
+                    category?._count?.productos
+                    ?? category?.productosCount
+                    ?? category?.totalProductos
+                    ?? category?.cantidadProductos
+                    ?? NaN,
+                );
+                const count = Number.isFinite(inventoryCount) ? inventoryCount : (visibleCounts.get(id) || 0);
+                return { id, name: String(category?.nombre || 'Sin categoria'), count };
+            })
+            .filter((category: any) => category.id > 0 && (category.count > 0 || Number(vm.selectedCategoryId || 0) === category.id))
+            .sort((a: any, b: any) => a.name.localeCompare(b.name, 'es'));
+
+        const total = tabs.reduce((sum: number, category: any) => sum + Number(category.count || 0), 0) || Number(vm.totalProducts || vm.catalogItems?.length || 0);
+        return { tabs, total };
+    }, [vm.catalogItems, vm.categories, vm.selectedCategoryId, vm.totalProducts]);
 
     return (
         <>
@@ -316,6 +353,40 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                         </button>
                     </div>
                 )}
+
+                {categoryFilter.tabs.length > 0 && (
+                    <div className="mt-4 -mx-1">
+                        <div className="flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-thin">
+                            {[
+                                { id: 0, name: 'Todos', count: categoryFilter.total },
+                                ...categoryFilter.tabs,
+                            ].map((category: any) => {
+                                const active = Number(vm.selectedCategoryId || 0) === category.id;
+                                return (
+                                    <button
+                                        key={category.id}
+                                        type="button"
+                                        onClick={() => vm.setSelectedCategoryId(category.id)}
+                                        className={`group inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition-all ${
+                                            active
+                                                ? 'border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-violet-800 dark:hover:bg-violet-950/30'
+                                        }`}
+                                    >
+                                        <span className="max-w-[150px] truncate">{category.name}</span>
+                                        <span className={`rounded-lg px-1.5 py-0.5 text-[10px] font-black ${
+                                            active
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-gray-100 text-gray-500 group-hover:bg-violet-100 group-hover:text-violet-700 dark:bg-slate-800 dark:text-slate-400'
+                                        }`}>
+                                            {category.count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Product Grid */}
@@ -475,20 +546,18 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                         })()}
                                     </div>
 
-                                    {/* Acciones — fila a todo el ancho para que "Agregar" nunca se corte */}
+                                    {/* Acciones ocultas temporalmente: detalle, cámara y botón Agregar. */}
                                     <div className="mt-2 flex items-center gap-1.5">
-                                        {/* Ver detalle */}
-                                        <button
+                                        {/* <button
                                             onClick={(e) => { e.stopPropagation(); setInfoProduct(item); }}
                                             className="shrink-0 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 rounded-lg transition-all active:scale-95 flex items-center justify-center"
                                             title="Ver detalle"
                                             aria-label="Ver detalle"
                                         >
                                             <Icon icon="solar:info-circle-linear" className="text-lg" />
-                                        </button>
+                                        </button> */}
 
-                                        {/* Subir imagen (solo productos, no combos) */}
-                                        {item.__catalogType === 'PRODUCTO' && (
+                                        {/* {item.__catalogType === 'PRODUCTO' && (
                                             <>
                                                 <input
                                                     ref={el => { fileInputRefs.current[item.id] = el; }}
@@ -513,10 +582,9 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                                     }
                                                 </button>
                                             </>
-                                        )}
+                                        )} */}
 
-                                        {/* Agregar al comprobante — acción principal, siempre visible */}
-                                        {(() => {
+                                        {/* {(() => {
                                             const isExpired = vm.usaLotesFarmacia && item.__catalogType === 'PRODUCTO' && item?.loteFefo?.diasAlVencimiento !== undefined && item?.loteFefo?.diasAlVencimiento < 0;
                                             return (
                                                 <button
@@ -534,7 +602,7 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                                     Agregar
                                                 </button>
                                             );
-                                        })()}
+                                        })()} */}
                                     </div>
                                 </div>
                             </div>

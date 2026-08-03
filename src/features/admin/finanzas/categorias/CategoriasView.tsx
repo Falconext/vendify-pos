@@ -19,12 +19,12 @@ function Skeleton() {
         <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-28 bg-slate-100 animate-pulse rounded-3xl" />
+                    <div key={i} className="h-28 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-3xl" />
                 ))}
             </div>
-            <div className="h-64 bg-slate-100 animate-pulse rounded-3xl" />
+            <div className="h-64 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-3xl" />
             {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-2xl" />
+                <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl" />
             ))}
         </div>
     );
@@ -37,12 +37,12 @@ function KpiCard({ icon, iconBg, iconColor, label, value, sub }: {
     label: string; value: string; sub?: string;
 }) {
     return (
-        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-4 ${iconBg}`}>
                 <Icon icon={icon} className={`text-xl ${iconColor}`} />
             </div>
             <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1.5">{label}</p>
-            <h3 className="text-2xl font-extrabold text-slate-800 tracking-tight truncate">{value}</h3>
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight truncate">{value}</h3>
             {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
         </div>
     );
@@ -54,10 +54,10 @@ function MarginBadge({ value }: { value: number }) {
     const good = value >= 30;
     const mid = value >= 10;
     const cls = good
-        ? 'bg-emerald-50 text-emerald-600'
+        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
         : mid
-            ? 'bg-amber-50 text-amber-600'
-            : 'bg-rose-50 text-rose-600';
+            ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+            : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400';
     const dot = good ? 'bg-emerald-500' : mid ? 'bg-amber-500' : 'bg-rose-500';
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cls}`}>
@@ -82,24 +82,24 @@ function CategoriaRow({
     const pct = totalGanancia > 0 ? (cat.gananciaTotal / totalGanancia) * 100 : 0;
 
     return (
-        <div className="bg-white rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+        <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
             {/* Header row */}
             <button
                 onClick={onToggle}
-                className="w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50/60 transition-colors text-left"
+                className="w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50/60 dark:hover:bg-slate-800 transition-colors text-left"
             >
                 {/* Color dot */}
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
 
                 {/* Category name */}
                 <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">{cat.nombre}</p>
+                    <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{cat.nombre}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{cat.cantidadProductos} producto{cat.cantidadProductos !== 1 ? 's' : ''} · {Math.round(cat.unidadesVendidas)} uds</p>
                 </div>
 
                 {/* Share bar */}
                 <div className="hidden md:flex flex-col items-end w-32">
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">{formatPct(pct)} del total</p>
@@ -114,7 +114,7 @@ function CategoriaRow({
                 {/* Ingreso */}
                 <div className="text-right w-28 hidden md:block">
                     <p className="text-xs text-slate-400">Ingresos</p>
-                    <p className="font-bold text-sm text-slate-700">{formatSoles(cat.ingresoTotal)}</p>
+                    <p className="font-bold text-sm text-slate-700 dark:text-gray-200">{formatSoles(cat.ingresoTotal)}</p>
                 </div>
 
                 {/* Ganancia */}
@@ -132,10 +132,10 @@ function CategoriaRow({
 
             {/* Expanded: products table */}
             {isExpanded && (
-                <div className="border-t border-slate-100 overflow-x-auto">
+                <div className="border-t border-slate-100 dark:border-slate-800 overflow-x-auto">
                     <table className="w-full text-xs">
                         <thead>
-                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                 <th className="text-left px-5 py-2.5">Producto</th>
                                 <th className="text-right px-4 py-2.5">P. Venta</th>
                                 <th className="text-right px-4 py-2.5">Costo</th>
@@ -148,12 +148,12 @@ function CategoriaRow({
                             {cat.productos.map((prod, pi) => (
                                 <tr
                                     key={pi}
-                                    className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                                    className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800 transition-colors"
                                 >
-                                    <td className="px-5 py-3 font-semibold text-slate-700 max-w-[200px] truncate">
+                                    <td className="px-5 py-3 font-semibold text-slate-700 dark:text-gray-200 max-w-[200px] truncate">
                                         {prod.nombre}
                                     </td>
-                                    <td className="px-4 py-3 text-right text-slate-600">
+                                    <td className="px-4 py-3 text-right text-slate-600 dark:text-gray-300">
                                         {formatSoles(prod.precioUnitario)}
                                     </td>
                                     <td className="px-4 py-3 text-right text-slate-400">
@@ -162,7 +162,7 @@ function CategoriaRow({
                                     <td className="px-4 py-3 text-right">
                                         <MarginBadge value={prod.margen} />
                                     </td>
-                                    <td className="px-4 py-3 text-right text-slate-600">
+                                    <td className="px-4 py-3 text-right text-slate-600 dark:text-gray-300">
                                         {prod.unidadesVendidas % 1 === 0
                                             ? prod.unidadesVendidas
                                             : prod.unidadesVendidas.toFixed(2)}
@@ -191,8 +191,8 @@ function GananciasChart({ data }: { data: CategoriasResponse }) {
     }));
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-            <h3 className="font-bold text-slate-800 text-sm mb-1">Ingresos vs Ganancia por categoría</h3>
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-1">Ingresos vs Ganancia por categoría</h3>
             <p className="text-xs text-slate-400 mb-5">Top {chartData.length} categorías del período</p>
             <BarChart
                 data={chartData}
@@ -213,11 +213,11 @@ function GananciasChart({ data }: { data: CategoriasResponse }) {
 function EmptyState({ mes, anio }: { mes: number; anio: number }) {
     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Jul','Ago','Sep','Oct','Nov','Dic'];
     return (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                <Icon icon="solar:tag-linear" className="text-3xl text-slate-300" />
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
+                <Icon icon="solar:tag-linear" className="text-3xl text-slate-300 dark:text-slate-600" />
             </div>
-            <p className="font-bold text-slate-700">Sin ventas en {MESES[mes - 1]} {anio}</p>
+            <p className="font-bold text-slate-700 dark:text-gray-200">Sin ventas en {MESES[mes - 1]} {anio}</p>
             <p className="text-sm text-slate-400 mt-1">No hay comprobantes registrados en este período.</p>
         </div>
     );
@@ -237,7 +237,7 @@ export default function CategoriasView() {
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Período</p>
-                    <h2 className="text-[22px] font-extrabold text-slate-800 tracking-tight flex items-center">
+                    <h2 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center">
                         {MESES_FULL[mesActual - 1]} {anioActual}
                         {isCurrentOrFuture && (
                             <span className="ml-2.5 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: ACCENT }}>
@@ -257,14 +257,14 @@ export default function CategoriasView() {
                     </button>
                     <button
                         onClick={() => vm.navegarMes(-1)}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Icon icon="solar:alt-arrow-left-linear" />
                     </button>
                     <button
                         onClick={() => vm.navegarMes(1)}
                         disabled={isCurrentOrFuture}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30"
+                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-30"
                     >
                         <Icon icon="solar:alt-arrow-right-linear" />
                     </button>
@@ -279,24 +279,24 @@ export default function CategoriasView() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <KpiCard
                             icon="solar:tag-bold-duotone"
-                            iconBg="bg-violet-50"
-                            iconColor="text-violet-600"
+                            iconBg="bg-violet-50 dark:bg-violet-900/20"
+                            iconColor="text-violet-600 dark:text-violet-400"
                             label="Categorías activas"
                             value={String(data.totalCategorias)}
                             sub="con ventas este mes"
                         />
                         <KpiCard
                             icon="solar:cup-star-bold-duotone"
-                            iconBg="bg-amber-50"
-                            iconColor="text-amber-600"
+                            iconBg="bg-amber-50 dark:bg-amber-900/20"
+                            iconColor="text-amber-600 dark:text-amber-400"
                             label="Mejor categoría"
                             value={data.mejorCategoria ?? '—'}
                             sub="mayor ganancia"
                         />
                         <KpiCard
                             icon="solar:wallet-money-bold-duotone"
-                            iconBg="bg-blue-50"
-                            iconColor="text-blue-600"
+                            iconBg="bg-blue-50 dark:bg-blue-900/20"
+                            iconColor="text-blue-600 dark:text-blue-400"
                             label="Ingresos totales"
                             value={formatSoles(data.ingresoTotal)}
                             sub="ventas del período"
@@ -317,9 +317,9 @@ export default function CategoriasView() {
                     {/* Category Legend */}
                     <div className="flex flex-wrap gap-2">
                         {data.categorias.map((c, i) => (
-                            <div key={c.nombre} className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-full shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-xs">
+                            <div key={c.nombre} className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-800 rounded-full shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-xs">
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[i % CAT_COLORS.length] }} />
-                                <span className="text-slate-600 font-semibold">{c.nombre}</span>
+                                <span className="text-slate-600 dark:text-gray-300 font-semibold">{c.nombre}</span>
                             </div>
                         ))}
                     </div>
@@ -339,18 +339,18 @@ export default function CategoriasView() {
                     </div>
 
                     {/* Footer totals */}
-                    <div className="bg-white rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
                         <div className="flex-1">
                             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Resumen del mes</p>
                         </div>
                         <div className="flex gap-8">
                             <div className="text-right">
                                 <p className="text-xs text-slate-400">Ingresos</p>
-                                <p className="font-bold text-slate-800">{formatSoles(data.ingresoTotal)}</p>
+                                <p className="font-bold text-slate-800 dark:text-white">{formatSoles(data.ingresoTotal)}</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-slate-400">Costo mercadería</p>
-                                <p className="font-bold text-slate-800">{formatSoles(data.ingresoTotal - data.gananciaTotal)}</p>
+                                <p className="font-bold text-slate-800 dark:text-white">{formatSoles(data.ingresoTotal - data.gananciaTotal)}</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-slate-400">Ganancia bruta</p>
@@ -358,7 +358,7 @@ export default function CategoriasView() {
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-slate-400">Margen</p>
-                                <p className="font-bold text-slate-800">{formatPct(data.margenPromedio)}</p>
+                                <p className="font-bold text-slate-800 dark:text-white">{formatPct(data.margenPromedio)}</p>
                             </div>
                         </div>
                     </div>

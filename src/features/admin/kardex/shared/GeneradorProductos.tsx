@@ -76,12 +76,12 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
                     type="checkbox"
                     checked={selectedIndexes.includes(index)}
                     onChange={() => toggleSelect(index)}
-                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 cursor-pointer"
+                    className="w-4 h-4 text-purple-600 rounded border-gray-300 dark:border-slate-700 focus:ring-purple-500 cursor-pointer"
                 />
             </div>
         ),
         'Imagen': (
-            <div className="flex items-center justify-center h-12 w-12 bg-gray-100 rounded overflow-hidden border border-gray-200">
+            <div className="flex items-center justify-center h-12 w-12 bg-gray-100 dark:bg-slate-800 rounded overflow-hidden border border-gray-200 dark:border-slate-700">
                 {p.imagenUrl ? (
                     <img
                         src={p.imagenUrl}
@@ -102,17 +102,17 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
     }));
 
     return (
-        <div className="flex flex-col h-full bg-gray-50/50">
+        <div className="flex flex-col h-full bg-gray-50/50 dark:bg-[#0A0D14]">
             {/* Search Bar & Header - COMPACT VERSION */}
-            <div className="px-6 py-5 bg-white border-b border-gray-100 shadow-sm z-10 shrink-0">
+            <div className="px-6 py-5 bg-white dark:bg-[#111827] border-b border-gray-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 shrink-0">
                 <div className="flex items-center gap-6  mx-auto">
                     {/* Left: Input & Title */}
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="inline-flex items-center justify-center p-1.5 bg-fuchsia-100 rounded-lg text-fuchsia-600">
+                            <div className="inline-flex items-center justify-center p-1.5 bg-fuchsia-100 dark:bg-fuchsia-900/20 rounded-lg text-fuchsia-600 dark:text-fuchsia-400">
                                 <Icon icon="solar:magic-stick-3-bold-duotone" className="text-lg" />
                             </div>
-                            <h2 className="text-xl font-bold text-gray-900">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                 Generador de Productos con IA
                             </h2>
                         </div>
@@ -127,7 +127,7 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                                className="w-full pl-10 pr-4 h-[42px] bg-gray-50 border-0 text-gray-900 rounded-xl focus:ring-2 focus:ring-fuchsia-100 focus:bg-white transition-all placeholder:text-gray-400 outline-none text-sm font-medium"
+                                className="w-full pl-10 pr-4 h-[42px] bg-gray-50 dark:bg-slate-900 border-0 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-fuchsia-100 dark:focus:ring-fuchsia-900/30 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder:text-gray-400 outline-none text-sm font-medium"
                                 autoComplete="off"
                             />
                             <button
@@ -146,11 +146,11 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
 
                     {/* Right: Compact Disclaimer */}
                     <div className="shrink-0 max-w-[640px] relative">
-                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex gap-3 h-full items-center">
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 flex gap-3 h-full items-center">
                             <Icon icon="solar:info-circle-bold-duotone" className="text-2xl text-amber-500 shrink-0" />
                             <div>
-                                <h4 className="font-bold text-amber-800 text-md mb-0.5">Uso Inteligente</h4>
-                                <p className="text-[13px] text-amber-700/90 leading-tight">
+                                <h4 className="font-bold text-amber-800 dark:text-amber-300 text-md mb-0.5">Uso Inteligente</h4>
+                                <p className="text-[13px] text-amber-700/90 dark:text-amber-300/90 leading-tight">
                                     Estimado usuario estas consultas son limitadas, los precios que vera son referenciales y tal vez no van acorde al mercado esta es una ayuda para poder generar un catálogo de productos.
                                 </p>
                             </div>
@@ -161,17 +161,17 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
 
             {/* Results Area */}
             <div className="flex-1 p-6 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
-                <div className="bg-white rounded-3xl shadow-xl shadow-gray-100/50 border border-gray-100 flex-1 overflow-hidden relative flex flex-col">
+                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-xl shadow-gray-100/50 dark:shadow-none border border-gray-100 dark:border-slate-800 flex-1 overflow-hidden relative flex flex-col">
                     {loading && (
-                        <div className="absolute inset-0 bg-white/80   z-20 flex flex-col items-center justify-center">
+                        <div className="absolute inset-0 bg-white/80 dark:bg-[#111827]/80   z-20 flex flex-col items-center justify-center">
                             <div className="relative">
                                 <div className="w-20 h-20 border-4 border-fuchsia-100 border-t-fuchsia-600 rounded-full animate-spin"></div>
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <Icon icon="solar:magic-stick-3-bold-duotone" className="text-2xl text-fuchsia-600 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mt-6 mb-2">Creando catálogo...</h3>
-                            <p className="text-gray-500 font-medium">Esto puede tomar unos segundos</p>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-6 mb-2">Creando catálogo...</h3>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">Esto puede tomar unos segundos</p>
                         </div>
                     )}
 
@@ -184,11 +184,11 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
                         ) : (
                             !loading && (
                                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                                    <div className="w-24 h-24 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
                                         <Icon icon="solar:box-minimalistic-bold-duotone" className="text-4xl text-gray-300" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Tu catálogo aparecerá aquí</h3>
-                                    <p className="text-gray-500 max-w-sm mx-auto">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tu catálogo aparecerá aquí</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
                                         Ingresa una descripción arriba y deja que la IA haga el trabajo pesado por ti.
                                     </p>
                                 </div>
@@ -199,21 +199,21 @@ export default function GeneradorProductos({ onImport, onCancel }: GeneradorProd
             </div>
 
             {/* Footer Actions */}
-            <div className="px-8 py-5 bg-white border-t border-gray-100 flex justify-between items-center z-10">
-                <div className="text-sm font-medium text-gray-500">
-                    <span className="text-gray-900 font-bold">{selectedIndexes.length}</span> productos seleccionados
+            <div className="px-8 py-5 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800 flex justify-between items-center z-10">
+                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-900 dark:text-white font-bold">{selectedIndexes.length}</span> productos seleccionados
                 </div>
                 <div className="flex gap-3">
                     <button
                         onClick={onCancel}
-                        className="px-6 py-2.5 text-gray-600 font-semibold hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors"
+                        className="px-6 py-2.5 text-gray-600 dark:text-gray-300 font-semibold hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleImportClick}
                         disabled={selectedIndexes.length === 0}
-                        className="px-8 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-semibold shadow-lg shadow-fuchsia-200 hover:shadow-fuchsia-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 active:scale-95"
+                        className="px-8 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-semibold shadow-lg shadow-fuchsia-200 hover:shadow-fuchsia-300 dark:shadow-none dark:hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 active:scale-95"
                     >
                         <Icon icon="solar:file-download-bold-duotone" className="text-xl" />
                         Importar Selección

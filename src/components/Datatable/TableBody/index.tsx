@@ -16,12 +16,12 @@ const CENTERED_KEYS = new Set(['estado', 'tipo', 'status', 'acciones']);
 const getButtonStyle = (action: any, row: any): string => {
     if (action.color) {
         const map: Record<string, string> = {
-            violet:  'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100',
-            blue:    'bg-blue-50 text-blue-500 hover:bg-blue-100 border border-blue-100',
-            rose:    'bg-rose-50 text-rose-500 hover:bg-rose-100 border border-rose-100',
-            emerald: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100',
-            amber:   'bg-amber-50 text-amber-500 hover:bg-amber-100 border border-amber-100',
-            gray:    'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200',
+            violet:  'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/30 dark:border-violet-900/40',
+            blue:    'bg-blue-50 text-blue-500 hover:bg-blue-100 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 dark:border-blue-900/40',
+            rose:    'bg-rose-50 text-rose-500 hover:bg-rose-100 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/30 dark:border-rose-900/40',
+            emerald: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 dark:border-emerald-900/40',
+            amber:   'bg-amber-50 text-amber-500 hover:bg-amber-100 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/30 dark:border-amber-900/40',
+            gray:    'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:hover:bg-slate-700 dark:border-slate-700',
         };
         return map[action.color] ?? map.violet;
     }
@@ -29,12 +29,12 @@ const getButtonStyle = (action: any, row: any): string => {
     const raw = typeof action.tooltip === 'function' ? action.tooltip(row) : (action.tooltip ?? '');
     const t = raw.toString().toLowerCase();
 
-    if (/(elim|borra|anula|cancel|delet)/.test(t)) return 'bg-rose-50 text-rose-500 hover:bg-rose-100 border border-rose-100';
-    if (/(imprim|pdf|export|descarg|print)/.test(t))  return 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200';
-    if (/(ver|detall|vista|abrir|view|show)/.test(t))  return 'bg-blue-50 text-blue-500 hover:bg-blue-100 border border-blue-100';
-    if (/(edit|modif|actualiz|cambiar|update)/.test(t)) return 'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100';
+    if (/(elim|borra|anula|cancel|delet)/.test(t)) return 'bg-rose-50 text-rose-500 hover:bg-rose-100 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/30 dark:border-rose-900/40';
+    if (/(imprim|pdf|export|descarg|print)/.test(t))  return 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 dark:bg-slate-800 dark:text-gray-400 dark:hover:bg-slate-700 dark:border-slate-700';
+    if (/(ver|detall|vista|abrir|view|show)/.test(t))  return 'bg-blue-50 text-blue-500 hover:bg-blue-100 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 dark:border-blue-900/40';
+    if (/(edit|modif|actualiz|cambiar|update)/.test(t)) return 'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/30 dark:border-violet-900/40';
 
-    return 'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100';
+    return 'bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-100 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/30 dark:border-violet-900/40';
 };
 
 const EditableCell = ({ value, type, onChange, disabled, className }: any) => {
@@ -185,35 +185,35 @@ const TableBody: FC<ITableBodyProps> = ({ data, formValues, actions, columns }) 
                                             type={key === 'descripcion' ? 'text' : 'number'}
                                             value={cellValue}
                                             onChange={(newValue: any) => handleInputChange(index, key, newValue)}
-                                            className="w-full py-1.5 px-3 border-0 bg-gray-50 text-gray-700 text-sm rounded-lg focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
+                                            className="w-full py-1.5 px-3 border-0 bg-gray-50 text-gray-700 text-sm rounded-lg focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all dark:bg-slate-800 dark:text-gray-200 dark:focus:bg-slate-900 dark:focus:ring-violet-900/40"
                                             disabled={!isEditable}
                                         />
                                     ) : key === 'stock' || key === 'Stock' ? (
                                         cell !== null && cell !== '' ? (
-                                            <span className={`font-semibold ${Number(cell) <= 5 ? 'text-rose-500' : Number(cell) <= 15 ? 'text-amber-500' : 'text-emerald-600'}`}>
+                                            <span className={`font-semibold ${Number(cell) <= 5 ? 'text-rose-500 dark:text-rose-400' : Number(cell) <= 15 ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                                 {cell as React.ReactNode}
                                             </span>
                                         ) : (
-                                            <span className="text-gray-400">—</span>
+                                            <span className="text-gray-400 dark:text-gray-500">—</span>
                                         )
                                     ) : keyLower === 'cantidad' && !isEditable ? (
-                                        <span className={`font-semibold ${Number(cell) > 10 ? 'text-emerald-600' : Number(cell) > 0 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                        <span className={`font-semibold ${Number(cell) > 10 ? 'text-emerald-600 dark:text-emerald-400' : Number(cell) > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'}`}>
                                             {cell?.toString()}
                                         </span>
                                     ) : key === 'estado' || key === 'tipo' || key === 'status' || key === 'ambiente' || key === 'Ambiente' ? (
                                         <div
                                             className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
                                                 ${cell === 'EMITIDO' || cell === 'ACTIVO' || cell === 'ACEPTADO' || cell === 'INGRESO' || cell === 'TRANSFERENCIA' || cell === 'SENT' || cell === 'Present' || cell === 'COMPLETADO' || cell === 'PRODUCCIÓN'
-                                                    ? 'bg-emerald-50 text-emerald-600'
+                                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'
                                                     : cell === 'PENDIENTE' || cell === 'PENDIENTE_CONCILIACION'
-                                                        ? 'bg-blue-50 text-blue-600'
+                                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
                                                         : cell === 'PENDIENTE_PAGO' || cell === 'PAGO_PARCIAL' || cell === 'AJUSTE' || cell === 'ENVIANDO' || cell === 'DEMO'
-                                                            ? 'bg-amber-50 text-amber-600'
+                                                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
                                                             : cell === 'PARTIAL'
-                                                                ? 'bg-blue-50 text-blue-600'
+                                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
                                                                 : cell === 'RECHAZADO' || cell === 'ANULADO' || cell === 'SALIDA' || cell === 'FALLIDO_ENVIO' || cell === 'INACTIVO' || cell === 'Leave'
-                                                                    ? 'bg-rose-50 text-rose-500'
-                                                                    : 'bg-gray-100 text-gray-500'
+                                                                    ? 'bg-rose-50 text-rose-500 dark:bg-rose-900/20 dark:text-rose-300'
+                                                                    : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400'
                                                 }`}
                                         >
                                             {cell === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'

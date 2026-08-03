@@ -88,7 +88,7 @@ function KpiCard({ title, value, icon, iconBg, iconColor, sub, subColor, badge, 
     }
 
     return (
-        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 transition-all hover:shadow-md">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 dark:border-slate-800 transition-all hover:shadow-md">
             <div className="flex justify-between items-start mb-4">
                 <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl ${iconBg}`}>
                     <Icon icon={icon} className={iconColor} />
@@ -96,7 +96,7 @@ function KpiCard({ title, value, icon, iconBg, iconColor, sub, subColor, badge, 
                 {badge && <div>{badge}</div>}
             </div>
             <p className="text-slate-400 font-semibold uppercase tracking-wide text-xs mb-1.5">{title}</p>
-            <h3 className="text-[22px] font-extrabold text-slate-800 tracking-tight">{value}</h3>
+            <h3 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">{value}</h3>
             {sub && (
                 <p className={`text-sm mt-1 font-medium ${subColor ?? 'text-slate-400'}`}>{sub}</p>
             )}
@@ -124,25 +124,25 @@ function DailyProfitCard({ pnl }: { pnl: PnlResponse }) {
     const topDays = pnl.resumenDiario.slice(0, 7);
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                        <Icon icon="solar:calendar-mark-bold-duotone" className="text-emerald-600 text-xl" />
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                        <Icon icon="solar:calendar-mark-bold-duotone" className="text-emerald-600 dark:text-emerald-400 text-xl" />
                     </div>
                     <div>
-                        <h3 className="font-extrabold text-slate-800 text-base">Ganancia diaria real</h3>
+                        <h3 className="font-extrabold text-slate-800 dark:text-white text-base">Ganancia diaria real</h3>
                         <p className="text-xs text-slate-400">Ventas menos productos, publicidad y gastos diarios</p>
                     </div>
                 </div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-gray-400">
                     Últimos {topDays.length || 0} días
                 </span>
             </div>
 
             {topDays.length === 0 ? (
                 <div className="py-10 text-center">
-                    <Icon icon="solar:calendar-linear" className="text-4xl text-slate-200 mx-auto mb-2" />
+                    <Icon icon="solar:calendar-linear" className="text-4xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
                     <p className="text-sm text-slate-400">Aún no hay ventas con productos para este período.</p>
                 </div>
             ) : (
@@ -152,44 +152,44 @@ function DailyProfitCard({ pnl }: { pnl: PnlResponse }) {
                         return (
                             <div
                                 key={day.fecha}
-                                className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4"
+                                className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 p-4"
                             >
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-sm font-bold text-slate-800">{formatDate(day.fecha)}</span>
+                                    <span className="text-sm font-bold text-slate-800 dark:text-white">{formatDate(day.fecha)}</span>
                                     <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
                                         positive
-                                            ? 'bg-emerald-50 text-emerald-600'
-                                            : 'bg-rose-50 text-rose-600'
+                                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                            : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
                                     }`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${positive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                         Neto {formatPercent(day.margenNeto)}
                                     </span>
                                 </div>
                                 <div className="space-y-1 text-xs">
-                                    <div className="flex justify-between text-slate-500">
+                                    <div className="flex justify-between text-slate-500 dark:text-gray-400">
                                         <span>Ventas</span>
-                                        <span className="font-semibold text-slate-600">{formatCurrency(day.ventasNetas)}</span>
+                                        <span className="font-semibold text-slate-600 dark:text-gray-300">{formatCurrency(day.ventasNetas)}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-500">
+                                    <div className="flex justify-between text-slate-500 dark:text-gray-400">
                                         <span>Costo real</span>
-                                        <span className="font-semibold text-slate-600">{formatCurrency(day.costoMercaderia)}</span>
+                                        <span className="font-semibold text-slate-600 dark:text-gray-300">{formatCurrency(day.costoMercaderia)}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-500">
+                                    <div className="flex justify-between text-slate-500 dark:text-gray-400">
                                         <span>Publicidad</span>
-                                        <span className="font-semibold text-slate-600">{formatCurrency(day.publicidad)}</span>
+                                        <span className="font-semibold text-slate-600 dark:text-gray-300">{formatCurrency(day.publicidad)}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-500">
+                                    <div className="flex justify-between text-slate-500 dark:text-gray-400">
                                         <span>ROAS</span>
-                                        <span className="font-semibold text-slate-600">{day.roas === null ? '-' : `${day.roas.toFixed(2)}x`}</span>
+                                        <span className="font-semibold text-slate-600 dark:text-gray-300">{day.roas === null ? '-' : `${day.roas.toFixed(2)}x`}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-500">
+                                    <div className="flex justify-between text-slate-500 dark:text-gray-400">
                                         <span>Pedidos / costo pub.</span>
-                                        <span className="font-semibold text-slate-600">
+                                        <span className="font-semibold text-slate-600 dark:text-gray-300">
                                             {day.pedidos} / {day.costoPublicidadPorPedido === null ? '-' : formatCurrency(day.costoPublicidadPorPedido)}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between pt-2 mt-2 border-t border-slate-200">
-                                        <span className="font-bold text-slate-700">Ganancia neta</span>
+                                    <div className="flex justify-between pt-2 mt-2 border-t border-slate-200 dark:border-slate-700">
+                                        <span className="font-bold text-slate-700 dark:text-gray-200">Ganancia neta</span>
                                         <span className={`font-extrabold ${positive ? 'text-emerald-600' : 'text-rose-500'}`}>
                                             {formatCurrency(day.gananciaNeta)}
                                         </span>
@@ -225,30 +225,30 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
             {/* ── Month Navigator ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Rentabilidad P&amp;L</h2>
+                    <h2 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Rentabilidad P&amp;L</h2>
                     <div className="flex items-center gap-3 mt-1">
                         <p className="text-sm text-slate-400">
                             Análisis detallado de ganancias y pérdidas
                         </p>
-                        <button onClick={() => setIsHistorialOpen(true)} className="flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-600 text-xs font-semibold rounded-xl hover:bg-violet-100 transition-colors border border-violet-100">
+                        <button onClick={() => setIsHistorialOpen(true)} className="flex items-center gap-1.5 px-3 py-1 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-300 text-xs font-semibold rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors border border-violet-100 dark:border-violet-900/40">
                             <Icon icon="solar:history-bold-duotone" />
                             Ver historial completo
                         </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-1.5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                <div className="flex items-center gap-2 bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-2xl p-1.5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
                     <button
                         onClick={() => navegarMes(-1)}
-                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-[var(--accent)] hover:bg-violet-50 transition-colors"
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-gray-300 hover:text-[var(--accent)] hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                     >
                         <Icon icon="solar:arrow-left-bold" className="text-base" />
                         <span className="hidden sm:inline">Anterior</span>
                     </button>
 
-                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-50">
+                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-50 dark:bg-violet-900/20">
                         <Icon icon="solar:calendar-date-bold-duotone" className="text-[var(--accent)] text-base" />
-                        <span className="text-sm font-bold text-violet-700 whitespace-nowrap">
+                        <span className="text-sm font-bold text-violet-700 dark:text-violet-300 whitespace-nowrap">
                             {getMesFullLabel(mesActual)} {anioActual}
                         </span>
                     </div>
@@ -256,7 +256,7 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                     <button
                         onClick={() => navegarMes(1)}
                         disabled={isCurrentOrFuture}
-                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-[var(--accent)] hover:bg-violet-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-600 disabled:hover:bg-transparent"
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-gray-300 hover:text-[var(--accent)] hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-600 disabled:hover:bg-transparent"
                     >
                         <span className="hidden sm:inline">Siguiente</span>
                         <Icon icon="solar:arrow-right-bold" className="text-base" />
@@ -269,16 +269,16 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
                         {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100">
-                                <div className="w-11 h-11 rounded-2xl bg-slate-100 animate-pulse mb-4" />
-                                <div className="h-3 w-24 rounded bg-slate-100 animate-pulse mb-3" />
-                                <div className="h-6 w-32 rounded-lg bg-slate-100 animate-pulse" />
+                            <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 dark:border-slate-800">
+                                <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse mb-4" />
+                                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800 animate-pulse mb-3" />
+                                <div className="h-6 w-32 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                             </div>
                         ))}
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                        <div className="lg:col-span-3 h-72 rounded-3xl bg-slate-100 animate-pulse" />
-                        <div className="lg:col-span-2 h-72 rounded-3xl bg-slate-100 animate-pulse" />
+                        <div className="lg:col-span-3 h-72 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                        <div className="lg:col-span-2 h-72 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </div>
                 </>
             )}
@@ -292,8 +292,8 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             title="Ventas Netas"
                             value={formatCurrency(pnl?.ventasNetas ?? 0)}
                             icon="solar:cart-large-4-bold-duotone"
-                            iconBg="bg-violet-50"
-                            iconColor="text-violet-600"
+                            iconBg="bg-violet-50 dark:bg-violet-900/20"
+                            iconColor="text-violet-600 dark:text-violet-400"
                         />
 
                         {/* Ingresos Manuales (operativos del mes) */}
@@ -301,12 +301,12 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             title="Ingresos Manuales"
                             value={formatCurrency(pnl?.otrosIngresos ?? 0)}
                             icon="solar:wallet-money-bold-duotone"
-                            iconBg="bg-teal-50"
-                            iconColor="text-teal-600"
+                            iconBg="bg-teal-50 dark:bg-teal-900/20"
+                            iconColor="text-teal-600 dark:text-teal-400"
                             sub={(pnl?.otrosIngresos ?? 0) > 0
                                 ? `Suma a la ganancia · ${ingresos.length} registro${ingresos.length === 1 ? '' : 's'}`
                                 : 'Sin ingresos manuales este mes'}
-                            subColor="text-teal-500"
+                            subColor="text-teal-500 dark:text-teal-400"
                         />
 
                         {/* Ganancia Bruta */}
@@ -314,10 +314,10 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             title="Ganancia Bruta"
                             value={formatCurrency(pnl?.gananciaBruta ?? 0)}
                             icon="solar:chart-bold-duotone"
-                            iconBg="bg-blue-50"
-                            iconColor="text-blue-600"
+                            iconBg="bg-blue-50 dark:bg-blue-900/20"
+                            iconColor="text-blue-600 dark:text-blue-400"
                             sub={pnl ? `Margen ${formatPercent(pnl.margenBruto)} · Costo real ${formatCurrency(pnl.costoMercaderia)}` : undefined}
-                            subColor="text-blue-500"
+                            subColor="text-blue-500 dark:text-blue-400"
                         />
 
                         {/* Total Gastos Operativos */}
@@ -325,12 +325,12 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             title="Total Gastos Op."
                             value={formatCurrency(pnl?.gastosTotales ?? 0)}
                             icon="solar:bill-list-bold-duotone"
-                            iconBg="bg-amber-50"
-                            iconColor="text-amber-600"
+                            iconBg="bg-amber-50 dark:bg-amber-900/20"
+                            iconColor="text-amber-600 dark:text-amber-400"
                             sub={pnl
                                 ? `Publicidad ${formatCurrency(pnl.gastoPublicidad)}`
                                 : 'Sin gastos registrados'}
-                            subColor="text-amber-500"
+                            subColor="text-amber-500 dark:text-amber-400"
                         />
 
                         {/* Ganancia Neta — highlighted */}
@@ -378,11 +378,11 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-3xl p-12 border border-slate-100 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
-                            <div className="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
-                                <Icon icon="solar:chart-2-linear" className="text-3xl text-slate-300" />
+                        <div className="bg-white dark:bg-[#111827] rounded-3xl p-12 border border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
+                            <div className="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                                <Icon icon="solar:chart-2-linear" className="text-3xl text-slate-300 dark:text-slate-600" />
                             </div>
-                            <p className="text-slate-600 font-semibold">Sin datos para {getMesFullLabel(mesActual)} {anioActual}</p>
+                            <p className="text-slate-600 dark:text-gray-300 font-semibold">Sin datos para {getMesFullLabel(mesActual)} {anioActual}</p>
                             <p className="text-sm text-slate-400 mt-1">Aún no hay ventas registradas en este período</p>
                         </div>
                     )}

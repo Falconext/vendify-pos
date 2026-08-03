@@ -40,6 +40,7 @@ export interface IProductsViewModelState {
     showColumnFilter: boolean;
     vistaActual: 'cards' | 'tabla' | 'lista';
     marcaIdFilter: number | undefined;
+    soloStockBajo: boolean;
 }
 
 export const initialProductForm: IFormProduct = {

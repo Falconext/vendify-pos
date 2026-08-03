@@ -21,10 +21,10 @@ export default function PerfilIndex() {
 
     const isSystemAdmin = perfil?.rol === 'ADMIN_SISTEMA';
     const theme = {
-        bg: isSystemAdmin ? 'bg-indigo-50' : 'bg-violet-50',
-        text: isSystemAdmin ? 'text-indigo-600' : 'text-violet-600',
-        textDark: isSystemAdmin ? 'text-indigo-700' : 'text-violet-700',
-        border: isSystemAdmin ? 'border-indigo-100' : 'border-violet-100',
+        bg: isSystemAdmin ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-violet-50 dark:bg-violet-900/20',
+        text: isSystemAdmin ? 'text-indigo-600 dark:text-indigo-300' : 'text-violet-600 dark:text-violet-300',
+        textDark: isSystemAdmin ? 'text-indigo-700 dark:text-indigo-300' : 'text-violet-700 dark:text-violet-300',
+        border: isSystemAdmin ? 'border-indigo-100 dark:border-indigo-900/40' : 'border-violet-100 dark:border-violet-900/40',
         icon: isSystemAdmin ? 'text-indigo-300' : 'text-violet-300',
     };
     const limiteRaw = Number(usageStats?.limiteMaximo ?? 0);
@@ -37,12 +37,12 @@ export default function PerfilIndex() {
     const SHOW_WHATSAPP: boolean = false;
 
     // Estilos base reutilizables — CRM claro
-    const cardCls = 'bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100';
-    const inputCls = 'w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-colors focus:border-[var(--accent)]';
+    const cardCls = 'bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800';
+    const inputCls = 'w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-colors focus:border-[var(--accent)]';
     const primaryBtn = 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none';
 
     const SectionHeader = ({ icon, title, chip }: { icon: string; title: string; chip?: string }) => (
-        <h2 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2.5">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-5 flex items-center gap-2.5">
             <span className={`p-2 rounded-xl ${chip ?? `${theme.bg} ${theme.text}`}`}><Icon icon={icon} width="20" /></span>
             {title}
         </h2>
@@ -50,7 +50,7 @@ export default function PerfilIndex() {
 
     if (perfil?.rol === 'ADMIN_SISTEMA') {
         return (
-            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
                 <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                     <Icon icon="solar:home-smile-linear" className="text-base" />
                     <span>Panel</span>
@@ -60,24 +60,24 @@ export default function PerfilIndex() {
                     <span className="font-semibold" style={{ color: ACCENT }}>Mi Perfil</span>
                 </div>
                 <div className="mb-5">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Perfil de Administrador del Sistema</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Perfil de Administrador del Sistema</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Información de tu cuenta de plataforma.</p>
                 </div>
                 <div className={`${cardCls} p-6 max-w-4xl`}>
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-extrabold text-2xl">
+                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-extrabold text-2xl">
                             {perfil.nombre.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">{perfil.nombre}</h2>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">{perfil.nombre}</h2>
                             <p className="text-slate-400">{perfil.email}</p>
-                            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600"><span className="w-1.5 h-1.5 rounded-full bg-violet-500" />SUPER ADMIN</span>
+                            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300"><span className="w-1.5 h-1.5 rounded-full bg-violet-500" />SUPER ADMIN</span>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Rol</h3><p className="font-semibold text-slate-800">{perfil.rol}</p></div>
+                        <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Rol</h3><p className="font-semibold text-slate-800 dark:text-slate-100">{perfil.rol}</p></div>
                         <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Estado</h3><p className="font-semibold text-emerald-600">{perfil.estado}</p></div>
-                        <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Fecha Creación</h3><p className="font-semibold text-slate-800">{vm.formatearFecha(perfil.fechaCreacion)}</p></div>
+                        <div><h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Fecha Creación</h3><p className="font-semibold text-slate-800 dark:text-slate-100">{vm.formatearFecha(perfil.fechaCreacion)}</p></div>
                     </div>
                 </div>
             </div>
@@ -85,14 +85,14 @@ export default function PerfilIndex() {
     }
 
     const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-        <div className="pb-3 border-b border-slate-50 last:border-0 last:pb-0">
+        <div className="pb-3 border-b border-slate-50 dark:border-slate-800 last:border-0 last:pb-0">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>
             {children}
         </div>
     );
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -106,7 +106,7 @@ export default function PerfilIndex() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
                 <div>
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Mi Perfil</h1>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Mi Perfil</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Información de tu cuenta y empresa</p>
                 </div>
             </div>
@@ -115,15 +115,15 @@ export default function PerfilIndex() {
                 {/* Cabecera de perfil */}
                 <div className={`${cardCls} p-5`}>
                     <div className="flex items-center gap-5">
-                        <div className={`w-24 h-24 rounded-2xl p-1 border-2 ${theme.border} bg-white`}>
-                            <div className="w-full h-full bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative group cursor-pointer">
+                        <div className={`w-24 h-24 rounded-2xl p-1 border-2 ${theme.border} bg-white dark:bg-slate-800`}>
+                            <div className="w-full h-full bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden relative group cursor-pointer">
                                 {perfil.empresa.logo ? <img src={perfil.empresa.logo} alt="Logo empresa" className="w-full h-full object-cover" /> : <Icon icon="solar:user-circle-bold-duotone" className={`w-14 h-14 ${theme.icon}`} />}
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => document.getElementById('logoInput')?.click()}><Icon icon="solar:camera-add-bold" className="text-white w-8 h-8" /></div>
                                 <input type="file" id="logoInput" className="hidden" accept="image/*" onChange={vm.handleLogoChange} />
                             </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight truncate">{perfil.nombre}</h2>
+                            <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight truncate">{perfil.nombre}</h2>
                             <p className="text-slate-400 font-medium">{perfil.email}</p>
                             <div className="flex flex-wrap items-center gap-2 mt-3">
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${theme.bg} ${theme.textDark} uppercase tracking-wide`}>{perfil.rol.replace('ADMIN_', '').replace('USUARIO_', '').replace('_', ' ')}</span>
@@ -135,7 +135,7 @@ export default function PerfilIndex() {
 
                 {/* Cambiar contraseña — visible para todos los roles */}
                 <div className={`${cardCls} p-5`}>
-                    <SectionHeader icon="solar:lock-password-bold-duotone" title="Cambiar Contraseña" chip="bg-rose-50 text-rose-600" />
+                    <SectionHeader icon="solar:lock-password-bold-duotone" title="Cambiar Contraseña" chip="bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300" />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block">Contraseña actual</label>
@@ -145,7 +145,7 @@ export default function PerfilIndex() {
                                     value={passwordForm.actual}
                                     onChange={e => setPasswordForm(p => ({ ...p, actual: e.target.value }))}
                                     placeholder="••••••••"
-                                    className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 pr-10 outline-none transition-colors ${passwordErrors.actual ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 focus:border-[var(--accent)]'}`}
+                                    className={`w-full rounded-xl border-2 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 pr-10 outline-none transition-colors ${passwordErrors.actual ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-[var(--accent)]'}`}
                                 />
                                 <button type="button" onClick={() => setShowActual(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                                     <Icon icon={showActual ? 'solar:eye-closed-bold' : 'solar:eye-bold'} width={18} />
@@ -161,7 +161,7 @@ export default function PerfilIndex() {
                                     value={passwordForm.nueva}
                                     onChange={e => setPasswordForm(p => ({ ...p, nueva: e.target.value }))}
                                     placeholder="Mínimo 6 caracteres"
-                                    className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 pr-10 outline-none transition-colors ${passwordErrors.nueva ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 focus:border-[var(--accent)]'}`}
+                                    className={`w-full rounded-xl border-2 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 pr-10 outline-none transition-colors ${passwordErrors.nueva ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-[var(--accent)]'}`}
                                 />
                                 <button type="button" onClick={() => setShowNueva(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                                     <Icon icon={showNueva ? 'solar:eye-closed-bold' : 'solar:eye-bold'} width={18} />
@@ -176,7 +176,7 @@ export default function PerfilIndex() {
                                 value={passwordForm.confirmar}
                                 onChange={e => setPasswordForm(p => ({ ...p, confirmar: e.target.value }))}
                                 placeholder="Repite la nueva contraseña"
-                                className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-colors ${passwordErrors.confirmar ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 focus:border-[var(--accent)]'}`}
+                                className={`w-full rounded-xl border-2 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-colors ${passwordErrors.confirmar ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-[var(--accent)]'}`}
                             />
                             {passwordErrors.confirmar && <p className="text-xs text-rose-500">{passwordErrors.confirmar}</p>}
                         </div>
@@ -217,7 +217,7 @@ export default function PerfilIndex() {
                                     type="email"
                                     value={perfil.email}
                                     disabled
-                                    className="w-full rounded-xl border-2 px-3 py-2.5 text-sm outline-none border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+                                    className="w-full rounded-xl border-2 px-3 py-2.5 text-sm outline-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -256,7 +256,7 @@ export default function PerfilIndex() {
                                 <p className="text-[11px] text-slate-400 mt-1">Aparecerá en tus comprobantes y cotizaciones de todos los formatos.</p>
                             </div>
                             <div className="flex items-center justify-between pt-1">
-                                <Field label="Estado"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${perfil.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}><span className={`w-1.5 h-1.5 rounded-full ${perfil.estado === 'ACTIVO' ? 'bg-emerald-500' : 'bg-rose-500'}`} />{perfil.estado}</span></Field>
+                                <Field label="Estado"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${perfil.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300'}`}><span className={`w-1.5 h-1.5 rounded-full ${perfil.estado === 'ACTIVO' ? 'bg-emerald-500' : 'bg-rose-500'}`} />{perfil.estado}</span></Field>
                                 <button
                                     type="button"
                                     onClick={vm.handleSavePersonal}
@@ -282,7 +282,7 @@ export default function PerfilIndex() {
                                     <Icon icon="mdi:whatsapp" width={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-slate-800">Envío automático por WhatsApp</h2>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Envío automático por WhatsApp</h2>
                                     <p className="mt-1 text-sm leading-6 text-slate-500">
                                         Define si los comprobantes se envían con el número oficial de la plataforma o con el número propio de esta empresa.
                                     </p>
@@ -316,7 +316,7 @@ export default function PerfilIndex() {
                                                     </span>
                                                     {selected && <Icon icon="solar:check-circle-bold" className="text-emerald-500" width={20} />}
                                                 </div>
-                                                <p className="mt-3 text-sm font-bold text-slate-800">{option.title}</p>
+                                                <p className="mt-3 text-sm font-bold text-slate-800 dark:text-white">{option.title}</p>
                                                 <p className="mt-1 text-xs leading-5 text-slate-500">{option.description}</p>
                                             </button>
                                         );
@@ -327,10 +327,10 @@ export default function PerfilIndex() {
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                                         <div className="mb-4 flex items-center justify-between gap-3">
                                             <div>
-                                                <p className="text-sm font-bold text-slate-800">Credenciales propias de Meta</p>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-white">Credenciales propias de Meta</p>
                                                 <p className="text-xs text-slate-500">El token no se muestra por seguridad. Si escribes uno nuevo, se reemplaza.</p>
                                             </div>
-                                            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${perfil.empresa.whatsappApiTokenConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${perfil.empresa.whatsappApiTokenConfigured ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
                                                 {perfil.empresa.whatsappApiTokenConfigured ? 'Token configurado' : 'Sin token'}
                                             </span>
                                         </div>
@@ -341,7 +341,7 @@ export default function PerfilIndex() {
                                                     value={whatsAppForm.phoneNumberId}
                                                     onChange={e => vm.updateWhatsAppField('phoneNumberId', e.target.value)}
                                                     placeholder="Ej. 123456789012345"
-                                                    className="w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-400"
+                                                    className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-emerald-400"
                                                 />
                                             </label>
                                             <label className="space-y-1.5">
@@ -350,7 +350,7 @@ export default function PerfilIndex() {
                                                     value={whatsAppForm.businessId}
                                                     onChange={e => vm.updateWhatsAppField('businessId', e.target.value)}
                                                     placeholder="Opcional, pero recomendado"
-                                                    className="w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-400"
+                                                    className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-emerald-400"
                                                 />
                                             </label>
                                             <label className="space-y-1.5 md:col-span-2">
@@ -361,16 +361,16 @@ export default function PerfilIndex() {
                                                     type="password"
                                                     autoComplete="new-password"
                                                     placeholder={perfil.empresa.whatsappApiTokenConfigured ? 'Dejar vacío para conservar el token actual' : 'Pega aquí el token permanente de Meta'}
-                                                    className="w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-400"
+                                                    className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-emerald-400"
                                                 />
                                             </label>
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="text-xs leading-5 text-slate-500">
-                                        Estado actual: <span className="font-bold text-slate-800">{whatsAppForm.provider === 'DISABLED' ? 'Desactivado' : whatsAppForm.provider === 'EMPRESA' ? 'Número propio' : 'Número de plataforma'}</span>
+                                        Estado actual: <span className="font-bold text-slate-800 dark:text-white">{whatsAppForm.provider === 'DISABLED' ? 'Desactivado' : whatsAppForm.provider === 'EMPRESA' ? 'Número propio' : 'Número de plataforma'}</span>
                                     </div>
                                     <button
                                         type="button"
@@ -405,14 +405,14 @@ export default function PerfilIndex() {
 
                     {/* ── Conexión Shalom Pro (courier) — solo planes Negocio / Corporativo ── */}
                     {puedeShalom && (
-                    <div className="lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                        <div className="relative border-b border-rose-100/70 bg-gradient-to-br from-rose-50 via-white to-orange-50 p-5">
+                    <div className="lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-rose-100 dark:border-rose-900/40 bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                        <div className="relative border-b border-rose-100/70 dark:border-rose-900/40 bg-gradient-to-br from-rose-50 via-white to-orange-50 dark:from-rose-900/20 dark:via-[#111827] dark:to-orange-900/10 p-5">
                             <div className="flex items-start gap-3">
                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-500/20">
                                     <Icon icon="solar:delivery-bold-duotone" width={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-slate-800">Conexión con Shalom (Courier)</h2>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Conexión con Shalom (Courier)</h2>
                                     <p className="mt-1 text-sm leading-6 text-slate-500">
                                         Conecta tu cuenta de <strong>Shalom Pro</strong> (pro.shalom.pe) para consultar el tracking y generar guías de tus envíos. Es la misma cuenta con la que gestionas tus envíos en Shalom.
                                     </p>
@@ -422,8 +422,8 @@ export default function PerfilIndex() {
 
                         <div className="p-5 space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-700">Estado</span>
-                                <span className={`rounded-full px-3 py-1 text-xs font-bold ${perfil.empresa.shalomConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Estado</span>
+                                <span className={`rounded-full px-3 py-1 text-xs font-bold ${perfil.empresa.shalomConfigured ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
                                     {perfil.empresa.shalomConfigured ? 'Cuenta conectada' : 'Sin conectar'}
                                 </span>
                             </div>
@@ -435,7 +435,7 @@ export default function PerfilIndex() {
                                         onChange={e => vm.updateShalomField('email', e.target.value)}
                                         placeholder="tu-correo@ejemplo.com"
                                         autoComplete="off"
-                                        className="w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-rose-400"
+                                        className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-rose-400"
                                     />
                                 </label>
                                 <label className="space-y-1.5">
@@ -446,11 +446,11 @@ export default function PerfilIndex() {
                                         type="password"
                                         autoComplete="new-password"
                                         placeholder={perfil.empresa.shalomConfigured ? 'Dejar vacío para conservar la actual' : 'Tu contraseña de Shalom'}
-                                        className="w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-rose-400"
+                                        className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-rose-400"
                                     />
                                 </label>
                             </div>
-                            <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs leading-5 text-slate-500">
                                     Tu contraseña se guarda cifrada y solo se usa para autenticar tus operaciones con Shalom.
                                 </p>
@@ -468,44 +468,44 @@ export default function PerfilIndex() {
                     </div>
                     )}
                     <div className={`${cardCls} p-5 lg:order-2`}>
-                        <SectionHeader icon="solar:buildings-bold-duotone" title="Información de la Empresa" chip="bg-blue-50 text-blue-600" />
+                        <SectionHeader icon="solar:buildings-bold-duotone" title="Información de la Empresa" chip="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300" />
                         <div className="space-y-4">
-                            <Field label="Razón Social"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.razonSocial}</p></Field>
-                            <Field label="Nombre Comercial"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.nombreComercial}</p></Field>
-                            <Field label="RUC"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.ruc}</p></Field>
-                            <Field label="Dirección"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.direccion}</p></Field>
-                            <Field label="Tipo de Empresa"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.tipoEmpresa === 'FORMAL' ? 'bg-sky-50 text-sky-600' : 'bg-slate-100 text-slate-600'}`}>{perfil.empresa.tipoEmpresa === 'FORMAL' ? 'Formal' : 'Informal'}</span></Field>
-                            <Field label="Rubro"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.rubro.nombre}</p></Field>
-                            {perfil.empresa.ubicacion && <Field label="Ubicación"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.ubicacion.distrito}, {perfil.empresa.ubicacion.provincia}, {perfil.empresa.ubicacion.departamento}</p></Field>}
-                            <div className="pt-2 border-t border-slate-100">
-                                <label className="flex items-start gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50/40 cursor-pointer hover:bg-blue-50 transition-colors">
+                            <Field label="Razón Social"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.razonSocial}</p></Field>
+                            <Field label="Nombre Comercial"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.nombreComercial}</p></Field>
+                            <Field label="RUC"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.ruc}</p></Field>
+                            <Field label="Dirección"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.direccion}</p></Field>
+                            <Field label="Tipo de Empresa"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.tipoEmpresa === 'FORMAL' ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{perfil.empresa.tipoEmpresa === 'FORMAL' ? 'Formal' : 'Informal'}</span></Field>
+                            <Field label="Rubro"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.rubro.nombre}</p></Field>
+                            {perfil.empresa.ubicacion && <Field label="Ubicación"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.ubicacion.distrito}, {perfil.empresa.ubicacion.provincia}, {perfil.empresa.ubicacion.departamento}</p></Field>}
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <label className="flex items-start gap-3 p-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-900/10 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                                     <input
                                         type="checkbox"
                                         checked={Boolean(perfil.empresa.usaCodigoBarrasManual)}
                                         disabled={savingBarcodeConfig}
                                         onChange={(e) => vm.handleBarcodeToggle(e.target.checked)}
-                                        className="mt-1 w-4 h-4 accent-blue-600 rounded border-slate-300 bg-white"
+                                        className="mt-1 w-4 h-4 accent-blue-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
                                     />
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-800">Habilitar código de barras en productos</p>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Habilitar código de barras en productos</p>
                                         <p className="text-xs text-slate-500 mt-1">Muestra el campo "Código de Barras" en el formulario de productos, incluso si el rubro no lo activa automáticamente.</p>
                                         {savingBarcodeConfig && <p className="text-xs text-blue-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
                                 <label className={`mt-3 flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                                     fefoPermitidoPorPlan
-                                        ? 'border-violet-100 bg-violet-50/40 cursor-pointer hover:bg-violet-50'
-                                        : 'border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed'
+                                        ? 'border-violet-100 dark:border-violet-900/40 bg-violet-50/40 dark:bg-violet-900/10 cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-900/20'
+                                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 opacity-70 cursor-not-allowed'
                                 }`}>
                                     <input
                                         type="checkbox"
                                         checked={Boolean(perfil.empresa.usarPrecioLoteFefo)}
                                         disabled={savingFefoPriceConfig || !fefoPermitidoPorPlan}
                                         onChange={(e) => vm.handleFefoPriceToggle(e.target.checked)}
-                                        className="mt-1 w-4 h-4 accent-violet-600 rounded border-slate-300 bg-white"
+                                        className="mt-1 w-4 h-4 accent-violet-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
                                     />
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-800">Usar precio por lote FEFO en facturación</p>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Usar precio por lote FEFO en facturación</p>
                                         <p className="text-xs text-slate-500 mt-1">Cuando esté activo, el precio sugerido al agregar productos en comprobantes se tomará del costo del lote FEFO activo.</p>
                                         {!fefoPermitidoPorPlan && (
                                             <p className="text-xs text-orange-600 mt-1">Disponible solo si la característica de lotes está activa en el plan.</p>
@@ -513,28 +513,28 @@ export default function PerfilIndex() {
                                         {savingFefoPriceConfig && <p className="text-xs text-violet-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
-                                <label className="mt-3 flex items-start gap-3 p-3 rounded-xl border border-amber-100 bg-amber-50/40 cursor-pointer hover:bg-amber-50 transition-colors">
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
                                     <input
                                         type="checkbox"
                                         checked={Boolean(perfil.empresa.permitirVentaSinStock)}
                                         disabled={savingVentaSinStockConfig}
                                         onChange={(e) => vm.handleVentaSinStockToggle(e.target.checked)}
-                                        className="mt-1 w-4 h-4 accent-amber-600 rounded border-slate-300 bg-white"
+                                        className="mt-1 w-4 h-4 accent-amber-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
                                     />
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-800">Permitir vender sin stock (sobreventa)</p>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Permitir vender sin stock (sobreventa)</p>
                                         <p className="text-xs text-slate-500 mt-1">Cuando esté activo, podrás emitir comprobantes aunque el producto tenga stock 0 o insuficiente. La salida se registra igual y el inventario puede quedar en 0. Úsalo con cuidado.</p>
                                         {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
-                                <div className="mt-3 pt-3 border-t border-slate-100">
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:document-text-bold-duotone" width={14} />
                                         Formato de Cotización
                                     </p>
                                     <p className="text-xs text-slate-500">Ahora se configura desde <span className="font-semibold text-slate-700">Cotizaciones → Configurar formato</span>, con vista previa en vivo (mostrar/ocultar y tamaño de cada elemento).</p>
                                 </div>
-                                <div className="mt-3 pt-3 border-t border-slate-100">
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:printer-bold-duotone" width={14} />
                                         Tamaño del Logo en Comprobantes
@@ -544,7 +544,7 @@ export default function PerfilIndex() {
                                             disabled={vm.savingTicketLogoSize}
                                             value={perfil.empresa.ticketLogoSize ?? 96}
                                             onChange={(e) => vm.handleTicketLogoSizeChange(Number(e.target.value))}
-                                            className="px-3 py-2 text-sm rounded-xl border-2 border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[var(--accent)]"
+                                            className="px-3 py-2 text-sm rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)]"
                                         >
                                             <option value={64}>Extra Pequeño (64px)</option>
                                             <option value={96}>Pequeño (96px)</option>
@@ -560,7 +560,7 @@ export default function PerfilIndex() {
                                     <p className="text-xs text-slate-500 mt-1">Ajusta el tamaño con el que se imprime tu logo en todos los formatos: ticket 80mm, A4, A5, cotizaciones y guías de remisión.</p>
                                 </div>
                                 {usaLotesFarmaciaRubro(perfil.empresa.rubro?.nombre) && (
-                                    <div className="mt-3 pt-3 border-t border-slate-100">
+                                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                         <p className="text-xs font-bold text-violet-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                             <Icon icon="solar:medical-kit-bold-duotone" width={14} />
                                             Director Técnico Q.F. (Libro Control DIGEMID)
@@ -568,7 +568,7 @@ export default function PerfilIndex() {
                                         <div className="flex items-center gap-2">
                                             <input
                                                 type="text"
-                                                className="flex-1 px-3 py-2 text-sm rounded-xl border-2 border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-violet-500"
+                                                className="flex-1 px-3 py-2 text-sm rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-violet-500"
                                                 placeholder="Q.F. Nombre Apellido — CQP 12345"
                                                 value={directorInput ?? (perfil.empresa.directorTecnico ?? '')}
                                                 onChange={e => setDirectorInput(e.target.value)}
@@ -588,10 +588,10 @@ export default function PerfilIndex() {
                         </div>
                     </div>
                     {perfil.empresa.tipoEmpresa === 'FORMAL' && usageStats && (
-                        <div className={`lg:order-4 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border ${usageStats.limiteAlcanzado ? 'border-rose-200' : usageStats.alerta80 ? 'border-orange-200' : 'border-slate-100'} p-5`}>
+                        <div className={`lg:order-4 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border ${usageStats.limiteAlcanzado ? 'border-rose-200 dark:border-rose-900/50' : usageStats.alerta80 ? 'border-orange-200 dark:border-orange-900/50' : 'border-slate-100 dark:border-slate-800'} p-5`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
-                                    <span className={`p-2 rounded-xl ${usageStats.limiteAlcanzado ? 'bg-rose-50 text-rose-600' : usageStats.alerta80 ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}`}>
+                                    <span className={`p-2 rounded-xl ${usageStats.limiteAlcanzado ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' : usageStats.alerta80 ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'}`}>
                                         <Icon icon="solar:document-bold-duotone" width="20" />
                                     </span>
                                     Uso de Comprobantes SUNAT
@@ -645,20 +645,20 @@ export default function PerfilIndex() {
                         </div>
                     )}
                     <div className={`${cardCls} p-5 lg:order-5`}>
-                        <SectionHeader icon="solar:card-bold-duotone" title="Plan Actual" chip="bg-emerald-50 text-emerald-600" />
+                        <SectionHeader icon="solar:card-bold-duotone" title="Plan Actual" chip="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300" />
                         <div className="space-y-4">
                             <Field label="Nombre del Plan"><p className={`${theme.text} font-bold text-sm`}>{perfil.empresa.plan.nombre}</p></Field>
-                            <Field label="Descripción"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.plan.descripcion}</p></Field>
+                            <Field label="Descripción"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.plan.descripcion}</p></Field>
                             <Field label="Precio"><p className="text-slate-800 font-extrabold text-lg">S/ {Number(perfil.empresa?.plan?.costo).toFixed(2)}</p></Field>
-                            <Field label="Duración"><p className="text-slate-700 font-semibold text-sm">{perfil.empresa.plan.duracionDias} días</p></Field>
-                            <Field label="Tipo de Plan"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.plan.esPrueba ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>{perfil.empresa.plan.esPrueba ? 'Versión de Prueba' : 'Plan Premium'}</span></Field>
+                            <Field label="Duración"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.plan.duracionDias} días</p></Field>
+                            <Field label="Tipo de Plan"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.plan.esPrueba ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'}`}>{perfil.empresa.plan.esPrueba ? 'Versión de Prueba' : 'Plan Premium'}</span></Field>
                         </div>
                     </div>
                     <div className={`${cardCls} p-5 lg:order-6`}>
-                        <SectionHeader icon="solar:calendar-mark-bold-duotone" title="Suscripción Actual" chip="bg-amber-50 text-amber-600" />
+                        <SectionHeader icon="solar:calendar-mark-bold-duotone" title="Suscripción Actual" chip="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300" />
                         <div className="space-y-4">
-                            {perfil.empresa.fechaActivacion && <Field label="Fecha de Activación"><p className="text-slate-700 font-semibold text-sm">{vm.formatearFechaSolo(perfil.empresa.fechaActivacion)}</p></Field>}
-                            {perfil.empresa.fechaExpiracion && <Field label="Fecha de Expiración"><p className="text-slate-700 font-semibold text-sm">{vm.formatearFechaSolo(perfil.empresa.fechaExpiracion)}</p></Field>}
+                            {perfil.empresa.fechaActivacion && <Field label="Fecha de Activación"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{vm.formatearFechaSolo(perfil.empresa.fechaActivacion)}</p></Field>}
+                            {perfil.empresa.fechaExpiracion && <Field label="Fecha de Expiración"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{vm.formatearFechaSolo(perfil.empresa.fechaExpiracion)}</p></Field>}
                             <Field label="Estado actual"><span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${vm.obtenerColorEstado()}`}>{vm.obtenerEstadoSuscripcion()}</span></Field>
                         </div>
                     </div>

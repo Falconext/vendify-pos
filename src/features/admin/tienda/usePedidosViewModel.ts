@@ -213,7 +213,10 @@ const unwrapPedidos = (payload: ApiEnvelope<PedidoApi[] | PaginatedResponse<Pedi
 export const usePedidosViewModel = () => {
     const [pedidos, setPedidos] = useState<PedidoTiendaAdmin[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filtroEstado, setFiltroEstado] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('soloPendientesAtencion') === 'true' ? 'PENDIENTE' : '';
+    });
     const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
     const [newOrdersCount, setNewOrdersCount] = useState(0);
     const [busqueda, setBusqueda] = useState('');
