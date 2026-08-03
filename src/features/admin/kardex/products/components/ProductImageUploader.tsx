@@ -293,7 +293,7 @@ export const ProductImageUploader: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                 <button
                   type="button"
                   onClick={() => galleryInputRef.current?.click()}
-                  className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-700 flex flex-col items-center justify-center text-gray-400 hover:border-[#6A6CFF] hover:text-[#6A6CFF] transition-colors"
+                  className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-700 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-[#6A6CFF] hover:text-[#6A6CFF] transition-colors"
                   title="Agregar imágenes"
                 >
                   <Icon icon="mdi:plus" width={20} height={20} />

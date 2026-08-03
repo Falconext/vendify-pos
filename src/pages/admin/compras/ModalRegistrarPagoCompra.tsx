@@ -168,7 +168,7 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                     <button
                         onClick={handleSubmit}
                         disabled={loading || montoNum <= 0 || montoNum > saldoActual}
-                        className="px-8 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-all font-bold text-sm shadow-lg shadow-violet-200 dark:shadow-none flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                        className="px-8 py-3 btn-accent rounded-xl transition-all font-bold text-sm shadow-lg shadow-black/20 dark:shadow-none flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
                         {loading ? (
                             <>

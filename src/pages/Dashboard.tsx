@@ -13,12 +13,12 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0A0D14]">
+      <nav className="bg-white dark:bg-slate-800 shadow dark:shadow-none">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">Nephi POS</h1>
+          <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Nephi POS</h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-700">Bienvenido, {auth?.nombre}</span>
+            <span className="text-gray-700 dark:text-slate-200">Bienvenido, {auth?.nombre}</span>
             <Button color="danger" size="sm" onClick={handleLogout}>
               Cerrar Sesión
             </Button>
@@ -42,13 +42,13 @@ export function DashboardPage() {
         )}
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">Próximamente</h2>
-            <p className="text-gray-500">Gráficos y más funcionalidades</p>
+          <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-lg shadow dark:shadow-none p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Próximamente</h2>
+            <p className="text-gray-500 dark:text-gray-400">Gráficos y más funcionalidades</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">Información</h2>
-            <p className="text-gray-500">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow dark:shadow-none p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Información</h2>
+            <p className="text-gray-500 dark:text-gray-400">
               {auth?.rol === 'ADMIN_SISTEMA'
                 ? 'Administrador del Sistema'
                 : `Empresa: ${auth?.empresa?.razonSocial}`}
@@ -68,10 +68,10 @@ interface DashboardCardProps {
 
 function DashboardCard({ title, value, icon }: DashboardCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow dark:shadow-none p-6">
       <div className="text-3xl mb-2">{icon}</div>
-      <p className="text-gray-500 text-sm">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-gray-500 dark:text-gray-400 text-sm">{title}</p>
+      <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
     </div>
   )
 }

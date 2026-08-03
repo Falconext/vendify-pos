@@ -60,7 +60,7 @@ export default function ImageUploader({
 
     return (
         <div className="w-full">
-            <h5 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <h5 className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                 <Icon icon="mdi:image-outline" width={16} height={16} />
                 {label}
             </h5>
@@ -68,7 +68,7 @@ export default function ImageUploader({
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#6A6CFF] transition-colors cursor-pointer overflow-hidden relative"
+                    className="w-full h-40 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-lg hover:border-[#6A6CFF] transition-colors cursor-pointer overflow-hidden relative"
                     disabled={loadingImage}
                 >
                     {loadingImage ? (
@@ -79,7 +79,7 @@ export default function ImageUploader({
                                 height={32}
                                 className="animate-spin text-[#6A6CFF]"
                             />
-                            <span className="text-xs text-gray-500 mt-2">Validando...</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-2">Validando...</span>
                         </div>
                     ) : previewUrl ? (
                         <img
@@ -88,11 +88,11 @@ export default function ImageUploader({
                             className="w-full h-full object-contain"
                         />
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                        <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                             <Icon icon="mdi:image-plus" width={32} height={32} className="mb-2" />
                             <div className="text-center px-4">
                                 <div className="text-sm">Click para subir imagen</div>
-                                <div className="text-xs text-gray-400 mt-1">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                     Máx. 2MB
                                 </div>
                             </div>

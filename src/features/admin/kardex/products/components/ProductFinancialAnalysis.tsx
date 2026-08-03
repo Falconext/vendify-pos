@@ -56,6 +56,15 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                     </div>
                 </div>
 
+                {/* Precio sin IGV — base real del cálculo de margen, resaltado */}
+                {esGravado && (
+                    <div className="mt-3 rounded-lg p-3 text-center bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                        <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Precio de venta sin IGV</p>
+                        <p className="text-xl font-extrabold text-gray-900 dark:text-white leading-none mt-1">S/ {precioSinIgv.toFixed(2)}</p>
+                        <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">Base para el margen · con IGV S/ {precioUnitario.toFixed(2)}</p>
+                    </div>
+                )}
+
                 {/* Métricas principales */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                     {/* Precio */}
@@ -64,7 +73,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                         </div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {precioUnitario.toFixed(2)}</p>
-                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Precio{esGravado ? ` · sin IGV S/ ${precioSinIgv.toFixed(2)}` : ''}</p>
+                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Precio{esGravado ? ' con IGV' : ''}</p>
                     </div>
 
                     {/* Costo */}
@@ -73,7 +82,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon="solar:box-bold" className="text-slate-500 dark:text-slate-400" width={12} />
                         </div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {costoUnitario.toFixed(2)}</p>
-                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Costo</p>
+                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Costo</p>
                     </div>
 
                     {/* Ganancia */}
@@ -84,7 +93,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                         <p className={`text-sm font-bold leading-none ${gananciaPositiva ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                             {gananciaPositiva ? '+' : ''}S/ {ganancia.toFixed(2)}
                         </p>
-                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Ganancia</p>
+                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Ganancia</p>
                     </div>
 
                     {/* Margen */}
@@ -93,7 +102,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon="solar:pie-chart-bold" className={margenColor} width={12} />
                         </div>
                         <p className={`text-sm font-bold leading-none ${margenColor}`}>{margen.toFixed(1)}%</p>
-                        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">Margen</p>
+                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Margen</p>
                     </div>
                 </div>
             </div>
@@ -108,17 +117,17 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div className="text-center">
                             <p className="text-xs font-bold text-gray-700 dark:text-gray-200">S/ {(precioSinIgv * stockParaProyeccion).toFixed(2)}</p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Venta (sin IGV)</p>
+                            <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Venta (sin IGV)</p>
                         </div>
                         <div className="text-center border-x border-blue-100/50 dark:border-blue-900/30">
                             <p className="text-xs font-bold text-red-500 dark:text-red-400">S/ {(costoUnitario * stockParaProyeccion).toFixed(2)}</p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Inversión</p>
+                            <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Inversión</p>
                         </div>
                         <div className="text-center">
                             <p className={`text-xs font-bold ${gananciaPositiva ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                 S/ {(ganancia * stockParaProyeccion).toFixed(2)}
                             </p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Ganancia</p>
+                            <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Ganancia</p>
                         </div>
                     </div>
                 </div>

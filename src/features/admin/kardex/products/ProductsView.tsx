@@ -208,7 +208,7 @@ export default function ProductsView() {
                 'Costo Total Fijo': !esServicio && costoTotalFijo > 0 ? (
                     <div className="flex flex-col">
                         <span className="font-semibold text-gray-800 dark:text-gray-100">{simbolo} {formatMoney(costoTotalFijo)}</span>
-                        <span className="text-[10px] text-gray-400">Unit. {simbolo} {formatMoney(costoFijoUnitario)}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Unit. {simbolo} {formatMoney(costoFijoUnitario)}</span>
                     </div>
                 ) : '-',
                 'Margen': margen > 0 ? `${margen.toFixed(1)}%` : '-',
@@ -231,7 +231,7 @@ export default function ProductsView() {
                 'U.M': unidadNombre.toUpperCase(),
                 'Lotes': (() => {
                     const lotes = Array.isArray(itemAny?.lotes) ? itemAny.lotes : [];
-                    if (esServicio || lotes.length === 0) return <span className="text-gray-400">—</span>;
+                    if (esServicio || lotes.length === 0) return <span className="text-gray-400 dark:text-gray-500">—</span>;
                     const prox = lotes[0];
                     const venc = new Date(prox.fechaVencimiento);
                     const dias = Math.ceil((venc.getTime() - Date.now()) / 86400000);
@@ -246,7 +246,7 @@ export default function ProductsView() {
                             <span style={{ backgroundColor: color.bg, color: color.text }} className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap">
                                 {dias < 0 ? 'Vencido' : `Vence ${venc.toLocaleDateString('es-PE')}`}
                             </span>
-                            <span className="text-[10px] text-gray-400">{lotes.length} lote{lotes.length > 1 ? 's' : ''} · {totalStock} und</span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">{lotes.length} lote{lotes.length > 1 ? 's' : ''} · {totalStock} und</span>
                         </div>
                     );
                 })(),
@@ -255,31 +255,31 @@ export default function ProductsView() {
                     if (!cfg) return '-';
                     if (cfg.visibleEnSede === false) {
                         return (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-slate-700 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                                 <Icon icon="mdi:eye-off-outline" width={12} /> Oculto
                             </span>
                         );
                     }
                     if (cfg.vendibleEnSede === false) {
                         return (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                                 <Icon icon="mdi:archive-outline" width={12} /> Solo inventario
                             </span>
                         );
                     }
                     return (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             <Icon icon="mdi:cash-register" width={12} /> Vendible
                         </span>
                     );
                 })(),
                 'Estado': item.estado,
                 'Tienda': (item as any).publicarEnTienda ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
                         <Icon icon="mdi:store" width={12} /> Sí
                     </span>
                 ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-400">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-gray-500">
                         <Icon icon="mdi:store-off" width={12} /> No
                     </span>
                 ),
@@ -305,7 +305,7 @@ export default function ProductsView() {
                                 actions.setAnchorEl(e.currentTarget);
                             }
                         }}
-                        className="h-8 w-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                        className="h-8 w-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Icon icon="mdi:dots-vertical" width={20} height={20} />
                     </button>
@@ -421,12 +421,12 @@ export default function ProductsView() {
                                     {imageSrc ? (
                                         <img src={imageSrc} alt={item?.descripcion} className="h-full w-full object-contain" />
                                     ) : (
-                                        <Icon icon="solar:gallery-linear" width={28} className="text-gray-300" />
+                                        <Icon icon="solar:gallery-linear" width={28} className="text-gray-300 dark:text-slate-600" />
                                     )}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="line-clamp-2 text-sm font-black uppercase leading-snug text-gray-900 dark:text-white">{item?.descripcion}</p>
-                                    <p className="mt-1 text-[11px] font-mono text-gray-400">{item?.codigo || 'Sin código'}</p>
+                                    <p className="mt-1 text-[11px] font-mono text-gray-400 dark:text-gray-500">{item?.codigo || 'Sin código'}</p>
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
                                             {item?.categoria?.nombre || 'Sin categoría'}
@@ -452,20 +452,20 @@ export default function ProductsView() {
 
                             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
-                                    <p className="font-bold uppercase tracking-wide text-gray-400">Precio venta</p>
+                                    <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Precio venta</p>
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.precioUnitario || 0).toFixed(2)}</p>
                                 </div>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
-                                    <p className="font-bold uppercase tracking-wide text-gray-400">Costo</p>
+                                    <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Costo</p>
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}</p>
                                 </div>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
-                                    <p className="font-bold uppercase tracking-wide text-gray-400">Marca</p>
+                                    <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Marca</p>
                                     <p className="mt-1 truncate font-bold text-gray-700 dark:text-gray-200">{item?.marca?.nombre || 'Sin marca'}</p>
                                 </div>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
-                                    <p className="font-bold uppercase tracking-wide text-gray-400">Tienda</p>
-                                    <p className={`mt-1 font-bold ${(item as any).publicarEnTienda ? 'text-emerald-600' : 'text-gray-400'}`}>{(item as any).publicarEnTienda ? 'Publicado' : 'Oculto'}</p>
+                                    <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Tienda</p>
+                                    <p className={`mt-1 font-bold ${(item as any).publicarEnTienda ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>{(item as any).publicarEnTienda ? 'Publicado' : 'Oculto'}</p>
                                 </div>
                             </div>
                         </article>
@@ -488,9 +488,9 @@ export default function ProductsView() {
     };
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
                 <span>Panel</span>
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
@@ -502,8 +502,8 @@ export default function ProductsView() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">{vm.labels.titulo}</h1>
-                    <p className="text-sm text-slate-400 mt-0.5">Gestiona tu inventario de {vm.labels.titulo.toLowerCase()}</p>
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">{vm.labels.titulo}</h1>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Gestiona tu inventario de {vm.labels.titulo.toLowerCase()}</p>
                 </div>
                 <div className="flex w-full sm:w-auto gap-3">
                     <button
@@ -519,8 +519,8 @@ export default function ProductsView() {
             </div>
 
             {/* Main Content */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] relative z-0 overflow-hidden">
-                <div className="p-4 sm:p-5 border-b border-slate-100">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none relative z-0 overflow-hidden">
+                <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex flex-col lg:flex-row gap-4">
                         <div className="flex-1">
                             <InputPro
@@ -555,25 +555,25 @@ export default function ProductsView() {
                         )}
                         <div className="w-full flex md:top-3 relative z-50 lg:w-auto overflow-visible pb-2 lg:pb-0">
                             <div className="flex gap-2 px-1 items-center overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:tag-bold-duotone" className="text-blue-500" /> Categorías
                                 </button>
-                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:star-bold-duotone" className="text-emerald-500" /> Marcas
                                 </button>
                                 <div className="relative inline-block shrink-0" ref={dropdownRef}>
                                     <button
                                         type="button"
                                         onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                                        className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                                        className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                                     >
                                         <Icon icon="solar:file-bold-duotone" className="text-amber-500" width={16} />
                                         Excel / CSV
-                                        <Icon icon={showOptionsDropdown ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} className="text-slate-400" width={14} />
+                                        <Icon icon={showOptionsDropdown ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} className="text-slate-400 dark:text-slate-500" width={14} />
                                     </button>
 
                                     {showOptionsDropdown && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1.5 font-inter">
+                                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-none z-50 overflow-hidden py-1.5 font-inter">
                                             <input
                                                 type="file"
                                                 accept=".xlsx, .xls"
@@ -586,19 +586,19 @@ export default function ProductsView() {
                                             />
                                             <button
                                                 onClick={() => { actions.exportProducts(); setShowOptionsDropdown(false); }}
-                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
                                             >
                                                 <Icon icon="solar:export-bold" className="mr-2 text-emerald-500" width={18} />
                                                 Exportar Productos
                                             </button>
                                             <button
                                                 onClick={() => { vm.fileInputRef.current?.click(); }}
-                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
                                             >
                                                 <Icon icon="solar:import-bold" className="mr-2 text-blue-500" width={18} />
                                                 Importar desde Excel
                                             </button>
-                                            <div className="mx-4 my-1 border-t border-slate-100"></div>
+                                            <div className="mx-4 my-1 border-t border-slate-100 dark:border-slate-700"></div>
                                             <button
                                                 onClick={async () => {
                                                     setShowOptionsDropdown(false);
@@ -614,7 +614,7 @@ export default function ProductsView() {
                                                     a.click();
                                                     URL.revokeObjectURL(url);
                                                 }}
-                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
                                             >
                                                 <Icon icon="solar:file-download-bold" className="mr-2 text-amber-500" width={18} />
                                                 Descargar Modelo (Guía)
@@ -622,7 +622,7 @@ export default function ProductsView() {
                                         </div>
                                     )}
                                 </div>
-                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:shop-bold" className="text-indigo-500" /> Catálogo PDF
                                 </button>
                                 {/* Botón "Autocompletar" oculto a pedido del usuario. */}
@@ -632,18 +632,18 @@ export default function ProductsView() {
                 </div>
                 <div className="p-3 sm:p-4">
                     {vm.soloStockBajo && (
-                        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-rose-50 border border-rose-100 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600">
+                        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
                                 <Icon icon="solar:box-minimalistic-bold-duotone" width={18} />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold text-rose-700">Filtro de Stock Bajo Activo</p>
-                                <p className="text-xs text-rose-600/70">Mostrando productos con stock igual o menor al mínimo establecido.</p>
+                                <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">Filtro de Stock Bajo Activo</p>
+                                <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Mostrando productos con stock igual o menor al mínimo establecido.</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => actions.setSoloStockBajo(false)}
-                                className="ml-4 p-1.5 hover:bg-rose-200/50 rounded-lg text-rose-500 transition-colors shrink-0"
+                                className="ml-4 p-1.5 hover:bg-rose-200/50 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 dark:text-rose-400 transition-colors shrink-0"
                             >
                                 <Icon icon="solar:close-circle-bold" width={20} />
                             </button>

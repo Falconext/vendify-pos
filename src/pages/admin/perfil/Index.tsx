@@ -50,7 +50,7 @@ export default function PerfilIndex() {
 
     if (perfil?.rol === 'ADMIN_SISTEMA') {
         return (
-            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
                 <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                     <Icon icon="solar:home-smile-linear" className="text-base" />
                     <span>Panel</span>
@@ -92,7 +92,7 @@ export default function PerfilIndex() {
     );
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -576,7 +576,7 @@ export default function PerfilIndex() {
                                             <button
                                                 disabled={savingDirectorTecnico || directorInput === null}
                                                 onClick={() => vm.handleDirectorTecnicoSave(directorInput ?? '', () => setDirectorInput(null))}
-                                                className="px-3 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors"
+                                                className="px-3 py-2 btn-accent disabled:opacity-50 disabled:cursor-not-allowed text-sm font-bold rounded-xl transition-colors"
                                             >
                                                 {savingDirectorTecnico ? '...' : 'Guardar'}
                                             </button>

@@ -31,30 +31,30 @@ const PlanesSelector: React.FC<PlanesSelectorProps> = ({
     switch (planNombre.toUpperCase()) {
       case 'BASICO':
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          text: 'text-blue-800',
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-200 dark:border-blue-900/30',
+          text: 'text-blue-800 dark:text-blue-400',
           accent: 'text-blue-600'
         };
       case 'PRO':
         return {
-          bg: 'bg-purple-50',
-          border: 'border-purple-200',
-          text: 'text-purple-800',
+          bg: 'bg-purple-50 dark:bg-violet-900/20',
+          border: 'border-purple-200 dark:border-violet-900/30',
+          text: 'text-purple-800 dark:text-violet-400',
           accent: 'text-purple-600'
         };
       case 'PREMIUM':
         return {
-          bg: 'bg-amber-50',
-          border: 'border-amber-200',
-          text: 'text-amber-800',
+          bg: 'bg-amber-50 dark:bg-amber-900/20',
+          border: 'border-amber-200 dark:border-amber-900/30',
+          text: 'text-amber-800 dark:text-amber-400',
           accent: 'text-amber-600'
         };
       default:
         return {
-          bg: 'bg-gray-50',
-          border: 'border-gray-200',
-          text: 'text-gray-800',
+          bg: 'bg-gray-50 dark:bg-slate-900',
+          border: 'border-gray-200 dark:border-slate-700',
+          text: 'text-gray-800 dark:text-white',
           accent: 'text-gray-600'
         };
     }
@@ -75,7 +75,7 @@ const PlanesSelector: React.FC<PlanesSelectorProps> = ({
 
   if (!planes || planes.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
         <Icon icon="mdi:information-outline" className="mx-auto text-4xl mb-2" />
         <p>No hay planes disponibles</p>
       </div>
@@ -84,7 +84,7 @@ const PlanesSelector: React.FC<PlanesSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
         Seleccionar Plan de Suscripción *
       </label>
 
@@ -104,7 +104,7 @@ const PlanesSelector: React.FC<PlanesSelectorProps> = ({
                   ? `${colors.border} ${colors.bg} ring-2 ring-blue-500 ring-opacity-50`
                   : `border-gray-200 bg-white hover:${colors.bg} hover:${colors.border}`
                 }
-                ${isHovered ? 'transform scale-105 shadow-lg' : 'shadow-sm'}
+                ${isHovered ? 'transform scale-105 shadow-lg dark:shadow-none' : 'shadow-sm dark:shadow-none'}
               `}
               onClick={() => onPlanSelect(plan.id)}
               onMouseEnter={() => setHoveredPlan(plan.id)}
@@ -133,21 +133,21 @@ const PlanesSelector: React.FC<PlanesSelectorProps> = ({
                 <div className={`text-2xl font-bold ${colors.accent}`}>
                   S/ {plan.costo || 0}
                 </div>
-                <div className="text-sm text-gray-500">por mes</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">por mes</div>
               </div>
 
               {/* Características */}
               <div className="space-y-2 text-sm">
-                <div className="flex items-center text-gray-600">
-                  <Icon icon="mdi:account-group" className="mr-2 text-gray-400" />
+                <div className="flex items-center text-gray-600 dark:text-gray-400">
+                  <Icon icon="mdi:account-group" className="mr-2 text-gray-400 dark:text-gray-500" />
                   <span>
                     {plan.limiteUsuarios ? `${plan.limiteUsuarios} usuarios` : 'Usuarios ilimitados'}
                   </span>
                 </div>
 
                 {plan.descripcion && (
-                  <div className="flex items-start text-gray-600">
-                    <Icon icon="mdi:information-outline" className="mr-2 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start text-gray-600 dark:text-gray-400">
+                    <Icon icon="mdi:information-outline" className="mr-2 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
                     <span className="text-xs leading-relaxed">{plan.descripcion}</span>
                   </div>
                 )}

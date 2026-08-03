@@ -63,7 +63,7 @@ export default function CotizacionesView() {
                             vm.setAnchorEl(e.currentTarget);
                         }
                     }}
-                    className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                    className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors"
                 >
                     <Icon icon="mdi:dots-vertical" width={18} height={18} />
                 </button>
@@ -114,9 +114,9 @@ export default function CotizacionesView() {
             )}
             </div>
 
-            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+            <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
                 <span>Panel</span>
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
@@ -128,19 +128,19 @@ export default function CotizacionesView() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-11 w-11 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 shrink-0">
+                    <div className="h-11 w-11 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 shrink-0">
                         <Icon icon="solar:document-text-bold-duotone" className="text-2xl" />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight truncate">Cotizaciones</h1>
-                        <p className="text-sm text-slate-400 mt-0.5">Gestiona y convierte tus cotizaciones en facturas</p>
+                        <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Cotizaciones</h1>
+                        <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">Gestiona y convierte tus cotizaciones en facturas</p>
                     </div>
                 </div>
                 <div className="grid w-full grid-cols-1 gap-2.5 sm:w-auto sm:grid-cols-3">
                     <button
                         type="button"
                         onClick={() => setConfigFormatoOpen(true)}
-                        className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
+                        className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
                         Configurar formato
@@ -148,7 +148,7 @@ export default function CotizacionesView() {
                     <button
                         type="button"
                         onClick={() => vm.setIsOpenModalClean(true)}
-                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-600 flex items-center justify-center gap-1.5 hover:bg-rose-50 transition-colors"
+                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-600 flex items-center justify-center gap-1.5 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
                     >
                         <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
                         Limpiar pruebas
@@ -166,17 +166,17 @@ export default function CotizacionesView() {
             </div>
 
             {/* Main Content Card */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden">
                 {/* Filters Section */}
-                <div className="border-b border-slate-100 p-4 sm:p-5">
+                <div className="border-b border-slate-100 dark:border-slate-700 p-4 sm:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3 px-1">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="h-9 w-9 grid place-items-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
+                            <div className="h-9 w-9 grid place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shrink-0">
                                 <Icon icon="solar:filter-bold-duotone" className="text-lg" />
                             </div>
                             <div className="min-w-0">
-                                <h3 className="font-bold uppercase tracking-wide text-[11px] text-slate-400">Filtros de búsqueda</h3>
-                                <p className="truncate text-xs text-slate-400 md:hidden">Búsqueda, fechas y formato</p>
+                                <h3 className="font-bold uppercase tracking-wide text-[11px] text-slate-400 dark:text-gray-400">Filtros de búsqueda</h3>
+                                <p className="truncate text-xs text-slate-400 dark:text-gray-400 md:hidden">Búsqueda, fechas y formato</p>
                             </div>
                         </div>
                         <button
@@ -194,10 +194,10 @@ export default function CotizacionesView() {
                             <InputPro name="searchClient" onChange={vm.handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
                         </div>
                         <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" onChange={vm.handleDate} className="admin-date-filter" portal />
+                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(vm.fechaInicio).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
                         </div>
                         <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" onChange={vm.handleDate} className="admin-date-filter" portal />
+                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(vm.fechaFin).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
                         </div>
                         <div>
                             <Select onChange={vm.handleSelectPrint} label="Formato impresión" name="printSize" defaultValue={vm.printSize} options={vm.printOptions} error="" />
@@ -224,7 +224,7 @@ export default function CotizacionesView() {
                                         'Acciones'
                                     ]} />
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                                 <Pagination
                                     data={productsTable}
                                     optionSelect
@@ -240,9 +240,9 @@ export default function CotizacionesView() {
                         </>
                     ) : (
                         <div className="py-16 text-center">
-                            <Icon icon="solar:document-text-linear" className="text-5xl text-slate-200 mx-auto mb-3" />
-                            <p className="text-slate-500 font-semibold">No se encontraron comprobantes</p>
-                            <p className="text-sm text-slate-400 mt-1">Ajusta los filtros o selecciona un rango de fechas diferente</p>
+                            <Icon icon="solar:document-text-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                            <p className="text-slate-500 dark:text-gray-400 font-semibold">No se encontraron comprobantes</p>
+                            <p className="text-sm text-slate-400 dark:text-gray-500 mt-1">Ajusta los filtros o selecciona un rango de fechas diferente</p>
                         </div>
                     )}
                 </div>
@@ -277,8 +277,8 @@ export default function CotizacionesView() {
                                 type="button"
                                 onClick={() => vm.setPaymentMethod(key)}
                                 className={`p-1 justify-center rounded-lg flex border-2 ${vm.paymentMethod === key
-                                    ? 'border-blue-500 bg-blue-100'
-                                    : 'border-transparent hover:border-gray-300'
+                                    ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30'
+                                    : 'border-transparent hover:border-gray-300 dark:hover:border-slate-600'
                                     }`}
                             >
                                 <img src={src} alt={key} className="w-14 object-cover" />
@@ -344,12 +344,12 @@ export default function CotizacionesView() {
                     </div>
                     <div className="h-[80vh] flex items-center justify-center">
                         {!vm.pdfUrl ? (
-                            <div className="flex flex-col items-center gap-3 text-gray-400">
+                            <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500">
                                 <Icon icon="solar:refresh-bold" className="animate-spin text-violet-500" width={36} />
                                 <span className="text-sm">Generando PDF...</span>
                             </div>
                         ) : (
-                            <iframe src={vm.pdfUrl} className="w-full h-full rounded-lg border" />
+                            <iframe src={vm.pdfUrl} className="w-full h-full rounded-lg border dark:border-slate-700" />
                         )}
                     </div>
                 </div>

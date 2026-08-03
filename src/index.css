@@ -81,6 +81,32 @@
   }
 }
 
+@layer components {
+  /* Botón principal del panel: adopta el color de acento (--accent) elegido en
+     Personalización, con un hover ligeramente más oscuro. Reemplaza a los
+     colores fijos de los CTA (bg-blue-600 / bg-violet-600 / bg-indigo-600 /
+     #7551FF). Solo aplica color; el tamaño/forma lo dan las utilidades Tailwind. */
+  .btn-accent {
+    background-color: var(--accent, #7551FF);
+    color: #fff;
+  }
+  .btn-accent:hover {
+    background-color: color-mix(in srgb, var(--accent, #7551FF) 88%, #000);
+  }
+  /* Variante suave (fondo tenue con texto en el color de acento). */
+  .btn-accent-soft {
+    background-color: color-mix(in srgb, var(--accent, #7551FF) 14%, transparent);
+    color: var(--accent, #7551FF);
+  }
+  .btn-accent-soft:hover {
+    background-color: color-mix(in srgb, var(--accent, #7551FF) 22%, transparent);
+  }
+  /* Texto / borde / anillo en el color de acento (para enlaces y estados). */
+  .text-accent-brand { color: var(--accent, #7551FF); }
+  .border-accent-brand { border-color: var(--accent, #7551FF); }
+  .ring-accent-brand { --tw-ring-color: var(--accent, #7551FF); }
+}
+
 @layer base {
   * {
     border-color: hsl(var(--border));

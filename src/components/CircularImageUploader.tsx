@@ -27,8 +27,8 @@ export default function CircularImageUploader({
     };
 
     return (
-        <div className={`w-24 h-24 rounded-full p-1 border-2 ${theme.border} bg-white ${className}`}>
-            <div className="w-full h-full bg-gray-50 rounded-full flex items-center justify-center overflow-hidden relative group cursor-pointer">
+        <div className={`w-24 h-24 rounded-full p-1 border-2 ${theme.border} bg-white dark:bg-slate-800 ${className}`}>
+            <div className="w-full h-full bg-gray-50 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden relative group cursor-pointer">
                 {imageUrl ? (
                     <img
                         src={imageUrl}

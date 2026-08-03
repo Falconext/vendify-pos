@@ -6,8 +6,7 @@ import { useAuthStore } from '@/zustand/auth';
 import Modal from '@/components/Modal';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 type SistemaNegocio = string;
 type SistemaProducto = 'FACTURACION' | 'HOTEL' | 'RESTAURANTE' | '';
@@ -39,6 +38,8 @@ const EMPTY_FORM: FormData = {
 };
 
 export default function SistemaUsuarios() {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const authUser = useAuthStore(s => s.auth);
   // Si el admin logueado tiene alcance configurado, solo puede crear/editar dentro de ese scope
   const miSistemaNegocio = authUser?.sistemaNegocio ?? null;
@@ -269,7 +270,7 @@ export default function SistemaUsuarios() {
   };
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />

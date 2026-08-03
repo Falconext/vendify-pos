@@ -103,7 +103,7 @@ export default function ConciliacionView() {
             <button
               onClick={vm.conciliar}
               disabled={!vm.archivo || vm.cargando}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl btn-accent px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:opacity-50"
             >
               <Icon icon={vm.cargando ? 'svg-spinners:180-ring' : 'solar:refresh-bold'} width={18} />
               {vm.cargando ? 'Conciliando…' : 'Conciliar'}

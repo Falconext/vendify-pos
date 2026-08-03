@@ -488,7 +488,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                 type="button"
                                 onClick={handleEnviarEmail}
                                 disabled={enviandoEmail}
-                                className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold transition-colors shrink-0 disabled:opacity-60 flex items-center gap-1.5"
+                                className="h-10 px-4 rounded-xl btn-accent text-sm font-bold transition-colors shrink-0 disabled:opacity-60 flex items-center gap-1.5"
                             >
                                 {enviandoEmail && <Icon icon="line-md:loading-twotone-loop" className="text-base" />}
                                 Enviar

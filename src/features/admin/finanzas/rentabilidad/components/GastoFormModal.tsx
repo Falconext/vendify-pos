@@ -360,7 +360,7 @@ export default function GastoFormModal({
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 dark:shadow-indigo-900/20"
+                            className="flex-1 py-2.5 rounded-xl btn-accent disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-black/20"
                         >
                             {isSaving ? (
                                 <>

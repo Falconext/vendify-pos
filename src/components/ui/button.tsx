@@ -26,9 +26,9 @@ const buttonVariants = cva(
         default:
           "bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:scale-[0.98]",
         primary:
-          "bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:scale-[0.98]",
+          "btn-accent shadow-sm active:scale-[0.98]",
         secondary:
-          "bg-violet-600 text-white shadow-sm hover:bg-violet-700 active:scale-[0.98]",
+          "btn-accent-soft shadow-sm active:scale-[0.98]",
         destructive:
           "bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:scale-[0.98]",
         danger:
@@ -44,7 +44,7 @@ const buttonVariants = cva(
         "outline-default":
           "border border-slate-300 bg-transparent text-slate-700 hover:bg-slate-50 active:scale-[0.98]",
         "outline-primary":
-          "border border-blue-500 bg-transparent text-blue-600 hover:bg-blue-50 active:scale-[0.98]",
+          "border border-accent-brand bg-transparent text-accent-brand hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]",
         "outline-secondary":
           "border border-violet-500 bg-transparent text-violet-600 hover:bg-violet-50 active:scale-[0.98]",
         "outline-destructive":

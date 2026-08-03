@@ -6,8 +6,7 @@ import { useAuthStore } from '@/zustand/auth';
 import { esRubroFabricacion } from '@/utils/rubro-features';
 import Select from '@/components/Select';
 import InputPro from '@/components/InputPro';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 type Receta = {
   id: number;
@@ -46,6 +45,8 @@ type SelectOption = {
 };
 
 export default function ProduccionRecetasPage() {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const { auth } = useAuthStore();
   const alert = useAlertStore((state) => state.alert);
   const [loading, setLoading] = useState(false);
@@ -397,7 +398,6 @@ export default function ProduccionRecetasPage() {
     return (
       <div
         className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta"
-        style={{ ['--accent' as any]: ACCENT }}
       >
         <div className="max-w-xl mx-auto mt-10 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
           <div className="h-14 w-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 grid place-items-center mx-auto mb-4">
@@ -417,7 +417,6 @@ export default function ProduccionRecetasPage() {
   return (
     <div
       className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta"
-      style={{ ['--accent' as any]: ACCENT }}
     >
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">

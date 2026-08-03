@@ -240,7 +240,7 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
                     <button
                         onClick={handleSubmit}
                         disabled={loading || montoNum <= 0 || montoNum > saldoActual}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-5 py-2.5 btn-accent rounded-lg transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <>

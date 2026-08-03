@@ -269,7 +269,7 @@ const PaymentReceipt = ({
             </button>
             <button
               onClick={handlePrint}
-              className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 btn-accent rounded-xl transition-colors font-medium text-sm flex items-center justify-center gap-2"
             >
               <Icon icon="solar:printer-bold" width="15" height="15" />
               Imprimir

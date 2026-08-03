@@ -332,7 +332,7 @@ export default function ClienteDetalleModal({ resellerId, clienteId, isOpen, onC
                                             </div>
                                             <div className="mt-3 flex items-center gap-2">
                                                 {!tieneQpse ? (
-                                                    <button type="button" onClick={() => handleAprovisionarQpse(false)} className="inline-flex items-center gap-1.5 rounded-xl bg-[#7551FF] px-3.5 py-2 text-xs font-bold text-white hover:brightness-110 transition-all">
+                                                    <button type="button" onClick={() => handleAprovisionarQpse(false)} className="inline-flex items-center gap-1.5 rounded-xl btn-accent px-3.5 py-2 text-xs font-bold transition-all">
                                                         <Icon icon="solar:magic-stick-3-bold-duotone" width="16" />
                                                         Generar credenciales QPSE
                                                     </button>

@@ -5,8 +5,8 @@ import apiClient from '@/utils/apiClient'
 import { useProductModalViewModel } from '@/features/admin/kardex/products/useProductModalViewModel'
 import { ProductFormContent } from '@/features/admin/kardex/products/components/ProductFormContent'
 import { initialProductForm, IFormProduct, buildEditFormValues } from '@/features/admin/kardex/products/ProductsModel'
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme'
 
-const ACCENT = '#7551FF'
 const LIST_PATH = '/administrador/kardex/productos'
 
 const emptyForm = (): IFormProduct => ({ ...initialProductForm, preciosMayorista: [] })
@@ -18,6 +18,8 @@ const emptyErrors = () => ({
 // y EDITAR (/kardex/productos/editar/:id). Reutiliza el mismo ViewModel y
 // contenido (ProductFormContent) que el modal — una sola fuente de verdad.
 export default function ProductoNuevo() {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor)
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF'
   const navigate = useNavigate()
   const { id } = useParams()
   const location = useLocation()
@@ -75,32 +77,32 @@ export default function ProductoNuevo() {
   }, [isEdit, id])
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+      <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-500 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
         <span>Kardex</span>
         <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
-        <button onClick={goToList} className="hover:text-slate-600 transition-colors">Productos</button>
+        <button onClick={goToList} className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">Productos</button>
         <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
         <span className="font-semibold" style={{ color: ACCENT }}>{isEdit ? 'Editar producto' : 'Nuevo producto'}</span>
       </div>
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={goToList} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-slate-600 transition-colors">
+        <button onClick={goToList} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
           <Icon icon="solar:alt-arrow-left-linear" />
         </button>
         <div>
-          <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">{isEdit ? 'Editar producto' : 'Nuevo producto'}</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">{isEdit ? 'Editar producto' : 'Nuevo producto'}</h1>
+          <p className="text-sm text-slate-400 dark:text-gray-500 mt-0.5">
             {isEdit ? 'Actualiza la información del producto y guarda los cambios.' : 'Completa la información del producto y guárdalo.'}
           </p>
         </div>
       </div>
 
       {/* Contenido del formulario (mismo que el modal) */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] pb-1">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none pb-1">
         <ProductFormContent vm={vm} onCancel={goToList} forceBarcode />
       </div>
     </div>

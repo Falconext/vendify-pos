@@ -6,38 +6,21 @@
     width: 100%;
 }
 
-:global(.admin-date-filter) label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0;
-    color: #94a3b8;
-}
-
+/* El campo de fecha reutiliza el estilo base de InputPro (mismo alto, radio,
+   colores, tipografía y foco que los demás inputs/selects del panel). El label
+   también usa el estilo nativo de InputPro. Aquí solo reservamos espacio a la
+   derecha para el icono de calendario y lo posicionamos. */
 :global(.admin-date-filter) input {
-    height: 44px;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    padding: 0 42px 0 14px;
-    font-size: 12px;
-    font-weight: 800;
-    color: #334155;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.65);
-    transition: all 0.15s ease;
-}
-
-:global(.admin-date-filter) input:focus {
-    background: #fff;
-    border-color: #c4b5fd;
-    box-shadow: 0 0 0 3px rgba(117, 81, 255, 0.12);
+    padding-right: 40px;
 }
 
 :global(.admin-date-filter) svg {
-    top: 35px;
+    top: 33px;
     right: 14px;
-    color: #7551ff;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    color: #9ca3af;
 }
 
 :global(.admin-date-filter) > div:nth-child(2) {
@@ -337,25 +320,12 @@
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
 }
 
-/* admin-date-filter dark */
-:global(.dark) :global(.admin-date-filter) label {
-    color: #94a3b8;
-}
-
-:global(.dark) :global(.admin-date-filter) input {
-    background: #0f172a;
-    border-color: #1e293b;
-    color: #ffffff;
-}
-
-:global(.dark) :global(.admin-date-filter) input:focus {
-    background: #111827;
-    border-color: #7551ff;
-    box-shadow: 0 0 0 3px rgba(117, 81, 255, 0.22);
-}
-
+/* admin-date-filter dark: el input hereda las clases dark de InputPro
+   (dark:bg-slate-800, dark:border-slate-700, texto blanco y foco índigo).
+   Solo ajustamos el color del icono para que combine con las flechas de los
+   selects vecinos. */
 :global(.dark) :global(.admin-date-filter) svg {
-    color: #a78bfa;
+    color: #6b7280;
 }
 
 :global(.dark) :global(.admin-date-filter) > div:nth-child(2) {

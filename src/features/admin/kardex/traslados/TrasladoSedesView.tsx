@@ -220,7 +220,7 @@ export default function TrasladoSedesView() {
     const hasStockIssues = selectedProducts.some(p => p.cantidad > p.stockActual);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta">
 
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">

@@ -291,7 +291,7 @@ export default function EmpresaDrawer({
                                     <button
                                         onClick={guardarNota}
                                         disabled={!nuevaNota.trim() || guardando}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-violet-600 rounded-lg hover:bg-violet-700 disabled:opacity-40 transition-colors"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold btn-accent rounded-lg disabled:opacity-40 transition-colors"
                                     >
                                         {guardando && <Icon icon="eos-icons:loading" width={13} />}
                                         <Icon icon="solar:notes-bold" width={13} />
@@ -523,7 +523,7 @@ export default function EmpresaDrawer({
                                     <button
                                         onClick={enviarEmail}
                                         disabled={enviandoEmail || (emailTipo === 'PROMOCION' && !emailMensaje.trim())}
-                                        className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-bold text-white bg-violet-600 rounded-xl hover:bg-violet-700 disabled:opacity-40 transition-colors"
+                                        className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-bold btn-accent rounded-xl disabled:opacity-40 transition-colors"
                                     >
                                         {enviandoEmail
                                             ? <><Icon icon="eos-icons:loading" width={16} /> Enviando...</>

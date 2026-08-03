@@ -176,7 +176,7 @@ export const ModalRecetaMedica = ({ isOpen, item, onConfirmar, onCerrar }: Props
                                         type="button"
                                         onClick={handleValidarDni}
                                         disabled={reniecLoading || (datos.dniPaciente?.length ?? 0) !== 8}
-                                        className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 flex-shrink-0"
+                                        className="px-3 py-2.5 btn-accent disabled:bg-gray-300 disabled:cursor-not-allowed rounded-xl text-xs font-bold transition-colors flex items-center gap-1 flex-shrink-0"
                                     >
                                         {reniecLoading
                                             ? <Icon icon="solar:spinner-bold" className="animate-spin" />
@@ -261,7 +261,7 @@ export const ModalRecetaMedica = ({ isOpen, item, onConfirmar, onCerrar }: Props
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 btn-accent rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
                         >
                             <Icon icon="solar:check-circle-bold" />
                             Confirmar

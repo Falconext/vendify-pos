@@ -630,7 +630,7 @@ function EditarPedidoTiendaDespachoModal({ item, onClose, onSuccess }: EditarPed
                         type="button"
                         onClick={guardar}
                         disabled={saving}
-                        className="h-11 px-5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 disabled:opacity-60"
+                        className="h-11 px-5 rounded-xl btn-accent text-sm font-black disabled:opacity-60"
                     >
                         {saving ? 'Guardando...' : 'Guardar despacho'}
                     </button>
@@ -1147,7 +1147,7 @@ export default function DespachoView() {
     });
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />

@@ -126,7 +126,7 @@ export default function CampanasView() {
   const resumen = data?.resumen;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -173,12 +173,12 @@ export default function CampanasView() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 bg-white rounded-2xl px-3 py-2 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-          <button onClick={() => navegarMes(-1)} className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
+        <div className="flex items-center gap-2 bg-white dark:bg-[#111827] rounded-2xl px-3 py-2 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+          <button onClick={() => navegarMes(-1)} className="p-1 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Icon icon="solar:alt-arrow-left-bold" />
           </button>
-          <span className="text-sm font-bold text-slate-800 min-w-[90px] text-center">{MESES[mes - 1]} {anio}</span>
-          <button onClick={() => navegarMes(1)} disabled={mes === now.getMonth() + 1 && anio === now.getFullYear()} className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-30">
+          <span className="text-sm font-bold text-slate-800 dark:text-white min-w-[90px] text-center">{MESES[mes - 1]} {anio}</span>
+          <button onClick={() => navegarMes(1)} disabled={mes === now.getMonth() + 1 && anio === now.getFullYear()} className="p-1 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-30">
             <Icon icon="solar:alt-arrow-right-bold" />
           </button>
         </div>
@@ -188,14 +188,14 @@ export default function CampanasView() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-3xl bg-slate-100 animate-pulse" />
+            <div key={i} className="h-24 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
           ))}
         </div>
       ) : campanasFiltradas.length === 0 ? (
-        <div className="bg-white rounded-3xl p-16 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
-          <Icon icon="solar:target-linear" className="text-5xl text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-400">Sin campañas todavía</p>
-          <p className="text-xs text-slate-400 mt-1">Crea tu primera campaña para saber cuánto te cuesta cada venta y cuánto ganas realmente</p>
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-16 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none text-center">
+          <Icon icon="solar:target-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-400 dark:text-gray-400">Sin campañas todavía</p>
+          <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Crea tu primera campaña para saber cuánto te cuesta cada venta y cuánto ganas realmente</p>
           <button onClick={abrirCrear} className="mt-4 h-10 px-5 rounded-2xl text-white text-sm font-bold hover:brightness-105 transition-all shadow-lg shadow-violet-500/30" style={{ background: ACCENT }}>
             + Nueva Campaña
           </button>

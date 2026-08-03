@@ -19,6 +19,8 @@ const legacyColorToVariant: Record<string, Record<"filled" | "outline", string>>
   info: { filled: "info", outline: "outline-info" },
   lilac: { filled: "info", outline: "outline-info" },
   blue: { filled: "primary", outline: "outline-primary" },
+  indigo: { filled: "primary", outline: "outline-primary" },
+  violet: { filled: "primary", outline: "outline-primary" },
   primary: { filled: "primary", outline: "outline-primary" },
   success: { filled: "success", outline: "outline-success" },
   successTicket: { filled: "success", outline: "outline-success" },

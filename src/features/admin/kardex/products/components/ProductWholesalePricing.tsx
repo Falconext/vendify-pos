@@ -83,7 +83,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                                 {wholesaleOptions.length} nivel{wholesaleOptions.length > 1 ? 'es' : ''}
                             </span>
                         )}
-                        <div className={`p-1 rounded-full transition-colors ${isOpen ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : 'text-gray-400 group-hover:text-emerald-500'}`}>
+                        <div className={`p-1 rounded-full transition-colors ${isOpen ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : 'text-gray-400 dark:text-gray-500 group-hover:text-emerald-500'}`}>
                             <Icon icon="mdi:chevron-down" className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} width={20} />
                         </div>
                     </div>
@@ -102,7 +102,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                         return (
                             <div
                                 key={idx}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-300 transition-colors group"
+                                className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-700 transition-colors group"
                             >
                                 {/* Step badge */}
                                 <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
@@ -120,7 +120,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                                                 onChange={(e) => setEditValues(prev => ({ ...prev, cantidadMinima: e.target.value }))}
                                                 className="w-24 text-xs px-2 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-white"
                                             />
-                                            <span className="text-xs text-gray-500">unidades</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">unidades</span>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -135,7 +135,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                                                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                                                     {opt.cantidadMinima}+ unidades
                                                 </span>
-                                                <Icon icon="solar:arrow-right-linear" width={12} className="text-gray-400" />
+                                                <Icon icon="solar:arrow-right-linear" width={12} className="text-gray-400 dark:text-gray-500" />
                                                 <span className="text-sm font-bold text-green-700 dark:text-green-400">
                                                     S/ {Number(opt.precio).toFixed(2)}
                                                 </span>
@@ -163,7 +163,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                                             <button
                                                 type="button"
                                                 onClick={cancelEdit}
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700"
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                                             >
                                                 <Icon icon="solar:close-circle-linear" width={15} />
                                             </button>
@@ -207,7 +207,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                         Cant. mínima
                     </label>
                     <div className={`flex items-center gap-1.5 border rounded-lg px-2 py-1.5 transition-colors ${focused === 'cantidadMinima' ? 'border-blue-400 dark:border-blue-500' : 'border-gray-200 dark:border-slate-600'} bg-white dark:bg-slate-800`}>
-                        <Icon icon="solar:box-minimalistic-linear" width={13} className="text-gray-400 flex-shrink-0" />
+                        <Icon icon="solar:box-minimalistic-linear" width={13} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                         <input
                             type="number"
                             placeholder="Ej. 12"
@@ -228,7 +228,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                         Precio (S/)
                     </label>
                     <div className={`flex items-center gap-1.5 border rounded-lg px-2 py-1.5 transition-colors ${focused === 'precio' ? 'border-blue-400 dark:border-blue-500' : 'border-gray-200 dark:border-slate-600'} bg-white dark:bg-slate-800`}>
-                        <span className="text-xs font-semibold text-gray-400 flex-shrink-0">S/</span>
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 flex-shrink-0">S/</span>
                         <input
                             type="number"
                             placeholder="0.00"
@@ -254,7 +254,7 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                         type="button"
                         onClick={handleAddWholesaleOption}
                         disabled={!newWholesaleOption.cantidadMinima || !newWholesaleOption.precio}
-                        className="h-[34px] px-3 flex items-center gap-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white disabled:text-gray-400 dark:disabled:text-gray-500 rounded-lg text-xs font-semibold transition-all shadow-sm disabled:shadow-none mt-[22px]"
+                        className="h-[34px] px-3 flex items-center gap-1 btn-accent disabled:bg-gray-200 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-gray-400 dark:disabled:text-gray-500 rounded-lg text-xs font-semibold transition-all shadow-sm disabled:shadow-none mt-[22px]"
                     >
                         <Icon icon="mdi:plus" width={16} />
                         <span className="hidden sm:inline">Agregar</span>

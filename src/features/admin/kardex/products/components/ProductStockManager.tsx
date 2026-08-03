@@ -43,7 +43,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         name="visibleEnSede"
                         checked={formValues?.visibleEnSede !== false}
                         onChange={(e) => handleChange({ target: { name: 'visibleEnSede', value: e.target.checked } } as any)}
-                        className="h-3.5 w-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-700 text-violet-600 focus:ring-violet-500"
                     />
                     Visible en catálogo
                 </label>
@@ -53,7 +53,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         name="disponibleParaVenta"
                         checked={formValues?.disponibleParaVenta !== false}
                         onChange={(e) => handleChange({ target: { name: 'disponibleParaVenta', value: e.target.checked } } as any)}
-                        className="h-3.5 w-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-700 text-violet-600 focus:ring-violet-500"
                     />
                     Permite vender
                 </label>
@@ -111,7 +111,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                 label="Cantidad disponible"
                                 placeholder="Ej. 50"
                             />
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                                 Indica cuántas porciones/unidades tienes disponibles para vender.
                             </p>
                         </div>
@@ -137,13 +137,13 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                     tipoAjusteStock === 'restar' ? Math.max(0, stockOriginal - cantidadAjuste) : stockOriginal
                                         }
                                     </div>
-                                    <div className="text-xs text-gray-600">Stock Resultante</div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">Stock Resultante</div>
                                 </div>
                             </div>
 
                             <div>
                                 <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">Tipo de Ajuste</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Tipo de Ajuste</label>
                                     <div className="flex flex-wrap gap-2">
                                         {[
                                             { value: 'ninguno', label: 'Sin cambios', color: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300' },
@@ -168,7 +168,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
                                 {tipoAjusteStock !== 'ninguno' && (
                                     <div className="mt-3">
-                                        <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
                                             {tipoAjusteStock === 'reemplazar' ? 'Nuevo stock total:' :
                                                 tipoAjusteStock === 'sumar' ? 'Cantidad a agregar:' :
                                                     'Cantidad a quitar:'}
@@ -178,7 +178,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                             min="0"
                                             value={cantidadAjuste}
                                             onChange={(e) => setCantidadAjuste(Number(e.target.value))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                             placeholder="Ingrese la cantidad"
                                         />
                                     </div>
@@ -207,7 +207,7 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                     <div className={hasSedePolicy ? 'grid grid-cols-1 lg:grid-cols-4 gap-6' : ''}>
                         <div className={hasSedePolicy ? 'lg:col-span-1' : ''}>
                             <InputPro autocomplete="off" type="number" readOnly={esFarmaceutico} value={formValues?.stock} error={errors.stock} name="stock" onChange={handleChange} isLabel label="Stock Inicial" placeholder="Cantidad inicial en inventario" />
-                            {esFarmaceutico && <p className="text-[11px] text-amber-500 mt-1"><Icon icon="mdi:information" className="inline mr-1" />En farmacia, ingresa el stock inicial usando el botón "Gestión de Lotes".</p>}
+                            {esFarmaceutico && <p className="text-[11px] text-amber-500 dark:text-amber-400 mt-1"><Icon icon="mdi:information" className="inline mr-1" />En farmacia, ingresa el stock inicial usando el botón "Gestión de Lotes".</p>}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                 <InputPro autocomplete="off" type="number" value={formValues?.stockMinimo ?? ''} name="stockMinimo" onChange={handleChange} isLabel label="Stock mínimo" placeholder="Ej. 5" />
                                 <InputPro autocomplete="off" type="number" value={formValues?.stockMaximo ?? ''} name="stockMaximo" onChange={handleChange} isLabel label={isMobile ? "Stock máximo" : "Stock máximo"} placeholder="Ej. 100" />

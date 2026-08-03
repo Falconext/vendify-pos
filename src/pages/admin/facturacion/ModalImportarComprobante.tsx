@@ -415,7 +415,7 @@ const ModalImportarComprobante = ({ isOpen, onClose, onSuccess }: ModalImportarC
                                         type="button"
                                         onClick={buscarClientePorDoc}
                                         disabled={buscandoCliente}
-                                        className="w-full h-[42px] flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-60"
+                                        className="w-full h-[42px] flex items-center justify-center gap-1.5 text-xs font-bold btn-accent rounded-lg disabled:opacity-60"
                                     >
                                         <Icon icon={buscandoCliente ? 'eos-icons:loading' : 'solar:magnifer-linear'} width={16} />
                                         Buscar

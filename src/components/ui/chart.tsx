@@ -12,13 +12,13 @@ export function ChartTooltip({ content }: { content: React.ReactNode }) {
 }
 
 export function ChartLegend({ children }: { children?: React.ReactNode }) {
-  return <div className="flex items-center gap-3 text-xs text-gray-600">{children}</div>
+  return <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">{children}</div>
 }
 
 export function ChartTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-xl border bg-white px-3 py-2 shadow-md text-xs">
+    <div className="rounded-xl border dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 shadow-md dark:shadow-none text-xs">
       <div className="mb-1 font-medium">{label}</div>
       {payload.map((entry: any, idx: number) => (
         <div key={idx} className="flex items-center gap-2">

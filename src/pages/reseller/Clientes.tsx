@@ -524,7 +524,7 @@ export default function ResellerClientes() {
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white font-bold rounded-xl shadow-lg shadow-violet-500/30 hover:bg-violet-700 transition-all active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 btn-accent font-bold rounded-xl shadow-lg shadow-black/20 transition-all active:scale-95"
                     >
                         <Icon icon="solar:add-circle-bold" width="20" />
                         Nuevo Cliente
@@ -932,7 +932,7 @@ export default function ResellerClientes() {
                     </div>
                     <div className="sticky bottom-0 z-20 mt-auto flex gap-3 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
                         <button type="button" onClick={() => setIsEditModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
-                        <button type="submit" className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105">Guardar Cambios</button>
+                        <button type="submit" className="h-12 flex-1 rounded-xl btn-accent text-sm font-bold shadow-lg shadow-black/20 transition-all">Guardar Cambios</button>
                     </div>
                 </form>
             </Modal>
@@ -1300,7 +1300,7 @@ export default function ResellerClientes() {
                                     )}
                                     <div className="flex gap-3">
                                         <button type="button" onClick={() => setIsModalOpen(false)} className="h-12 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancelar</button>
-                                        <button type="submit" disabled={saldoInsuf} className="h-12 flex-1 rounded-xl bg-[#7551FF] text-sm font-bold text-white shadow-lg shadow-[#7551FF]/30 transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">Crear Cliente</button>
+                                        <button type="submit" disabled={saldoInsuf} className="h-12 flex-1 rounded-xl btn-accent text-sm font-bold shadow-lg shadow-black/20 transition-all disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">Crear Cliente</button>
                                     </div>
                                 </>
                             );

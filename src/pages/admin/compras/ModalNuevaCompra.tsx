@@ -718,7 +718,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                                                 outline
                                                 color="black"
                                                 onClick={guardarNuevoProveedor}
-                                                className="!bg-violet-600 !text-white !border-none !text-xs !py-1.5 shadow-sm"
+                                                className="!bg-[var(--accent)] !text-white !border-none !text-xs !py-1.5 shadow-sm"
                                             >
                                                 {savingProveedor ? <Icon icon="svg-spinners:270-ring-with-bg" width={14} /> : <Icon icon="solar:check-circle-bold" width={14} />}
                                                 {savingProveedor ? 'Guardando...' : 'Guardar Proveedor'}
@@ -840,7 +840,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                                 />
                             </div>
                             <div className="col-span-2">
-                                <Button outline color="black" onClick={addItem} className="w-full justify-center !bg-violet-600 !text-white !border-none shadow-md shadow-violet-200 hover:opacity-90">
+                                <Button outline color="black" onClick={addItem} className="w-full justify-center !bg-[var(--accent)] !text-white !border-none shadow-md shadow-black/20 hover:opacity-90">
                                     Agregar
                                     <Icon width={25} icon="solar:add-circle-bold" className="ml-2" />
                                 </Button>
@@ -912,7 +912,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                                                                     <Button
                                                                         outline
                                                                         color="black"
-                                                                        className="!bg-indigo-600 !text-white !border-none"
+                                                                        className="!bg-[var(--accent)] !text-white !border-none"
                                                                         onClick={() => vincularItemXml(idx)}
                                                                     >
                                                                         Vincular

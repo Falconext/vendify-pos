@@ -133,7 +133,7 @@ export default function ModalProveedor({
 
                         {/* Tipo de documento + número */}
                         <div className="space-y-3">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">N° de Documento</p>
+                            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">N° de Documento</p>
                             <div className="flex flex-wrap gap-2">
                                 {DOC_TYPES.map((dt) => (
                                     <button
@@ -142,8 +142,8 @@ export default function ModalProveedor({
                                         onClick={() => handleTipoDocChange(dt.key)}
                                         className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
                                             activeTipoDoc === dt.key
-                                                ? 'bg-gray-900 text-white border-gray-900'
-                                                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500 hover:text-gray-800'
+                                                ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white'
+                                                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500 hover:text-gray-800 dark:bg-slate-800 dark:text-gray-400 dark:border-slate-700 dark:hover:border-slate-500 dark:hover:text-white'
                                         }`}
                                     >
                                         {dt.label}
@@ -160,8 +160,8 @@ export default function ModalProveedor({
                                 label={inputPlaceholder}
                             />
                             {activeDocType.hint && (
-                                <p className="text-xs text-gray-400 flex items-center gap-1">
-                                    <span className="inline-block w-3.5 h-3.5 rounded-full border border-gray-400 text-center leading-3 text-[10px]">i</span>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    <span className="inline-block w-3.5 h-3.5 rounded-full border border-gray-400 dark:border-gray-500 text-center leading-3 text-[10px]">i</span>
                                     {activeDocType.hint}
                                 </p>
                             )}

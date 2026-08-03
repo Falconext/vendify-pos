@@ -349,7 +349,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         ? 'bg-gray-400 cursor-not-allowed'
                         : !hayProductos
                             ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-violet-600 shadow-sm border border-violet-700'
+                        : 'btn-accent shadow-sm border border-violet-700'
                         }`}
                     title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
@@ -662,7 +662,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                             <button
                                 onClick={() => vm.addInvoiceReceipt()}
                                 disabled={vm.isMixedPayment && !splitValid}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${vm.isMixedPayment && !splitValid ? 'bg-gray-400 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/30'}`}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${vm.isMixedPayment && !splitValid ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
                             >
                                 <Icon icon={vm.isEditMode ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
                                 {vm.isEditMode ? 'ACTUALIZAR' : 'EMITIR'}

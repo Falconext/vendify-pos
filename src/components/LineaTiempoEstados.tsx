@@ -65,7 +65,7 @@ export default function LineaTiempoEstados({ historial, estadoActual }: LineaTie
                         <div className="flex flex-col items-center">
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                                    isDone ? 'bg-green-500' : isPending ? 'bg-gray-100' : ''
+                                    isDone ? 'bg-green-500' : isPending ? 'bg-gray-100 dark:bg-slate-700' : ''
                                 }`}
                                 style={
                                     isActive
@@ -78,13 +78,13 @@ export default function LineaTiempoEstados({ historial, estadoActual }: LineaTie
                                 ) : (
                                     <Icon
                                         icon={estado.icon}
-                                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-300'} ${isActive ? 'animate-pulse' : ''}`}
+                                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-300 dark:text-slate-600'} ${isActive ? 'animate-pulse' : ''}`}
                                         style={isActive ? { color: 'white' } : undefined}
                                     />
                                 )}
                             </div>
                             {!isLast && (
-                                <div className={`w-0.5 flex-1 min-h-[28px] mt-1 ${isDone ? 'bg-green-400' : 'bg-gray-100'}`} />
+                                <div className={`w-0.5 flex-1 min-h-[28px] mt-1 ${isDone ? 'bg-green-400' : 'bg-gray-100 dark:bg-slate-700'}`} />
                             )}
                         </div>
 
@@ -102,10 +102,10 @@ export default function LineaTiempoEstados({ historial, estadoActual }: LineaTie
                                 )}
                             </p>
                             {ts && (
-                                <p className="text-xs text-gray-400 mt-0.5">{ts}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{ts}</p>
                             )}
                             {!ts && isPending && (
-                                <p className="text-xs text-gray-300 mt-0.5">Pendiente</p>
+                                <p className="text-xs text-gray-300 dark:text-slate-600 mt-0.5">Pendiente</p>
                             )}
                         </div>
                     </div>

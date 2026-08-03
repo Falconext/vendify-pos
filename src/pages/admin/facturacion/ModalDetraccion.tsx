@@ -334,7 +334,7 @@ const ModalDetraccion = ({
                                         <button
                                             type="button"
                                             onClick={agregarCuota}
-                                            className="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                            className="flex items-center gap-1 text-xs px-3 py-1.5 btn-accent rounded-lg transition-colors"
                                         >
                                             <Icon icon="solar:add-circle-bold" width={16} />
                                             Agregar Cuota
@@ -420,7 +420,7 @@ const ModalDetraccion = ({
                     <Button
                         color="primary"
                         onClick={handleGuardar}
-                        className="shadow-lg shadow-blue-500/30"
+                        className="shadow-lg shadow-black/20"
                     >
                         <Icon icon="solar:check-circle-bold" className="mr-2" width={18} />
                         Guardar {mode === 'RETENCION' ? 'Retención' : 'Detracción'}

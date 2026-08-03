@@ -43,7 +43,7 @@ export default function SedeSelectionScreen() {
             </div>
 
             {/* LEFT PANEL */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-slate-900 relative">
                 <div className="w-full max-w-md space-y-8">
                     {/* Header */}
                     <div className="space-y-2">
@@ -52,9 +52,9 @@ export default function SedeSelectionScreen() {
                                 <Icon icon="solar:city-bold" className="text-white text-xl" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Selecciona tu sede</h1>
-                                <p className="text-gray-500 text-sm">
-                                    Hola, <span className="font-semibold text-gray-700">{auth?.nombre?.split(' ')[0]}</span>. ¿A qué sede ingresas hoy?
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Selecciona tu sede</h1>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                    Hola, <span className="font-semibold text-gray-700 dark:text-slate-200">{auth?.nombre?.split(' ')[0]}</span>. ¿A qué sede ingresas hoy?
                                 </p>
                             </div>
                         </div>
@@ -62,10 +62,10 @@ export default function SedeSelectionScreen() {
 
                     {/* Sedes Grid */}
                     {!pendingSedes || pendingSedes.length === 0 ? (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+                        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 p-5 text-center">
                             <Icon icon="solar:shield-warning-bold-duotone" className="mx-auto mb-2 text-4xl text-amber-500" />
-                            <p className="text-sm font-bold text-gray-900">Tu selección de sede expiró</p>
-                            <p className="mt-1 text-xs text-gray-500">Vuelve a iniciar sesión para cargar tus sedes disponibles.</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">Tu selección de sede expiró</p>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Vuelve a iniciar sesión para cargar tus sedes disponibles.</p>
                             <button
                                 onClick={handleLogout}
                                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-indigo-700"
@@ -83,15 +83,15 @@ export default function SedeSelectionScreen() {
                                 disabled={loading}
                                 className={`w-full group relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
                                     selectedId === sede.id
-                                        ? 'border-[#4F46E5] bg-indigo-50 shadow-lg shadow-indigo-100'
-                                        : 'border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-md'
+                                        ? 'border-[#4F46E5] bg-indigo-50 dark:bg-indigo-900/20 shadow-lg shadow-indigo-100'
+                                        : 'border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-200 hover:bg-indigo-50/50 dark:hover:bg-slate-700 hover:shadow-md'
                                 } ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 {/* Icon */}
                                 <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
                                     selectedId === sede.id
                                         ? 'bg-[#4F46E5] text-white'
-                                        : 'bg-gray-50 text-gray-400 group-hover:bg-indigo-100 group-hover:text-indigo-600'
+                                        : 'bg-gray-50 dark:bg-slate-700 text-gray-400 dark:text-gray-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'
                                 }`}>
                                     {loading && selectedId === sede.id ? (
                                         <Icon icon="mdi:loading" className="text-2xl animate-spin" />
@@ -107,19 +107,19 @@ export default function SedeSelectionScreen() {
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-gray-900 text-sm">{sede.nombre}</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{sede.nombre}</span>
                                         {sede.tipo === 'ALMACEN' ? (
-                                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 rounded-full">
+                                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full">
                                                 Almacén
                                             </span>
                                         ) : sede.esPrincipal ? (
-                                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 rounded-full">
+                                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full">
                                                 Principal
                                             </span>
                                         ) : null}
                                     </div>
                                     {sede.codigo && (
-                                        <p className="text-xs text-gray-400 mt-0.5">Código: {sede.codigo}</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Código: {sede.codigo}</p>
                                     )}
                                 </div>
 
@@ -129,7 +129,7 @@ export default function SedeSelectionScreen() {
                                     className={`flex-shrink-0 transition-all duration-200 ${
                                         selectedId === sede.id
                                             ? 'text-[#4F46E5] translate-x-1'
-                                            : 'text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1'
+                                            : 'text-gray-300 dark:text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1'
                                     }`}
                                     width={20}
                                 />
@@ -139,15 +139,15 @@ export default function SedeSelectionScreen() {
                     )}
 
                     {/* Footer */}
-                    <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors"
+                            className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
                         >
                             <Icon icon="solar:logout-bold-duotone" width={16} />
                             Cambiar cuenta
                         </button>
-                        <p className="text-xs text-gray-300">© {new Date().getFullYear()} {BRAND.name}</p>
+                        <p className="text-xs text-gray-300 dark:text-slate-600">© {new Date().getFullYear()} {BRAND.name}</p>
                     </div>
                 </div>
             </div>

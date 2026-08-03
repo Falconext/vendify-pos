@@ -657,7 +657,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-tight">Requiere Receta Médica</p>
-                                    <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">Bloquea venta en POS hasta ingresar Nº receta</p>
+                                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">Bloquea venta en POS hasta ingresar Nº receta</p>
                                 </div>
                             </label>
                         )}
@@ -675,7 +675,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-tight">Medicamento Controlado</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">Requiere DNI paciente y nombre del médico</p>
+                                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">Requiere DNI paciente y nombre del médico</p>
                             </div>
                         </label>
                         <label className="flex items-start gap-3 cursor-pointer group mt-1 md:mt-2">
@@ -692,7 +692,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 leading-tight">🧊 Cadena de Frío</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">Muestra alerta en POS y en el carrito</p>
+                                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">Muestra alerta en POS y en el carrito</p>
                             </div>
                         </label>
                     </div>
@@ -736,17 +736,11 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         const esGravado = !['20', '30'].includes((formValues as any).tipoAfectacionIGV ?? '10');
                         const igvPct = esGravado ? 0.18 : 0;
                         const precio = Number(formValues?.precioUnitario) || 0;
-                        const costo = Number((formValues as any)?.costoUnitario) || 0;
 
                         // precioUnitario siempre se guarda CON IGV — derivar neto desde ahí
                         const precioConIgv = precio;
                         const precioSinIgv = esGravado ? parseFloat((precio / 1.18).toFixed(2)) : precio;
                         const igvMonto = parseFloat((precioConIgv - precioSinIgv).toFixed(2));
-
-                        const margen = costo > 0 && precioSinIgv > 0
-                            ? parseFloat(((precioSinIgv - costo) / costo * 100).toFixed(1))
-                            : null;
-                        const margenPositivo = margen !== null && margen >= 0;
 
                         const handlePrecioChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                             const num = parseFloat(e.target.value) || 0;
@@ -825,7 +819,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                     {esGravado && precio > 0 && (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-8">
                                             <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg px-3 py-2 text-center">
-                                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Neto</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Neto</p>
                                                 <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mt-0.5">{simbolo} {precioSinIgv.toFixed(2)}</p>
                                             </div>
                                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 text-center">
@@ -839,29 +833,19 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                         </div>
                                     )}
 
-                                    {/* Costo + margen */}
+                                    {/* Costo unitario */}
                                     {!isRestaurante && (
-                                        <div className="flex gap-3 items-end mt-10">
-                                            <div className="flex-1">
-                                                <InputPro
-                                                    type="number"
-                                                    step="0.01"
-                                                    name="costoUnitario"
-                                                    placeholder="0.00"
-                                                    isLabel
-                                                    label={`Costo unitario ${simbolo} (neto sin IGV)`}
-                                                    value={(formValues as any)?.costoUnitario != null ? parseFloat(Number((formValues as any).costoUnitario).toFixed(2)) : ''}
-                                                    onChange={(e) => setFormValues({ ...formValues, costoUnitario: parseFloat(e.target.value) || 0 } as any)}
-                                                />
-                                            </div>
-                                            {margen !== null && (
-                                                <div className={`px-3 py-2 rounded-xl text-center min-w-[80px] mb-0.5 ${margenPositivo ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Margen</p>
-                                                    <p className={`text-base font-bold mt-0.5 ${margenPositivo ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                                                        {margenPositivo ? '+' : ''}{margen}%
-                                                    </p>
-                                                </div>
-                                            )}
+                                        <div className="mt-10">
+                                            <InputPro
+                                                type="number"
+                                                step="0.01"
+                                                name="costoUnitario"
+                                                placeholder="0.00"
+                                                isLabel
+                                                label={`Costo unitario ${simbolo} (neto sin IGV)`}
+                                                value={(formValues as any)?.costoUnitario != null ? parseFloat(Number((formValues as any).costoUnitario).toFixed(2)) : ''}
+                                                onChange={(e) => setFormValues({ ...formValues, costoUnitario: parseFloat(e.target.value) || 0 } as any)}
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -898,7 +882,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                             <Icon
                                 icon="solar:alt-arrow-down-bold"
                                 width={16}
-                                className={`text-gray-400 transition-transform duration-200 ${advancedFinancialOpen ? 'rotate-180' : ''}`}
+                                className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 ${advancedFinancialOpen ? 'rotate-180' : ''}`}
                             />
                         </button>
                         {advancedFinancialOpen && (
@@ -1033,13 +1017,13 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
                                                         {/* Resultado grande */}
                                                         <div className={`rounded-xl p-4 text-center border-2 ${gana ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700' : empata ? 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700' : 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700'}`}>
-                                                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${gana ? 'text-emerald-600 dark:text-emerald-400' : empata ? 'text-gray-500' : 'text-red-500'}`}>
+                                                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${gana ? 'text-emerald-600 dark:text-emerald-400' : empata ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
                                                                 {gana ? '¡Estás ganando!' : empata ? 'Punto de equilibrio' : 'Estás perdiendo dinero'}
                                                             </p>
-                                                            <p className={`text-4xl font-black tracking-tight ${gana ? 'text-emerald-600 dark:text-emerald-400' : empata ? 'text-gray-600' : 'text-red-500'}`}>
+                                                            <p className={`text-4xl font-black tracking-tight ${gana ? 'text-emerald-600 dark:text-emerald-400' : empata ? 'text-gray-600 dark:text-gray-300' : 'text-red-500'}`}>
                                                                 {gana ? '+' : ''} S/ {gananciaXDia.toFixed(2)}
                                                             </p>
-                                                            <p className={`text-xs mt-1 ${gana ? 'text-emerald-500' : empata ? 'text-gray-400' : 'text-red-400'}`}>
+                                                            <p className={`text-xs mt-1 ${gana ? 'text-emerald-500' : empata ? 'text-gray-400 dark:text-gray-500' : 'text-red-400'}`}>
                                                                 al día
                                                             </p>
                                                         </div>
@@ -1048,16 +1032,16 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                         {pubDia > 0 && ventasDia > 0 && (
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                                 <div className="bg-white/60 dark:bg-slate-800/50 rounded-xl p-3 text-center border border-indigo-100 dark:border-indigo-900/40">
-                                                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">CPA (costo por venta)</p>
+                                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide font-semibold">CPA (costo por venta)</p>
                                                                     <p className="text-base font-bold text-amber-600 dark:text-amber-400 mt-0.5">S/ {cpaDia.toFixed(2)}</p>
-                                                                    <p className="text-[10px] text-gray-400 mt-0.5">publicidad ÷ ventas</p>
+                                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">publicidad ÷ ventas</p>
                                                                 </div>
                                                                 <div className={`rounded-xl p-3 text-center border ${ganaXUnidadConAds !== null && ganaXUnidadConAds >= 0 ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40' : 'bg-red-50/60 dark:bg-red-950/20 border-red-100 dark:border-red-900/40'}`}>
-                                                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Ganancia por unidad</p>
+                                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide font-semibold">Ganancia por unidad</p>
                                                                     <p className={`text-base font-bold mt-0.5 ${ganaXUnidadConAds !== null && ganaXUnidadConAds >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                                                         S/ {(ganaXUnidadConAds ?? 0).toFixed(2)}
                                                                     </p>
-                                                                    <p className="text-[10px] text-gray-400 mt-0.5">incluyendo publicidad</p>
+                                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">incluyendo publicidad</p>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1096,7 +1080,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                         Activo
                                     </span>
                                 )}
-                                <div className={`p-1 rounded-full transition-colors ${provisionOpen ? 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
+                                <div className={`p-1 rounded-full transition-colors ${provisionOpen ? 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
                                     <Icon icon="mdi:chevron-down" className={`transition-transform duration-300 ${provisionOpen ? 'rotate-180' : ''}`} width={20} />
                                 </div>
                             </div>
@@ -1155,7 +1139,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                 <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700 mt-2">
                                                     <table className="w-full text-left border-collapse">
                                                         <thead>
-                                                            <tr className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-[10px] text-gray-500 uppercase tracking-wide">
+                                                            <tr className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                                                                 <th className="px-3 py-2 font-semibold">Stock Base</th>
                                                                 <th className="px-3 py-2 font-semibold">Cupo Venta</th>
                                                                 <th className="px-3 py-2 font-semibold">Cupo Provisión</th>

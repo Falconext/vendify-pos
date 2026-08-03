@@ -361,7 +361,7 @@ const EditEmpresa = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
         <Loading />
       </div>
     );
@@ -369,7 +369,7 @@ const EditEmpresa = () => {
 
   if (!empresa) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
         <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-10">
           <div className="text-center py-10">
             <div className="mx-auto mb-4 h-16 w-16 grid place-items-center rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400">
@@ -394,7 +394,7 @@ const EditEmpresa = () => {
   console.log("EL FORMDATA DEL FORMULARIO", formData)
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />

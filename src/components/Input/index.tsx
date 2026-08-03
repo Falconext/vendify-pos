@@ -49,7 +49,7 @@ const Input = ({
 
     return (
         <div className="rounded">
-            <div className={`z-0 relative ${isGroup ? "" : "border-gray-200 border-solid border rounded-xl"}`}>
+            <div className={`z-0 relative ${isGroup ? "" : "border-gray-200 dark:border-slate-700 border-solid border rounded-xl"}`}>
                 {
                     isIcon && (
                         <div className="absolute top-3.5 left-3">
@@ -59,7 +59,7 @@ const Input = ({
                         </div>
                     )
                 }
-                <div className={`content-[""] w-[1px] h-full bg-[#e3e3e3] absolute left-12 `}>
+                <div className={`content-[""] w-[1px] h-full bg-[#e3e3e3] dark:bg-slate-700 absolute left-12 `}>
 
                 </div>
                 {
@@ -75,7 +75,7 @@ const Input = ({
                             form={form} 
                             readOnly={readOnly}
                             autoComplete={autoComplete}
-                            className="peer block w-full font-medium pl-14 border-gray-400 py-4 pb-2 rounded-xl focus:bg-[#F3F3F8] focus:outline-none focus:border-1 focus:ring-0 focus:border-[#895af8] focus:pl-14"
+                            className="peer block w-full font-medium pl-14 border-gray-400 dark:border-slate-700 dark:text-white dark:bg-transparent py-4 pb-2 rounded-xl focus:bg-[#F3F3F8] dark:focus:bg-slate-800 focus:outline-none focus:border-1 focus:ring-0 focus:border-[#895af8] focus:pl-14"
                             defaultValue={value || ""} // Usa value en lugar de defaultValue
                             onChange={onChange}
                             max={max}
@@ -98,7 +98,7 @@ const Input = ({
                             placeholder=" "
                             readOnly={readOnly}
                             autoComplete={autoComplete}
-                            className="peer block w-full h-[50px] font-medium pl-14 border-gray-400 py-4 pb-2 rounded-xl focus:outline-none focus:bg-[#F3F3F8] focus:border-1 focus:ring-0 focus:border-[#6851EE] focus:pl-14"
+                            className="peer block w-full h-[50px] font-medium pl-14 border-gray-400 dark:border-slate-700 dark:text-white dark:bg-transparent py-4 pb-2 rounded-xl focus:outline-none focus:bg-[#F3F3F8] dark:focus:bg-slate-800 focus:border-1 focus:ring-0 focus:border-[#6851EE] focus:pl-14"
                             value={value} // Usa value en lugar de defaultValue
                             onChange={onChange}
                             max={max}
@@ -122,7 +122,7 @@ const Input = ({
                             readOnly={readOnly}
                             form={form}
                             autoComplete={autoComplete}
-                            className="peer block w-full font-medium pl-14 border-gray-400 py-5 pb-2 rounded-xl focus:outline-none focus:bg-[#F3F3F8] focus:border-1 focus:ring-0 focus:border-[#6851EE] focus:pl-14"
+                            className="peer block w-full font-medium pl-14 border-gray-400 dark:border-slate-700 dark:text-white dark:bg-transparent py-5 pb-2 rounded-xl focus:outline-none focus:bg-[#F3F3F8] dark:focus:bg-slate-800 focus:border-1 focus:ring-0 focus:border-[#6851EE] focus:pl-14"
                             value={value} // Usa value en lugar de defaultValue
                             onChange={onChange}
                             max={max}
@@ -136,7 +136,7 @@ const Input = ({
                 <label
                     htmlFor={label}
                     onClick={onClick}
-                    className="absolute left-14 top-2 text-xs text-gray-600 transition-all duration-200 peer-placeholder-shown:top-3 focus:bg-[#F3F3F8] peer-placeholder-shown:text-lg peer-focus:top-2 peer-focus:text-xs peer-focus:text-black-500"
+                    className="absolute left-14 top-2 text-xs text-gray-600 dark:text-gray-400 transition-all duration-200 peer-placeholder-shown:top-3 focus:bg-[#F3F3F8] peer-placeholder-shown:text-lg peer-focus:top-2 peer-focus:text-xs peer-focus:text-black-500"
                 >
                     {label}
                 </label>

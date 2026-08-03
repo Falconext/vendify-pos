@@ -106,12 +106,12 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
                         <Icon icon="solar:database-bold-duotone" width={16} className="text-blue-600" />
                         Buscar en DIGEMID
                         {digemidCargado === true && (
-                            <span className="ml-auto text-[10px] font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                            <span className="ml-auto text-[10px] font-semibold text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
                                 ✓ Disponible
                             </span>
                         )}
                         {digemidCargado === false && (
-                            <span className="ml-auto text-[10px] font-semibold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                            <span className="ml-auto text-[10px] font-semibold text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
                                 Sin datos
                             </span>
                         )}
@@ -131,7 +131,7 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
                                     value={digemidQuery}
                                     onChange={e => handleDigemidSearch(e.target.value)}
                                     placeholder="Nombre comercial o principio activo..."
-                                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-[#111c44]/60 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-[#111c44]/60 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 />
                                 <Icon
                                     icon={digemidLoading ? 'svg-spinners:ring-resize' : 'solar:magnifer-linear'}
@@ -157,14 +157,14 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
                                                     <span className="text-xs text-blue-600 dark:text-blue-400">{item.principioActivo}</span>
                                                 )}
                                                 {item.concentracion && (
-                                                    <span className="text-xs text-gray-500">{item.concentracion}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{item.concentracion}</span>
                                                 )}
                                                 {item.laboratorio && (
-                                                    <span className="text-xs text-gray-400 truncate">{item.laboratorio}</span>
+                                                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">{item.laboratorio}</span>
                                                 )}
                                             </div>
                                             {item.registroSanitario && (
-                                                <p className="text-[10px] text-gray-400 mt-0.5">RS: {item.registroSanitario}</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">RS: {item.registroSanitario}</p>
                                             )}
                                         </button>
                                     ))}
@@ -173,7 +173,7 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
 
                             {showResults && digemidResults.length === 0 && !digemidLoading && digemidQuery.length >= 2 && (
                                 <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#111c44]/60 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl px-4 py-3">
-                                    <p className="text-xs text-gray-500 text-center">No encontrado en DIGEMID</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">No encontrado en DIGEMID</p>
                                 </div>
                             )}
                         </div>
@@ -183,7 +183,7 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
                 {/* Información farmacológica */}
                 <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-[#111c44]/60">
                     <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <div className="p-1.5 bg-white dark:bg-white/10 rounded-lg shadow-sm">
+                        <div className="p-1.5 bg-white dark:bg-white/10 rounded-lg shadow-sm dark:shadow-none">
                             <Icon icon="solar:pill-bold-duotone" width={16} className="text-blue-600 dark:text-blue-400" />
                         </div>
                         Farmacología
@@ -199,7 +199,7 @@ const ModalMedicamento = ({ isOpen, onClose, formValues, handleChange, errors, o
                 {/* Unidades de Compra/Venta */}
                 <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-[#111c44]/60">
                     <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <div className="p-1.5 bg-white dark:bg-white/10 rounded-lg shadow-sm">
+                        <div className="p-1.5 bg-white dark:bg-white/10 rounded-lg shadow-sm dark:shadow-none">
                             <Icon icon="solar:box-minimalistic-bold-duotone" width={16} className="text-green-600 dark:text-green-400" />
                         </div>
                         Unidades y Conversión

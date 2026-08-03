@@ -197,7 +197,7 @@ export default function CampanaFormModal({ vm }: { vm: VM }) {
             <button
               onClick={guardar}
               disabled={isSaving}
-              className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl btn-accent text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSaving && <Icon icon="mdi:loading" className="animate-spin" />}
               {editando ? 'Guardar' : 'Crear Campaña'}

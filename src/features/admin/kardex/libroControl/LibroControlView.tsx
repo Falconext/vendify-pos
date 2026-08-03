@@ -28,7 +28,6 @@ export default function LibroControlView() {
     return (
         <div
             className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta print:m-0 print:p-4 print:bg-white dark:print:bg-white"
-            style={{ ['--accent' as any]: ACCENT }}
         >
             <style>{`
                 @media print {

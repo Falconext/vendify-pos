@@ -69,9 +69,9 @@ export default function ComprasView() {
     ].filter(Boolean).length;
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
                 <span>Panel</span>
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
@@ -83,8 +83,8 @@ export default function ComprasView() {
             {/* Header */}
             <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold tracking-tight text-slate-800">Cuentas por Pagar / Compras</h1>
-                    <p className="mt-0.5 text-sm text-slate-400">Gestión de compras y pagos a proveedores</p>
+                    <h1 className="text-[22px] font-extrabold tracking-tight text-slate-800 dark:text-white">Cuentas por Pagar / Compras</h1>
+                    <p className="mt-0.5 text-sm text-slate-400 dark:text-gray-400">Gestión de compras y pagos a proveedores</p>
                 </div>
                 <button
                     onClick={actions.openNuevaCompra}
@@ -99,54 +99,54 @@ export default function ComprasView() {
             {/* Stats */}
             <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {/* KPI 1 */}
-                <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                     <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">Facturas (Vista)</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-violet-50 text-violet-600">
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Facturas (Vista)</h3>
+                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400">
                             <Icon icon="solar:bill-list-bold-duotone" className="text-xl" />
                         </div>
                     </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800">{totalCompras || 0}</h2>
+                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">{totalCompras || 0}</h2>
                     <p className="mt-2 h-4 text-xs font-medium text-transparent">.</p>
                 </div>
 
                 {/* KPI 2 */}
-                <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                     <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">Saldo por Pagar</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-50 text-rose-600">
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Saldo por Pagar</h3>
+                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
                             <Icon icon="solar:money-bag-bold-duotone" className="text-xl" />
                         </div>
                     </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800">S/ {totalPorPagar.toFixed(2)}</h2>
-                    <p className="mt-2 text-xs font-medium text-slate-400">(Página actual)</p>
+                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">S/ {totalPorPagar.toFixed(2)}</h2>
+                    <p className="mt-2 text-xs font-medium text-slate-400 dark:text-gray-400">(Página actual)</p>
                 </div>
 
                 {/* KPI 3 */}
-                <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                     <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">Vencidos (+1 día)</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 text-amber-600">
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Vencidos (+1 día)</h3>
+                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
                             <Icon icon="solar:calendar-bold-duotone" className="text-xl" />
                         </div>
                     </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800">{totalVencidos}</h2>
+                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">{totalVencidos}</h2>
                     <p className="mt-2 h-4 text-xs font-medium text-transparent">.</p>
                 </div>
             </div>
 
             {/* Card contenedora */}
-            <div className="rounded-3xl bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="rounded-3xl bg-white dark:bg-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                 {/* Filters */}
-                <div className="border-b border-slate-100 p-4 sm:p-5">
+                <div className="border-b border-slate-100 dark:border-slate-700 p-4 sm:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3 sm:hidden">
                         <div className="flex min-w-0 items-center gap-2">
-                            <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                            <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
                                 <Icon icon="solar:filter-bold-duotone" className="text-lg" />
                             </div>
                             <div className="min-w-0">
-                                <h3 className="font-semibold text-slate-800">Filtros</h3>
-                                <p className="truncate text-xs text-slate-400">{activeFilterCount} activos</p>
+                                <h3 className="font-semibold text-slate-800 dark:text-white">Filtros</h3>
+                                <p className="truncate text-xs text-slate-400 dark:text-gray-400">{activeFilterCount} activos</p>
                             </div>
                         </div>
                         <button
@@ -212,29 +212,29 @@ export default function ComprasView() {
                                     return (
                                         <article
                                             key={row.id}
-                                            className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]"
+                                            className="rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none"
                                         >
                                             <div className="mb-3 flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
-                                                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{row.Fecha}</p>
-                                                    <h3 className="mt-1 truncate text-base font-bold text-slate-800">{row.Proveedor}</h3>
-                                                    <p className="text-xs font-semibold text-slate-500">{row.Comprobante}</p>
+                                                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">{row.Fecha}</p>
+                                                    <h3 className="mt-1 truncate text-base font-bold text-slate-800 dark:text-white">{row.Proveedor}</h3>
+                                                    <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">{row.Comprobante}</p>
                                                 </div>
                                                 {row.Pago}
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3">
+                                            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase text-slate-400">Total</p>
-                                                    <p className="text-sm font-bold text-slate-800">{row.Total}</p>
+                                                    <p className="text-[10px] font-bold uppercase text-slate-400 dark:text-gray-400">Total</p>
+                                                    <p className="text-sm font-bold text-slate-800 dark:text-white">{row.Total}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase text-slate-400">Saldo</p>
-                                                    <p className="text-sm font-bold text-rose-600">{row.Saldo}</p>
+                                                    <p className="text-[10px] font-bold uppercase text-slate-400 dark:text-gray-400">Saldo</p>
+                                                    <p className="text-sm font-bold text-rose-600 dark:text-rose-400">{row.Saldo}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase text-slate-400">Venc.</p>
-                                                    <p className="text-sm font-bold text-slate-800">{row['Días Venc.']} días</p>
+                                                    <p className="text-[10px] font-bold uppercase text-slate-400 dark:text-gray-400">Venc.</p>
+                                                    <p className="text-sm font-bold text-slate-800 dark:text-white">{row['Días Venc.']} días</p>
                                                 </div>
                                             </div>
 
@@ -242,7 +242,7 @@ export default function ComprasView() {
                                                 <button
                                                     type="button"
                                                     onClick={() => actions.openDetalle(row.id)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-100 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition hover:bg-slate-200 dark:hover:bg-slate-600"
                                                 >
                                                     <Icon icon="solar:eye-bold" className="text-base" />
                                                     Detalle
@@ -250,7 +250,7 @@ export default function ComprasView() {
                                                 <button
                                                     type="button"
                                                     onClick={() => actions.openHistorial(compra)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-50 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100"
+                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
                                                 >
                                                     <Icon icon="solar:history-bold-duotone" className="text-base" />
                                                     Historial
@@ -277,7 +277,7 @@ export default function ComprasView() {
                                     actions={tableActions}
                                 />
                             </div>
-                             <div className="mt-4 border-t border-slate-100 pt-4">
+                             <div className="mt-4 border-t border-slate-100 dark:border-slate-700 pt-4">
                                 <Pagination
                                     data={tableData}
                                     optionSelect
@@ -293,8 +293,8 @@ export default function ComprasView() {
                         </>
                     ) : (
                         <div className="py-16 text-center">
-                            <Icon icon="solar:cart-large-minimalistic-linear" className="mx-auto mb-2 text-5xl text-slate-200" />
-                            <p className="text-sm text-slate-400">No se encontraron compras</p>
+                            <Icon icon="solar:cart-large-minimalistic-linear" className="mx-auto mb-2 text-5xl text-slate-200 dark:text-gray-600" />
+                            <p className="text-sm text-slate-400 dark:text-gray-400">No se encontraron compras</p>
                         </div>
                     )}
                 </div>

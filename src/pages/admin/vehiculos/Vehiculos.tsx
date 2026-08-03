@@ -13,9 +13,9 @@ import type {
 } from '@/interfaces/vehiculo';
 import ChecklistPicker, { type ChecklistState, checklistToPayload } from './ChecklistPicker';
 import { printActa } from './actaPrint';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 // ─── Estilo CRM claro (ver src/pages/admin/Index.tsx) ──────────────────────────
-const ACCENT = '#7551FF';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: string) =>
@@ -374,6 +374,8 @@ function DetalleModal({ vehiculo, onClose, onNuevaActa }: { vehiculo: IVehiculo;
 
 // ─── Página Principal ─────────────────────────────────────────────────────────
 export default function VehiculosPage() {
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     // Estado de la lista desde el store (se actualiza reactivamente en cada CRUD).
     const data = useVehiculosStore((s) => s.vehiculos);
     const total = useVehiculosStore((s) => s.totalVehiculos);
@@ -428,7 +430,7 @@ export default function VehiculosPage() {
     }, [page, totalPages]);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />

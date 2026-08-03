@@ -155,9 +155,9 @@ export default function ResellerDashboard() {
     if (saldoBajo) atencion.push({ key: 'saldo', icon: 'solar:wallet-money-bold-duotone', label: 'Saldo bajo', value: money(saldo), hint: 'Recarga para no suspender clientes', tone: 'violet', onClick: openSupportChat });
 
     const toneMap: Record<string, { bg: string; text: string; ring: string }> = {
-        amber: { bg: 'bg-amber-50', text: 'text-amber-600', ring: 'ring-amber-100' },
-        rose: { bg: 'bg-rose-50', text: 'text-rose-600', ring: 'ring-rose-100' },
-        violet: { bg: 'bg-violet-50', text: 'text-violet-600', ring: 'ring-violet-100' },
+        amber: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', ring: 'ring-amber-100' },
+        rose: { bg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-600 dark:text-rose-400', ring: 'ring-rose-100' },
+        violet: { bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-600 dark:text-violet-400', ring: 'ring-violet-100' },
     };
 
     const kpis = [
@@ -172,11 +172,11 @@ export default function ResellerDashboard() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Hola, {auth?.nombre} 👋</h1>
-                    <p className="text-slate-500">Tu negocio como Distribuidor {BRAND.name}</p>
+                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Hola, {auth?.nombre} 👋</h1>
+                    <p className="text-slate-500 dark:text-gray-400">Tu negocio como Distribuidor {BRAND.name}</p>
                 </div>
                 <div className="flex items-center gap-2.5">
-                    <button onClick={openSupportChat} className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+                    <button onClick={openSupportChat} className="h-11 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5">
                         <Icon icon="solar:wallet-money-bold-duotone" className="text-lg text-indigo-500" /> Recargar saldo
                     </button>
                     <button onClick={() => navigate('/reseller/clientes')} className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all" style={{ background: ACCENT }}>
@@ -188,13 +188,13 @@ export default function ResellerDashboard() {
             {/* KPIs hero */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {kpis.map((c) => (
-                    <div key={c.label} className={`rounded-3xl bg-white p-5 shadow-sm border ${c.warn ? 'border-rose-200' : 'border-slate-100'} transition-transform hover:-translate-y-1 duration-300`}>
-                        <div className={`h-11 w-11 grid place-items-center rounded-2xl ${c.warn ? 'bg-rose-50 text-rose-600' : c.accent ? 'bg-violet-50 text-violet-600' : 'bg-slate-50 text-slate-500'}`}>
+                    <div key={c.label} className={`rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-sm dark:shadow-none border ${c.warn ? 'border-rose-200 dark:border-rose-900/40' : 'border-slate-100 dark:border-slate-700'} transition-transform hover:-translate-y-1 duration-300`}>
+                        <div className={`h-11 w-11 grid place-items-center rounded-2xl ${c.warn ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : c.accent ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-gray-400'}`}>
                             <Icon icon={c.icon} className="text-2xl" />
                         </div>
-                        <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{c.label}</p>
-                        <p className={`mt-0.5 text-2xl font-extrabold ${c.accent ? 'text-violet-600' : c.warn ? 'text-rose-600' : 'text-slate-800'}`}>{c.value}</p>
-                        <p className="mt-0.5 text-xs font-medium text-slate-400 truncate">{c.sub}</p>
+                        <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-gray-500">{c.label}</p>
+                        <p className={`mt-0.5 text-2xl font-extrabold ${c.accent ? 'text-violet-600 dark:text-violet-400' : c.warn ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{c.value}</p>
+                        <p className="mt-0.5 text-xs font-medium text-slate-400 dark:text-gray-500 truncate">{c.sub}</p>
                     </div>
                 ))}
             </div>
@@ -203,7 +203,7 @@ export default function ResellerDashboard() {
             <div>
                 <div className="flex items-center gap-2 mb-2.5">
                     <Icon icon="solar:rocket-2-bold-duotone" className="text-indigo-500 text-lg" />
-                    <h2 className="text-sm font-extrabold text-slate-700">Crece tu negocio</h2>
+                    <h2 className="text-sm font-extrabold text-slate-700 dark:text-slate-200">Crece tu negocio</h2>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Progreso al siguiente nivel (flagship) o potencial por cliente */}
@@ -232,20 +232,20 @@ export default function ResellerDashboard() {
                     )}
 
                     {/* Proyección próximo mes */}
-                    <div className="rounded-3xl bg-white p-5 shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-2 text-sm font-bold text-slate-700"><Icon icon="solar:graph-up-bold-duotone" className="text-emerald-500" /> Proyección próximo mes</div>
-                        <p className="mt-2 text-3xl font-extrabold text-slate-800">{moneyShort(gananciaProxMes || ganancia)}</p>
-                        <p className="text-sm text-slate-400 mt-1">ganancia proyectada si mantienes tus clientes activos.</p>
+                    <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200"><Icon icon="solar:graph-up-bold-duotone" className="text-emerald-500" /> Proyección próximo mes</div>
+                        <p className="mt-2 text-3xl font-extrabold text-slate-800 dark:text-white">{moneyShort(gananciaProxMes || ganancia)}</p>
+                        <p className="text-sm text-slate-400 dark:text-gray-500 mt-1">ganancia proyectada si mantienes tus clientes activos.</p>
                         {gananciaProxMes > ganancia && (
-                            <p className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-1">
+                            <p className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-full px-2.5 py-1">
                                 <Icon icon="solar:alt-arrow-up-bold" /> +{money(gananciaProxMes - ganancia)} vs este mes
                             </p>
                         )}
                     </div>
 
                     {/* Distribución por plan */}
-                    <div className="rounded-3xl bg-white p-5 shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Icon icon="solar:pie-chart-2-bold-duotone" className="text-indigo-500" /> Clientes por plan</div>
+                    <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200 mb-1"><Icon icon="solar:pie-chart-2-bold-duotone" className="text-indigo-500" /> Clientes por plan</div>
                         {totalPlan > 0 ? (
                             <div className="flex items-center gap-3">
                                 <div className="relative h-28 w-28 shrink-0">
@@ -258,42 +258,42 @@ export default function ResellerDashboard() {
                                         </PieChart>
                                     </ResponsiveContainer>
                                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-lg font-extrabold text-slate-800">{totalPlan}</span>
-                                        <span className="text-[10px] text-slate-400">clientes</span>
+                                        <span className="text-lg font-extrabold text-slate-800 dark:text-white">{totalPlan}</span>
+                                        <span className="text-[10px] text-slate-400 dark:text-gray-500">clientes</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 space-y-1.5">
                                     {clientesPorPlan.map((c, i) => (
                                         <div key={c.name} className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 min-w-0"><span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: SERIES[i % SERIES.length] }} /><span className="truncate text-slate-600 font-medium">{c.name}</span></span>
-                                            <span className="font-bold text-slate-500">{c.value}</span>
+                                            <span className="flex items-center gap-1.5 min-w-0"><span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: SERIES[i % SERIES.length] }} /><span className="truncate text-slate-600 dark:text-gray-400 font-medium">{c.name}</span></span>
+                                            <span className="font-bold text-slate-500 dark:text-gray-400">{c.value}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ) : (
-                            <p className="py-8 text-center text-sm text-slate-400">Aún no tienes clientes activos</p>
+                            <p className="py-8 text-center text-sm text-slate-400 dark:text-gray-500">Aún no tienes clientes activos</p>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* ── Simulador de ganancias + precios de venta ── */}
-            <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+            <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                 {/* Header */}
-                <div className="flex items-center gap-3 border-b border-slate-100 p-5">
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 p-5">
                     <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#7551FF] to-[#9f7bff] text-white shadow-md shadow-violet-500/25">
                         <Icon icon="solar:calculator-minimalistic-bold-duotone" width="22" />
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-extrabold text-slate-800">Simulador · ¿Cuánto puedes ganar?</h3>
-                        <p className="text-xs text-slate-400">Define cuánto cobras por plan y proyecta tu ganancia real.</p>
+                        <h3 className="text-[15px] font-extrabold text-slate-800 dark:text-white">Simulador · ¿Cuánto puedes ganar?</h3>
+                        <p className="text-xs text-slate-400 dark:text-gray-500">Define cuánto cobras por plan y proyecta tu ganancia real.</p>
                     </div>
                 </div>
 
                 <div className="p-5">
                     {!preciosConfigurados && (
-                        <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
                             <Icon icon="solar:danger-triangle-bold-duotone" width="20" className="mt-0.5 shrink-0 text-amber-500" />
                             <p>Ajusta tu precio de venta por plan y guarda. Se usa para simular tu ganancia real y como precio por defecto al registrar clientes.</p>
                         </div>
@@ -308,65 +308,65 @@ export default function ResellerDashboard() {
                             const negative = row.price > 0 && row.price - cost <= 0;
                             const earn = margin * row.clients;
                             return (
-                                <div key={p.key} className="flex flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                <div key={p.key} className="flex flex-col rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-none">
                                     <div className="flex items-center gap-2">
                                         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7551FF]/10 text-[#7551FF]"><Icon icon={p.icon} width="18" /></div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-extrabold text-slate-800">{p.key}</p>
-                                            <p className="truncate text-[11px] text-slate-400">{p.desc}</p>
+                                            <p className="text-sm font-extrabold text-slate-800 dark:text-white">{p.key}</p>
+                                            <p className="truncate text-[11px] text-slate-400 dark:text-gray-500">{p.desc}</p>
                                         </div>
                                     </div>
 
                                     {/* Costo por volumen */}
-                                    <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-slate-400">Costo por volumen</p>
+                                    <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-gray-500">Costo por volumen</p>
                                     <div className="mt-1.5 grid grid-cols-4 gap-1">
                                         {p.tiers.map((t, ti) => (
-                                            <div key={t.min} className={`rounded-lg border px-1 py-1 text-center ${t.cost === cost ? 'border-[#7551FF] bg-[#7551FF]/[0.06]' : 'border-slate-100 bg-slate-50'}`}>
-                                                <div className="text-[9px] font-bold text-slate-400">{tierLabel(p.tiers, ti)}</div>
-                                                <div className={`text-[11px] font-black tabular-nums ${t.cost === cost ? 'text-[#7551FF]' : 'text-slate-600'}`}>{t.cost}</div>
+                                            <div key={t.min} className={`rounded-lg border px-1 py-1 text-center ${t.cost === cost ? 'border-[#7551FF] bg-[#7551FF]/[0.06]' : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700'}`}>
+                                                <div className="text-[9px] font-bold text-slate-400 dark:text-gray-500">{tierLabel(p.tiers, ti)}</div>
+                                                <div className={`text-[11px] font-black tabular-nums ${t.cost === cost ? 'text-[#7551FF]' : 'text-slate-600 dark:text-gray-400'}`}>{t.cost}</div>
                                             </div>
                                         ))}
                                     </div>
-                                    <p className="mt-1.5 text-[11px] text-slate-500">Con <b className="tabular-nums">{row.clients}</b> te cuesta <b className="tabular-nums">{money(cost)}</b> c/u</p>
+                                    <p className="mt-1.5 text-[11px] text-slate-500 dark:text-gray-400">Con <b className="tabular-nums">{row.clients}</b> te cuesta <b className="tabular-nums">{money(cost)}</b> c/u</p>
 
                                     {/* Precio de venta */}
-                                    <label className="mt-3 block text-[11px] font-bold text-slate-600">Tu precio de venta</label>
-                                    <div className="mt-1 flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-[#7551FF] focus-within:ring-2 focus-within:ring-[#7551FF]/20">
+                                    <label className="mt-3 block text-[11px] font-bold text-slate-600 dark:text-gray-400">Tu precio de venta</label>
+                                    <div className="mt-1 flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus-within:border-[#7551FF] focus-within:ring-2 focus-within:ring-[#7551FF]/20">
                                         <span className="pl-3 text-sm font-bold text-[#7551FF]">S/</span>
                                         <input
                                             type="number" min={0} step="0.10"
                                             value={row.price}
                                             onChange={(e) => updateRow(i, { price: Math.max(0, Number(e.target.value) || 0) })}
-                                            className="h-10 w-full appearance-none border-0 bg-transparent px-2 text-sm font-bold text-slate-800 outline-none focus:outline-none focus:ring-0 tabular-nums [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="h-10 w-full appearance-none border-0 bg-transparent px-2 text-sm font-bold text-slate-800 dark:text-white outline-none focus:outline-none focus:ring-0 tabular-nums [&::-webkit-inner-spin-button]:appearance-none"
                                         />
-                                        <span className="pr-3 text-xs text-slate-400">/mes</span>
+                                        <span className="pr-3 text-xs text-slate-400 dark:text-gray-500">/mes</span>
                                     </div>
-                                    <p className="mt-1 text-[10px] text-slate-400">Ref. público S/ {p.publico.toFixed(2)}/mes</p>
+                                    <p className="mt-1 text-[10px] text-slate-400 dark:text-gray-500">Ref. público S/ {p.publico.toFixed(2)}/mes</p>
 
                                     {/* Margen */}
-                                    <div className={`mt-2 rounded-lg px-2.5 py-1.5 text-xs font-bold ${negative ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                    <div className={`mt-2 rounded-lg px-2.5 py-1.5 text-xs font-bold ${negative ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
                                         {negative ? 'Sube tu precio · margen ' : 'Margen '}<span className="tabular-nums">{money(margin)}</span> por cliente
                                     </div>
 
                                     {/* Stepper clientes */}
-                                    <label className="mt-3 block text-[11px] font-bold text-slate-600">Clientes en este plan</label>
-                                    <div className="mt-1 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-1">
-                                        <button type="button" onClick={() => updateRow(i, { clients: Math.max(0, row.clients - 1) })} className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-600 shadow-sm hover:text-[#7551FF]"><Icon icon="solar:minus-square-linear" width="18" /></button>
+                                    <label className="mt-3 block text-[11px] font-bold text-slate-600 dark:text-gray-400">Clientes en este plan</label>
+                                    <div className="mt-1 flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 p-1">
+                                        <button type="button" onClick={() => updateRow(i, { clients: Math.max(0, row.clients - 1) })} className="grid h-8 w-8 place-items-center rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-400 shadow-sm dark:shadow-none hover:text-[#7551FF]"><Icon icon="solar:minus-square-linear" width="18" /></button>
                                         <input
                                             type="number" min={0} value={row.clients}
                                             onChange={(e) => updateRow(i, { clients: Math.max(0, Number(e.target.value) || 0) })}
                                             onFocus={(e) => e.target.select()}
-                                            className="w-14 appearance-none border-0 bg-transparent text-center text-lg font-black text-slate-800 outline-none focus:outline-none focus:ring-0 tabular-nums [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-14 appearance-none border-0 bg-transparent text-center text-lg font-black text-slate-800 dark:text-white outline-none focus:outline-none focus:ring-0 tabular-nums [&::-webkit-inner-spin-button]:appearance-none"
                                         />
-                                        <button type="button" onClick={() => updateRow(i, { clients: row.clients + 1 })} className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-600 shadow-sm hover:text-[#7551FF]"><Icon icon="solar:add-square-linear" width="18" /></button>
+                                        <button type="button" onClick={() => updateRow(i, { clients: row.clients + 1 })} className="grid h-8 w-8 place-items-center rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-400 shadow-sm dark:shadow-none hover:text-[#7551FF]"><Icon icon="solar:add-square-linear" width="18" /></button>
                                     </div>
 
                                     {/* Ganas */}
                                     <div className="mt-auto pt-3">
-                                        <div className="rounded-xl bg-emerald-50 px-3 py-2 text-center">
-                                            <span className="text-xs font-semibold text-emerald-700">Ganas </span>
-                                            <span className="text-lg font-black tabular-nums text-emerald-600">{money(earn)}</span>
-                                            <span className="text-xs font-semibold text-emerald-700">/mes</span>
+                                        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-center">
+                                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Ganas </span>
+                                            <span className="text-lg font-black tabular-nums text-emerald-600 dark:text-emerald-400">{money(earn)}</span>
+                                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">/mes</span>
                                         </div>
                                     </div>
                                 </div>
@@ -397,7 +397,7 @@ export default function ResellerDashboard() {
                         </button>
                         <button
                             onClick={() => navigate('/reseller/clientes')}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#7551FF] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-500/30 transition-all hover:brightness-105 active:scale-95"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl btn-accent px-5 py-2.5 text-sm font-black shadow-lg shadow-black/20 transition-all active:scale-95"
                         >
                             <Icon icon="solar:user-plus-bold" width="18" /> Registrar clientes ahora
                         </button>
@@ -410,20 +410,20 @@ export default function ResellerDashboard() {
                 <div>
                     <div className="flex items-center gap-2 mb-2.5">
                         <Icon icon="solar:danger-triangle-bold-duotone" className="text-amber-500 text-lg" />
-                        <h2 className="text-sm font-extrabold text-slate-700">Requiere tu atención</h2>
+                        <h2 className="text-sm font-extrabold text-slate-700 dark:text-slate-200">Requiere tu atención</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {atencion.map((a) => {
                             const t = toneMap[a.tone];
                             return (
-                                <button key={a.key} onClick={a.onClick} className={`group flex items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-sm border border-slate-100 ring-1 ${t.ring} hover:shadow-md transition-all`}>
+                                <button key={a.key} onClick={a.onClick} className={`group flex items-center gap-3 rounded-2xl bg-white dark:bg-slate-800 p-4 text-left shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-700 ring-1 ${t.ring} hover:shadow-md transition-all`}>
                                     <div className={`h-11 w-11 shrink-0 grid place-items-center rounded-xl ${t.bg} ${t.text}`}><Icon icon={a.icon} className="text-2xl" /></div>
                                     <div className="min-w-0 flex-1">
                                         <p className={`text-lg font-extrabold ${t.text}`}>{a.value}</p>
-                                        <p className="text-xs font-semibold text-slate-600 leading-tight">{a.label}</p>
-                                        <p className="text-[11px] text-slate-400 leading-tight">{a.hint}</p>
+                                        <p className="text-xs font-semibold text-slate-600 dark:text-gray-400 leading-tight">{a.label}</p>
+                                        <p className="text-[11px] text-slate-400 dark:text-gray-500 leading-tight">{a.hint}</p>
                                     </div>
-                                    <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                    <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors" />
                                 </button>
                             );
                         })}
@@ -433,14 +433,14 @@ export default function ResellerDashboard() {
 
             {/* ── Próximas renovaciones + recargar ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-6">
+                <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-slate-800">Próximas renovaciones</h3>
-                        <button onClick={() => navigate('/reseller/ganancias')} className="text-sm text-violet-600 font-semibold hover:underline">Ver todas</button>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">Próximas renovaciones</h3>
+                        <button onClick={() => navigate('/reseller/ganancias')} className="text-sm text-violet-600 dark:text-violet-400 font-semibold hover:underline">Ver todas</button>
                     </div>
                     <div className="overflow-x-auto font-inter">
                         {renovaciones.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-slate-400">No hay renovaciones próximas. ¡Todo al día!</p>
+                            <p className="py-8 text-center text-sm text-slate-400 dark:text-gray-500">No hay renovaciones próximas. ¡Todo al día!</p>
                         ) : (
                             <table className="w-full text-left border-collapse min-w-[600px]">
                                 <thead><tr className={THEAD_TR}>
@@ -456,10 +456,10 @@ export default function ResellerDashboard() {
                                         return (
                                             <tr key={rn.empresaId} className={BODY_TR}>
                                                 <td className="py-3.5 pl-5 pr-3"><EntityCell name={rn.razonSocial} sub={rucByEmpresa.get(rn.empresaId)} /></td>
-                                                <td className="py-3.5 px-3 text-sm text-slate-500 truncate max-w-[160px]">{rn.plan}</td>
-                                                <td className="py-3.5 px-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${rn.vencida ? 'bg-rose-50 text-rose-600' : urgente ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'}`}>{rn.vencida ? 'Vencida' : `${rn.diasRestantes}d`}</span></td>
-                                                <td className="py-3.5 px-3 text-right font-semibold text-rose-500 whitespace-nowrap">{money(rn.costo)}</td>
-                                                <td className="py-3.5 px-3 pr-5 text-right font-bold text-emerald-600 whitespace-nowrap">{money(rn.ganancia)}</td>
+                                                <td className="py-3.5 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[160px]">{rn.plan}</td>
+                                                <td className="py-3.5 px-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${rn.vencida ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : urgente ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-gray-400'}`}>{rn.vencida ? 'Vencida' : `${rn.diasRestantes}d`}</span></td>
+                                                <td className="py-3.5 px-3 text-right font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap">{money(rn.costo)}</td>
+                                                <td className="py-3.5 px-3 pr-5 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{money(rn.ganancia)}</td>
                                             </tr>
                                         );
                                     })}
@@ -468,7 +468,7 @@ export default function ResellerDashboard() {
                         )}
                     </div>
                     {urgentes.length > 0 && (
-                        <p className="mt-3 text-xs text-amber-600 font-semibold flex items-center gap-1">
+                        <p className="mt-3 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
                             <Icon icon="solar:bell-bing-bold-duotone" /> {urgentes.length} vencen esta semana — contáctalos para asegurar la renovación.
                         </p>
                     )}
@@ -490,14 +490,14 @@ export default function ResellerDashboard() {
             </div>
 
             {/* ── Últimos clientes ── */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-slate-800">Últimos clientes registrados</h3>
-                    <button onClick={() => navigate('/reseller/clientes')} className="text-sm text-violet-600 font-semibold hover:underline">Ver todos</button>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Últimos clientes registrados</h3>
+                    <button onClick={() => navigate('/reseller/clientes')} className="text-sm text-violet-600 dark:text-violet-400 font-semibold hover:underline">Ver todos</button>
                 </div>
                 <div className="overflow-x-auto font-inter">
                     {latestClientes.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-slate-400">Aún no has registrado clientes. ¡Registra el primero!</p>
+                        <p className="py-8 text-center text-sm text-slate-400 dark:text-gray-500">Aún no has registrado clientes. ¡Registra el primero!</p>
                     ) : (
                         <table className="w-full text-left border-collapse min-w-[560px]">
                             <thead><tr className={THEAD_TR}>
@@ -510,8 +510,8 @@ export default function ResellerDashboard() {
                                 {latestClientes.map((c: any) => (
                                     <tr key={c.id} className={BODY_TR}>
                                         <td className="py-3.5 pl-5 pr-3"><EntityCell name={c.razonSocial} sub={c.ruc} /></td>
-                                        <td className="py-3.5 px-3 text-sm text-slate-500 truncate max-w-[160px]">{c?.plan?.nombre || `Plan ID ${c.planId}`}</td>
-                                        <td className="py-3.5 px-3 font-bold text-slate-800 text-sm whitespace-nowrap">{money(Number(c.costoActivacionReseller ?? c?.plan?.costo ?? 0))}</td>
+                                        <td className="py-3.5 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[160px]">{c?.plan?.nombre || `Plan ID ${c.planId}`}</td>
+                                        <td className="py-3.5 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{money(Number(c.costoActivacionReseller ?? c?.plan?.costo ?? 0))}</td>
                                         <td className="py-3.5 px-3 pr-5"><EstadoPill estado={c.estado} /></td>
                                     </tr>
                                 ))}
@@ -524,32 +524,32 @@ export default function ResellerDashboard() {
             {/* ── Estructura de precios (flagship) ── */}
             {isFlagship && (
                 <div className="space-y-6">
-                    <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-6">
                         <div className="flex flex-col gap-1 mb-5">
-                            <div className="flex items-center gap-2 text-violet-600 text-sm font-semibold"><Icon icon="solar:tag-price-bold-duotone" width="20" /> Estructura de precios</div>
-                            <p className="text-sm text-slate-500">Referencia de precios públicos vs. lo que tú pagas. Tú defines cuánto cobras a tu cliente.</p>
+                            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 text-sm font-semibold"><Icon icon="solar:tag-price-bold-duotone" width="20" /> Estructura de precios</div>
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Referencia de precios públicos vs. lo que tú pagas. Tú defines cuánto cobras a tu cliente.</p>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse text-sm">
-                                <thead className="bg-slate-50/60 text-slate-500 text-xs uppercase">
+                                <thead className="bg-slate-50/60 dark:bg-slate-900/40 text-slate-500 dark:text-gray-400 text-xs uppercase">
                                     <tr>
                                         <th className="px-4 py-3 font-semibold">Plan</th>
                                         <th className="px-4 py-3 font-semibold">Precio público</th>
                                         <th className="px-4 py-3 font-semibold">Tu precio (mensual)</th>
-                                        <th className="px-4 py-3 font-semibold text-emerald-600">Ganancia si cobras público</th>
+                                        <th className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">Ganancia si cobras público</th>
                                         <th className="px-4 py-3 font-semibold">Tu precio (anual)</th>
-                                        <th className="px-4 py-3 font-semibold text-emerald-600">Ganancia anual</th>
+                                        <th className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">Ganancia anual</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {VENDIFY_PLANES_REFERENCIA.map((row) => (
-                                        <tr key={row.plan} className="hover:bg-slate-50/40">
-                                            <td className="px-4 py-3.5 font-semibold text-slate-800">{row.plan}</td>
-                                            <td className="px-4 py-3.5 tabular-nums text-slate-500">{money(row.precioPublico)}</td>
-                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-violet-700">{money(row.resellerMensual)}</td>
-                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-emerald-600">+{money(row.gananciaPublico)}</td>
-                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-violet-700">{money(row.resellerAnual)}</td>
-                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-emerald-600">+{money(row.gananciaAnual)}</td>
+                                        <tr key={row.plan} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/50">
+                                            <td className="px-4 py-3.5 font-semibold text-slate-800 dark:text-white">{row.plan}</td>
+                                            <td className="px-4 py-3.5 tabular-nums text-slate-500 dark:text-gray-400">{money(row.precioPublico)}</td>
+                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-violet-700 dark:text-violet-400">{money(row.resellerMensual)}</td>
+                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">+{money(row.gananciaPublico)}</td>
+                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-violet-700 dark:text-violet-400">{money(row.resellerAnual)}</td>
+                                            <td className="px-4 py-3.5 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">+{money(row.gananciaAnual)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -557,14 +557,14 @@ export default function ResellerDashboard() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-6">
                         <div className="flex flex-col gap-1 mb-5">
-                            <div className="flex items-center gap-2 text-violet-600 text-sm font-semibold"><Icon icon="solar:layers-minimalistic-bold-duotone" width="20" /> Tu costo según volumen de clientes</div>
-                            <p className="text-sm text-slate-500">Mientras más clientes activos tienes, menos pagas por cada uno. Tu nivel actual está resaltado.</p>
+                            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 text-sm font-semibold"><Icon icon="solar:layers-minimalistic-bold-duotone" width="20" /> Tu costo según volumen de clientes</div>
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Mientras más clientes activos tienes, menos pagas por cada uno. Tu nivel actual está resaltado.</p>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse text-sm">
-                                <thead className="bg-slate-50/60 text-slate-500 text-xs uppercase">
+                                <thead className="bg-slate-50/60 dark:bg-slate-900/40 text-slate-500 dark:text-gray-400 text-xs uppercase">
                                     <tr>
                                         <th className="px-4 py-3 font-semibold">Clientes activos</th>
                                         <th className="px-4 py-3 font-semibold">Emprendedor</th>
@@ -572,18 +572,18 @@ export default function ResellerDashboard() {
                                         <th className="px-4 py-3 font-semibold">Corporativo</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {VENDIFY_VOLUME_TIERS.map((tier, idx) => {
                                         const isCurrentTier = idx === currentTierIndex;
                                         return (
-                                            <tr key={tier.label} className={isCurrentTier ? 'bg-violet-50 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50/40'}>
-                                                <td className={`px-4 py-3.5 font-semibold ${isCurrentTier ? 'text-violet-700' : 'text-slate-700'}`}>
+                                            <tr key={tier.label} className={isCurrentTier ? 'bg-violet-50 dark:bg-violet-900/20 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/50'}>
+                                                <td className={`px-4 py-3.5 font-semibold ${isCurrentTier ? 'text-violet-700 dark:text-violet-400' : 'text-slate-700 dark:text-slate-200'}`}>
                                                     {tier.label}
                                                     {isCurrentTier && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-600 text-white">TU NIVEL</span>}
                                                 </td>
-                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700' : 'text-slate-700'}`}>{money(tier.emprendedor)}</td>
-                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700' : 'text-slate-700'}`}>{money(tier.negocio)}</td>
-                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700' : 'text-slate-700'}`}>{money(tier.corporativo)}</td>
+                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700 dark:text-violet-400' : 'text-slate-700 dark:text-slate-200'}`}>{money(tier.emprendedor)}</td>
+                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700 dark:text-violet-400' : 'text-slate-700 dark:text-slate-200'}`}>{money(tier.negocio)}</td>
+                                                <td className={`px-4 py-3.5 tabular-nums font-semibold ${isCurrentTier ? 'text-violet-700 dark:text-violet-400' : 'text-slate-700 dark:text-slate-200'}`}>{money(tier.corporativo)}</td>
                                             </tr>
                                         );
                                     })}

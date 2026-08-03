@@ -148,7 +148,7 @@ export default function OrdenesCompraPage() {
                 </div>
                 <button
                     onClick={() => { setOrdenEdit(null); setIsModalOpen(true); }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95"
+                    className="inline-flex items-center gap-2 rounded-xl btn-accent px-5 py-2.5 text-sm font-black shadow-lg shadow-black/20 transition-all active:scale-95"
                 >
                     <Icon icon="solar:add-circle-bold" className="text-lg" />
                     Nueva Orden
@@ -606,7 +606,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                         <input value={libreDesc} onChange={(e) => setLibreDesc(e.target.value)} placeholder="Ítem libre: descripción (flete, servicio, producto nuevo...)" className={`${inputCls} flex-1`} />
                         <input type="number" min="0.001" value={libreCant} onChange={(e) => setLibreCant(e.target.value)} placeholder="Cant." className={`${inputCls} lg:w-24`} />
                         <input type="number" min="0" step="0.01" value={librePrecio} onChange={(e) => setLibrePrecio(e.target.value)} placeholder="P. Unit." className={`${inputCls} lg:w-28`} />
-                        <button type="button" onClick={agregarLibre} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white hover:bg-indigo-700">
+                        <button type="button" onClick={agregarLibre} className="rounded-xl btn-accent px-4 py-2.5 text-sm font-black">
                             Agregar
                         </button>
                     </div>
@@ -669,7 +669,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                     <button type="button" onClick={() => guardar('BORRADOR')} disabled={guardando} className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-800">
                         Guardar borrador
                     </button>
-                    <button type="button" onClick={() => guardar('EMITIDA')} disabled={guardando} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:opacity-50">
+                    <button type="button" onClick={() => guardar('EMITIDA')} disabled={guardando} className="inline-flex items-center justify-center gap-2 rounded-xl btn-accent px-6 py-3 text-sm font-black shadow-lg shadow-black/20 transition disabled:opacity-50">
                         <Icon icon={guardando ? 'svg-spinners:180-ring' : 'solar:clipboard-check-bold'} className="text-lg" />
                         {esEdicion ? 'Guardar cambios' : 'Emitir orden'}
                     </button>

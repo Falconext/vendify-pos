@@ -313,7 +313,7 @@ const CreateEmpresa = () => {
       : 'bg-white dark:bg-[#111827] border-slate-100 dark:border-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)]'}`;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">

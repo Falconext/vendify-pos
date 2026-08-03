@@ -686,7 +686,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
         {opcionesAtributos.map((option, index) => (
           <div key={index} className="grid gap-3 rounded-2xl border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-slate-900 md:grid-cols-[180px_1fr_40px]">
             <label className="block">
-              <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-gray-500">Opción</span>
+              <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">Opción</span>
               <input
                 type="text"
                 placeholder="Color / Talla"
@@ -696,7 +696,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-gray-500">Valores separados por coma</span>
+              <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">Valores separados por coma</span>
               <input
                 type="text"
                 placeholder="Ej: Negro, Blanco, Beige"
@@ -754,7 +754,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                       </button>
                     )}
                   </div>
-                  <label className="flex h-24 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-300 bg-gray-50 text-center text-[11px] font-bold text-gray-500 transition hover:border-violet-400 dark:border-slate-700 dark:bg-slate-800">
+                  <label className="flex h-24 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-300 bg-gray-50 text-center text-[11px] font-bold text-gray-500 dark:text-gray-400 transition hover:border-violet-400 dark:border-slate-700 dark:bg-slate-800">
                     {preview ? (
                       <img src={preview} alt={color} className="h-full w-full object-cover" />
                     ) : (
@@ -772,7 +772,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                   </label>
                   <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-2 dark:border-white/10 dark:bg-slate-950/30">
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wide text-gray-500">
+                      <span className="text-[10px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">
                         Galería del color
                       </span>
                       <label className="cursor-pointer rounded-lg bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 transition hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300">
@@ -790,13 +790,13 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                       </label>
                     </div>
                     {savedGallery.length === 0 && pendingGallery.length === 0 ? (
-                      <p className="py-3 text-center text-[11px] font-semibold text-gray-400">
+                      <p className="py-3 text-center text-[11px] font-semibold text-gray-400 dark:text-gray-500">
                         Agrega fotos frontal, espalda o detalle para este color.
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {savedGallery.map((url) => (
-                          <div key={url} className="group relative h-16 overflow-hidden rounded-lg bg-white">
+                          <div key={url} className="group relative h-16 overflow-hidden rounded-lg bg-white dark:bg-slate-800">
                             <img src={url} alt={`${color} galería`} className="h-full w-full object-cover" />
                             <button
                               type="button"
@@ -809,7 +809,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                           </div>
                         ))}
                         {pendingGallery.map((url, index) => (
-                          <div key={`${url}-${index}`} className="group relative h-16 overflow-hidden rounded-lg bg-white ring-2 ring-violet-300">
+                          <div key={`${url}-${index}`} className="group relative h-16 overflow-hidden rounded-lg bg-white dark:bg-slate-800 ring-2 ring-violet-300">
                             <img src={url} alt={`${color} nueva foto`} className="h-full w-full object-cover" />
                             <button
                               type="button"
@@ -841,7 +841,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/40">
             <span className="text-[11px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">Aplicar a todas ({rows.length})</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-gray-400">S/</span>
+              <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500">S/</span>
               <input
                 type="number"
                 step="0.01"
@@ -856,7 +856,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                 type="button"
                 onClick={applyPriceToAll}
                 disabled={bulkPrecio.trim() === ''}
-                className="rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg btn-accent px-3 py-1.5 text-[11px] font-bold transition disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Aplicar precio
               </button>
@@ -883,7 +883,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-[10px] font-black uppercase tracking-wide text-gray-500 dark:border-slate-700 dark:bg-slate-800">
+              <thead className="border-b border-gray-200 bg-gray-50 text-[10px] font-black uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:border-slate-700 dark:bg-slate-800">
                 <tr>
                   <th className="px-4 py-3">Variante</th>
                   <th className="px-4 py-3">SKU</th>
@@ -902,7 +902,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         <div className="font-black text-gray-900 dark:text-white">
                           {Object.values(row.valoresAtributos).join(' / ')}
                         </div>
-                        <div className="text-[11px] text-gray-500">
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400">
                           {Object.entries(row.valoresAtributos).map(([name, value]) => `${name}: ${value}`).join(' · ')}
                         </div>
                       </td>
@@ -957,7 +957,7 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                           onClick={() => updateVariant(key, { estado: row.estado === 'INACTIVO' ? 'ACTIVO' : 'INACTIVO' })}
                           className={`rounded-full px-3 py-1 text-[11px] font-black ${
                             row.estado === 'INACTIVO'
-                              ? 'bg-gray-100 text-gray-500 dark:bg-slate-800'
+                              ? 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400'
                               : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                           }`}
                         >

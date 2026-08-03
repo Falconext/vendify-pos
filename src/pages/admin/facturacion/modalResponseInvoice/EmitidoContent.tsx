@@ -81,7 +81,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
             <div className="flex flex-col">
                 {/* Header con estado */}
                 <div className={`px-6 pt-7 pb-5 flex flex-col items-center gap-3 text-center border-b ${isDarkMode ? 'border-slate-800' : 'border-gray-100'}`}>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400 font-medium">Comprobante emitido</p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500 font-medium">Comprobante emitido</p>
 
                     {isPendiente ? (
                         <div className={`flex items-center justify-center w-16 h-16 rounded-full border-2 ${isDarkMode ? 'bg-amber-950/40 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
@@ -118,7 +118,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                             {dataReceipt?.serie}-{dataReceipt?.correlativo}
                         </span>
                     </div>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
                         {isPendiente ? 'Se confirmará en tu historial pronto.' : 'Disponible en tu historial de comprobantes.'}
                     </p>
                 </div>
@@ -126,7 +126,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                 {/* Sección compartir */}
                 {canShare && (
                     <div className="px-6 pt-4 pb-2">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-medium mb-3 text-center">Compartir comprobante</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 font-medium mb-3 text-center">Compartir comprobante</p>
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => { setTabEnviar('whatsapp'); setShowEnviar(true); }}
@@ -137,7 +137,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                             </button>
                             <button
                                 onClick={() => { setTabEnviar('email'); setShowEnviar(true); }}
-                                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-all duration-150 shadow-sm shadow-violet-200 active:scale-95"
+                                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl btn-accent text-sm font-semibold transition-all duration-150 shadow-sm shadow-black/20 active:scale-95"
                             >
                                 <Icon icon="solar:letter-bold" className="text-xl" />
                                 Correo
@@ -185,7 +185,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                     {hasDespacho && (
                         <button
                             onClick={goDespacho}
-                            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors active:scale-95"
+                            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl btn-accent text-sm font-semibold transition-colors active:scale-95"
                         >
                             <Icon icon="solar:delivery-bold-duotone" className="text-lg" />
                             Ver despacho

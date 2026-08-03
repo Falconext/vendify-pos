@@ -23,11 +23,11 @@ import {
   esRubroFabricacion,
   esRubroComputo,
 } from '@/utils/rubro-features'
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme'
 
 // ── Dashboard del negocio — resumen accionable + tabla de comprobantes ────────
 // Responde en 5 segundos: ¿cuánto vendí? ¿qué requiere mi atención? ¿qué/cómo se vende?
 // Adaptativo por rubro (bodega, farmacia, restaurante, fabricación, cómputo, vehicular…).
-const ACCENT = '#7551FF'
 // Paleta CVD-safe (dataviz) para series categóricas.
 const SERIES = ['#7551FF', '#1baf7a', '#eda100', '#2a78d6', '#e0567a']
 
@@ -188,6 +188,8 @@ export default function AdminIndex() {
   const { auth, sedeActiva } = useAuthStore()
   const { overviewData, getOverview, topPorCategoria, getTopPorCategoria }: IDashboardState = useDashboardStore()
   const { showModal, tourStep, startTour, skipTour, nextStep, prevStep, endTour } = useWelcomeTour(auth)
+  const sidebarColor = useThemeStore((s) => s.sidebarColor)
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF'
 
   const rubroUI = useMemo(() => resolveRubroUI(auth?.empresa?.rubro?.nombre), [auth?.empresa?.rubro?.nombre])
 
@@ -347,7 +349,7 @@ export default function AdminIndex() {
   ]
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-transparent font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-transparent font-jakarta">
       {/* ── Header ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
@@ -355,7 +357,7 @@ export default function AdminIndex() {
             <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Hola, {nombre} 👋</h1>
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white shrink-0" style={{ background: ACCENT }}>En vivo</span>
           </div>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">
             Resumen de tu negocio · <span className="capitalize">{moment().format('dddd, D [de] MMMM')}</span>
           </p>
         </div>
@@ -388,7 +390,7 @@ export default function AdminIndex() {
               </div>
               {!ovLoading && <Trend trend={c.trend} />}
             </div>
-            <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{c.label}</p>
+            <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-gray-400">{c.label}</p>
             {ovLoading ? (
               <div className="mt-1 h-7 w-24 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
             ) : (
@@ -409,7 +411,7 @@ export default function AdminIndex() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p className="mt-1 text-xs font-medium text-slate-400 truncate">{c.sub}</p>
+              <p className="mt-1 text-xs font-medium text-slate-400 dark:text-gray-400 truncate">{c.sub}</p>
             )}
           </div>
         ))}
@@ -435,7 +437,7 @@ export default function AdminIndex() {
                     <p className={`text-lg font-extrabold ${t.text}`}>{a.value}</p>
                     <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 leading-tight">{a.label}</p>
                   </div>
-                  <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+                  <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors" />
                 </button>
               )
             })}
@@ -449,9 +451,9 @@ export default function AdminIndex() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-slate-700 dark:text-gray-200 leading-tight">{rubroUI.focus.label}</p>
-                    <p className="text-xs font-medium text-slate-400 leading-tight">{rubroUI.focus.hint}</p>
+                    <p className="text-xs font-medium text-slate-400 dark:text-gray-400 leading-tight">{rubroUI.focus.hint}</p>
                   </div>
-                  <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+                  <Icon icon="solar:alt-arrow-right-linear" className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors" />
                 </button>
               )
             })()}
@@ -476,7 +478,7 @@ export default function AdminIndex() {
           <div className="mb-3 flex items-start justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Ventas por día</h3>
-              <p className="text-xs text-slate-400">{periodLabel}</p>
+              <p className="text-xs text-slate-400 dark:text-gray-400">{periodLabel}</p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-gray-400">
               <span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} /> Ventas netas
@@ -501,9 +503,9 @@ export default function AdminIndex() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center text-slate-300">
+              <div className="flex h-full flex-col items-center justify-center text-slate-300 dark:text-slate-600">
                 <Icon icon="solar:chart-2-linear" className="text-5xl mb-2" />
-                <p className="text-sm text-slate-400">Sin ventas en este periodo</p>
+                <p className="text-sm text-slate-400 dark:text-gray-400">Sin ventas en este periodo</p>
               </div>
             )}
           </div>
@@ -512,7 +514,7 @@ export default function AdminIndex() {
         {/* Donut canales */}
         <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
           <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Cómo te pagan</h3>
-          <p className="mb-2 text-xs text-slate-400">Canales del periodo</p>
+          <p className="mb-2 text-xs text-slate-400 dark:text-gray-400">Canales del periodo</p>
           <div className="relative mx-auto h-36 w-36">
             {chartCanales.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -524,11 +526,11 @@ export default function AdminIndex() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-center text-sm text-slate-300">Sin datos</div>
+              <div className="flex h-full items-center justify-center text-center text-sm text-slate-300 dark:text-slate-600">Sin datos</div>
             )}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-base font-extrabold text-slate-800 dark:text-white">{formatShort(canalTotal)}</span>
-              <span className="text-[10px] font-medium text-slate-400">total</span>
+              <span className="text-[10px] font-medium text-slate-400 dark:text-gray-400">total</span>
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -541,7 +543,7 @@ export default function AdminIndex() {
                 <span className="shrink-0 font-bold text-slate-500 dark:text-gray-400">{(c.percentage ?? 0).toFixed(0)}%</span>
               </div>
             ))}
-            {chartCanales.length === 0 && <p className="text-center text-xs text-slate-400 py-2">Aún no hay pagos registrados</p>}
+            {chartCanales.length === 0 && <p className="text-center text-xs text-slate-400 dark:text-gray-400 py-2">Aún no hay pagos registrados</p>}
           </div>
         </div>
       </div>
@@ -562,29 +564,29 @@ export default function AdminIndex() {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white" style={{ background: color }}>{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[13px] font-semibold text-slate-800">{p.producto?.descripcion || 'Producto sin nombre'}</span>
-                    <span className="shrink-0 text-[13px] font-bold text-slate-700">{formatMoney(p.total)}</span>
+                    <span className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">{p.producto?.descripcion || 'Producto sin nombre'}</span>
+                    <span className="shrink-0 text-[13px] font-bold text-slate-700 dark:text-gray-200">{formatMoney(p.total)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                     </div>
-                    <span className="w-14 shrink-0 text-right text-[11px] font-medium text-slate-400">{p.cantidad ?? 0} u.</span>
+                    <span className="w-14 shrink-0 text-right text-[11px] font-medium text-slate-400 dark:text-gray-400">{p.cantidad ?? 0} u.</span>
                   </div>
                 </div>
               </div>
             )
           }) : (
-            <p className="py-6 text-center text-sm text-slate-400">Sin productos vendidos en este periodo</p>
+            <p className="py-6 text-center text-sm text-slate-400 dark:text-gray-400">Sin productos vendidos en este periodo</p>
           )}
         </div>
       </div>
 
       {/* ── Resumen financiero ── */}
-      <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 mb-4">
+      <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-extrabold text-slate-800">Resumen financiero</h3>
-          <span className="text-xs text-slate-400">{periodLabel}</span>
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Resumen financiero</h3>
+          <span className="text-xs text-slate-400 dark:text-gray-400">{periodLabel}</span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -595,15 +597,15 @@ export default function AdminIndex() {
           ].map((f) => {
             const t = toneMap[f.tone] ?? toneMap.violet
             return (
-              <div key={f.key} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <div key={f.key} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4">
                 <div className="flex items-center justify-between">
                   <div className={`h-9 w-9 grid place-items-center rounded-xl ${t.bg} ${t.text}`}>
                     <Icon icon={f.icon} className="text-lg" />
                   </div>
                   {!ovLoading && <Trend trend={f.invert ? -f.trend : f.trend} />}
                 </div>
-                <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{f.label}</p>
-                <p className="mt-0.5 text-lg font-extrabold text-slate-800 truncate">{formatMoney(f.value)}</p>
+                <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-gray-400">{f.label}</p>
+                <p className="mt-0.5 text-lg font-extrabold text-slate-800 dark:text-white truncate">{formatMoney(f.value)}</p>
               </div>
             )
           })}
@@ -611,26 +613,26 @@ export default function AdminIndex() {
       </div>
 
       {/* ── Productos más vendidos por categoría ── */}
-      <div className="rounded-3xl bg-white p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 mb-4">
+      <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-sm font-extrabold text-slate-800">Productos más vendidos por categoría</h3>
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Productos más vendidos por categoría</h3>
           <div className="flex items-center gap-2.5">
             {/* Segmento moneda: General (S/) vs Exportación (US$) */}
-            <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
+            <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
               <button onClick={() => setCatMoneda('PEN')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'PEN' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'PEN' ? 'text-white' : 'text-slate-500 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
                 style={catMoneda === 'PEN' ? { background: ACCENT } : undefined}>
                 General (S/)
               </button>
               <button onClick={() => setCatMoneda('USD')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'USD' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${catMoneda === 'USD' ? 'text-white' : 'text-slate-500 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
                 style={catMoneda === 'USD' ? { background: ACCENT } : undefined}>
                 Exportación (US$)
               </button>
             </div>
             {/* Selector de categoría */}
             <select value={catSelId ?? 0} onChange={(e) => setCatSelId(Number(e.target.value) || null)}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 focus:outline-none focus:border-[var(--accent)]">
+              className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-semibold text-slate-600 dark:text-gray-300 focus:outline-none focus:border-[var(--accent)]">
               <option value={0}>Todas las categorías</option>
               {(topPorCategoria?.categorias ?? []).map((c: any) => (
                 <option key={c.id} value={c.id}>{c.nombre}</option>
@@ -640,7 +642,7 @@ export default function AdminIndex() {
         </div>
 
         {(!topPorCategoria || (topPorCategoria.grupos ?? []).length === 0) ? (
-          <p className="py-8 text-center text-sm text-slate-400">
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-gray-400">
             No hay productos vendidos en {catMoneda === 'USD' ? 'Exportación (US$)' : 'General (S/)'} para este periodo
           </p>
         ) : (
@@ -648,10 +650,10 @@ export default function AdminIndex() {
             {(topPorCategoria.grupos ?? []).map((g: any) => {
               const maxVal = g.productos[0]?.total || 1
               return (
-                <div key={g.categoriaId} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                <div key={g.categoriaId} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h4 className="truncate text-sm font-bold text-slate-800 pr-2">{g.categoriaNombre}</h4>
-                    <span className="shrink-0 text-xs font-bold text-slate-500">{money(g.total, topPorCategoria.moneda)}</span>
+                    <h4 className="truncate text-sm font-bold text-slate-800 dark:text-white pr-2">{g.categoriaNombre}</h4>
+                    <span className="shrink-0 text-xs font-bold text-slate-500 dark:text-gray-400">{money(g.total, topPorCategoria.moneda)}</span>
                   </div>
                   <div className="space-y-3">
                     {g.productos.map((p: any, i: number) => {
@@ -660,14 +662,14 @@ export default function AdminIndex() {
                       return (
                         <div key={p.productoId || i}>
                           <div className="mb-1 flex items-baseline justify-between gap-2">
-                            <span className="truncate text-[13px] font-semibold text-slate-700 pr-2">{p.producto?.descripcion || 'Producto sin nombre'}</span>
-                            <span className="shrink-0 text-[13px] font-bold text-slate-600">{money(p.total, topPorCategoria.moneda)}</span>
+                            <span className="truncate text-[13px] font-semibold text-slate-700 dark:text-gray-200 pr-2">{p.producto?.descripcion || 'Producto sin nombre'}</span>
+                            <span className="shrink-0 text-[13px] font-bold text-slate-600 dark:text-gray-300">{money(p.total, topPorCategoria.moneda)}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                               <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                             </div>
-                            <span className="w-14 shrink-0 text-right text-[11px] font-medium text-slate-400">{p.cantidad ?? 0} u.</span>
+                            <span className="w-14 shrink-0 text-right text-[11px] font-medium text-slate-400 dark:text-gray-400">{p.cantidad ?? 0} u.</span>
                           </div>
                         </div>
                       )
@@ -681,25 +683,25 @@ export default function AdminIndex() {
       </div>
 
       {/* ── Comprobantes recientes (tabla) ── */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
-        <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100">
-          <h3 className="text-sm font-extrabold text-slate-800 mr-1">Comprobantes recientes</h3>
+      <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white mr-1">Comprobantes recientes</h3>
           <div className="relative flex-1 min-w-[180px] lg:max-w-xs">
-            <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+            <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-400 text-sm" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar cliente o documento…"
-              className="w-full h-9 pl-9 pr-8 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors" />
-            {search && <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"><Icon icon="solar:close-circle-bold" /></button>}
+              className="w-full h-9 pl-9 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)] transition-colors" />
+            {search && <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"><Icon icon="solar:close-circle-bold" /></button>}
           </div>
           {/* Filtro */}
           <div className="relative">
-            <button onClick={() => { setShowFilter((v) => !v); setShowSort(false) }} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+            <button onClick={() => { setShowFilter((v) => !v); setShowSort(false) }} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
               <Icon icon="solar:filter-linear" /> Filtro {estado && <span className="ml-0.5 h-5 min-w-5 px-1 grid place-items-center rounded-full text-white text-[11px]" style={{ background: ACCENT }}>1</span>}
             </button>
             {showFilter && (
-              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 bg-white shadow-xl p-1.5">
+              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5">
                 {ESTADOS.map((e) => (
                   <button key={e.key} onClick={() => { setEstado(e.key); setShowFilter(false) }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${estado === e.key ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${estado === e.key ? 'bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-300' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}>
                     {e.label} {estado === e.key && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
                   </button>
                 ))}
@@ -708,14 +710,14 @@ export default function AdminIndex() {
           </div>
           {/* Orden */}
           <div className="relative">
-            <button onClick={() => { setShowSort((v) => !v); setShowFilter(false) }} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+            <button onClick={() => { setShowSort((v) => !v); setShowFilter(false) }} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
               <Icon icon="solar:sort-vertical-linear" /> {SORTS.find((s) => s.key === sort)?.label}
             </button>
             {showSort && (
-              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 bg-white shadow-xl p-1.5">
+              <div className="absolute z-20 mt-2 w-44 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5">
                 {SORTS.map((s) => (
                   <button key={s.key} onClick={() => { setSort(s.key); setShowSort(false) }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${sort === s.key ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between ${sort === s.key ? 'bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-300' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}>
                     {s.label} {sort === s.key && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
                   </button>
                 ))}
@@ -723,10 +725,10 @@ export default function AdminIndex() {
             )}
           </div>
           <div className="ml-auto flex items-center gap-2.5">
-            <button onClick={exportCSV} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+            <button onClick={exportCSV} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
               <Icon icon="solar:upload-minimalistic-linear" /> <span className="hidden sm:inline">Exportar</span>
             </button>
-            <button onClick={() => navigate('/administrador/facturacion/comprobantes')} className="h-9 px-3.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50">
+            <button onClick={() => navigate('/administrador/facturacion/comprobantes')} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-gray-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
               <Icon icon="solar:eye-linear" /> <span className="hidden sm:inline">Ver todo</span>
             </button>
           </div>
@@ -735,7 +737,7 @@ export default function AdminIndex() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[820px]">
             <thead>
-              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400 border-b border-slate-100 dark:border-slate-800">
                 <th className="py-3 pl-5 px-3">Cliente</th>
                 <th className="py-3 px-3">Documento</th>
                 <th className="py-3 px-3">Total</th>
@@ -748,45 +750,59 @@ export default function AdminIndex() {
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-slate-50"><td colSpan={7} className="py-3.5 px-5"><div className="h-6 rounded-lg bg-slate-100 animate-pulse" /></td></tr>
+                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800"><td colSpan={7} className="py-3.5 px-5"><div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" /></td></tr>
                 ))
               ) : sortedRows.length === 0 ? (
                 <tr><td colSpan={7} className="py-16 text-center">
-                  <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 mx-auto mb-2" />
-                  <p className="text-slate-400 text-sm">No hay comprobantes para mostrar.</p>
+                  <Icon icon="solar:inbox-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
+                  <p className="text-slate-400 dark:text-gray-400 text-sm">No hay comprobantes para mostrar.</p>
                 </td></tr>
               ) : sortedRows.map((inv) => {
                 const pill = estadoPill(inv.estadoEnvioSunat)
-                const pagado = String(inv.estadoPago ?? '').toUpperCase() === 'PAGADO'
+                const sunatNorm = String(inv.estadoEnvioSunat ?? '').toUpperCase()
+                // No tiene sentido mostrar estado de pago si SUNAT rechazó/anuló el comprobante:
+                // no es una venta válida hasta corregirlo/reemitirlo.
+                const comprobanteInvalido = ['RECHAZADO', 'FALLIDO_ENVIO', 'ERROR', 'OBSERVADO', 'ANULADO', 'BAJA'].includes(sunatNorm)
+                const estadoPagoNorm = String(inv.estadoPago ?? '').toUpperCase()
+                const pagoCfg =
+                  estadoPagoNorm === 'COMPLETADO'
+                    ? { label: 'Pagado', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' }
+                    : estadoPagoNorm === 'PAGO_PARCIAL'
+                      ? { label: 'Parcial', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' }
+                      : estadoPagoNorm === 'ANULADO'
+                        ? { label: 'Anulado', cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }
+                        : { label: 'Por cobrar', cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' }
                 const cliente = inv.cliente?.nombre || inv.clienteNombre || 'Cliente varios'
                 return (
-                  <tr key={inv.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
+                  <tr key={inv.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors group">
                     <td className="py-3 pl-5 px-3">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">{cliente.charAt(0).toUpperCase()}</div>
-                        <span className="font-semibold text-slate-700 text-sm truncate max-w-[180px]">{cliente}</span>
+                        <span className="font-semibold text-slate-700 dark:text-gray-200 text-sm truncate max-w-[180px]">{cliente}</span>
                       </div>
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-sm text-slate-600">{inv.serie}-{String(inv.correlativo).padStart(8, '0')}</span>
-                        <button onClick={() => copyDoc(inv)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-slate-600 transition-opacity">
+                        <span className="font-mono text-sm text-slate-600 dark:text-gray-300">{inv.serie}-{String(inv.correlativo).padStart(8, '0')}</span>
+                        <button onClick={() => copyDoc(inv)} className="opacity-0 group-hover:opacity-100 text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-opacity">
                           <Icon icon={copied === inv.id ? 'solar:check-read-linear' : 'solar:copy-linear'} className={copied === inv.id ? 'text-emerald-500' : ''} />
                         </button>
                       </div>
                     </td>
-                    <td className="py-3 px-3 font-bold text-slate-800 text-sm">{money(inv.mtoImpVenta, inv.tipoMoneda)}</td>
-                    <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[160px]">{inv.sede?.nombre || '—'}</td>
+                    <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm">{money(inv.mtoImpVenta, inv.tipoMoneda)}</td>
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[160px]">{inv.sede?.nombre || '—'}</td>
                     <td className="py-3 px-3">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pill.bg} ${pill.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} /> {pill.label}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500">{moment(inv.fechaEmision).format('DD/MM/YYYY')}</td>
+                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">{moment(inv.fechaEmision).format('DD/MM/YYYY')}</td>
                     <td className="py-3 px-3 pr-5">
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600">{TIPO_DOC_LABEL[inv.tipoDoc] || inv.tipoDoc}</span>
-                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${pagado ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{pagado ? 'Pagado' : 'Por cobrar'}</span>
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">{TIPO_DOC_LABEL[inv.tipoDoc] || inv.tipoDoc}</span>
+                        {!comprobanteInvalido && (
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${pagoCfg.cls}`}>{pagoCfg.label}</span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -796,24 +812,24 @@ export default function AdminIndex() {
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100">
-          <span className="text-sm text-slate-400">{fromRow}-{toRow} de {total.toLocaleString('es-PE')}</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-sm text-slate-400 dark:text-gray-400">{fromRow}-{toRow} de {total.toLocaleString('es-PE')}</span>
           <div className="flex items-center gap-1">
-            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
+            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-left-linear" /></button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-left-linear" /></button>
             {pageNumbers.map((n, i) => {
               const prev = pageNumbers[i - 1]; const gap = prev && n - prev > 1
               return (
                 <span key={n} className="flex items-center">
-                  {gap && <span className="px-1 text-slate-300">…</span>}
-                  <button onClick={() => setPage(n)} className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 hover:bg-slate-100'}`} style={n === page ? { background: ACCENT } : undefined}>{n}</button>
+                  {gap && <span className="px-1 text-slate-300 dark:text-slate-600">…</span>}
+                  <button onClick={() => setPage(n)} className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-colors ${n === page ? 'text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-slate-800'}`} style={n === page ? { background: ACCENT } : undefined}>{n}</button>
                 </span>
               )
             })}
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
-            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:alt-arrow-right-linear" /></button>
+            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"><Icon icon="solar:double-alt-arrow-right-linear" /></button>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-400">
             <span>Filas/pág</span>
             <Select label="" name="limit" error="" options={PER_PAGE.map((n) => ({ id: n, value: String(n) }))} value={String(limit)} onChange={(id) => setLimit(Number(id))} />
           </div>

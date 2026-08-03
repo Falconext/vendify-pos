@@ -714,7 +714,6 @@ export default function ProduccionOrdenesPage() {
     return (
       <div
         className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta"
-        style={{ ['--accent' as any]: ACCENT }}
       >
         <div className="max-w-xl mx-auto mt-16 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-8 text-center">
           <div className="h-14 w-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 grid place-items-center mb-4">
@@ -734,7 +733,6 @@ export default function ProduccionOrdenesPage() {
   return (
     <div
       className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta"
-      style={{ ['--accent' as any]: ACCENT }}
     >
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">

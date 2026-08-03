@@ -105,7 +105,7 @@ const ReciboPagoParcial = ({
             </div>
             <button
                 onClick={printFn}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm"
+                className="btn-accent px-4 py-2 rounded text-sm"
             >
                 🖨️ Imprimir Recibo
             </button>

@@ -8,8 +8,7 @@ import Modal from '@/components/Modal';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
 import Select from '@/components/Select';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 const EMPTY_FORM: StoreProductPayload = {
   name: '',
@@ -25,6 +24,8 @@ const EMPTY_FORM: StoreProductPayload = {
 };
 
 export default function CatalogoWebPage() {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -150,7 +151,7 @@ export default function CatalogoWebPage() {
           font-family: inherit;
         }
       `}</style>
-      <div className="-m-5 p-5 bg-[#F7F8FB] font-jakarta min-h-screen" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="-m-5 p-5 bg-[#F7F8FB] font-jakarta min-h-screen">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />

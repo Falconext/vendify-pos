@@ -84,7 +84,7 @@ const ModalCuotas = ({ isOpen, onClose, onSave, initialCuotas, totalFactura }: P
                             <button
                                 type="button"
                                 onClick={agregarCuota}
-                                className="flex items-center gap-1 text-xs px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+                                className="flex items-center gap-1 text-xs px-3 py-1.5 btn-accent rounded-lg transition-colors"
                             >
                                 <Icon icon="solar:add-circle-bold" width={16} />
                                 Agregar Cuota
@@ -141,7 +141,7 @@ const ModalCuotas = ({ isOpen, onClose, onSave, initialCuotas, totalFactura }: P
 
                 <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex gap-3 justify-end bg-gray-50 dark:bg-slate-800/30 rounded-b-2xl">
                     <Button color="lila" onClick={onClose} outline>Cancelar</Button>
-                    <Button color="primary" onClick={handleGuardar} className="shadow-lg shadow-indigo-500/30">
+                    <Button color="primary" onClick={handleGuardar} className="shadow-lg shadow-black/20">
                         <Icon icon="solar:check-circle-bold" className="mr-2" width={18} />
                         Guardar Cuotas
                     </Button>

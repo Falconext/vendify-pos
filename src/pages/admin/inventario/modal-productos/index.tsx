@@ -235,7 +235,7 @@ const ModalProduct = ({ setSelectProduct, isInvoice, initialForm, formValues, se
                             type="button"
                             onClick={() => void handleBarcodeSearch()}
                             disabled={searchingBarcode || barcodeSearch.length < 8}
-                            className="h-10 px-4 flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white disabled:text-gray-400 text-sm font-semibold transition-all flex-shrink-0"
+                            className="h-10 px-4 flex items-center gap-1.5 rounded-xl btn-accent disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-gray-400 text-sm font-semibold transition-all flex-shrink-0"
                         >
                             {searchingBarcode
                                 ? <Icon icon="svg-spinners:ring-resize" width={15} />
@@ -489,7 +489,7 @@ const ModalProduct = ({ setSelectProduct, isInvoice, initialForm, formValues, se
                                 type="button"
                                 onClick={handleAddWholesaleRow}
                                 disabled={!newWholesaleRow.cantidadMinima || !newWholesaleRow.precio}
-                                className="h-10 px-4 flex items-center gap-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white disabled:text-gray-400 dark:disabled:text-gray-500 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
+                                className="h-10 px-4 flex items-center gap-1 btn-accent disabled:bg-gray-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-gray-400 dark:disabled:text-gray-500 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
                             >
                                 <Icon icon="mdi:plus" width={16} />
                                 <span className="hidden sm:inline">Agregar</span>

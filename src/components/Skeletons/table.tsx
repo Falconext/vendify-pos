@@ -229,9 +229,9 @@ const TableSkeleton = ({ arrayData }: any) => {
                     </section> :
                     <div className={styles.not__data}>
                         <div className="flex flex-col items-center justify-center p-8">
-                            <Icon icon="solar:box-search-linear" className="text-gray-300 text-7xl mb-4" />
+                            <Icon icon="solar:box-search-linear" className="text-gray-300 dark:text-slate-600 text-7xl mb-4" />
                             <div>
-                                <p className='font-medium text-gray-500 text-center text-sm'>No se encontraron resultados para tu búsqueda.</p>
+                                <p className='font-medium text-gray-500 dark:text-gray-400 text-center text-sm'>No se encontraron resultados para tu búsqueda.</p>
                             </div>
                         </div>
 

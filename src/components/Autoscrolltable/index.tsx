@@ -48,10 +48,10 @@ const AutoScrollTable = ({
         <div className={styles.autoScrollTable}>
             {hasOverflow && (
                 <div className="flex justify-end items-center gap-2 px-4 py-0 pb-2 rounded-t-xl mt-3">
-                    <span className="text-xs text-gray-400 font-[400] mr-2">Desplazamiento rápido</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-[400] mr-2">Desplazamiento rápido</span>
                     <button
                         onClick={jumpToStart}
-                        className="p-1.5 rounded-lg border border-gray-200 transition-all duration-200 bg-white text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm"
+                        className="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 transition-all duration-200 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm"
                         title="Ir al inicio"
                     >
                         <Icon icon="solar:double-alt-arrow-left-bold-duotone" width={20} height={20} />
@@ -59,7 +59,7 @@ const AutoScrollTable = ({
 
                     <button
                         onClick={jumpToEnd}
-                        className="p-1.5 rounded-lg border border-gray-200 transition-all duration-200 bg-white text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm"
+                        className="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 transition-all duration-200 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm"
                         title="Ir al final"
                     >
                         <Icon icon="solar:double-alt-arrow-right-bold-duotone" width={20} height={20} />

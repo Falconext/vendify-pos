@@ -33,7 +33,6 @@ export function InventoryPage({ children }: InventoryPageProps) {
   return (
     <div
       className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta dark:bg-[#0A0D14]"
-      style={{ ['--accent' as any]: ACCENT }}
     >
       {children}
     </div>

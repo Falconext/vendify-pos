@@ -232,7 +232,7 @@ export default function CategoriasView() {
     const { data, isLoading, mesActual, anioActual, expandedCat, isCurrentOrFuture } = vm;
 
     return (
-        <div className="space-y-5 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="space-y-5 font-jakarta">
             {/* Period navigator */}
             <div className="flex items-center justify-between">
                 <div>

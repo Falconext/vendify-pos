@@ -129,7 +129,7 @@ export default function AdminResellers() {
     }, [vm.resellers, vm.rentabilidad, search, estadoFilter, soloRiesgo, sortBy]);
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta space-y-6" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta space-y-6">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400">
                 <Icon icon="solar:home-smile-linear" className="text-base" />

@@ -521,7 +521,7 @@ const ComprobantesInformales = () => {
     ].filter(Boolean).length;
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta">
             <ComprobantePrintPage
                 company={auth}
                 componentRef={componentRef}
@@ -631,10 +631,10 @@ const ComprobantesInformales = () => {
                             <InputPro name="" onChange={handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
                         </div>
                         <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" onChange={handleDate} className="admin-date-filter" portal />
+                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                         </div>
                         <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" onChange={handleDate} className="admin-date-filter" portal />
+                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                         </div>
                         <div>
                             <Select onChange={handleSelectState} label="Estado" name="" options={estadosInvoice} error="" />

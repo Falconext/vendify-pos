@@ -7,8 +7,7 @@ import InputPro from '@/components/InputPro';
 import Modal from '@/components/Modal';
 import ModalConfirm from '@/components/ModalConfirm';
 import TableSkeleton from '@/components/Skeletons/table';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 interface Rubro {
     id: number;
@@ -31,6 +30,8 @@ const RUBRO_FEATURES = [
 
 export default function SistemaRubros() {
     const { alert, load } = useAlertStore();
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
 
     const [rubros, setRubros] = useState<Rubro[]>([]);
     const [loading, setLocalLoading] = useState(false);
@@ -143,9 +144,9 @@ export default function SistemaRubros() {
     if (loading && rubros.length === 0) return <TableSkeleton />;
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
+            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
                 <span>Panel</span>
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
@@ -157,22 +158,22 @@ export default function SistemaRubros() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div className="min-w-0">
-                    <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Rubros de Negocio</h1>
-                    <p className="text-sm text-slate-400 mt-0.5">
+                    <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Rubros de Negocio</h1>
+                    <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">
                         Tipos de negocio que pueden tener las empresas registradas en el sistema
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5">
                     <div className="relative flex-1 lg:w-72">
-                        <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-400" />
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Buscar rubro…"
-                            className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[var(--accent)] transition-colors"
+                            className="w-full h-11 pl-10 pr-9 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-[var(--accent)] transition-colors"
                         />
                         {search && (
-                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-gray-600 hover:text-slate-500 dark:hover:text-gray-400">
                                 <Icon icon="solar:close-circle-bold" />
                             </button>
                         )}
@@ -190,31 +191,31 @@ export default function SistemaRubros() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
                 {[
-                    { label: 'Total rubros', value: rubros.length, icon: 'solar:buildings-3-bold-duotone', chip: 'bg-violet-50 text-violet-600' },
-                    { label: 'Con empresas', value: conEmpresas, icon: 'solar:check-circle-bold-duotone', chip: 'bg-emerald-50 text-emerald-600' },
-                    { label: 'Sin usar', value: sinUsar, icon: 'solar:archive-bold-duotone', chip: 'bg-slate-100 text-slate-400' },
+                    { label: 'Total rubros', value: rubros.length, icon: 'solar:buildings-3-bold-duotone', chip: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400' },
+                    { label: 'Con empresas', value: conEmpresas, icon: 'solar:check-circle-bold-duotone', chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+                    { label: 'Sin usar', value: sinUsar, icon: 'solar:archive-bold-duotone', chip: 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300' },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] px-5 py-4 flex items-center gap-3.5">
+                    <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none px-5 py-4 flex items-center gap-3.5">
                         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${stat.chip}`}>
                             <Icon icon={stat.icon} width={22} />
                         </div>
                         <div>
-                            <p className="text-2xl font-extrabold text-slate-800 leading-none">{stat.value}</p>
-                            <p className="text-xs text-slate-400 uppercase tracking-wide mt-1.5">{stat.label}</p>
+                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none">{stat.value}</p>
+                            <p className="text-xs text-slate-400 dark:text-gray-400 uppercase tracking-wide mt-1.5">{stat.label}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Card contenedora */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100">
+                <div className="flex flex-wrap items-center gap-2.5 p-4 border-b border-slate-100 dark:border-slate-700">
                     <button onClick={cargar} className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors"
                         style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
                         <Icon icon="solar:refresh-linear" className={loading ? 'animate-spin' : ''} /> Actualizar
                     </button>
-                    <span className="text-sm text-slate-400 font-medium px-1">{filtered.length.toLocaleString('es-PE')} resultados</span>
+                    <span className="text-sm text-slate-400 dark:text-gray-400 font-medium px-1">{filtered.length.toLocaleString('es-PE')} resultados</span>
                 </div>
 
                 {/* Tabla */}
@@ -222,7 +223,7 @@ export default function SistemaRubros() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse min-w-[860px]">
                             <thead>
-                                <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                                <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400 border-b border-slate-100 dark:border-slate-700">
                                     <th className="py-3 pl-5 pr-2 w-12 text-center">#</th>
                                     <th className="py-3 px-3">Nombre del Rubro</th>
                                     <th className="py-3 px-3 text-center">Empresas</th>
@@ -232,26 +233,26 @@ export default function SistemaRubros() {
                             </thead>
                             <tbody>
                                 {filtered.map((r, i) => (
-                                    <tr key={r.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
+                                    <tr key={r.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors group">
                                         <td className="py-3 pl-5 pr-2 text-center">
-                                            <span className="text-xs text-slate-400 font-mono">{i + 1}</span>
+                                            <span className="text-xs text-slate-400 dark:text-gray-400 font-mono">{i + 1}</span>
                                         </td>
                                         <td className="py-3 px-3">
                                             <div className="flex items-center gap-2.5">
                                                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center shrink-0">
                                                     <Icon icon="solar:buildings-3-bold" width={15} />
                                                 </div>
-                                                <span className="font-semibold text-slate-700 text-sm">{r.nombre}</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{r.nombre}</span>
                                             </div>
                                         </td>
                                         <td className="py-3 px-3 text-center">
                                             {(r._count?.empresas ?? 0) > 0 ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                     {r._count?.empresas} empresa{(r._count?.empresas ?? 0) !== 1 ? 's' : ''}
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                                     Sin usar
                                                 </span>
@@ -269,8 +270,8 @@ export default function SistemaRubros() {
                                                             onClick={() => toggleFeature(r, feature.key)}
                                                             disabled={Boolean(savingFeature)}
                                                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${active
-                                                                ? 'bg-emerald-50 text-emerald-600'
-                                                                : 'bg-slate-50 text-slate-400'
+                                                                ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                                                : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-gray-500'
                                                                 } ${savingThis ? 'opacity-60' : ''}`}
                                                             title={feature.group}
                                                         >
@@ -285,14 +286,14 @@ export default function SistemaRubros() {
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
                                                     onClick={() => handleOpenEdit(r)}
-                                                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-violet-50 text-violet-600 hover:bg-violet-100 transition-all"
+                                                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-all"
                                                     title="Editar"
                                                 >
                                                     <Icon icon="solar:pen-bold" width={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => confirmDelete(r.id)}
-                                                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-50 text-rose-500 dark:bg-rose-900/20 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                     disabled={(r._count?.empresas ?? 0) > 0}
                                                     title={(r._count?.empresas ?? 0) > 0 ? 'Tiene empresas asignadas' : 'Eliminar'}
                                                 >
@@ -306,12 +307,12 @@ export default function SistemaRubros() {
                         </table>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                        <Icon icon="solar:buildings-3-linear" className="text-6xl text-slate-200 mb-3" />
-                        <h3 className="text-base font-semibold text-slate-500 mb-1">
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-gray-400">
+                        <Icon icon="solar:buildings-3-linear" className="text-6xl text-slate-200 dark:text-gray-700 mb-3" />
+                        <h3 className="text-base font-semibold text-slate-500 dark:text-gray-400 mb-1">
                             {search ? 'Sin resultados' : 'No hay rubros registrados'}
                         </h3>
-                        <p className="text-sm text-slate-400 text-center">
+                        <p className="text-sm text-slate-400 dark:text-gray-400 text-center">
                             {search ? `No se encontró "${search}"` : 'Crea el primer rubro del sistema'}
                         </p>
                         {!search && (
@@ -345,7 +346,7 @@ export default function SistemaRubros() {
                         onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                         autoFocus
                     />
-                    <p className="text-xs text-slate-400 mt-2">
+                    <p className="text-xs text-slate-400 dark:text-gray-400 mt-2">
                         El nombre debe ser descriptivo del tipo de negocio. Se usa para activar funciones específicas en el sistema.
                     </p>
                 </div>

@@ -225,27 +225,27 @@ const ModalLotes = ({ isOpen, onClose, formValues, isEdit, creationLote, setCrea
                                 const isDeletingThis = deletingId === lote.id;
 
                                 return (
-                                    <div key={lote.id} className="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111c44]/70 dark:backdrop-blur-xl shadow-sm">
+                                    <div key={lote.id} className="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111c44]/70 dark:backdrop-blur-xl shadow-sm dark:shadow-none">
                                         {/* Cabecera del lote */}
                                         <div className="flex justify-between items-start p-4">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="font-bold text-gray-800 dark:text-gray-200">{lote.lote}</span>
                                                     {isVencido ? (
-                                                        <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">VENCIDO</span>
+                                                        <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded-full font-bold">VENCIDO</span>
                                                     ) : isPorVencer ? (
-                                                        <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-bold">{diasRestantes} DÍAS</span>
+                                                        <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-amber-900/20 dark:text-amber-400 rounded-full font-bold">{diasRestantes} DÍAS</span>
                                                     ) : (
-                                                        <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">VIGENTE</span>
+                                                        <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded-full font-bold">VIGENTE</span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-gray-500">Vence: {moment(lote.fechaVencimiento).format('DD/MM/YYYY')}</p>
-                                                {lote.proveedor && <p className="text-xs text-gray-400 mt-0.5">Prov: {lote.proveedor}</p>}
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Vence: {moment(lote.fechaVencimiento).format('DD/MM/YYYY')}</p>
+                                                {lote.proveedor && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Prov: {lote.proveedor}</p>}
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="text-right">
                                                     <div className="font-bold text-lg text-gray-900 dark:text-white">{lote.stockActual}</div>
-                                                    <div className="text-[10px] text-gray-400 uppercase font-medium">Stock</div>
+                                                    <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-medium">Stock</div>
                                                 </div>
                                                 {/* Botones editar / eliminar */}
                                                 {!isEditingThis && !isDeletingThis && (
@@ -341,15 +341,15 @@ const ModalLotes = ({ isOpen, onClose, formValues, isEdit, creationLote, setCrea
                                                             )}
                                                         </div>
                                                         {deltaValido && delta !== 0 && (
-                                                            <p className="text-[11px] text-gray-400 mt-1.5">
+                                                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
                                                                 Se registrará {delta > 0 ? 'un ingreso' : 'una salida'} de <strong>{Math.abs(delta)}</strong> unidades en el kardex.
                                                             </p>
                                                         )}
                                                     </div>
 
                                                     <div className="flex justify-end gap-2">
-                                                        <button type="button" onClick={cancelEdit} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
-                                                        <button type="button" onClick={handleGuardarEdicion} className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Guardar cambios</button>
+                                                        <button type="button" onClick={cancelEdit} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
+                                                        <button type="button" onClick={handleGuardarEdicion} className="text-xs px-3 py-1.5 rounded-lg btn-accent transition-colors">Guardar cambios</button>
                                                     </div>
                                                 </div>
                                             );
@@ -365,7 +365,7 @@ const ModalLotes = ({ isOpen, onClose, formValues, isEdit, creationLote, setCrea
                                                         : 'El lote está sin stock y se desactivará.'}
                                                 </p>
                                                 <div className="flex gap-2 justify-end">
-                                                    <button type="button" onClick={() => setDeletingId(null)} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
+                                                    <button type="button" onClick={() => setDeletingId(null)} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleEliminarLote(lote.id)}
@@ -380,7 +380,7 @@ const ModalLotes = ({ isOpen, onClose, formValues, isEdit, creationLote, setCrea
                                     </div>
                                 );
                             }) : (
-                                <div className="text-center py-8 text-gray-400">
+                                <div className="text-center py-8 text-gray-400 dark:text-gray-500">
                                     <Icon icon="solar:box-minimalistic-linear" width={48} className="mx-auto mb-2 opacity-30" />
                                     No hay lotes registrados
                                 </div>

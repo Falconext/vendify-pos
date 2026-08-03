@@ -221,7 +221,7 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
     const [isHistorialOpen, setIsHistorialOpen] = useState(false);
 
     return (
-        <div className="space-y-6 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="space-y-6 font-jakarta">
             {/* ── Month Navigator ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

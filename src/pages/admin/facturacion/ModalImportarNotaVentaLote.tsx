@@ -243,7 +243,7 @@ const ModalImportarNotaVentaLote = ({ isOpen, onClose, onSuccess }: ModalImporta
                         color="black"
                         onClick={importarLote}
                         disabled={importando || !file}
-                        className="!bg-indigo-600 !text-white !border-none shadow-md hover:opacity-90"
+                        className="!bg-[var(--accent)] !text-white !border-none shadow-md hover:opacity-90"
                     >
                         {importando ? <Icon icon="svg-spinners:270-ring-with-bg" width={16} className="mr-1" /> : <Icon icon="solar:upload-bold" width={16} className="mr-1" />}
                         {importando ? 'Importando...' : 'Importar notas de venta'}

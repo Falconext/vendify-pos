@@ -7,8 +7,7 @@ import ModalConfirm from '@/components/ModalConfirm';
 import TableSkeleton from '@/components/Skeletons/table';
 import TableActionMenu from '@/components/TableActionMenu';
 import Select from '@/components/Select';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 const TIPO_OPTIONS = [
   { id: '', value: 'Todas' },
@@ -57,6 +56,8 @@ function venceClass(texto?: string) {
 
 const EmpresasIndex = () => {
   const vm = useEmpresaIndexViewModel();
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [selectedMenuRow, setSelectedMenuRow] = useState<any>(null);
   const [showTipo, setShowTipo] = useState(false);
@@ -104,7 +105,7 @@ const EmpresasIndex = () => {
   if (vm.loading && vm.empresas.length === 0) return <TableSkeleton />;
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />

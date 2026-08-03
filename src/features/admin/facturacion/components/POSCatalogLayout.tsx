@@ -166,7 +166,7 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
 
                     <button
                         onClick={() => vm.setIsOpenModalProduct(true)}
-                        className="flex items-center gap-2 px-4 py-3 !bg-violet-600 hover:!bg-violet-700 text-white rounded-xl font-semibold shadow-md shadow-violet-200/50 transition-all"
+                        className="flex items-center gap-2 px-4 py-3 btn-accent rounded-xl font-semibold shadow-md shadow-black/20 transition-all"
                         title="Crear producto nuevo"
                     >
                         <Icon icon="solar:add-circle-bold" className="text-xl" />

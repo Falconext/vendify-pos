@@ -165,7 +165,7 @@ export default function ResellerMarca() {
                     </Section>
 
                     <button onClick={onSave} disabled={!!domInvalido}
-                        className="w-full py-3 bg-violet-600 text-white font-bold rounded-xl shadow-lg shadow-violet-500/30 hover:bg-violet-700 transition-all active:scale-95 disabled:opacity-50">
+                        className="w-full py-3 btn-accent font-bold rounded-xl shadow-lg shadow-black/20 transition-all active:scale-95 disabled:opacity-50">
                         Guardar cambios
                     </button>
                 </div>

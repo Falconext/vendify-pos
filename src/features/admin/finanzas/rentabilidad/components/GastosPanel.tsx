@@ -24,7 +24,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                 </div>
                 <button
                     onClick={onAgregar}
-                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors shadow-sm shadow-indigo-200 dark:shadow-indigo-900/20"
+                    className="flex items-center gap-1.5 btn-accent text-xs font-semibold px-3 py-2 rounded-xl transition-colors shadow-sm shadow-black/20"
                 >
                     <Icon icon="solar:add-circle-bold" className="text-base" />
                     Agregar gasto

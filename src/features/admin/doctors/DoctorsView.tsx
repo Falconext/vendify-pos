@@ -213,7 +213,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
   // ── Modo EMBEDDED: encaja dentro de la card de ClientsView ───────────
   if (embedded) {
     return (
-      <div style={{ ['--accent' as any]: ACCENT }} className="font-jakarta">
+      <div className="font-jakarta">
         {/* Toolbar: igual al de ClientsView */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="relative flex-1 max-w-xs w-full">
@@ -246,7 +246,7 @@ export default function DoctorsView({ hideHeader, embedded }: Props = {}) {
 
   // ── Modo STANDALONE: página propia con header y card ─────────────────
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
         <Icon icon="solar:home-smile-linear" className="text-base" />

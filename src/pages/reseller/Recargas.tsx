@@ -89,10 +89,10 @@ export default function ResellerRecargas() {
         { label: 'Total recargado', value: money(totalRecargado), icon: 'solar:course-up-bold-duotone', tone: 'indigo', sub: `${recargas.length} recarga${recargas.length !== 1 ? 's' : ''}` },
     ];
     const toneMap: Record<string, string> = {
-        indigo: 'bg-violet-50 text-violet-600',
-        amber: 'bg-amber-50 text-amber-600',
-        emerald: 'bg-emerald-50 text-emerald-600',
-        rose: 'bg-rose-50 text-rose-600',
+        indigo: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
+        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+        rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
     };
 
     return (
@@ -100,8 +100,8 @@ export default function ResellerRecargas() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Mis recargas</h1>
-                    <p className="text-slate-500">Tu saldo, recargas y renovaciones de clientes</p>
+                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Mis recargas</h1>
+                    <p className="text-slate-500 dark:text-gray-400">Tu saldo, recargas y renovaciones de clientes</p>
                 </div>
                 <button onClick={openSupportChat} className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all" style={{ background: ACCENT }}>
                     <Icon icon="solar:add-circle-bold" className="text-lg" /> Recargar saldo
@@ -110,9 +110,9 @@ export default function ResellerRecargas() {
 
             {/* Alerta de saldo bajo */}
             {saldoBajo && (
-                <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+                <div className="flex items-center gap-3 rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-900/20 px-4 py-3">
                     <Icon icon="solar:danger-triangle-bold-duotone" className="text-rose-500 text-2xl shrink-0" />
-                    <p className="text-sm text-rose-700 font-semibold">Tu saldo alcanza para {runwayLabel}. Recarga pronto para evitar que se suspendan tus clientes.</p>
+                    <p className="text-sm text-rose-700 dark:text-rose-400 font-semibold">Tu saldo alcanza para {runwayLabel}. Recarga pronto para evitar que se suspendan tus clientes.</p>
                     <button onClick={openSupportChat} className="ml-auto shrink-0 px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700">Recargar</button>
                 </div>
             )}
@@ -120,42 +120,42 @@ export default function ResellerRecargas() {
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {kpis.map((c) => (
-                    <div key={c.label} className={`bg-white p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border ${c.tone === 'rose' ? 'border-rose-200' : 'border-slate-100'}`}>
+                    <div key={c.label} className={`bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border ${c.tone === 'rose' ? 'border-rose-200 dark:border-rose-900/40' : 'border-slate-100 dark:border-slate-700'}`}>
                         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneMap[c.tone]}`}><Icon icon={c.icon} width="24" /></div>
-                        <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400">{c.label}</p>
-                        <p className={`mt-0.5 text-2xl font-extrabold ${c.tone === 'rose' ? 'text-rose-600' : 'text-slate-800'}`}>{c.value}</p>
-                        <p className="mt-0.5 text-xs font-medium text-slate-400 truncate">{c.sub}</p>
+                        <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-gray-500">{c.label}</p>
+                        <p className={`mt-0.5 text-2xl font-extrabold ${c.tone === 'rose' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{c.value}</p>
+                        <p className="mt-0.5 text-xs font-medium text-slate-400 dark:text-gray-500 truncate">{c.sub}</p>
                     </div>
                 ))}
             </div>
 
             {/* Flujo del mes */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-5">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-5">
                 <div className="flex items-center gap-2 mb-3">
                     <Icon icon="solar:round-transfer-vertical-bold-duotone" className="text-indigo-500 text-lg" />
-                    <h3 className="text-sm font-extrabold text-slate-700">Flujo de este mes · {moment().format('MMMM')}</h3>
+                    <h3 className="text-sm font-extrabold text-slate-700 dark:text-slate-200">Flujo de este mes · {moment().format('MMMM')}</h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-700">
                     <div className="px-2 sm:px-5 py-2">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">Recargado (entra)</p>
-                        <p className="text-xl font-extrabold text-emerald-600">+{money(recargadoMes)}</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Recargado (entra)</p>
+                        <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">+{money(recargadoMes)}</p>
                     </div>
                     <div className="px-2 sm:px-5 py-2">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">Consumido (sale)</p>
-                        <p className="text-xl font-extrabold text-amber-600">-{money(consumidoMes)}</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">Consumido (sale)</p>
+                        <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400">-{money(consumidoMes)}</p>
                     </div>
                     <div className="px-2 sm:px-5 py-2">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Neto del mes</p>
-                        <p className={`text-xl font-extrabold ${netoMes >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>{netoMes >= 0 ? '+' : ''}{money(netoMes)}</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-gray-400">Neto del mes</p>
+                        <p className={`text-xl font-extrabold ${netoMes >= 0 ? 'text-slate-800 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>{netoMes >= 0 ? '+' : ''}{money(netoMes)}</p>
                     </div>
                 </div>
             </div>
 
             {/* Gráfico recargas por mes + cómo recargar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 p-5">
-                    <h3 className="text-sm font-extrabold text-slate-700 mb-1">Recargas por mes</h3>
-                    <p className="text-xs text-slate-400 mb-3">Últimos 6 meses</p>
+                <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-5">
+                    <h3 className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mb-1">Recargas por mes</h3>
+                    <p className="text-xs text-slate-400 dark:text-gray-500 mb-3">Últimos 6 meses</p>
                     <div className="h-52">
                         {recargasPorMes.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
@@ -168,9 +168,9 @@ export default function ResellerRecargas() {
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full flex-col items-center justify-center text-slate-300">
+                            <div className="flex h-full flex-col items-center justify-center text-slate-300 dark:text-slate-600">
                                 <Icon icon="solar:chart-2-linear" className="text-5xl mb-2" />
-                                <p className="text-sm text-slate-400">Aún no has hecho recargas</p>
+                                <p className="text-sm text-slate-400 dark:text-gray-500">Aún no has hecho recargas</p>
                             </div>
                         )}
                     </div>
@@ -202,14 +202,14 @@ export default function ResellerRecargas() {
             </div>
 
             {/* Historial de recargas */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 overflow-hidden">
-                <div className="p-5 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-800">Historial de recargas</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-700">
+                    <h3 className="font-bold text-slate-800 dark:text-white">Historial de recargas</h3>
                 </div>
                 <div className="p-4 relative z-0">
                     <div className="overflow-x-auto font-inter">
                         {recargasTable.length === 0 ? (
-                            <div className="py-12 text-center text-slate-400">
+                            <div className="py-12 text-center text-slate-400 dark:text-gray-500">
                                 <Icon icon="solar:wallet-linear" className="text-5xl mx-auto mb-2 opacity-60" />
                                 <p className="text-sm">Aún no has realizado recargas.</p>
                             </div>
@@ -226,11 +226,11 @@ export default function ResellerRecargas() {
                                 <tbody>
                                     {recargasTable.map((r: any, i: number) => (
                                         <tr key={i} className={BODY_TR}>
-                                            <td className="py-3 pl-5 pr-3 font-mono text-sm text-slate-500">{r.id}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 whitespace-nowrap">{r.fecha}</td>
-                                            <td className="py-3 px-3 font-bold text-emerald-600 text-sm whitespace-nowrap">{r.monto}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-600">{r.medioPago}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 truncate max-w-[160px]">{r.referencia}</td>
+                                            <td className="py-3 pl-5 pr-3 font-mono text-sm text-slate-500 dark:text-gray-400">{r.id}</td>
+                                            <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 whitespace-nowrap">{r.fecha}</td>
+                                            <td className="py-3 px-3 font-bold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">{r.monto}</td>
+                                            <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-400">{r.medioPago}</td>
+                                            <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[160px]">{r.referencia}</td>
                                             <td className="py-3 px-3 pr-5"><EstadoPill estado={r.estado} /></td>
                                         </tr>
                                     ))}
@@ -242,11 +242,11 @@ export default function ResellerRecargas() {
             </div>
 
             {/* Renovaciones de clientes */}
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 overflow-hidden">
-                <div className="p-4 border-b border-slate-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h3 className="font-bold text-slate-800">Renovaciones de clientes</h3>
-                        <p className="text-xs text-slate-500">Seguimiento de cobros mensuales, intentos y suspensiones</p>
+                        <h3 className="font-bold text-slate-800 dark:text-white">Renovaciones de clientes</h3>
+                        <p className="text-xs text-slate-500 dark:text-gray-400">Seguimiento de cobros mensuales, intentos y suspensiones</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {[
@@ -258,7 +258,7 @@ export default function ResellerRecargas() {
                             <button
                                 key={item.label}
                                 onClick={() => aplicarFiltro(item.value)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${estadoFiltro === item.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${estadoFiltro === item.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                             >
                                 {item.label}
                             </button>
@@ -266,29 +266,29 @@ export default function ResellerRecargas() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 border-b border-slate-100 bg-slate-50/40">
-                    <div className="rounded-xl border border-slate-100 bg-white p-3">
-                        <p className="text-[11px] uppercase font-semibold text-slate-500">Total</p>
-                        <p className="text-xl font-bold text-slate-800">{renovacionesResumen.total || 0}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/40">
+                    <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+                        <p className="text-[11px] uppercase font-semibold text-slate-500 dark:text-gray-400">Total</p>
+                        <p className="text-xl font-bold text-slate-800 dark:text-white">{renovacionesResumen.total || 0}</p>
                     </div>
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
-                        <p className="text-[11px] uppercase font-semibold text-emerald-600">Aplicados</p>
-                        <p className="text-xl font-bold text-emerald-700">{renovacionesResumen.aplicados || 0}</p>
+                    <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-900/20 p-3">
+                        <p className="text-[11px] uppercase font-semibold text-emerald-600 dark:text-emerald-400">Aplicados</p>
+                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{renovacionesResumen.aplicados || 0}</p>
                     </div>
-                    <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-                        <p className="text-[11px] uppercase font-semibold text-amber-600">Pendientes</p>
-                        <p className="text-xl font-bold text-amber-700">{renovacionesResumen.pendientes || 0}</p>
+                    <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/20 p-3">
+                        <p className="text-[11px] uppercase font-semibold text-amber-600 dark:text-amber-400">Pendientes</p>
+                        <p className="text-xl font-bold text-amber-700 dark:text-amber-400">{renovacionesResumen.pendientes || 0}</p>
                     </div>
-                    <div className="rounded-xl border border-red-100 bg-red-50/50 p-3">
-                        <p className="text-[11px] uppercase font-semibold text-red-600">Rechazados</p>
-                        <p className="text-xl font-bold text-red-700">{renovacionesResumen.rechazados || 0}</p>
+                    <div className="rounded-xl border border-red-100 dark:border-rose-900/40 bg-red-50/50 dark:bg-rose-900/20 p-3">
+                        <p className="text-[11px] uppercase font-semibold text-red-600 dark:text-rose-400">Rechazados</p>
+                        <p className="text-xl font-bold text-red-700 dark:text-rose-400">{renovacionesResumen.rechazados || 0}</p>
                     </div>
                 </div>
 
                 <div className="p-4 relative z-0">
                     <div className="overflow-x-auto font-inter">
                         {renovacionesTable.length === 0 ? (
-                            <div className="py-12 text-center text-slate-400">
+                            <div className="py-12 text-center text-slate-400 dark:text-gray-500">
                                 <Icon icon="solar:refresh-circle-linear" className="text-5xl mx-auto mb-2 opacity-60" />
                                 <p className="text-sm">No hay renovaciones para este filtro.</p>
                             </div>
@@ -306,11 +306,11 @@ export default function ResellerRecargas() {
                                     {renovacionesTable.map((m: any, i: number) => (
                                         <tr key={i} className={BODY_TR}>
                                             <td className="py-3 pl-5 pr-3"><EntityCell name={m.cliente} sub={m.ruc} /></td>
-                                            <td className="py-3 px-3 text-sm text-slate-500 whitespace-nowrap">{m.fecha}</td>
-                                            <td className="py-3 px-3 font-bold text-slate-800 text-sm whitespace-nowrap">{m.monto}</td>
-                                            <td className="py-3 px-3 text-sm text-slate-500">{m.intento}</td>
+                                            <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 whitespace-nowrap">{m.fecha}</td>
+                                            <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{m.monto}</td>
+                                            <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">{m.intento}</td>
                                             <td className="py-3 px-3"><EstadoPill estado={m.estado} /></td>
-                                            <td className="py-3 px-3 pr-5 text-sm text-slate-500 truncate max-w-[220px]">{m.detalle}</td>
+                                            <td className="py-3 px-3 pr-5 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[220px]">{m.detalle}</td>
                                         </tr>
                                     ))}
                                 </tbody>

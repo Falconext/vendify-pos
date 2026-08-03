@@ -11,9 +11,7 @@ import {
 } from '@/features/admin/sistema/useSistemaFinanzasViewModel';
 import { Calendar } from '@/components/Date';
 import Select from '@/components/Select';
-
-// ── Estilo CRM claro (Brix UI) ─────────────────────────────────────────────────
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +95,8 @@ function CustomTooltip({ active, payload, label }: any) {
 // ── Modal Gasto ────────────────────────────────────────────────────────────────
 
 function ModalGasto({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel> }) {
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     if (!vm.showModal) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -308,6 +308,8 @@ function ModalIngreso({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
 // ── Tab: Dashboard ─────────────────────────────────────────────────────────────
 
 function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel> }) {
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     const d = vm.dashboard;
     if (vm.loadingDash || !d) {
         return (
@@ -489,6 +491,8 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
 // ── Tab: Movimientos (tabla ingresos arriba, tabla gastos abajo) ───────────────
 
 function TabMovimientos({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel> }) {
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     const balance = vm.totalIngresos - vm.totalGastos;
 
     return (
@@ -720,6 +724,8 @@ function TabMovimientos({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMo
 // ── Tab: Clientes ──────────────────────────────────────────────────────────────
 
 function TabClientes({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel> }) {
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     if (vm.loadingDash || !vm.dashboard) {
         return <div className="flex items-center justify-center h-64"><Icon icon="eos-icons:loading" className="w-10 h-10" style={{ color: ACCENT }} /></div>;
     }
@@ -871,9 +877,11 @@ const TABS = [
 
 export default function SistemaFinanzas() {
     const vm = useSistemaFinanzasViewModel();
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />

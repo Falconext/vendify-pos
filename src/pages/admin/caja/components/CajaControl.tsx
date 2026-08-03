@@ -121,7 +121,7 @@ const CajaControl: React.FC = () => {
 
     if (loading && !estadoCaja) {
         return (
-            <div className="font-jakarta space-y-6" style={{ ['--accent' as any]: ACCENT }}>
+            <div className="font-jakarta space-y-6">
                 <div className="h-40 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="h-28 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
@@ -150,7 +150,7 @@ const CajaControl: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 font-jakarta animate-in fade-in duration-500" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="space-y-6 font-jakarta animate-in fade-in duration-500">
 
             {/* Error global */}
             {error && (
@@ -268,7 +268,7 @@ const CajaControl: React.FC = () => {
 
             {/* Modal Apertura */}
             {showApertura && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 top-[-30px] flex items-center justify-center p-4 animate-in fade-in duration-200 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 top-[-30px] flex items-center justify-center p-4 animate-in fade-in duration-200 font-jakarta">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
                         <div className="bg-emerald-50 p-6 border-b border-emerald-100">
                             <h3 className="text-xl font-extrabold text-emerald-700 flex items-center gap-2">
@@ -316,7 +316,7 @@ const CajaControl: React.FC = () => {
 
             {/* Modal Cierre */}
             {showCierre && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 font-jakarta">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
                         <div className="bg-slate-50 p-6 border-b border-slate-100">
                             <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">

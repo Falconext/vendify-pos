@@ -9,8 +9,7 @@ import Pagination from '@/components/Pagination';
 import Select from '@/components/Select';
 import { useDebounce } from '@/hooks/useDebounce';
 import ModalConfirm from '@/components/ModalConfirm';
-
-const ACCENT = '#7551FF';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 type EstadoSerie = 'TODOS' | 'DISPONIBLE' | 'VENDIDO' | 'RESERVADO' | 'BAJA';
 type EstadoGarantia = 'TODOS' | 'VIGENTE' | 'VENCIDA' | 'SIN_GARANTIA';
@@ -117,6 +116,8 @@ const EMPTY_FORM = { productoId: '', numeroSerie: '', garantiaMeses: '', observa
 const EMPTY_RECLAMO = { descripcion: '', tecnico: '', estadoReclamo: 'ABIERTO' as EstadoReclamo };
 
 export default function SeriesGarantias() {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const { auth } = useAuthStore();
   const { alert } = useAlertStore();
   const [search, setSearch] = useState('');
@@ -409,7 +410,7 @@ export default function SeriesGarantias() {
 
   if (!canUse) {
     return (
-      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta">
         <div className="mx-auto mt-10 grid max-w-xl place-items-center rounded-3xl bg-white dark:bg-[#111827] px-8 py-14 text-center shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
           <div className="grid h-20 w-20 place-items-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
             <Icon icon="solar:lock-keyhole-linear" className="text-4xl" />
@@ -424,7 +425,7 @@ export default function SeriesGarantias() {
   }
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta text-slate-900 dark:text-slate-100" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-slate-950 font-jakarta text-slate-900 dark:text-slate-100">
       {/* Breadcrumb */}
       <div className="mb-5 flex items-center gap-2 text-sm text-slate-400">
         <Icon icon="solar:home-smile-linear" className="text-base" />

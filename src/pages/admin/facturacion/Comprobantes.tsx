@@ -256,9 +256,12 @@ const Comprobantes = () => {
                 page: currentPage,
                 limit: itemsPerPage,
                 search: debounce,
-                fechaInicio,
-                fechaFin,
+                // Con el filtro de pendientes en SUNAT se ignora el rango de fechas
+                // (el conteo del dashboard no está acotado por mes): así aparecen
+                // los pendientes de cualquier mes, no solo el actual.
+                ...(soloPendientesSunat ? {} : { fechaInicio, fechaFin }),
                 estado: stateInvoice === "TODOS" ? "" : stateInvoice,
+                ...(soloPendientesSunat ? { soloPendientesSunat: 'true' } : {}),
                 ...(canFilterByUsuario && selectedUsuarioId ? { usuarioId: selectedUsuarioId } : {}),
                 ...(effectiveSedeId ? { sedeId: effectiveSedeId } : {})
             })
@@ -289,7 +292,7 @@ const Comprobantes = () => {
                 setInvoicesLoading(false);
             }
         }
-    }, [currentPage, itemsPerPage, debounce, fechaInicio, fechaFin, stateInvoice, effectiveSedeId, selectedUsuarioId, canFilterByUsuario]);
+    }, [currentPage, itemsPerPage, debounce, fechaInicio, fechaFin, stateInvoice, soloPendientesSunat, effectiveSedeId, selectedUsuarioId, canFilterByUsuario]);
 
     useEffect(() => {
         fetchFormalInvoices();
@@ -683,12 +686,28 @@ const Comprobantes = () => {
                 <button
                     type="button"
                     onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
-                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl btn-accent text-sm font-bold transition-all shadow-lg shadow-black/20 active:scale-95"
                 >
                     <Icon icon="solar:add-circle-bold" className="text-lg" />
                     Nuevo comprobante
                 </button>
             </div>
+
+            {soloPendientesSunat && (
+                <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 rounded-xl max-w-fit">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <Icon icon="solar:document-add-bold-duotone" width={18} />
+                    </div>
+                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Mostrando comprobantes pendientes en SUNAT de cualquier fecha</p>
+                    <button
+                        type="button"
+                        onClick={() => { setSoloPendientesSunat(false); setcurrentPage(1); navigate('/administrador/facturacion/comprobantes', { replace: true }); }}
+                        className="ml-1 inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300"
+                    >
+                        <Icon icon="solar:close-circle-bold" width={16} /> Quitar filtro
+                    </button>
+                </div>
+            )}
 
             <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 {/* Filters Section */}
@@ -717,10 +736,10 @@ const Comprobantes = () => {
                             <InputPro name="" onChange={handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
                         </div>
                         <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" onChange={handleDate} className="admin-date-filter" portal />
-                        </div>      
+                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
+                        </div>
                         <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" onChange={handleDate} className="admin-date-filter" portal />
+                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                         </div>
                         <div>
                             <Select onChange={handleSelectState} label="Estado" name="" options={estadosInvoice} error="" />

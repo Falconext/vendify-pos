@@ -18,10 +18,9 @@ import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
 import { usePaymentFlow, PaymentType } from '@/hooks/usePaymentFlow';
 import ModalPaymentUnified from '@/components/ModalPaymentUnified';
 import PaymentReceipt from '@/components/PaymentReceipt';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 const print = [{ id: 1, value: 'TICKET' }, { id: 2, value: 'A5' }, { id: 3, value: 'A4' }];
-
-const ACCENT = '#7551FF';
 
 // Pill de estado de pago — punto de color + texto, estilo CRM claro.
 const estadoPill = (estado?: string) => {
@@ -34,6 +33,8 @@ const estadoPill = (estado?: string) => {
 };
 
 const OrdenesDeTrabajoPage = () => {
+  const sidebarColor = useThemeStore((s) => s.sidebarColor);
+  const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
   const { auth } = useAuthStore();
   const { getAllInvoices, totalInvoices, invoices, getInvoice, invoice, resetInvoice, cancelInvoice, completePay }: IInvoicesState = useInvoiceStore();
   const { success } = useAlertStore();
@@ -318,7 +319,7 @@ const OrdenesDeTrabajoPage = () => {
   })();
 
   return (
-    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta">
       <ComprobantePrintPage
         company={auth}
         componentRef={componentRef}

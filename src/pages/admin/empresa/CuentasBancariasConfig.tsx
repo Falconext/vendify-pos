@@ -161,7 +161,7 @@ export default function CuentasBancariasConfig() {
         </div>
         <button
           onClick={abrirNuevo}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold btn-accent rounded-xl transition-all shadow-sm"
         >
           <Icon icon="solar:add-circle-bold" width={16} />
           Nueva cuenta
@@ -426,7 +426,7 @@ export default function CuentasBancariasConfig() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60"
+                  className="flex-1 py-2.5 rounded-xl btn-accent text-sm font-semibold transition-colors disabled:opacity-60"
                 >
                   {loading ? 'Guardando...' : editando ? 'Actualizar' : 'Guardar'}
                 </button>

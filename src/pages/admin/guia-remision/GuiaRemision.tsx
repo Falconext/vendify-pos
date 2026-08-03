@@ -267,12 +267,12 @@ const GuiaRemision = () => {
         estadoSunat: (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                 guia.estadoSunat === 'ACEPTADO'
-                ? 'bg-emerald-50 text-emerald-600' :
+                ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
                 guia.estadoSunat === 'RECHAZADO' || guia.estadoSunat === 'FALLIDO_ENVIO'
-                ? 'bg-rose-50 text-rose-600' :
+                ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' :
                 guia.estadoSunat === 'ENVIADO'
-                ? 'bg-violet-50 text-violet-600' :
-                'bg-blue-50 text-blue-600'
+                ? 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400' :
+                'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
             }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${
                     guia.estadoSunat === 'ACEPTADO' ? 'bg-emerald-500' :
@@ -285,7 +285,7 @@ const GuiaRemision = () => {
         acciones: (
             <button
                 onClick={(e) => handleOpenMenu(e, guia)}
-                className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="h-8 w-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
                 <Icon icon="mdi:dots-vertical" width={20} height={20} />
             </button>
@@ -295,7 +295,7 @@ const GuiaRemision = () => {
     const activeFilterCount = [searchTerm.trim(), fechaInicio, fechaFin, selectedSedeId].filter(Boolean).length;
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] font-jakarta" style={{ ['--accent' as any]: ACCENT }}>
+        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-400 mb-5">
                 <Icon icon="solar:home-smile-linear" className="text-base" />
@@ -309,11 +309,11 @@ const GuiaRemision = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-11 w-11 grid place-items-center rounded-2xl bg-violet-50 text-violet-600 shrink-0">
+                    <div className="h-11 w-11 grid place-items-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 shrink-0">
                         <Icon icon="solar:delivery-bold-duotone" className="text-2xl" />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Guías de Remisión</h1>
+                        <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Guías de Remisión</h1>
                         <p className="text-sm text-slate-400 mt-0.5">Gestión y envío de guías de remitente y transportista</p>
                     </div>
                 </div>
@@ -327,13 +327,13 @@ const GuiaRemision = () => {
                 </button>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
-                <div className="border-b border-slate-100 p-4 sm:p-5">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
+                <div className="border-b border-slate-100 dark:border-slate-700 p-4 sm:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3 px-1">
                         <div className="flex min-w-0 items-center gap-2">
-                            <Icon icon="solar:filter-bold-duotone" className="text-xl text-violet-600" />
+                            <Icon icon="solar:filter-bold-duotone" className="text-xl text-violet-600 dark:text-violet-400" />
                             <div className="min-w-0">
-                                <h3 className="font-bold uppercase tracking-wide text-xs text-slate-800">Filtros de búsqueda</h3>
+                                <h3 className="font-bold uppercase tracking-wide text-xs text-slate-800 dark:text-white">Filtros de búsqueda</h3>
                                 <p className="truncate text-xs text-slate-400 md:hidden">
                                     {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
                                 </p>
@@ -416,7 +416,7 @@ const GuiaRemision = () => {
                                     handleCloseMenu();
                                     navigate("/administrador/facturacion/nuevo", { state: { guiaRemision: selectedRow } });
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             >
                                 <Icon icon="solar:bill-bold" width={16} height={16} /> <span>Facturar Guía</span>
                             </button>
@@ -429,7 +429,7 @@ const GuiaRemision = () => {
                                     await downloadPdf(selectedRow.id);
                                 }
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                         >
                             <Icon icon="heroicons:arrow-down-tray" width={16} height={16} /> <span>Descargar PDF</span>
                         </button>
@@ -450,7 +450,7 @@ const GuiaRemision = () => {
                                         useAlertStore.getState().alert('Error al abrir PDF para imprimir', 'error');
                                     });
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                         >
                             <Icon icon="solar:printer-bold" width={16} height={16} /> <span>Imprimir Formato</span>
                         </button>
@@ -459,14 +459,14 @@ const GuiaRemision = () => {
                             <>
                                 <button
                                     onClick={handleEditar}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                                 >
                                     <Icon icon="material-symbols:edit" width={16} height={16} /> <span>Editar</span>
                                 </button>
                                 {canSendGuia && (
                                     <button
                                         onClick={handleEnviarSunat}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-green-700 hover:bg-green-50"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-green-700 dark:text-emerald-400 hover:bg-green-50 dark:hover:bg-emerald-900/20"
                                     >
                                         <Icon icon="heroicons:paper-airplane" width={16} height={16} /> <span>{isRetryGuia ? 'Reintentar envío a SUNAT' : 'Enviar a SUNAT'}</span>
                                     </button>
@@ -477,7 +477,7 @@ const GuiaRemision = () => {
                         {canDeleteGuia && (
                             <button
                                 onClick={handleEliminar}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-rose-900/20"
                             >
                                 <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} /> <span>Eliminar</span>
                             </button>

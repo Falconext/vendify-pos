@@ -96,7 +96,7 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
           <div className="w-full md:w-[380px] shrink-0 overflow-y-auto p-4 border-r border-gray-100 dark:border-slate-800">
             {grupos.map((g) => (
               <div key={g} className="mb-5">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">{g}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{g}</p>
                 <div className="space-y-2">
                   {COTIZ_ELEMENTOS.filter((e) => e.grupo === g).map((el) => {
                     const cur = elemCfg(config, el.key);
@@ -111,13 +111,13 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
                             <Icon icon={cur.visible ? 'solar:eye-bold' : 'solar:eye-closed-bold'} width={16} />
                           </button>
                         ) : (
-                          <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300"><Icon icon="solar:lock-keyhole-minimalistic-bold" width={14} /></div>
+                          <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 dark:text-gray-600"><Icon icon="solar:lock-keyhole-minimalistic-bold" width={14} /></div>
                         )}
-                        <span className={`flex-1 text-sm ${cur.visible ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 line-through'}`}>{el.label}</span>
+                        <span className={`flex-1 text-sm ${cur.visible ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{el.label}</span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300"><Icon icon="solar:minus-square-bold" width={14} /></button>
+                          <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
                           <span className="w-11 text-center text-xs font-mono text-gray-600 dark:text-gray-300">{cur.size}{el.unit || 'px'}</span>
-                          <button onClick={() => setSize(el.key, Math.min(el.max, cur.size + 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300"><Icon icon="solar:add-square-bold" width={14} /></button>
+                          <button onClick={() => setSize(el.key, Math.min(el.max, cur.size + 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:add-square-bold" width={14} /></button>
                         </div>
                       </div>
                     );
@@ -162,7 +162,7 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
           </button>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800">Cancelar</button>
-            <button onClick={guardar} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center gap-2 disabled:opacity-60">
+            <button onClick={guardar} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold btn-accent flex items-center gap-2 disabled:opacity-60">
               <Icon icon={saving ? 'svg-spinners:180-ring' : 'solar:diskette-bold'} width={16} />
               {saving ? 'Guardando…' : 'Guardar formato'}
             </button>

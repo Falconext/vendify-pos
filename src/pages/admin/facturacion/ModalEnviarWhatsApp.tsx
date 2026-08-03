@@ -304,7 +304,7 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
                                 <Button
                                     onClick={handleEnviarEmail}
                                     disabled={enviandoEmail || generando || !emailDestino.trim()}
-                                    className="flex-1 bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                                    className="flex-1 !bg-[var(--accent)] hover:opacity-90 text-white flex items-center justify-center gap-2 disabled:opacity-60"
                                 >
                                     {enviandoEmail ? (
                                         <Icon icon="line-md:loading-twotone-loop" className="text-xl" />

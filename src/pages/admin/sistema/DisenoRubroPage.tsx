@@ -371,14 +371,14 @@ export default function DisenoRubroPage() {
   const plantillasActuales = (form.plantillaId ?? 'moderna').split(',').filter(Boolean) as PlantillaId[];
   if (loading) {
     return (
-      <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)] flex items-center justify-center" style={{ ['--accent' as any]: ACCENT }}>
+      <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)] flex items-center justify-center">
         <Icon icon="svg-spinners:ring-resize" className="text-3xl" style={{ color: ACCENT }} />
       </div>
     );
   }
 
   return (
-    <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)]" style={{ ['--accent' as any]: ACCENT }}>
+    <div className="-m-5 p-5 bg-[#F7F8FB] dark:bg-slate-900 font-jakarta min-h-[calc(100vh-64px)]">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
         <Icon icon="solar:home-smile-linear" className="text-base" />
