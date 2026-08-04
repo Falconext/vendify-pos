@@ -255,6 +255,15 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
     const total = getComprobanteTotal(comprobante);
     const comprobanteLabel = getComprobanteLabel(comprobante);
     const showDespacho = puedeDespacho && hasRealDespacho(envio);
+    // Condición de pago (crédito) — no depende del medio de pago: una venta al
+    // crédito tiene medioPago 'EFECTIVO' por defecto pero formaPagoTipo=CREDITO
+    // / estadoPago pendiente / saldo>0.
+    const esVentaCredito =
+        String(comprobante?.formaPagoTipo || '').toUpperCase() === 'CREDITO' ||
+        ['PENDIENTE_PAGO', 'PAGO_PARCIAL'].includes(
+            String(comprobante?.estadoPago || '').toUpperCase(),
+        ) ||
+        Number(comprobante?.saldo || 0) > 0;
 
     return (
         <>
@@ -321,7 +330,11 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                             <p className="text-3xl font-black text-gray-900 dark:text-white">
                                 S/ {total.toFixed(2)}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">{comprobante.medioPago || 'Sin medio de pago'}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                {esVentaCredito
+                                    ? `Crédito${comprobante.medioPago ? ` · ${comprobante.medioPago}` : ''}`
+                                    : comprobante.medioPago || 'Sin medio de pago'}
+                            </p>
                         </div>
                         <div>
                             <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Cliente</p>
