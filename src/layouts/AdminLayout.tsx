@@ -402,6 +402,14 @@ export default function AdminLayout() {
             <div className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-2.5 h-9 dark:border-[#262626] dark:bg-white/5 focus-within:border-[var(--accent)] transition-colors">
               <Icon icon="solar:magnifer-linear" width={16} className="text-neutral-400 shrink-0" />
               <input
+                type="text"
+                name="menu-search"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-1p-ignore
+                data-lpignore="true"
                 value={navQuery}
                 onChange={(e) => setNavQuery(e.target.value)}
                 placeholder="Buscar en el menú…"
