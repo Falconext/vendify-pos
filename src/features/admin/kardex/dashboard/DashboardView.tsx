@@ -1,12 +1,14 @@
-import { BarChart as TremorBarChart, DonutChart } from '@tremor/react';
 import { Icon } from '@iconify/react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from '@/components/Datatable';
 import { useDashboardViewModel } from './useDashboardViewModel';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+import KardexPremiumCharts from './KardexPremiumCharts';
 
 export default function DashboardView() {
     const vm = useDashboardViewModel();
     const { dashboardData, loading, error, charts, helpers, actions } = vm;
+    const navigate = useNavigate();
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
 
@@ -41,7 +43,7 @@ export default function DashboardView() {
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                        <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
                             <div className="h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse mb-4" />
                             <div className="h-7 w-24 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse mb-2" />
                             <div className="h-3 w-32 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
@@ -49,7 +51,7 @@ export default function DashboardView() {
                     ))}
                 </div>
             ) : error || !dashboardData ? (
-                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-6">
+                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 p-6">
                     <div className="text-center py-12">
                         <Icon icon="solar:danger-triangle-linear" width={48} height={48} className="text-rose-400 mx-auto mb-4" />
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
@@ -69,108 +71,68 @@ export default function DashboardView() {
                 </div>
             ) : (
                 <>
-                {/* Métricas principales */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex flex-col justify-between group hover:shadow-[0_4px_28px_rgba(15,23,42,0.08)] transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-slate-400 uppercase tracking-wide text-xs font-bold">Total Productos</h3>
-                            <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                <Icon icon="solar:box-bold" className="text-xl" />
+                {/* Métricas principales — tarjeta unificada con columnas divididas (estilo dashboard) */}
+                {(() => {
+                    const kpiCards = [
+                        { label: 'Total Productos', value: dashboardData.resumenGeneral.totalProductos.toLocaleString(), sub: 'productos registrados', icon: 'solar:box-bold', tone: 'blue', to: '/administrador/kardex/productos' },
+                        { label: 'Valor Inventario', value: helpers.formatCurrency(dashboardData.resumenGeneral.valorTotalInventario), sub: 'valor total en stock', icon: 'solar:wallet-money-bold', tone: 'emerald', to: '/administrador/kardex/productos' },
+                        { label: 'Stock Crítico', value: dashboardData.resumenGeneral.productosStockCritico.toLocaleString(), sub: 'productos bajo mínimo', icon: 'solar:danger-triangle-bold', tone: 'amber', to: '/administrador/kardex/productos?soloStockBajo=true' },
+                        { label: 'Sin Stock', value: dashboardData.resumenGeneral.productosStockCero.toLocaleString(), sub: 'productos agotados', icon: 'solar:close-circle-bold', tone: 'rose', to: '/administrador/kardex/productos' },
+                    ];
+                    const toneCls: Record<string, string> = {
+                        blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+                        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+                        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+                        rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
+                    };
+                    return (
+                        <div className="rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-6">
+                            <div className="grid grid-cols-2 lg:grid-cols-4">
+                                {kpiCards.map((c, idx) => (
+                                    <div
+                                        key={c.label}
+                                        className={`flex flex-col border-slate-100 dark:border-slate-800 lg:border-t-0 ${idx % 2 === 1 ? 'border-l' : ''} ${idx >= 2 ? 'border-t' : ''} ${idx > 0 ? 'lg:border-l' : ''}`}
+                                    >
+                                        <div className="p-5 flex-1">
+                                            <div className="flex items-center gap-1.5 text-slate-400">
+                                                <span className="text-[11px] font-black uppercase tracking-wide">{c.label}</span>
+                                                <Icon icon="solar:info-circle-linear" className="text-[13px]" />
+                                            </div>
+                                            <div className="mt-2.5 flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <p className="text-2xl font-extrabold text-slate-800 dark:text-white truncate">{c.value}</p>
+                                                    <p className="mt-1.5 text-xs font-medium text-slate-400">{c.sub}</p>
+                                                </div>
+                                                <div className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${toneCls[c.tone]}`}>
+                                                    <Icon icon={c.icon} className="text-xl" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => navigate(c.to)}
+                                            className="group w-full flex items-center justify-center gap-1.5 border-t border-slate-100 dark:border-slate-800 py-3 text-[13px] font-bold text-slate-600 dark:text-gray-300 hover:text-[var(--accent)] transition-colors"
+                                        >
+                                            Ver detalle <Icon icon="solar:arrow-right-linear" className="transition-transform group-hover:translate-x-0.5" />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <div>
-                            <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mb-2">
-                                {dashboardData.resumenGeneral.totalProductos.toLocaleString()}
-                            </h2>
-                            <span className="text-xs text-slate-400 font-medium">productos registrados</span>
-                        </div>
-                    </div>
+                    );
+                })()}
 
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex flex-col justify-between group hover:shadow-[0_4px_28px_rgba(15,23,42,0.08)] transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-slate-400 uppercase tracking-wide text-xs font-bold">Valor Inventario</h3>
-                            <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                <Icon icon="solar:wallet-money-bold" className="text-xl" />
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mb-2">
-                                {helpers.formatCurrency(dashboardData.resumenGeneral.valorTotalInventario)}
-                            </h2>
-                            <span className="text-xs text-slate-400 font-medium">valor total en stock</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex flex-col justify-between group hover:shadow-[0_4px_28px_rgba(15,23,42,0.08)] transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-slate-400 uppercase tracking-wide text-xs font-bold">Stock Crítico</h3>
-                            <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                <Icon icon="solar:danger-triangle-bold" className="text-xl" />
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mb-2">
-                                {dashboardData.resumenGeneral.productosStockCritico}
-                            </h2>
-                            <span className="text-xs text-slate-400 font-medium">productos bajo mínimo</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex flex-col justify-between group hover:shadow-[0_4px_28px_rgba(15,23,42,0.08)] transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-slate-400 uppercase tracking-wide text-xs font-bold">Sin Stock</h3>
-                            <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                                <Icon icon="solar:close-circle-bold" className="text-xl" />
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mb-2">
-                                {dashboardData.resumenGeneral.productosStockCero}
-                            </h2>
-                            <span className="text-xs text-slate-400 font-medium">productos agotados</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Gráficos con Tremor */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                        <h3 className="text-slate-800 dark:text-white font-extrabold text-lg mb-1">Estado del stock</h3>
-                        <TremorBarChart
-                            className="mt-4 h-64"
-                            data={charts.stockChartData ?? []}
-                            index="estado"
-                            categories={["Stock normal", "Stock crítico", "Sin stock"]}
-                            colors={["emerald", "amber", "rose"]}
-                            showLegend
-                            showGridLines={false}
-                            showAnimation
-                            yAxisWidth={56}
-                            valueFormatter={(value: number) =>
-                                Number(value || 0).toLocaleString("es-PE")
-                            }
-                        />
-                    </div>
-
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                        <h3 className="text-slate-800 dark:text-white font-extrabold text-lg mb-1">Distribución del inventario</h3>
-                        <DonutChart
-                            className="mt-4 h-64"
-                            data={charts.pieData}
-                            index="name"
-                            category="value"
-                            colors={["emerald", "amber", "rose", "cyan"]}
-                            valueFormatter={(value: number) =>
-                                Number(value || 0).toLocaleString("es-PE")
-                            }
-                        />
-                    </div>
-                </div>
+                {/* Gráficos premium: estado de stock, top 10 vendidos, top 5 rentables */}
+                <KardexPremiumCharts
+                    pieData={charts.pieData}
+                    topVendidos={charts.topVendidos}
+                    topRentables={charts.topRentables}
+                    accent={ACCENT}
+                />
 
                 {/* Alertas y productos críticos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
                     {/* Productos con stock crítico */}
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3 mb-5">
                             <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                                 <Icon icon="solar:danger-triangle-bold-duotone" className="text-lg" />
@@ -209,7 +171,7 @@ export default function DashboardView() {
                     </div>
 
                     {/* Productos obsoletos */}
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                    <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3 mb-5">
                             <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
                                 <Icon icon="solar:clock-circle-bold-duotone" className="text-lg" />
@@ -247,7 +209,7 @@ export default function DashboardView() {
                 </div>
 
                 {/* Movimientos recientes */}
-                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
                             <Icon icon="solar:history-bold-duotone" className="text-lg" />
@@ -256,6 +218,7 @@ export default function DashboardView() {
                     </div>
                     <div className="p-4">
                         {dashboardData.movimientosRecientes.length > 0 ? (
+                            <div className="overflow-x-auto">
                             <DataTable actions={[]} bodyData={dashboardData.movimientosRecientes.map((movimiento) => ({
                                 fecha: helpers.formatDate(movimiento.fecha),
                                 producto: `${movimiento.producto?.codigo || ''} - ${movimiento.producto?.descripcion || 'Sin descripción'}`.toUpperCase(),
@@ -268,6 +231,7 @@ export default function DashboardView() {
                                     { label: 'Concepto', key: 'concepto' },
                                     { label: 'Cantidad', key: 'cantidad' },
                                 ]} />
+                            </div>
                         ) : (
                             <div className="text-center py-8">
                                 <Icon icon="solar:inbox-linear" className="text-4xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
@@ -314,7 +278,7 @@ export default function DashboardView() {
                                 action: dashboardData.farmacia.valorLotesVencidos > 0 ? 'Dar de baja o devolver' : '✅ Sin valor inmovilizado',
                             },
                         ].map((kpi) => (
-                            <div key={kpi.label} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                            <div key={kpi.label} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800">
                                 <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-3 ${kpi.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20' : kpi.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-emerald-50 dark:bg-emerald-900/20'}`}>
                                     <Icon icon={kpi.icon} className={`text-xl ${kpi.color === 'rose' ? 'text-rose-600 dark:text-rose-400' : kpi.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
                                 </div>
@@ -328,7 +292,7 @@ export default function DashboardView() {
                     {/* Tablas top lotes */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                         {/* Por vencer */}
-                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
                                 <h3 className="font-extrabold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <Icon icon="solar:clock-circle-bold" className="text-amber-500" />
@@ -356,7 +320,7 @@ export default function DashboardView() {
                         </div>
 
                         {/* Vencidos con stock */}
-                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+                        <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
                                 <h3 className="font-extrabold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <Icon icon="solar:danger-circle-bold" className="text-rose-500" />

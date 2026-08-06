@@ -17,7 +17,6 @@ import { Calendar } from "@/components/Date";
 import Select from "@/components/Select";
 import ModalConfirm from "@/components/ModalConfirm";
 import { useDebounce } from "@/hooks/useDebounce";
-import InputPro from "@/components/InputPro";
 import ModalPagoParcial from "@/components/ModalPagoParcial";
 import ComprobantePrintPage from "./comprobanteImprimir";
 import { useReactToPrint } from "react-to-print";
@@ -34,6 +33,7 @@ import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
 import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/comprobanteProductMapper";
 import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
+import ModalConfigCotizacion from "@/features/admin/cotizaciones/ModalConfigCotizacion";
 import apiClient from "@/utils/apiClient";
 
 const ACCENT = 'var(--accent, #7551FF)';
@@ -89,6 +89,7 @@ const ComprobantesInformales = () => {
     const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
     const [selectedUsuarioId, setSelectedUsuarioId] = useState<number | null>(null);
     const [isOpenModalImportarNV, setIsOpenModalImportarNV] = useState(false);
+    const [isOpenConfigFormato, setIsOpenConfigFormato] = useState(false);
     const [isOpenModalWhatsApp, setIsOpenModalWhatsApp] = useState(false);
     const [comprobanteWhatsApp, setComprobanteWhatsApp] = useState<any>(null);
     const [modalDefaultTab, setModalDefaultTab] = useState<'whatsapp' | 'email'>('whatsapp');
@@ -99,7 +100,6 @@ const ComprobantesInformales = () => {
     const [pdfUrl, setPdfUrl] = useState<string>("");
     const [pdfName, setPdfName] = useState<string>("comprobante.pdf");
     const [detalleComprobanteId, setDetalleComprobanteId] = useState<number | null>(null);
-    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const pages = [];
@@ -151,6 +151,11 @@ const ComprobantesInformales = () => {
             ? moment(item.envioDespacho.creadoEn).format('YYYY-MM-DD')
             : moment(item.fechaEmision).format('YYYY-MM-DD');
 
+        const estadoValue = ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
+            ? item.estadoEnvioSunat
+            : item.estadoPago;
+        const saldoStr = `S/ ${item?.saldo?.toFixed(2) || (0).toFixed(2)}`;
+        const estadoPillCfg = estadoPill(estadoValue);
         const rowBase: any = {
             id: item?.id,
             fechaEmisión: moment(item?.fechaEmision).format('DD/MM/YYYY HH:mm:ss'),
@@ -158,16 +163,31 @@ const ComprobantesInformales = () => {
             serie: item.serie,
             correlativo: item.correlativo,
             comprobante: item.comprobante,
+            comprobanteBadge: (
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{item.comprobante}</span>
+            ),
             documentoAfiliado: item?.numDocAfectado || item.numeroOrdenTrabajo,
             document: item?.cliente?.nroDoc,
             client: item?.cliente?.nombre,
+            clientBadge: (
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
+                        {(item?.cliente?.nombre || 'C').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[160px]">{item?.cliente?.nombre || 'Cliente varios'}</span>
+                </div>
+            ),
             vendedor: item?.usuario?.nombre || '-',
             s3PdfUrl: item?.s3PdfUrl,
             total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
-            saldo: `S/ ${item?.saldo?.toFixed(2) || (0).toFixed(2)}`,
-            estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
-                ? item.estadoEnvioSunat
-                : item.estadoPago,
+            saldo: saldoStr,
+            saldoBadge: <span className="font-bold text-amber-600 dark:text-amber-500 text-sm whitespace-nowrap">{saldoStr}</span>,
+            estado: estadoValue,
+            estadoBadge: (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${estadoPillCfg.bg} ${estadoPillCfg.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${estadoPillCfg.dot}`} /> {estadoPillCfg.label}
+                </span>
+            ),
             estadoEnvioSunat: item.estadoEnvioSunat,
             despachoCompleto,
             despachoFecha,
@@ -511,15 +531,6 @@ const ComprobantesInformales = () => {
         setSearchClient(e.target.value)
     }
 
-    const activeFilterCount = [
-        searchClient.trim(),
-        fechaInicio,
-        fechaFin,
-        stateInvoice !== 'TODOS' ? stateInvoice : '',
-        selectedSedeId,
-        selectedUsuarioId,
-    ].filter(Boolean).length;
-
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta">
             <ComprobantePrintPage
@@ -590,6 +601,14 @@ const ComprobantesInformales = () => {
                     </button>
                     <button
                         type="button"
+                        onClick={() => setIsOpenConfigFormato(true)}
+                        className="h-11 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                    >
+                        <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
+                        Configurar formato
+                    </button>
+                    <button
+                        type="button"
                         onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'NV', defaultClient: 'CLIENTES_VARIOS' } })}
                         className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
                         style={{ background: ACCENT }}
@@ -604,75 +623,61 @@ const ComprobantesInformales = () => {
             <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
                 {/* Filtros */}
                 <div className="border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
-                                <Icon icon="solar:filter-bold-duotone" className="text-lg" />
-                            </div>
-                            <div className="min-w-0">
-                                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Filtros</h3>
-                                <p className="truncate text-xs text-slate-400 md:hidden">
-                                    {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
-                                </p>
+                    <div className="space-y-3">
+                        {/* Fila 1: título + búsqueda inline + formato impresión */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="shrink-0 pr-1 text-base font-extrabold text-slate-800 dark:text-white">Notas de venta</h3>
+                            <div className="relative min-w-[200px] flex-1 sm:max-w-md">
+                                <Icon icon="solar:magnifer-linear" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-gray-400" />
+                                <input onChange={handleChangeSearch} placeholder="Buscar serie, cliente, correlativo" className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-gray-500" />
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-xs font-bold text-white shadow-lg shadow-violet-500/30 md:hidden"
-                            style={{ background: ACCENT }}
-                        >
-                            {isMobileFiltersOpen ? 'Ocultar' : 'Ver filtros'}
-                            <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
-                        </button>
-                    </div>
-                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-6`}>
-                        <div className="">
-                            <InputPro name="" onChange={handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Select onChange={handleSelectState} label="Estado" name="" options={estadosInvoice} error="" />
-                        </div>
-                        {canFilterBySede && (
-                            <div>
-                                <Select
-                                    onChange={handleSelectSede}
-                                    label="Sede"
-                                    name="sede"
-                                    options={sedesOptions}
-                                    defaultValue={selectedSedeId
-                                        ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
-                                        : 'Todas las sedes'}
-                                    value={selectedSedeId
-                                        ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
-                                        : 'Todas las sedes'}
-                                    error=""
-                                />
+                        {/* Fila 2: filtros (fechas, estado, sede, vendedor, formato) */}
+                        <div className="flex flex-wrap items-end gap-2.5">
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Desde" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                             </div>
-                        )}
-                        {canFilterByUsuario && (
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide">Vendedor</label>
-                                <select
-                                    value={selectedUsuarioId ?? ''}
-                                    onChange={handleSelectUsuario}
-                                    className="w-full h-11 px-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)] transition-colors"
-                                >
-                                    <option value="">Todos los vendedores</option>
-                                    {vendedoresOptions.map((usuario) => (
-                                        <option key={usuario.id} value={usuario.id}>{usuario.nombre}</option>
-                                    ))}
-                                </select>
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Hasta" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                             </div>
-                        )}
-                        <div className="">
-                            <Select onChange={handleSelectPrint} label="Formato impresión" name="" defaultValue={printSize} options={print} error="" />
+                            <div className="w-full sm:w-56">
+                                <Select onChange={handleSelectState} withLabel={false} label="" name="" options={estadosInvoice} defaultValue={stateInvoice} value={stateInvoice} error="" />
+                            </div>
+                            {canFilterBySede && (
+                                <div className="w-full sm:w-44">
+                                    <Select
+                                        onChange={handleSelectSede}
+                                        withLabel={false}
+                                        label=""
+                                        name="sede"
+                                        options={sedesOptions}
+                                        defaultValue={selectedSedeId
+                                            ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
+                                            : 'Todas las sedes'}
+                                        value={selectedSedeId
+                                            ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
+                                            : 'Todas las sedes'}
+                                        error=""
+                                    />
+                                </div>
+                            )}
+                            {canFilterByUsuario && (
+                                <div className="w-full sm:w-44">
+                                    <Select
+                                        onChange={(id: any) => { setcurrentPage(1); setSelectedUsuarioId(id ? Number(id) : null); }}
+                                        withLabel={false}
+                                        label=""
+                                        name="vendedor"
+                                        options={[{ id: 0, value: 'Todos los vendedores' }, ...vendedoresOptions.map((u: any) => ({ id: u.id, value: u.nombre }))]}
+                                        defaultValue="Todos los vendedores"
+                                        value={selectedUsuarioId ? (vendedoresOptions.find((u: any) => u.id === selectedUsuarioId)?.nombre || 'Todos los vendedores') : 'Todos los vendedores'}
+                                        error=""
+                                    />
+                                </div>
+                            )}
+                            <div className="w-full sm:w-48">
+                                <Select onChange={handleSelectPrint} withLabel={false} label="" name="" defaultValue={printSize} options={print} error="" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -737,68 +742,24 @@ const ComprobantesInformales = () => {
 
                         {/* Desktop table */}
                         <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full text-left border-collapse min-w-[1100px]">
-                                <thead>
-                                    <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                                        <th className="py-3 pl-5 pr-3">Fecha</th>
-                                        <th className="py-3 px-3">Sede</th>
-                                        <th className="py-3 px-3">Serie</th>
-                                        <th className="py-3 px-3">Nro.</th>
-                                        <th className="py-3 px-3">Comprobante</th>
-                                        <th className="py-3 px-3">Doc. Afiliado</th>
-                                        <th className="py-3 px-3">Num doc</th>
-                                        <th className="py-3 px-3">Cliente</th>
-                                        <th className="py-3 px-3">Vendedor</th>
-                                        <th className="py-3 px-3">Importe</th>
-                                        <th className="py-3 px-3">Saldo</th>
-                                        <th className="py-3 px-3">Estado</th>
-                                        <th className="py-3 px-3 pr-5 text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {productsTable.map((row: any) => {
-                                        const pill = estadoPill(row.estado);
-                                        return (
-                                            <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
-                                                <td className="py-3 pl-5 pr-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{row.fechaEmisión}</td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{row.sede}</td>
-                                                <td className="py-3 px-3 font-mono text-sm text-slate-600 dark:text-slate-300">{row.serie}</td>
-                                                <td className="py-3 px-3 font-mono text-sm text-slate-600 dark:text-slate-300">{row.correlativo}</td>
-                                                <td className="py-3 px-3">
-                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{row.comprobante}</span>
-                                                </td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">{row.documentoAfiliado || '-'}</td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400">{row.document || '-'}</td>
-                                                <td className="py-3 px-3">
-                                                    <div className="flex items-center gap-2.5 min-w-0">
-                                                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
-                                                            {(row.client || 'C').charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[160px]">{row.client || 'Cliente varios'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{row.vendedor}</td>
-                                                <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{row.total}</td>
-                                                <td className="py-3 px-3 font-bold text-amber-600 text-sm whitespace-nowrap">{row.saldo}</td>
-                                                <td className="py-3 px-3">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${pill.bg} ${pill.text}`}>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} /> {pill.label}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-3 pr-5 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget); setSelectedMenuRow(row); }}
-                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
-                                                    >
-                                                        <Icon icon="mdi:dots-vertical" width={18} height={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                            <DataTable
+                                bodyData={productsTable}
+                                headerColumns={[
+                                    'Fecha',
+                                    'Serie',
+                                    'Nro.',
+                                    { label: 'Comprobante', key: 'comprobanteBadge' },
+                                    { label: 'Cliente', key: 'clientBadge' },
+                                    'Importe',
+                                    { label: 'Saldo', key: 'saldoBadge' },
+                                    'Num doc',
+                                    'Vendedor',
+                                    'Sede',
+                                    'Doc. Afiliado',
+                                    { label: 'Estado', key: 'estadoBadge' },
+                                    'Acciones',
+                                ]}
+                            />
                         </div>
 
                         <div className="border-t border-slate-100 dark:border-slate-800 p-4">
@@ -1013,6 +974,16 @@ const ComprobantesInformales = () => {
                     }
                     getAllInvoices(params);
                 }}
+            />
+
+            <ModalConfigCotizacion
+                isOpen={isOpenConfigFormato}
+                onClose={() => setIsOpenConfigFormato(false)}
+                auth={auth}
+                configKey="notaVentaFormatoConfig"
+                previewReceipt="NOTA DE VENTA"
+                title="Configurar formato de nota de venta"
+                savedMsg="Formato de nota de venta guardado"
             />
         </div>
     );

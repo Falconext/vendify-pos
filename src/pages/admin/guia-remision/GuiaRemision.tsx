@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import moment from "moment";
-import InputPro from "@/components/InputPro";
 import { Calendar } from "@/components/Date";
 import DataTable from "@/components/Datatable";
 import TableActionMenu from "@/components/TableActionMenu";
@@ -168,7 +167,6 @@ const GuiaRemision = () => {
         window.history.replaceState({}, document.title);
     }, [location.state]);
     const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
-    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
     useEffect(() => {
         if (isAdmin) listarSedes();
@@ -292,8 +290,6 @@ const GuiaRemision = () => {
         )
     }));
 
-    const activeFilterCount = [searchTerm.trim(), fechaInicio, fechaFin, selectedSedeId].filter(Boolean).length;
-
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
             {/* Breadcrumb */}
@@ -329,69 +325,56 @@ const GuiaRemision = () => {
 
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 <div className="border-b border-slate-100 dark:border-slate-700 p-4 sm:p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3 px-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                            <Icon icon="solar:filter-bold-duotone" className="text-xl text-violet-600 dark:text-violet-400" />
-                            <div className="min-w-0">
-                                <h3 className="font-bold uppercase tracking-wide text-xs text-slate-800 dark:text-white">Filtros de búsqueda</h3>
-                                <p className="truncate text-xs text-slate-400 md:hidden">
-                                    {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                            className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold text-white shadow-lg shadow-violet-500/30 md:hidden"
-                            style={{ background: ACCENT }}
-                        >
-                            {isMobileFiltersOpen ? 'Ocultar' : 'Ver filtros'}
-                            <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
-                        </button>
-                    </div>
-                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-5 lg:items-end`}>
-                        <div className="lg:col-span-2">
-                            <InputPro
-                                label="Búsqueda rápida"
-                                name="search"
-                                value={searchTerm}
-                                onChange={handleSearch}
-                                placeholder="Serie, correlativo o destinatario..."
-                                isLabel={true}
-                            />
-                        </div>
-                        <div>
-                            <Calendar
-                                text="Desde"
-                                name="fechaInicio"
-                                value={moment(fechaInicio).format('DD/MM/YYYY')}
-                                onChange={(date: any) => setFechaInicio(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD'))}
-                                className="admin-date-filter"
-                                portal
-                            />
-                        </div>
-                        <div>
-                            <Calendar
-                                text="Hasta"
-                                name="fechaFin"
-                                value={moment(fechaFin).format('DD/MM/YYYY')}
-                                onChange={(date: any) => setFechaFin(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD'))}
-                                className="admin-date-filter"
-                                portal
-                            />
-                        </div>
-                        {isAdmin && (
-                            <div>
-                                <Select
-                                    error=""
-                                    label="Sede"
-                                    name="sedeId"
-                                    defaultValue="Todas las sedes"
-                                    onChange={(id: any, _value: string) => setSelectedSedeId(id === 0 ? null : Number(id))}
-                                    options={sedesOptions}
+                    <div className="space-y-3">
+                        {/* Fila 1: título + búsqueda inline */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="shrink-0 pr-1 text-base font-extrabold text-slate-800 dark:text-white">Guías de remisión</h3>
+                            <div className="relative min-w-[200px] flex-1 sm:max-w-md">
+                                <Icon icon="solar:magnifer-linear" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-gray-400" />
+                                <input
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    placeholder="Serie, correlativo o destinatario..."
+                                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-gray-500"
                                 />
                             </div>
-                        )}
+                        </div>
+                        {/* Fila 2: filtros (fechas, sede) */}
+                        <div className="flex flex-wrap items-end gap-2.5">
+                            <div className="w-full sm:w-40">
+                                <Calendar
+                                    text="Desde"
+                                    name="fechaInicio"
+                                    value={moment(fechaInicio).format('DD/MM/YYYY')}
+                                    onChange={(date: any) => setFechaInicio(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD'))}
+                                    className="admin-date-filter"
+                                    portal
+                                />
+                            </div>
+                            <div className="w-full sm:w-40">
+                                <Calendar
+                                    text="Hasta"
+                                    name="fechaFin"
+                                    value={moment(fechaFin).format('DD/MM/YYYY')}
+                                    onChange={(date: any) => setFechaFin(moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD'))}
+                                    className="admin-date-filter"
+                                    portal
+                                />
+                            </div>
+                            {isAdmin && (
+                                <div className="w-full sm:w-44">
+                                    <Select
+                                        error=""
+                                        label=""
+                                        withLabel={false}
+                                        name="sedeId"
+                                        defaultValue="Todas las sedes"
+                                        onChange={(id: any, _value: string) => setSelectedSedeId(id === 0 ? null : Number(id))}
+                                        options={sedesOptions}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

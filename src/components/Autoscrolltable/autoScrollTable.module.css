@@ -39,6 +39,43 @@
     scroll-behavior: auto;
 }
 
+/* Scrubber horizontal sincronizado con el scroll de la tabla */
+.scrubber {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    cursor: pointer;
+    outline: none;
+}
+:global(.dark) .scrubber {
+    background: #334155;
+}
+.scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--accent, #7551FF);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+}
+.scrubber::-webkit-slider-thumb:active {
+    cursor: grabbing;
+}
+.scrubber::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--accent, #7551FF);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+}
+
 /* Custom Scrollbar */
 .tableContainer::-webkit-scrollbar {
     height: 8px;

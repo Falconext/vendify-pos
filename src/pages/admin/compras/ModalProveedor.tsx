@@ -177,7 +177,7 @@ export default function ModalProveedor({
                             <InputPro autocomplete="off" value={formValues?.email} error={errors.email} name="email" onChange={handleChange} isLabel label="Correo electrónico" />
                         </div>
                         <div>
-                            <InputPro autocomplete="off" value={formValues?.telefono} error={errors.telefono} name="phone" onChange={handleChange} isLabel label="Teléfono / Celular" />
+                            <InputPro autocomplete="off" value={formValues?.telefono} error={errors.telefono} name="telefono" onChange={handleChange} isLabel label="Teléfono / Celular" />
                         </div>
                         <div className="col-start-1 col-end-3">
                             <SelectUbigeo

@@ -17,11 +17,18 @@ const medioPagoIcon: Record<string, string> = {
     TARJETA: 'solar:card-bold-duotone',
 };
 
+const DIRIGIDO_LABEL: Record<string, string> = {
+    ADMINISTRADOR: 'Administrador',
+    EMPRESA: 'Empresa',
+    VENDEDOR: 'Vendedor',
+};
+
 const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps) => {
     const { getHistorialPagos } = usePagosStore();
     const [pagos, setPagos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalPagado, setTotalPagado] = useState(0);
+    const [imgPreview, setImgPreview] = useState<string>('');
 
     useEffect(() => {
         const fetchPagos = async () => {
@@ -127,6 +134,32 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                                             {pago.observacion && (
                                                 <p className="text-xs text-gray-400 dark:text-gray-500">{pago.observacion}</p>
                                             )}
+                                            {(pago.vendedorNombre || pago.dirigidoA) && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {pago.vendedorNombre && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-[11px] font-medium">
+                                                            <Icon icon="solar:user-bold-duotone" className="text-[12px]" />
+                                                            Vendedor: {pago.vendedorNombre}
+                                                        </span>
+                                                    )}
+                                                    {pago.dirigidoA && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium">
+                                                            <Icon icon="solar:hand-money-bold-duotone" className="text-[12px]" />
+                                                            Dirigido a: {DIRIGIDO_LABEL[pago.dirigidoA] || pago.dirigidoA}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {pago.comprobanteUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setImgPreview(pago.comprobanteUrl)}
+                                                    className="mt-1.5 flex items-center gap-1.5 group"
+                                                >
+                                                    <img src={pago.comprobanteUrl} alt="Comprobante" className="h-11 w-11 object-cover rounded-md border border-gray-200 dark:border-slate-700 group-hover:ring-2 group-hover:ring-blue-400 transition" />
+                                                    <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">Ver comprobante</span>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <span className="text-sm font-bold text-gray-800 dark:text-white">S/ {Number(pago.monto).toFixed(2)}</span>
@@ -146,6 +179,22 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                     </button>
                 </div>
             </div>
+
+            {/* Lightbox del comprobante */}
+            {imgPreview && (
+                <div
+                    className="fixed inset-0 z-[9999999] bg-black/80 flex items-center justify-center p-4"
+                    onClick={() => setImgPreview('')}
+                >
+                    <img src={imgPreview} alt="Comprobante" className="max-h-[90vh] max-w-full rounded-lg shadow-2xl" />
+                    <button
+                        onClick={() => setImgPreview('')}
+                        className="absolute top-4 right-4 text-white/80 hover:text-white"
+                    >
+                        <Icon icon="mdi:close" className="text-3xl" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 

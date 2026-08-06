@@ -2,35 +2,40 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     width: 100%;
-    padding: 10px 0;
+    padding: 14px 4px;
 }
 
+/* Zona central: números de página centrados (estilo #12). */
 .container__pagination ul {
     display: flex;
     align-items: center;
-    width: 100%;
-    justify-content: flex-end;
-
+    flex: 1 1 auto;
+    justify-content: center;
+    gap: 2px;
 }
 
 .container__pagination li {
     margin-left: 2px;
     margin-right: 2px;
-    padding: 6px 10px;
-    border-radius: 4px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
     display: flex;
-    color: #6b7280 !important;
-    font-size: 10px;
-    font-weight: 300;
+    justify-content: center;
+    color: #64748b !important;
+    font-size: 13px;
+    font-weight: 600;
     align-items: center;
-    transition: 0.5s;
+    transition: 0.2s;
     cursor: pointer;
 }
 
 .container__pagination li.active,
 .container__pagination li.active:hover {
-    background: #5271FF;
+    background: var(--accent, #7551FF);
 }
 
 .container__pagination li.active span,
@@ -39,19 +44,24 @@
 }
 
 .container__pagination li span {
-    font-size: 11px;
-    transition: 0.5s;
-    color: #6b7280;
-    font-weight: 300;
+    font-size: 13px;
+    transition: 0.2s;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.container__pagination li.active span,
+.container__pagination li.active:hover span {
+    color: #fff !important;
 }
 
 .container__pagination li:hover {
     background: #F4F6FA;
-    transition: 0.5s;
+    transition: 0.2s;
 }
 
-.container__pagination li:hover span {
-    color: #5271FF;
+.container__pagination li:not(.active):hover span {
+    color: var(--accent, #7551FF);
 }
 
 .registers {
@@ -90,11 +100,7 @@
 }
 
 .registers li:hover {
-    background: #5271FF;
-}
-
-.container__pagination li:hover span {
-    color: #fff !important;
+    background: var(--accent, #7551FF);
 }
 
 .count__pagination:hover {

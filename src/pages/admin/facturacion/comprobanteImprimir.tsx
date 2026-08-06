@@ -57,8 +57,12 @@ const ComprobantePrintPage = ({
         return sum + grossLine;
     }, 0);
 
-    // Configuración del formato de cotización (visibilidad + tamaño por elemento)
-    const fc = (key: string) => elemCfg((company?.empresa as any)?.cotizFormatoConfig, key);
+    // Configuración del formato (visibilidad + tamaño por elemento).
+    // Las notas de venta tienen su propio formato independiente del de cotización.
+    const formatoConfig = receipt === 'NOTA DE VENTA'
+        ? (company?.empresa as any)?.notaVentaFormatoConfig
+        : (company?.empresa as any)?.cotizFormatoConfig;
+    const fc = (key: string) => elemCfg(formatoConfig, key);
     const px = (key: string) => `${fc(key).size}px`;
 
     const round2 = (n: any) => parseFloat(n?.toFixed(2)) || 0;
@@ -422,7 +426,7 @@ console.log(formValues)
                     </div>
                 ) : (
                     <div className="w-full text-xs font-sans">
-                        {receipt === "COTIZACIÓN" ? (
+                        {(receipt === "COTIZACIÓN" || receipt === "NOTA DE VENTA") ? (
                             <div className="w-full">
                                 {/* Header with Emisor and Cliente Boxes */}
                                 {/* RESTORED: Header with Logo and Company Info */}
@@ -441,7 +445,7 @@ console.log(formValues)
                                     </div>
                                     <div className="border border-black px-4 pt-4 pb-2 text-center ml-4">
                                         <div className="text-xs">RUC: {company?.empresa?.ruc}</div>
-                                        <div className="text-lg font-bold">COTIZACIÓN</div>
+                                        <div className="text-lg font-bold">{receipt === "COTIZACIÓN" ? "COTIZACIÓN" : "NOTA DE VENTA"}</div>
                                         {/* <div className='font-bold text-lg'>ELECTRONICA</div> */}
                                         <div>{formValues?.serie}-{formValues?.correlativo}</div>
                                     </div>
@@ -476,6 +480,7 @@ console.log(formValues)
                                             <span className="font-bold">FECHA EMISIÓN:</span>
                                             <span>{moment(formValues?.fechaEmision).format('DD/MM/YYYY')}</span>
 
+                                            {receipt === "COTIZACIÓN" && (<>
                                             <span className="font-bold">CONDICIÓN:</span>
                                             <span>
                                                 {quotationPaymentType === 'CONTADO' ? 'CONTADO' :
@@ -487,6 +492,7 @@ console.log(formValues)
 
                                             <span className="font-bold">VALIDEZ:</span>
                                             <span>{quotationValidity} días</span>
+                                            </>)}
 
                                             <span className="font-bold">MONEDA:</span>
                                             <span>{monedaNombre}</span>

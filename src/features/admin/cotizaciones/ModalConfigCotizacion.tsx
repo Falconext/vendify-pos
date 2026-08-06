@@ -10,6 +10,14 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   auth: any;
+  /** Campo de la empresa donde se guarda el formato. Por defecto cotización. */
+  configKey?: 'cotizFormatoConfig' | 'notaVentaFormatoConfig';
+  /** Tipo de comprobante para la vista previa. */
+  previewReceipt?: string;
+  /** Título del modal. */
+  title?: string;
+  /** Mensaje al guardar. */
+  savedMsg?: string;
 }
 
 const numberToWords = (n: number) =>
@@ -30,16 +38,24 @@ const SAMPLE_INVOICE = {
   montoDetraccion: 88.96,
 };
 
-export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) {
+export default function ModalConfigCotizacion({
+  isOpen,
+  onClose,
+  auth,
+  configKey = 'cotizFormatoConfig',
+  previewReceipt = 'COTIZACIÓN',
+  title = 'Configurar formato de cotización',
+  savedMsg = 'Formato de cotización guardado',
+}: Props) {
   const alertStore = useAlertStore();
   const [config, setConfig] = useState<CotizConfig>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setConfig({ ...((auth?.empresa?.cotizFormatoConfig as CotizConfig) || {}) });
+      setConfig({ ...((auth?.empresa?.[configKey] as CotizConfig) || {}) });
     }
-  }, [isOpen, auth]);
+  }, [isOpen, auth, configKey]);
 
   const setVisible = (key: string, visible: boolean) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], visible } }));
@@ -47,18 +63,18 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], size } }));
 
   const previewCompany = useMemo(
-    () => ({ ...auth, empresa: { ...auth?.empresa, cotizFormatoConfig: config } }),
-    [auth, config],
+    () => ({ ...auth, empresa: { ...auth?.empresa, [configKey]: config } }),
+    [auth, config, configKey],
   );
 
   const guardar = async () => {
     setSaving(true);
     try {
-      await useEmpresasStore.getState().actualizarMiEmpresa({ cotizFormatoConfig: config } as any);
+      await useEmpresasStore.getState().actualizarMiEmpresa({ [configKey]: config } as any);
       useAuthStore.setState((state) => ({
-        auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, cotizFormatoConfig: config } } : state.auth,
+        auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, [configKey]: config } } : state.auth,
       }));
-      alertStore.alert('Formato de cotización guardado', 'success');
+      alertStore.alert(savedMsg, 'success');
       onClose();
     } catch (e: any) {
       alertStore.alert(e?.message || 'No se pudo guardar', 'error');
@@ -81,7 +97,7 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
               <Icon icon="solar:tuning-square-bold-duotone" width={22} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 dark:text-white">Configurar formato de cotización</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">Muestra/oculta y ajusta el tamaño de cada elemento. Aplica a la vista previa y al PDF.</p>
             </div>
           </div>
@@ -140,7 +156,7 @@ export default function ModalConfigCotizacion({ isOpen, onClose, auth }: Props) 
                   productsInvoice={SAMPLE_PRODUCTS}
                   total={SAMPLE_INVOICE.mtoImpVenta.toFixed(2)}
                   mode="preview"
-                  receipt="COTIZACIÓN"
+                  receipt={previewReceipt}
                   selectedClient={SAMPLE_CLIENT}
                   totalInWords={numberToWords(SAMPLE_INVOICE.mtoImpVenta) + ' SOLES'}
                   observation={SAMPLE_INVOICE.observaciones}

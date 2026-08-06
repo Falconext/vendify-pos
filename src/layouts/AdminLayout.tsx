@@ -56,6 +56,8 @@ export default function AdminLayout() {
 
   const [nameNavbar, setNameNavbar] = useState<string>('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [navQuery, setNavQuery] = useState('')
+  const matchesNavQuery = (label: string) => !navQuery.trim() || label.toLowerCase().includes(navQuery.trim().toLowerCase())
   const [openModuleCode, setOpenModuleCode] = useState<string | null>(null)
   const toggleModule = (codigo: string) => setOpenModuleCode(prev => prev === codigo ? null : codigo)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -305,20 +307,26 @@ export default function AdminLayout() {
       return sidebarType === 'dark' ? 'text-neutral-400' : 'text-neutral-500 dark:text-neutral-500';
     },
 
-    // Item activo — usa el color de acento seleccionado (relleno sólido + texto blanco)
+    // Item activo — superficie neutra suave + barra de acento a la izquierda + texto oscuro
     get activeLink() {
-      return `flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'w-full h-10 px-3 rounded-md'} text-[14px] font-semibold text-white ${getActiveItemColor()} transition-colors duration-150 group`;
+      const base = isSidebarCollapsed
+        ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg'
+        : "w-full h-10 px-3 rounded-lg before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-full before:bg-[var(--accent)]";
+      return `relative flex items-center ${base} text-[14px] font-semibold text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10 transition-colors duration-150 group`;
     },
     // Item inactivo
     get inactiveLink() {
-      return `flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'w-full h-10 px-3 rounded-md'} text-[14px] font-medium ${sidebarType === 'dark' ? 'text-neutral-300 hover:text-white hover:bg-[#1f1f1f]' : 'text-neutral-600 hover:text-[#171717] hover:bg-[#efefef] dark:text-neutral-400 dark:hover:text-white dark:hover:bg-[#1f1f1f]'} transition-colors duration-150 group`;
+      return `relative flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'w-full h-10 px-3 rounded-lg'} text-[14px] font-medium ${sidebarType === 'dark' ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-[#171717] hover:bg-[#f1f1f3] dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'} transition-colors duration-150 group`;
     },
     // Accordion activo e inactivo
     get accordionActive() {
-      return `flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'justify-between w-full h-10 px-3 rounded-md'} text-[14px] font-semibold text-white ${getActiveItemColor()} transition-colors text-left`;
+      const base = isSidebarCollapsed
+        ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg'
+        : "justify-between w-full h-10 px-3 rounded-lg before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-full before:bg-[var(--accent)]";
+      return `relative flex items-center ${base} text-[14px] font-semibold text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10 transition-colors text-left`;
     },
     get accordionInactive() {
-      return `flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'justify-between w-full h-10 px-3 rounded-md'} text-[14px] font-medium ${sidebarType === 'dark' ? 'text-neutral-300 hover:text-white hover:bg-[#1f1f1f]' : 'text-neutral-600 hover:text-[#171717] hover:bg-[#efefef] dark:text-neutral-400 dark:hover:text-white dark:hover:bg-[#1f1f1f]'} transition-colors text-left`;
+      return `relative flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'justify-between w-full h-10 px-3 rounded-lg'} text-[14px] font-medium ${sidebarType === 'dark' ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-[#171717] hover:bg-[#f1f1f3] dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'} transition-colors text-left`;
     },
     // Submenu links
     get submenuBorder() {
@@ -362,20 +370,53 @@ export default function AdminLayout() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        {/* Logo area */}
-        <div className={`flex items-center w-full relative mb-4 ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'}`}>
-          <div className={`flex min-w-0 items-center gap-2.5 ${isSidebarCollapsed ? 'flex-col' : ''}`}>
-            <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full">
-              <img src={sidebarBrand.logoWhite} alt={sidebarBrand.name} className={`object-contain ${isSidebarCollapsed ? 'h-7 w-7 scale-150 object-left' : 'h-7 w-7 rounded-full'}`} />
+        {/* Company card */}
+        <div className={`mb-3 ${isSidebarCollapsed ? 'flex justify-center px-0' : 'px-1'}`}>
+          <div className={`flex items-center gap-2.5 rounded-xl border border-[#e5e5e5] bg-white dark:border-[#262626] dark:bg-white/5 ${isSidebarCollapsed ? 'p-1.5' : 'p-2.5'}`}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#111827]">
+              <img src={sidebarBrand.logoWhite} alt={sidebarBrand.name} className="h-6 w-6 object-contain" />
             </div>
             {!isSidebarCollapsed && (
-              <div className="min-w-0">
-                <h2 className={`truncate text-[15px] font-semibold leading-none tracking-tight ${theme.sidebarText}`}>{sidebarBrand.name}</h2>
-                <p className={`mt-0.5 truncate text-[11px] font-medium ${theme.sidebarTextMuted}`}>Panel administrativo</p>
-              </div>
+              <>
+                <div className="min-w-0 flex-1">
+                  <h2 className={`truncate text-[14px] font-bold leading-tight ${theme.sidebarText}`}>{sidebarBrand.name}</h2>
+                  <p className={`mt-0.5 truncate text-[11px] font-medium ${theme.sidebarTextMuted}`}>
+                    {auth?.empresa?.plan?.nombre ? `Plan ${auth.empresa.plan.nombre}` : 'Panel administrativo'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="shrink-0 grid h-6 w-6 place-items-center rounded-md text-neutral-400 hover:bg-[#f1f1f3] hover:text-[#171717] dark:hover:bg-white/10 dark:hover:text-white transition-colors"
+                  title="Contraer menú"
+                >
+                  <Icon icon="solar:double-alt-arrow-left-linear" width={16} />
+                </button>
+              </>
             )}
           </div>
         </div>
+
+        {/* Search */}
+        {!isSidebarCollapsed && (auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'USUARIO_EMPRESA') && (
+          <div className="mb-3 px-1">
+            <div className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-2.5 h-9 dark:border-[#262626] dark:bg-white/5 focus-within:border-[var(--accent)] transition-colors">
+              <Icon icon="solar:magnifer-linear" width={16} className="text-neutral-400 shrink-0" />
+              <input
+                value={navQuery}
+                onChange={(e) => setNavQuery(e.target.value)}
+                placeholder="Buscar en el menú…"
+                className="min-w-0 flex-1 bg-transparent border-none focus:border-none outline-none text-[13px] text-[#171717] placeholder:text-neutral-400 focus:outline-none dark:text-white"
+              />
+              {navQuery ? (
+                <button onClick={() => setNavQuery('')} className="text-neutral-400 hover:text-[#171717] dark:hover:text-white shrink-0" title="Limpiar">
+                  <Icon icon="solar:close-circle-linear" width={15} />
+                </button>
+              ) : (
+                <span className="text-[10px] font-semibold text-neutral-400 border border-[#e5e5e5] dark:border-[#262626] rounded px-1 shrink-0">⌘K</span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Toggle Button */}
         <button
@@ -468,6 +509,11 @@ export default function AdminLayout() {
                   </div>
                 )}
 
+                {/* Section label */}
+                {!isSidebarCollapsed && (
+                  <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Menú principal</p>
+                )}
+
                 {/* ── Sidebar dinámico generado desde plan.modulosAsignados ── */}
                 {planModules.map(({ modulo }) => {
                   // En modo almacén solo mostrar kardex (y comprobantes si la sede habilita facturación)
@@ -477,6 +523,7 @@ export default function AdminLayout() {
                   if (meta?.condition && !meta.condition(auth)) return null;
 
                   const label = meta?.labelOverride?.(auth) ?? modulo.nombre ?? modulo.codigo;
+                  if (!matchesNavQuery(label)) return null;
                   const icon = toOutlineIcon(meta?.iconOverride?.(auth) ?? modulo.icono ?? 'solar:circle-linear');
                   const ruta = modulo.ruta ?? LEGACY_MODULE_ROUTES[modulo.codigo];
                   const navRoute = meta?.navRoute?.(auth) ?? ruta ?? '#';
@@ -573,7 +620,7 @@ export default function AdminLayout() {
                 )}
 
                 {/* Comisiones — parte del módulo financiero (reportes); sigue el patrón de las demás opciones */}
-                {planTieneFinanzas && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && (
+                {planTieneFinanzas && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && matchesNavQuery('Mis Comisiones') && (
                   <NavLink
                     onClick={() => { setIsSidebarOpen(false); setNameNavbar('Mis Comisiones'); }}
                     to="/administrador/mis-comisiones"
@@ -585,7 +632,7 @@ export default function AdminLayout() {
                   </NavLink>
                 )}
 
-                {planTieneFinanzas && auth?.rol === 'ADMIN_EMPRESA' && (
+                {planTieneFinanzas && auth?.rol === 'ADMIN_EMPRESA' && matchesNavQuery('Comisiones del equipo') && (
                   <NavLink
                     onClick={() => { setIsSidebarOpen(false); setNameNavbar('Comisiones del equipo'); }}
                     to="/administrador/finanzas/dashboard?tab=comisiones"
@@ -613,6 +660,24 @@ export default function AdminLayout() {
             <Icon icon="solar:logout-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px] text-red-400'}`} />
             {!isSidebarCollapsed && <span className="text-red-500">Cerrar sesión</span>}
           </button>
+
+          {/* Upgrade card */}
+          {!isSidebarCollapsed && auth?.rol === 'ADMIN_EMPRESA' && (
+            <button
+              onClick={() => { setIsSidebarOpen(false); setNameNavbar('Configuración'); navigate('/administrador/perfil') }}
+              className="mt-2 w-full flex items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white p-2.5 text-left hover:bg-[#f1f1f3] dark:border-[#262626] dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+              title="Mejora tu plan"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-white">
+                <Icon icon="solar:rocket-2-bold" width={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-bold text-[#171717] dark:text-white">Mejora tu plan</span>
+                <span className="block truncate text-[11px] text-neutral-400">Desbloquea más funciones</span>
+              </span>
+              <Icon icon="solar:alt-arrow-right-linear" width={16} className="shrink-0 text-neutral-400" />
+            </button>
+          )}
         </div>
       </motion.aside>
 

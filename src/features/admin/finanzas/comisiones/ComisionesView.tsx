@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { BarChart, Bar, Cell, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { get, patch } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
+import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 interface ComisionDetalle {
     id: number;
@@ -28,8 +31,6 @@ interface ResumenMensual {
 }
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-
-const ACCENT = 'var(--accent, #7551FF)';
 
 function formatCurrency(n: number | string) {
     return `S/ ${parseFloat(String(n || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -58,6 +59,12 @@ export default function ComisionesView() {
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [pagandoId, setPagandoId] = useState<number | null>(null);
     const alertFn = useAlertStore(s => s.alert);
+
+    // ── Tema / acento (mismo lenguaje visual del dashboard) ─────────────────────
+    const sidebarColor = useThemeStore((s) => s.sidebarColor);
+    const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
+    const isDarkMode = useThemeStore((s) => s.isDarkMode);
+    const mutedBar = isDarkMode ? '#1e293b' : '#eef1f6';
 
     // ── Filtros ───────────────────────────────────────────────────────────────
     const [filtroVendedor, setFiltroVendedor] = useState<number | null>(null);
@@ -139,6 +146,24 @@ export default function ComisionesView() {
 
     const totalGeneral   = useMemo(() => vendedoresFiltrados.reduce((s, v) => s + v.totalComision, 0), [vendedoresFiltrados]);
     const totalPendiente = useMemo(() => vendedoresFiltrados.reduce((s, v) => s + v.totalPendiente, 0), [vendedoresFiltrados]);
+    const totalPagado    = useMemo(() => vendedoresFiltrados.reduce((s, v) => s + v.totalPagado, 0), [vendedoresFiltrados]);
+
+    // Distribución de comisiones por vendedor (top) para el gráfico de barras
+    const topVendedores = useMemo(
+        () => vendedoresFiltrados
+            .map(v => ({ nombre: v.vendedor.nombre, total: v.totalComision }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 8),
+        [vendedoresFiltrados],
+    );
+
+    // Tarjetas KPI unificadas (mismo lenguaje visual del dashboard)
+    const kpiCards: { label: string; value: string; sub: string; mini: 'line' | 'wave' | 'donut' | 'bars' }[] = [
+        { label: 'Total Comisiones', value: formatCurrency(totalGeneral),  sub: 'generado en el periodo', mini: 'line' },
+        { label: 'Pagado',           value: formatCurrency(totalPagado),    sub: 'ya liquidado',           mini: 'donut' },
+        { label: 'Pendiente',        value: formatCurrency(totalPendiente), sub: 'por liquidar',           mini: 'wave' },
+        { label: 'Vendedores',       value: String(vendedoresFiltrados.length), sub: 'con comisiones',     mini: 'bars' },
+    ];
 
     // ── Acciones ─────────────────────────────────────────────────────────────
     const marcarPagado = async (vendedorId: number) => {
@@ -233,29 +258,65 @@ export default function ComisionesView() {
                 </div>
             </div>
 
-            {/* ── KPI Cards ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-                {[
-                    { label: 'Total Comisiones', value: totalGeneral, icon: 'solar:dollar-minimalistic-bold-duotone', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20'},
-                    { label: 'Pendiente de Pago', value: totalPendiente, icon: 'solar:clock-circle-bold-duotone', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20'},
-                    { label: 'Vendedores', value: vendedoresFiltrados.length, icon: 'solar:users-group-rounded-bold-duotone', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20',isCurrency: false },
-                ].map((kpi, i) => (
-                    <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className={`w-10 h-10 rounded-2xl ${kpi.bg} flex items-center justify-center`}>
-                                <Icon icon={kpi.icon} className={`text-xl ${kpi.color}`} />
+            {/* ── KPIs hero (tarjeta unificada con columnas divididas) ── */}
+            <div className="rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-5">
+                <div className="grid grid-cols-2 lg:grid-cols-4">
+                    {kpiCards.map((c, idx) => (
+                        <div
+                            key={c.label}
+                            className={`flex flex-col border-slate-100 dark:border-slate-800 lg:border-t-0 ${idx % 2 === 1 ? 'border-l' : ''} ${idx >= 2 ? 'border-t' : ''} ${idx > 0 ? 'lg:border-l' : ''}`}
+                        >
+                            <div className="p-5">
+                                <div className="flex items-center gap-1.5 text-slate-400 dark:text-gray-400">
+                                    <span className="text-[11px] font-black uppercase tracking-wide">{c.label}</span>
+                                </div>
+                                <div className="mt-2.5 flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="text-2xl font-extrabold text-slate-800 dark:text-white truncate">{c.value}</p>
+                                        <span className="mt-1.5 block text-xs text-slate-400 dark:text-gray-400">{c.sub}</span>
+                                    </div>
+                                    <div className="shrink-0 pt-0.5">
+                                        <KpiMini type={c.mini} accent={ACCENT} />
+                                    </div>
+                                </div>
                             </div>
-                            <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">{kpi.label}</span>
                         </div>
-                        <p className="text-2xl font-extrabold text-slate-800 dark:text-white">
-                            {(kpi as any).isCurrency === false ? kpi.value : formatCurrency(kpi.value as number)}
-                        </p>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
+            {/* ── Comisiones por vendedor (distribución) ── */}
+            {topVendedores.length > 0 && (
+                <div className="rounded-3xl bg-white dark:bg-[#111827] p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 mb-5">
+                    <div className="mb-4 flex items-center gap-1.5">
+                        <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Comisiones por vendedor</h3>
+                        <Icon icon="solar:info-circle-linear" className="text-[13px] text-slate-400" />
+                    </div>
+                    <div className="h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={topVendedores} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="26%">
+                                <XAxis
+                                    dataKey="nombre"
+                                    tickFormatter={(l) => String(l).split(' ')[0]}
+                                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    interval={0}
+                                />
+                                <Tooltip cursor={{ fill: 'transparent' }} content={DarkTooltip(formatCurrency, (l) => String(l))} />
+                                <Bar dataKey="total" name="Comisión" radius={[999, 999, 999, 999]} maxBarSize={40} background={{ fill: mutedBar } as any}>
+                                    {topVendedores.map((_, i) => (
+                                        <Cell key={i} fill={ACCENT} fillOpacity={1 - i * 0.08} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
+
             {/* ── Filtros ── */}
-            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 mb-5">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 p-4 mb-5">
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-7 h-7 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
                         <Icon icon="solar:filter-bold-duotone" className="text-violet-600 dark:text-violet-400 text-sm" />
@@ -363,7 +424,7 @@ export default function ComisionesView() {
             {isLoading ? (
                 <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4">
+                        <div key={i} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 p-4">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse flex-shrink-0" />
                                 <div className="flex-1 space-y-2">
@@ -376,7 +437,7 @@ export default function ComisionesView() {
                     ))}
                 </div>
             ) : !vendedoresFiltrados.length ? (
-                <div className="bg-white dark:bg-[#111827] rounded-3xl p-12 shadow-[0_2px_20px_rgba(15,23,42,0.05)] text-center">
+                <div className="bg-white dark:bg-[#111827] rounded-3xl p-12 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 text-center">
                     <Icon icon="solar:hand-money-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-3" />
                     <p className="text-sm text-slate-400">
                         {hayFiltrosActivos
@@ -395,7 +456,7 @@ export default function ComisionesView() {
                         const isExpanded = expandedId === v.vendedor.id;
                         const allPaid = v.totalPendiente === 0;
                         return (
-                            <div key={v.vendedor.id} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
+                            <div key={v.vendedor.id} className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
                                 {/* Vendedor row */}
                                 <div className="flex items-center gap-4 p-4">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">

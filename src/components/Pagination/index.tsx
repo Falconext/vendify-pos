@@ -73,20 +73,9 @@ const Pagination = ({ pages, currentPage, setitemsPerPage, indexOfFirstItem, ind
     return (
         <nav className={styles.container__pagination}>
 
-            {
-                optionSelect && (
-                    <div className={styles.registers}>
-                        <p>Ver</p>
-                        <SelectPagination menuLeft optionSelect options={options} onClick={handleChangeOptions} />
-                        <p>registros</p>
-                    </div>
-                )
-            }
+            <span className={styles.count__pagination}>Mostrando {indexOfFirstItem + 1} - {indexOfLastItem} de {total}</span>
 
             <ul>
-
-                <li className={styles.count__pagination}>Mostrando {indexOfFirstItem + 1} - {indexOfLastItem} de {total}</li>
-
                 {
                     indexOfFirstItem > 1 &&
                     <li className="" onClick={handlePrevbtn}>
@@ -126,6 +115,16 @@ const Pagination = ({ pages, currentPage, setitemsPerPage, indexOfFirstItem, ind
                 }
 
             </ul>
+
+            {
+                optionSelect && (
+                    <div className={styles.registers}>
+                        <p>Ver</p>
+                        <SelectPagination menuLeft optionSelect options={options} onClick={handleChangeOptions} />
+                        <p>registros</p>
+                    </div>
+                )
+            }
         </nav>
     )
 }

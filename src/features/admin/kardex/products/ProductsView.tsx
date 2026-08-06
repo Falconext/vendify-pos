@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarcodeScannerInput } from '@/components/BarcodeScannerInput';
 import { Icon } from '@iconify/react';
-import InputPro from '@/components/InputPro';
 import Select from '@/components/Select';
 import ModalProduct from '@/pages/admin/kardex/modal-productos';
 import ModalCategories from '@/pages/admin/kardex/modal-categorias';
@@ -70,12 +69,17 @@ export default function ProductsView() {
     };
 
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [isOpenModalPreviewCatalogo, setIsOpenModalPreviewCatalogo] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const filterMenuRef = useRef<HTMLDivElement>(null);
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowOptionsDropdown(false);
+            }
+            if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+                setShowFilterMenu(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -503,7 +507,7 @@ export default function ProductsView() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
                 <div className="min-w-0">
                     <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">{vm.labels.titulo}</h1>
-                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Gestiona tu inventario de {vm.labels.titulo.toLowerCase()}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Gestiona tu inventario de productos</p>
                 </div>
                 <div className="flex w-full sm:w-auto gap-3">
                     <button
@@ -521,51 +525,79 @@ export default function ProductsView() {
             {/* Main Content */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none relative z-0 overflow-hidden">
                 <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700">
-                    <div className="flex flex-col lg:flex-row gap-4">
-                        <div className="flex-1">
-                            <InputPro
-                                name="search"
-                                value={vm.searchClient}
-                                onChange={actions.setSearchClient}
-                                label={vm.labels.buscar}
-                                isLabel
-                            />
-                        </div>
-                        <BarcodeScannerInput
-                            className="w-full lg:min-w-[220px] lg:w-auto"
-                            inputRef={barcodeRef}
-                            value={barcodeInput}
-                            onChange={(e) => setBarcodeInput(e.target.value)}
-                            onScan={handleBarcodeScan}
-                            loading={barcodeLoading}
-                            label='Escanear código de barras'
-                            placeholder=""
-                        />
-                        {vm.isAdmin && vm.esPrincipal && (
-                            <div className="w-full lg:w-48">
-                                <Select
-                                    onChange={(id: any) => vm.handleSelectSede(id)}
-                                    label="Sede"
-                                    name="sedeId"
-                                    options={vm.sedesOptions}
-                                    error=""
-                                    defaultValue="Todas las sedes"
+                    <div className="space-y-3">
+                        {/* Fila 1: título + búsqueda + filtro + orden · acciones a la derecha */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="shrink-0 pr-1 text-base font-extrabold text-slate-800 dark:text-white">Productos</h3>
+                            <div className="relative min-w-[200px] flex-1 sm:max-w-md">
+                                <Icon icon="solar:magnifer-linear" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-gray-400" />
+                                <input
+                                    name="search"
+                                    value={vm.searchClient}
+                                    onChange={actions.setSearchClient}
+                                    placeholder={vm.labels.buscar}
+                                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-gray-500"
                                 />
+                                {vm.searchClient && (
+                                    <button type="button" onClick={() => actions.setSearchClient({ target: { value: '' } } as any)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400">
+                                        <Icon icon="solar:close-circle-bold" />
+                                    </button>
+                                )}
                             </div>
-                        )}
-                        <div className="w-full flex md:top-3 relative z-50 lg:w-auto overflow-visible pb-2 lg:pb-0">
-                            <div className="flex gap-2 px-1 items-center overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
+                            <div className="relative shrink-0" ref={filterMenuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowFilterMenu((v) => !v)}
+                                    className={`h-10 rounded-xl border px-3.5 text-sm font-semibold flex items-center gap-1.5 transition-colors ${vm.soloStockBajo ? 'border-transparent text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+                                    style={vm.soloStockBajo ? { background: ACCENT } : undefined}
+                                >
+                                    <Icon icon="solar:filter-linear" /> Filtro
+                                    {vm.soloStockBajo && <span className="ml-0.5 h-4 min-w-4 px-1 grid place-items-center rounded-full bg-white/25 text-[10px] font-bold">1</span>}
+                                    <Icon icon={showFilterMenu ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-xs opacity-70" />
+                                </button>
+                                {showFilterMenu && (
+                                    <div className="absolute left-0 z-50 mt-2 w-56 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5">
+                                        <p className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Stock</p>
+                                        {[
+                                            { key: false, label: 'Todos los productos', icon: 'solar:widget-2-linear' },
+                                            { key: true, label: 'Solo stock bajo', icon: 'solar:box-minimalistic-linear' },
+                                        ].map((opt) => {
+                                            const active = vm.soloStockBajo === opt.key;
+                                            return (
+                                                <button
+                                                    key={String(opt.key)}
+                                                    type="button"
+                                                    onClick={() => { actions.setSoloStockBajo(opt.key); setShowFilterMenu(false); }}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${active ? 'bg-slate-50 text-slate-800 dark:bg-slate-700/60 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
+                                                >
+                                                    <Icon icon={opt.icon} className="text-base text-slate-400 dark:text-gray-400" />
+                                                    <span className="flex-1 text-left">{opt.label}</span>
+                                                    {active && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => actions.toggleStockSort()}
+                                className="h-10 shrink-0 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                            >
+                                <Icon icon="solar:sort-vertical-linear" /> {vm.stockSort === 'asc' ? 'Stock ↑' : vm.stockSort === 'desc' ? 'Stock ↓' : 'Ordenar'}
+                            </button>
+                            <div className="ml-auto flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:tag-bold-duotone" className="text-blue-500" /> Categorías
                                 </button>
-                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
+                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:star-bold-duotone" className="text-emerald-500" /> Marcas
                                 </button>
                                 <div className="relative inline-block shrink-0" ref={dropdownRef}>
                                     <button
                                         type="button"
                                         onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                                        className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                        className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                                     >
                                         <Icon icon="solar:file-bold-duotone" className="text-amber-500" width={16} />
                                         Excel / CSV
@@ -622,17 +654,42 @@ export default function ProductsView() {
                                         </div>
                                     )}
                                 </div>
-                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
+                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
                                     <Icon icon="solar:shop-bold" className="text-indigo-500" /> Catálogo PDF
                                 </button>
                                 {/* Botón "Autocompletar" oculto a pedido del usuario. */}
                             </div>
                         </div>
+                        {/* Fila 2: escáner + sede (compactos, sin etiqueta) */}
+                        <div className="flex flex-col sm:flex-row gap-2.5">
+                            <BarcodeScannerInput
+                                className="w-full sm:max-w-xs"
+                                inputRef={barcodeRef}
+                                value={barcodeInput}
+                                onChange={(e) => setBarcodeInput(e.target.value)}
+                                onScan={handleBarcodeScan}
+                                loading={barcodeLoading}
+                                placeholder="Escanear código de barras…"
+                            />
+                            {vm.isAdmin && vm.esPrincipal && (
+                                <div className="w-full sm:w-52">
+                                    <Select
+                                        withLabel={false}
+                                        onChange={(id: any) => vm.handleSelectSede(id)}
+                                        label=""
+                                        name="sedeId"
+                                        options={vm.sedesOptions}
+                                        error=""
+                                        defaultValue="Todas las sedes"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className="p-3 sm:p-4">
+                <div className="p-3 sm:p-0">
                     {vm.soloStockBajo && (
-                        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 ml-3 bg-rose-50 dark:bg-rose-950/20 border mt-2 border-rose-100 dark:border-rose-900/40 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
                                 <Icon icon="solar:box-minimalistic-bold-duotone" width={18} />
                             </div>

@@ -130,7 +130,7 @@ export const useProductsViewModel = () => {
 
     // Labels
     const labels = useMemo(() => ({
-        titulo: isRestaurante ? 'Platos' : 'Productos',
+        titulo: isRestaurante ? 'Platos' : 'Inventario',
         nuevoBtn: isRestaurante ? 'Nuevo plato' : 'Nuevo producto',
         nuevoBtnMobile: isRestaurante ? '+ Plato' : '+ Nuevo',
         buscar: isRestaurante ? 'Buscar plato' : 'Buscar nombre y código',
@@ -316,7 +316,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchProductsListRef.current();
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Sincroniza actualizaciones optimistas desde Zustand (editar/crear sin recargar página).
     useEffect(() => {

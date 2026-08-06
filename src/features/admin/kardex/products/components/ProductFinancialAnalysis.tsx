@@ -56,25 +56,27 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                     </div>
                 </div>
 
-                {/* Precio sin IGV — base real del cálculo de margen, resaltado */}
-                {esGravado && (
-                    <div className="mt-3 rounded-lg p-3 text-center bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                        <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Precio de venta sin IGV</p>
-                        <p className="text-xl font-extrabold text-gray-900 dark:text-white leading-none mt-1">S/ {precioSinIgv.toFixed(2)}</p>
-                        <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">Base para el margen · con IGV S/ {precioUnitario.toFixed(2)}</p>
-                    </div>
-                )}
-
                 {/* Métricas principales */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                    {/* Precio */}
-                    <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center flex flex-col justify-center">
+                    {/* Precio con IGV (solo, ocupa las dos columnas arriba) */}
+                    <div className="sm:col-span-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center flex flex-col justify-center">
                         <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mx-auto mb-1">
                             <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                         </div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {precioUnitario.toFixed(2)}</p>
-                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Precio{esGravado ? ' con IGV' : ''}</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-none">S/ {precioUnitario.toFixed(2)}</p>
+                        <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">{esGravado ? 'Precio con IGV' : 'Precio'}</p>
                     </div>
+
+                    {/* Precio sin IGV (primera celda de la fila de dos) */}
+                    {esGravado && (
+                        <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center flex flex-col justify-center">
+                            <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mx-auto mb-1">
+                                <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {precioSinIgv.toFixed(2)}</p>
+                            <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Precio sin IGV</p>
+                        </div>
+                    )}
 
                     {/* Costo */}
                     <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center flex flex-col justify-center">

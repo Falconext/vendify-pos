@@ -8,14 +8,24 @@ export const useDashboardViewModel = () => {
         dashboardData: null,
         error: null,
     });
+    // Productos más vendidos (endpoint de ventas) — alimenta los gráficos de
+    // barras (10 más vendidos) y de línea (5 más rentables de esos 10).
+    const [ventas, setVentas] = useState<any[]>([]);
 
     const fetchDashboardData = async () => {
         try {
             setState(prev => ({ ...prev, loading: true, error: null }));
-            const response = await apiClient.get('/kardex/dashboard');
+            const [dashResp, ventasResp] = await Promise.all([
+                apiClient.get('/kardex/dashboard'),
+                apiClient
+                    .get('/dashboard/top-productos', { params: { limit: 10 } })
+                    .catch(() => ({ data: [] as any })),
+            ]);
             // Support both wrapped "data" and direct response
-            const dashboardInfo = response.data.data || response.data;
+            const dashboardInfo = dashResp.data.data || dashResp.data;
+            const ventasInfo = ventasResp.data?.data ?? ventasResp.data ?? [];
             setState(prev => ({ ...prev, dashboardData: dashboardInfo }));
+            setVentas(Array.isArray(ventasInfo) ? ventasInfo : []);
         } catch (error: any) {
             console.error('Error al cargar dashboard:', error);
             setState(prev => ({
@@ -109,7 +119,27 @@ export const useDashboardViewModel = () => {
         return { barData, pieData, stockChartData };
     };
 
+    // 10 más vendidos (por unidades) y, de esos 10, los 5 más rentables (por ganancia).
+    const prepareVentasData = () => {
+        const items = (ventas ?? []).map((v: any) => ({
+            name: v?.producto?.descripcion || 'Sin nombre',
+            codigo: v?.producto?.codigo || '',
+            cantidad: Number(v?.cantidad ?? 0),
+            total: Number(v?.total ?? 0),
+            ganancia: Number(v?.ganancia ?? 0),
+        }));
+        const topVendidos = [...items]
+            .sort((a, b) => b.cantidad - a.cantidad)
+            .slice(0, 10);
+        const topRentables = [...topVendidos]
+            .sort((a, b) => b.ganancia - a.ganancia)
+            .slice(0, 5)
+            .map((v) => ({ name: v.name, codigo: v.codigo, ganancia: v.ganancia }));
+        return { topVendidos, topRentables };
+    };
+
     const chartData = prepareChartData();
+    const ventasData = prepareVentasData();
 
     return {
         ...state,
@@ -123,7 +153,9 @@ export const useDashboardViewModel = () => {
         charts: {
             barData: chartData.barData,
             pieData: chartData.pieData,
-            stockChartData: chartData.stockChartData
+            stockChartData: chartData.stockChartData,
+            topVendidos: ventasData.topVendidos,
+            topRentables: ventasData.topRentables,
         }
     };
 };

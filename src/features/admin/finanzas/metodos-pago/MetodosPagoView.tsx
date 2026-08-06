@@ -1,4 +1,15 @@
 import { Icon } from '@iconify/react';
+import { useMemo } from 'react';
+import {
+    Bar,
+    BarChart,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+} from 'recharts';
 import {
     MESES_FULL,
     MetodoPagoGrupo,
@@ -7,30 +18,23 @@ import {
     methodIcon,
 } from './MetodosPagoModel';
 import { useMetodosPagoViewModel } from './useMetodosPagoViewModel';
+import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+
+// Estilo de tarjeta unificado con el dashboard principal
+const CARD = 'rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800';
 
 function Skeleton() {
     return (
-        <div className="space-y-5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-slate-100 dark:bg-slate-800 rounded-3xl animate-pulse" />)}
+        <div className="space-y-4">
+            <div className="h-40 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="h-80 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="h-80 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse lg:col-span-2" />
             </div>
-            <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-4 space-y-3">
+            <div className="space-y-2.5">
                 {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />)}
             </div>
-        </div>
-    );
-}
-
-function Kpi({ icon, label, value, sub, tone }: { icon: string; label: string; value: string; sub?: string; tone: string }) {
-    return (
-        <div className="bg-white dark:bg-[#111827] rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-4 ${tone}`}>
-                <Icon icon={icon} className="text-xl" />
-            </div>
-            <p className="text-slate-400 uppercase tracking-wide text-xs font-semibold mb-1">{label}</p>
-            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">{value}</h3>
-            {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
         </div>
     );
 }
@@ -111,8 +115,23 @@ export default function MetodosPagoView() {
     const vm = useMetodosPagoViewModel();
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
+    const isDarkMode = useThemeStore((s) => s.isDarkMode);
+    const mutedBar = isDarkMode ? '#1e293b' : '#eef1f6';
     const data = vm.data;
     const maxTotal = Math.max(...(data?.metodos ?? []).map((m) => m.total), 1);
+
+    // Distribución por método para donut + barras (mismo lenguaje visual del dashboard)
+    const distribucion = useMemo(() => {
+        const metodos = data?.metodos ?? [];
+        const totalCobrado = Number(data?.resumen?.totalCobrado || 0);
+        return metodos.map((m) => ({
+            name: m.metodo,
+            value: Number(m.total || 0),
+            cantidad: m.cantidad,
+            color: methodColor(m.metodo),
+            pct: totalCobrado > 0 ? (Number(m.total || 0) / totalCobrado) * 100 : 0,
+        }));
+    }, [data?.metodos, data?.resumen?.totalCobrado]);
 
     return (
         <div className="min-h-0 -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
@@ -181,7 +200,7 @@ export default function MetodosPagoView() {
             </div>
 
             {vm.isLoading ? <Skeleton /> : !data || data.metodos.length === 0 ? (
-                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex flex-col items-center justify-center py-20 text-center">
+                <div className={`${CARD} flex flex-col items-center justify-center py-20 text-center`}>
                     <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
                         <Icon icon="solar:card-2-linear" className="text-3xl text-slate-300 dark:text-slate-600" />
                     </div>
@@ -189,12 +208,101 @@ export default function MetodosPagoView() {
                     <p className="text-sm text-slate-400 mt-1">No hay pagos de venta para este período.</p>
                 </div>
             ) : (
-                <div className="space-y-5">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Kpi icon="solar:wallet-money-bold-duotone" tone="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" label="Total cobrado" value={formatSoles(data.resumen.totalCobrado)} sub="pagos de ventas" />
-                        <Kpi icon="solar:card-2-bold-duotone" tone="bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400" label="Métodos usados" value={String(data.resumen.totalMetodos)} sub="canales de cobro" />
-                        <Kpi icon="solar:checklist-minimalistic-bold-duotone" tone="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" label="Con voucher/op." value={`${data.resumen.totalConReferencia}/${data.resumen.totalPagos}`} sub="respaldo registrado" />
-                        <Kpi icon="solar:archive-check-bold-duotone" tone="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" label="Respaldo legacy" value={String(data.resumen.totalRespaldo)} sub="comprobantes sin pago separado" />
+                <div className="space-y-4">
+                    {/* ── KPIs hero (tarjeta unificada con columnas divididas, estilo dashboard) ── */}
+                    <div className={`${CARD} overflow-hidden`}>
+                        <div className="grid grid-cols-2 lg:grid-cols-4">
+                            {[
+                                { label: 'Total cobrado', value: formatSoles(data.resumen.totalCobrado), sub: 'pagos de ventas', mini: 'line' as const },
+                                { label: 'Métodos usados', value: String(data.resumen.totalMetodos), sub: 'canales de cobro', mini: 'donut' as const },
+                                { label: 'Con voucher/op.', value: `${data.resumen.totalConReferencia}/${data.resumen.totalPagos}`, sub: 'respaldo registrado', mini: 'bars' as const },
+                                { label: 'Respaldo legacy', value: String(data.resumen.totalRespaldo), sub: 'sin pago separado', mini: 'wave' as const },
+                            ].map((c, idx) => (
+                                <div
+                                    key={c.label}
+                                    className={`flex flex-col p-5 border-slate-100 dark:border-slate-800 ${idx % 2 === 1 ? 'border-l' : ''} ${idx >= 2 ? 'border-t' : ''} lg:border-t-0 ${idx > 0 ? 'lg:border-l' : ''}`}
+                                >
+                                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-gray-400">
+                                        <span className="text-[11px] font-black uppercase tracking-wide">{c.label}</span>
+                                        <Icon icon="solar:info-circle-linear" className="text-[13px]" />
+                                    </div>
+                                    <div className="mt-2.5 flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white truncate">{c.value}</p>
+                                            <p className="mt-1.5 text-xs text-slate-400 dark:text-gray-400">{c.sub}</p>
+                                        </div>
+                                        <div className="shrink-0 pt-0.5">
+                                            <KpiMini type={c.mini} accent={ACCENT} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Distribución por método: donut + leyenda + barras (estilo "Cómo te pagan") ── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Donut + leyenda */}
+                        <div className={`${CARD} p-5`}>
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Cómo te pagan</h3>
+                                <Icon icon="solar:info-circle-linear" className="text-[13px] text-slate-400" />
+                            </div>
+                            <p className="mb-2 text-xs text-slate-400 dark:text-gray-400">Reparto del total cobrado</p>
+                            <div className="relative mx-auto h-36 w-36">
+                                {distribucion.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={distribucion} dataKey="value" nameKey="name" innerRadius={48} outerRadius={68} paddingAngle={2} stroke="none">
+                                                {distribucion.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                            </Pie>
+                                            <Tooltip formatter={(v: any, n: any) => [formatSoles(Number(v)), n]} contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#e5e7eb' }} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-center text-sm text-slate-300 dark:text-slate-600">Sin datos</div>
+                                )}
+                                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-base font-extrabold text-slate-800 dark:text-white">{formatSoles(data.resumen.totalCobrado)}</span>
+                                    <span className="text-[10px] font-medium text-slate-400 dark:text-gray-400">total</span>
+                                </div>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                {distribucion.map((c) => (
+                                    <div key={c.name} className="flex items-center justify-between gap-2 text-sm">
+                                        <span className="flex min-w-0 items-center gap-2">
+                                            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                                            <span className="truncate font-medium text-slate-600 dark:text-gray-300">{c.name}</span>
+                                        </span>
+                                        <span className="flex shrink-0 items-center gap-2">
+                                            <span className="font-bold text-slate-700 dark:text-gray-200">{formatSoles(c.value)}</span>
+                                            <span className="w-10 text-right font-bold text-slate-400 dark:text-gray-400">{c.pct.toFixed(0)}%</span>
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Barras por método (acento) */}
+                        <div className={`${CARD} p-5 lg:col-span-2`}>
+                            <div className="mb-4 flex items-center gap-1.5">
+                                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Total cobrado por método</h3>
+                                <Icon icon="solar:info-circle-linear" className="text-[13px] text-slate-400" />
+                            </div>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={distribucion} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="26%">
+                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={0} />
+                                        <Tooltip cursor={{ fill: 'transparent' }} content={DarkTooltip(formatSoles, (l) => String(l ?? ''))} />
+                                        <Bar dataKey="value" name="Total" radius={[999, 999, 999, 999]} maxBarSize={40}>
+                                            {distribucion.map((d, i) => (
+                                                <Cell key={i} fill={d.value >= maxTotal ? ACCENT : mutedBar} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-2.5">
@@ -209,7 +317,7 @@ export default function MetodosPagoView() {
                         ))}
                     </div>
 
-                    <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
+                    <div className={`${CARD} px-5 py-4 flex flex-col md:flex-row md:items-center gap-4`}>
                         <div className="w-11 h-11 rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
                             <Icon icon="solar:shield-check-bold-duotone" className="text-xl" />
                         </div>

@@ -18,7 +18,7 @@ interface WhatsAppSettingsForm {
 interface PerfilData {
     id: number; nombre: string; email: string; rol: string; celular?: string; telefono?: string;
     empresaId: number; estado: string; fechaCreacion: string; fechaActualizacion: string;
-    empresa: { id: number; razonSocial: string; nombreComercial: string; paginaWeb?: string | null; direccion: string; logo?: string; ruc: string; tipoEmpresa: string; fechaCreacion: string; fechaActivacion?: string; fechaExpiracion?: string; usaCodigoBarrasManual?: boolean | null; usarPrecioLoteFefo?: boolean | null; permitirVentaSinStock?: boolean | null; cotizMostrarEmail?: boolean | null; cotizMostrarCuentas?: boolean | null; cotizMostrarRazonSocial?: boolean | null; cotizMostrarDetraccion?: boolean | null; ticketLogoSize?: number | null; directorTecnico?: string | null; whatsappProvider?: WhatsAppProvider | null; whatsappPhoneNumberId?: string | null; whatsappBusinessId?: string | null; whatsappActivo?: boolean | null; whatsappApiTokenConfigured?: boolean; shalomEmail?: string | null; shalomConfigured?: boolean; rubro: { id: number; nombre: string; descripcion: string }; plan: { id: number; nombre: string; descripcion: string; costo: number; duracionDias: number; tipoFacturacion: string; esPrueba: boolean; activo: boolean; tieneGestionLotes: boolean }; departamento?: string; provincia?: string; distrito?: string; ubicacion?: { codigo: string; departamento: string; provincia: string; distrito: string } };
+    empresa: { id: number; razonSocial: string; nombreComercial: string; paginaWeb?: string | null; direccion: string; logo?: string; ruc: string; tipoEmpresa: string; fechaCreacion: string; fechaActivacion?: string; fechaExpiracion?: string; usaCodigoBarrasManual?: boolean | null; usarPrecioLoteFefo?: boolean | null; permitirVentaSinStock?: boolean | null; cobranzaCampo?: boolean | null; cotizMostrarEmail?: boolean | null; cotizMostrarCuentas?: boolean | null; cotizMostrarRazonSocial?: boolean | null; cotizMostrarDetraccion?: boolean | null; ticketLogoSize?: number | null; directorTecnico?: string | null; whatsappProvider?: WhatsAppProvider | null; whatsappPhoneNumberId?: string | null; whatsappBusinessId?: string | null; whatsappActivo?: boolean | null; whatsappApiTokenConfigured?: boolean; shalomEmail?: string | null; shalomConfigured?: boolean; rubro: { id: number; nombre: string; descripcion: string }; plan: { id: number; nombre: string; descripcion: string; costo: number; duracionDias: number; tipoFacturacion: string; esPrueba: boolean; activo: boolean; tieneGestionLotes: boolean }; departamento?: string; provincia?: string; distrito?: string; ubicacion?: { codigo: string; departamento: string; provincia: string; distrito: string } };
 }
 
 const whatsappFormFromPerfil = (perfil: PerfilData): WhatsAppSettingsForm => ({
@@ -57,6 +57,8 @@ export const usePerfilViewModel = () => {
     const fefoToggleInFlight = useRef(false);
     const barcodeToggleInFlight = useRef(false);
     const ventaSinStockToggleInFlight = useRef(false);
+    const cobranzaCampoToggleInFlight = useRef(false);
+    const [savingCobranzaCampoConfig, setSavingCobranzaCampoConfig] = useState(false);
     const { alert } = useAlertStore();
 
     useEffect(() => { cargarPerfil(); cargarUsageStats(); }, []);
@@ -166,6 +168,26 @@ export const usePerfilViewModel = () => {
         } finally {
             ventaSinStockToggleInFlight.current = false;
             setSavingVentaSinStockConfig(false);
+        }
+    };
+
+    const handleCobranzaCampoToggle = async (enabled: boolean) => {
+        if (savingCobranzaCampoConfig || cobranzaCampoToggleInFlight.current) return;
+        if (Boolean(perfil?.empresa?.cobranzaCampo) === enabled) return;
+        try {
+            cobranzaCampoToggleInFlight.current = true;
+            setSavingCobranzaCampoConfig(true);
+            await useEmpresasStore.getState().actualizarMiEmpresa({ cobranzaCampo: enabled });
+            setPerfil(prev => (prev ? { ...prev, empresa: { ...prev.empresa, cobranzaCampo: enabled } } : prev));
+            useAuthStore.setState(state => ({
+                auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, cobranzaCampo: enabled } } : state.auth,
+            }));
+            useAlertStore.getState().alert('Configuración de cobranza en campo actualizada', 'success');
+        } catch (error: any) {
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'No se pudo actualizar la configuración', 'error');
+        } finally {
+            cobranzaCampoToggleInFlight.current = false;
+            setSavingCobranzaCampoConfig(false);
         }
     };
 
@@ -466,5 +488,5 @@ export const usePerfilViewModel = () => {
         }
     };
 
-    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
+    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
 };

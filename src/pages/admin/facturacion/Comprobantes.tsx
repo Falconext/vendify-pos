@@ -310,10 +310,21 @@ const Comprobantes = () => {
             serie: item.serie,
             correlativo: item.correlativo,
             comprobante: item.comprobante,
+            comprobanteBadge: (
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{item.comprobante}</span>
+            ),
             documentoAfiliado: item?.numDocAfectado ? String(item?.numDocAfectado).toUpperCase() : "",
             document: item?.cliente?.nroDoc,
             s3PdfUrl: item?.s3PdfUrl,
             client: item?.cliente?.nombre,
+            clientBadge: (
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white grid place-items-center text-xs font-bold shrink-0">
+                        {(item?.cliente?.nombre || 'C').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[160px]">{item?.cliente?.nombre || 'Cliente varios'}</span>
+                </div>
+            ),
             vendedor: item?.usuario?.nombre || '-',
             total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
             estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
@@ -678,8 +689,7 @@ const Comprobantes = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 sm:mb-6 pt-4">
                 <div className="min-w-0">
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                        <Icon icon="solar:bill-list-bold-duotone" className="text-blue-600 dark:text-blue-400" />
-                        Comprobantes Electrónicos
+                        Comprobantes de la SUNAT
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Historial de boletas, facturas y notas de crédito</p>
                 </div>
@@ -712,79 +722,71 @@ const Comprobantes = () => {
             <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 {/* Filters Section */}
                 <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800">
-                    <div className="mb-4 flex items-center justify-between gap-3 px-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                            <Icon icon="solar:filter-bold-duotone" className="text-blue-600 dark:text-blue-400 text-xl" />
-                            <div className="min-w-0">
-                                <h3 className="font-bold text-gray-800 dark:text-white uppercase tracking-wider text-xs">Filtros de búsqueda</h3>
-                                <p className="truncate text-xs text-gray-400 md:hidden">
-                                    {activeFilterCount} activos · {moment(fechaInicio).format('DD/MM')} - {moment(fechaFin).format('DD/MM')}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                            className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-lg shadow-blue-500/20 md:hidden"
-                        >
-                            {isMobileFiltersOpen ? 'Ocultar' : 'Ver filtros'}
-                            <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
-                        </button>
-                    </div>
-                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-3 sm:grid sm:grid-cols-2 sm:gap-4 xl:grid-cols-5`}>
-                        <div className="sm:col-span-2 xl:col-span-1">
-                            <InputPro name="" onChange={handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Select onChange={handleSelectState} label="Estado" name="" options={estadosInvoice} error="" />
-                        </div>
-                        {canFilterBySede && (
-                            <div>
-                                <Select
-                                    onChange={handleSelectSede}
-                                    label="Sede"
-                                    name="sede"
-                                    options={sedesOptions}
-                                    defaultValue={selectedSedeId
-                                        ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
-                                        : 'Todas las sedes'}
-                                    value={selectedSedeId
-                                        ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
-                                        : 'Todas las sedes'}
-                                    error=""
+                    <div className="space-y-3">
+                        {/* Fila 1: título + búsqueda + formato (patrón productos) */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="shrink-0 pr-1 text-base font-extrabold text-slate-800 dark:text-white">Comprobantes</h3>
+                            <div className="relative min-w-[200px] flex-1 sm:max-w-md">
+                                <Icon icon="solar:magnifer-linear" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-gray-400" />
+                                <input
+                                    onChange={handleChangeSearch}
+                                    placeholder="Buscar serie, cliente, correlativo"
+                                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-gray-500"
                                 />
                             </div>
-                        )}
-                        {canFilterByUsuario && (
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">Vendedor</label>
-                                <select
-                                    value={selectedUsuarioId ?? ''}
-                                    onChange={handleSelectUsuario}
-                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                >
-                                    <option value="">Todos los vendedores</option>
-                                    {vendedoresOptions.map((usuario) => (
-                                        <option key={usuario.id} value={usuario.id}>{usuario.nombre}</option>
-                                    ))}
-                                </select>
+                        </div>
+                        {/* Fila 2: filtros (fechas, estado, sede, vendedor, formato) */}
+                        <div className="flex flex-wrap items-end gap-2.5">
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Desde" name="fechaInicio" value={moment(fechaInicio).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                             </div>
-                        )}
-                        <div className="sm:col-span-2 xl:col-span-1">
-                            <Select onChange={handleSelectPrint} label="Formato impresión" name="" defaultValue={printSize} options={print} error="" />
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Hasta" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
+                            </div>
+                            <div className="w-full sm:w-56">
+                                <Select onChange={handleSelectState} withLabel={false} label="" name="" options={estadosInvoice} defaultValue={stateInvoice} value={stateInvoice} error="" />
+                            </div>
+                            {canFilterBySede && (
+                                <div className="w-full sm:w-44">
+                                    <Select
+                                        onChange={handleSelectSede}
+                                        withLabel={false}
+                                        label=""
+                                        name="sede"
+                                        options={sedesOptions}
+                                        defaultValue={selectedSedeId
+                                            ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
+                                            : 'Todas las sedes'}
+                                        value={selectedSedeId
+                                            ? (sedes.find((s: any) => s.id === selectedSedeId)?.nombre || '')
+                                            : 'Todas las sedes'}
+                                        error=""
+                                    />
+                                </div>
+                            )}
+                            {canFilterByUsuario && (
+                                <div className="w-full sm:w-48">
+                                    <Select
+                                        onChange={(id: any) => { setcurrentPage(1); setSelectedUsuarioId(id ? Number(id) : null); }}
+                                        withLabel={false}
+                                        label=""
+                                        name="vendedor"
+                                        options={[{ id: 0, value: 'Todos los vendedores' }, ...vendedoresOptions.map((u: any) => ({ id: u.id, value: u.nombre }))]}
+                                        defaultValue="Todos los vendedores"
+                                        value={selectedUsuarioId ? (vendedoresOptions.find((u: any) => u.id === selectedUsuarioId)?.nombre || 'Todos los vendedores') : 'Todos los vendedores'}
+                                        error=""
+                                    />
+                                </div>
+                            )}
+                            <div className="w-full sm:w-48">
+                                <Select onChange={handleSelectPrint} withLabel={false} label="" name="" defaultValue={printSize} options={print} error="" />
+                            </div>
                         </div>
                     </div>
-
                 </div>
 
                 {/* Table Content */}
-                <div className="p-3 sm:p-4">
+                <div className="p-3 sm:p-4 pt-0">
                     {invoicesLoading ? (
                         <div className="py-16 flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
                             <Icon icon="line-md:loading-twotone-loop" className="text-4xl text-blue-500" />
@@ -796,15 +798,15 @@ const Comprobantes = () => {
                                 <DataTable bodyData={productsTable}
                                     headerColumns={[
                                         'Fecha',
-                                        'Sede',
                                         'Serie',
                                         'Nro.',
-                                        'Comprobante',
-                                        'Doc. Afiliado',
-                                        'Num doc',
-                                        'Cliente',
-                                        'Vendedor',
+                                        { label: 'Comprobante', key: 'comprobanteBadge' },
+                                        { label: 'Cliente', key: 'clientBadge' },
                                         'Importe',
+                                        'Num doc',
+                                        'Vendedor',
+                                        'Sede',
+                                        'Doc. Afiliado',
                                         'Estado',
                                         'Acciones'
                                     ]} />

@@ -22,6 +22,12 @@ const tabs = [
   { label: 'Cuentas por Cobrar', to: '/administrador/pagos/cuentas-cobrar', icon: 'solar:bill-list-bold-duotone' },
 ];
 
+const DIRIGIDO_LABEL: Record<string, string> = {
+  ADMINISTRADOR: 'Administrador',
+  EMPRESA: 'Empresa',
+  VENDEDOR: 'Vendedor',
+};
+
 const Pagos = () => {
   const { auth } = useAuthStore();
   const { getAllPagos, pagos, totalPagos, loading, eliminarPago }: IPagosState = usePagosStore();
@@ -37,6 +43,7 @@ const Pagos = () => {
   const [selectedPago, setSelectedPago] = useState<any>(null);
   const [comprobanteDetalles, setComprobanteDetalles] = useState<any>(null);
   const [loadingDetalles, setLoadingDetalles] = useState(false);
+  const [comprobantePreview, setComprobantePreview] = useState('');
 
   const debounce = useDebounce(searchTerm, 1000);
 
@@ -59,6 +66,8 @@ const Pagos = () => {
     getAllPagos(params);
   }, [debounce, currentPage, itemsPerPage, fechaInicio, fechaFin, medioPago]);
 
+  const cobranzaCampo = Boolean((auth as any)?.empresa?.cobranzaCampo);
+
   const pagosTable = pagos?.map((pago) => ({
     id: pago.id,
     fecha: moment(pago.fecha).format('DD/MM/YYYY HH:mm:ss'),
@@ -70,6 +79,9 @@ const Pagos = () => {
     medioPago: pago.medioPago,
     observacion: pago.observacion || '-',
     referencia: pago.referencia ? pago.referencia.toUpperCase() : '-',
+    dirigidoA: (pago as any).dirigidoA ? (DIRIGIDO_LABEL[(pago as any).dirigidoA] || (pago as any).dirigidoA) : '-',
+    vendedor: (pago as any).vendedorNombre || '-',
+    comprobanteUrl: (pago as any).comprobanteUrl || '',
   }));
 
   const handleDeletePago = (row: any) => {
@@ -101,6 +113,13 @@ const Pagos = () => {
   };
 
   const actions = [
+    {
+      onClick: (row: any) => setComprobantePreview(row.comprobanteUrl),
+      condition: (row: any) => !!row.comprobanteUrl,
+      className: 'print',
+      icon: <Icon icon="solar:gallery-bold" width="20" height="20" color="#7c3aed" />,
+      tooltip: 'Ver comprobante',
+    },
     {
       onClick: handleImprimirRecibo,
       className: 'print',
@@ -261,6 +280,7 @@ const Pagos = () => {
                     'Cliente',
                     'Monto',
                     'Medio Pago',
+                    ...(cobranzaCampo ? ['Dirigido a', 'Vendedor'] : []),
                     'Observación',
                     'Referencia',
                   ]}
@@ -300,6 +320,8 @@ const Pagos = () => {
             medioPago: selectedPago.medioPago,
             observacion: selectedPago.observacion,
             referencia: selectedPago.referencia,
+            dirigidoA: selectedPago.dirigidoA,
+            vendedorNombre: selectedPago.vendedorNombre,
           }}
           numeroRecibo={`REC-${selectedPago.id}`}
           nuevoSaldo={comprobanteDetalles?.saldo ?? selectedPago.comprobante?.saldo ?? 0}
@@ -312,6 +334,18 @@ const Pagos = () => {
             setComprobanteDetalles(null);
           }}
         />
+      )}
+
+      {comprobantePreview && (
+        <div
+          className="fixed inset-0 z-[9999999] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setComprobantePreview('')}
+        >
+          <img src={comprobantePreview} alt="Comprobante" className="max-h-[90vh] max-w-full rounded-lg shadow-2xl" />
+          <button onClick={() => setComprobantePreview('')} className="absolute top-4 right-4 text-white/80 hover:text-white">
+            <Icon icon="mdi:close" className="text-3xl" />
+          </button>
+        </div>
       )}
 
       {loadingDetalles && (

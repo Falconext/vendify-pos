@@ -12,6 +12,8 @@ interface IPaymentReceiptProps {
     medioPago: string;
     observacion?: string;
     referencia?: string;
+    dirigidoA?: string;
+    vendedorNombre?: string;
   };
   numeroRecibo: string;
   saldo: any;
@@ -163,6 +165,8 @@ const PaymentReceipt = ({
             <div className="text-[18px] mb-2">
               <p className="flex justify-between bg-gray-100"><span>{payment.tipo === 'ADELANTO' ? 'Adelanto:' : 'Monto Pagado:'}</span><span>S/ {Number(payment.monto).toFixed(2)}</span></p>
               <p className="flex justify-between mt-1"><span>Método de Pago:</span><span>{payment.medioPago?.toUpperCase()}</span></p>
+              {payment.vendedorNombre && <p className="flex justify-between mt-1"><span>Vendedor:</span><span>{payment.vendedorNombre}</span></p>}
+              {payment.dirigidoA && <p className="flex justify-between mt-1"><span>Dirigido a:</span><span>{payment.dirigidoA === 'ADMINISTRADOR' ? 'Administrador' : payment.dirigidoA === 'EMPRESA' ? 'Empresa' : 'Vendedor'}</span></p>}
               {payment.referencia && <p className="flex justify-between mt-1"><span>Referencia:</span><span>{payment.referencia}</span></p>}
               {payment.observacion && <div className="mt-1"><p>Observación:</p><p>{payment.observacion}</p></div>}
               {Number(nuevoSaldo ?? 0) > 0 && (() => {
@@ -232,6 +236,8 @@ const PaymentReceipt = ({
                 <span className="text-xl font-black text-gray-900 dark:text-white">S/ {payment.monto?.toFixed(2)}</span>
               </div>
               <Row label="Método de pago" value={payment.medioPago?.toUpperCase()} />
+              {payment.vendedorNombre && <Row label="Vendedor" value={payment.vendedorNombre} />}
+              {payment.dirigidoA && <Row label="Dirigido a" value={payment.dirigidoA === 'ADMINISTRADOR' ? 'Administrador' : payment.dirigidoA === 'EMPRESA' ? 'Empresa' : 'Vendedor'} />}
               {payment.referencia && <Row label="Referencia" value={payment.referencia.toUpperCase()} />}
               {payment.observacion && <Row label="Observación" value={payment.observacion} />}
               {Number(nuevoSaldo ?? 0) > 0 && (() => {

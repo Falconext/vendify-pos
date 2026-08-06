@@ -17,15 +17,17 @@
 }
 
 .table thead tr th {
-    padding: 8px 16px 12px;
+    padding: 12px 18px 14px;
     color: #9ca3af;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
+    background: #f8fafc;
     border: none;
-    border-bottom: 1.5px solid #f1f5f9;
+    border-bottom: 1px solid #eef2f7;
+    border-right: 1px solid #eef2f7;
     border-radius: 0 !important;
     box-sizing: border-box;
     cursor: pointer;
@@ -33,7 +35,7 @@
 }
 
 .table thead tr th:first-child { border-radius: 0 !important; }
-.table thead tr th:last-child  { border-radius: 0 !important; }
+.table thead tr th:last-child  { border-radius: 0 !important; border-right: none; }
 
 /* ─── Body rows ──────────────────────────────────────────────────── */
 .table tbody tr {
@@ -56,7 +58,7 @@
 
 /* ─── Cells ──────────────────────────────────────────────────────── */
 .table tbody tr td {
-    padding: 13px 16px !important;
+    padding: 16px 18px !important;
     font-size: 13px;
     vertical-align: middle;
     white-space: nowrap;
@@ -64,7 +66,14 @@
     font-weight: 500 !important;
     background: transparent !important;
     border: none !important;
+    border-right: 1px solid #f1f5f9 !important;
     border-radius: 0 !important;
+}
+
+/* Fila seleccionada (opt-in): tinte + barra de acento a la izquierda, estilo mockup. */
+.table tbody tr.selected {
+    background-color: color-mix(in srgb, var(--accent, #7551FF) 6%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--accent, #7551FF);
 }
 
 .table tbody tr td:first-child {
@@ -76,6 +85,9 @@
     border-radius: 0 !important;
     border-right: none !important;
 }
+
+/* Redondeo del "chrome" de la grilla: bordes verticales en header y body
+   (estilo grid), sin tocar el contenido de las celdas. */
 
 .table tbody tr td > .flex {
     display: flex;
@@ -186,13 +198,21 @@
 }
 
 :global(.dark) .table thead tr th {
+    background: #0f172a;
     border-bottom-color: #1e293b;
+    border-right-color: #1e293b;
     color: #64748b;
 }
+:global(.dark) .table thead tr th:last-child { border-right: none; }
 
 :global(.dark) .table tbody tr {
     border-bottom-color: #1e293b;
 }
+
+:global(.dark) .table tbody tr td {
+    border-right-color: #1e293b !important;
+}
+:global(.dark) .table tbody tr td:last-child { border-right: none !important; }
 
 :global(.dark) .table tbody tr:hover {
     /* Overlay sutil: aclara la fila sobre cualquier fondo navy del tema dark

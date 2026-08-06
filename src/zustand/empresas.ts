@@ -20,6 +20,7 @@ interface Empresa {
   usaCodigoBarrasManual?: boolean | null;
   usarPrecioLoteFefo?: boolean | null;
   permitirVentaSinStock?: boolean | null;
+  cobranzaCampo?: boolean | null;
   brand?: string;
   producto?: string;
   providerId?: string;
@@ -161,6 +162,7 @@ interface UpdateEmpresaDto {
   usaCodigoBarrasManual?: boolean;
   usarPrecioLoteFefo?: boolean;
   permitirVentaSinStock?: boolean;
+  cobranzaCampo?: boolean;
   ticketLogoSize?: number;
   directorTecnico?: string;
   brand?: string;

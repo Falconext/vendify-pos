@@ -8,7 +8,6 @@ import { numberToWords } from "@/utils/numberToLetters";
 import { Calendar } from "@/components/Date";
 import Select from "@/components/Select";
 import ModalConfirm from "@/components/ModalConfirm";
-import InputPro from "@/components/InputPro";
 import ComprobantePrintPage from "../../../pages/admin/facturacion/comprobanteImprimir";
 import ModalEnviarWhatsApp from "../../../pages/admin/facturacion/ModalEnviarWhatsApp";
 import ModalPaymentUnified from "@/components/ModalPaymentUnified";
@@ -26,7 +25,6 @@ export default function CotizacionesView() {
     const vm = useCotizacionesViewModel();
     const [configFormatoOpen, setConfigFormatoOpen] = useState(false);
     const navigate = useNavigate();
-    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
     const productsTable = vm.invoices?.map((item: IInvoices) => {
         const rowBase: any = {
@@ -169,38 +167,31 @@ export default function CotizacionesView() {
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden">
                 {/* Filters Section */}
                 <div className="border-b border-slate-100 dark:border-slate-700 p-4 sm:p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3 px-1">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="h-9 w-9 grid place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shrink-0">
-                                <Icon icon="solar:filter-bold-duotone" className="text-lg" />
+                    <div className="space-y-3">
+                        {/* Fila 1: título + búsqueda inline */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="shrink-0 pr-1 text-base font-extrabold text-slate-800 dark:text-white">Cotizaciones</h3>
+                            <div className="relative min-w-[200px] flex-1 sm:max-w-md">
+                                <Icon icon="solar:magnifer-linear" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-gray-400" />
+                                <input
+                                    name="searchClient"
+                                    onChange={vm.handleChangeSearch}
+                                    placeholder="Buscar serie, cliente, correlativo"
+                                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-gray-500"
+                                />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="font-bold uppercase tracking-wide text-[11px] text-slate-400 dark:text-gray-400">Filtros de búsqueda</h3>
-                                <p className="truncate text-xs text-slate-400 dark:text-gray-400 md:hidden">Búsqueda, fechas y formato</p>
+                        </div>
+                        {/* Fila 2: filtros (fechas, formato) */}
+                        <div className="flex flex-wrap items-end gap-2.5">
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Desde" name="fechaInicio" value={moment(vm.fechaInicio).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
                             </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                            className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-xs font-black text-white shadow-lg shadow-violet-500/30 md:hidden"
-                            style={{ background: ACCENT }}
-                        >
-                            {isMobileFiltersOpen ? 'Ocultar' : 'Ver filtros'}
-                            <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
-                        </button>
-                    </div>
-                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-5`}>
-                        <div className="lg:col-span-1">
-                            <InputPro name="searchClient" onChange={vm.handleChangeSearch} isLabel label="Buscar serie, cliente, correlativo" />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha inicio" name="fechaInicio" value={moment(vm.fechaInicio).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Calendar text="Fecha Fin" name="fechaFin" value={moment(vm.fechaFin).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
-                        </div>
-                        <div>
-                            <Select onChange={vm.handleSelectPrint} label="Formato impresión" name="printSize" defaultValue={vm.printSize} options={vm.printOptions} error="" />
+                            <div className="w-full sm:w-40">
+                                <Calendar text="Hasta" name="fechaFin" value={moment(vm.fechaFin).format('DD/MM/YYYY')} onChange={vm.handleDate} className="admin-date-filter" portal />
+                            </div>
+                            <div className="w-full sm:w-44">
+                                <Select onChange={vm.handleSelectPrint} withLabel={false} label="" name="printSize" defaultValue={vm.printSize} options={vm.printOptions} error="" />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -38,6 +38,25 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const [advancedFinancialOpen, setAdvancedFinancialOpen] = useState(false);
     const [provisionOpen, setProvisionOpen] = useState(false);
 
+    // Costo de venta ingresado CON IGV (texto crudo del input). costoUnitario SIEMPRE se guarda NETO.
+    const [costoConIgvInput, setCostoConIgvInput] = useState('');
+    const _costoNet = Number((formValues as any)?.costoUnitario) || 0;
+    const _esGravadoCosto = !['20', '30'].includes((formValues as any).tipoAfectacionIGV ?? '10');
+    const _costoBrutoDerivado = _costoNet > 0
+        ? (_esGravadoCosto ? parseFloat((_costoNet * 1.18).toFixed(2)) : _costoNet)
+        : 0;
+    useEffect(() => {
+        // Sincroniza el texto del input con el neto almacenado cuando cambia por fuera (carga en edición
+        // o cambio de afectación), pero respeta lo que el usuario está tecleando si ya cuadra con ese neto.
+        const implicitoNet = costoConIgvInput === ''
+            ? 0
+            : (_esGravadoCosto ? parseFloat((parseFloat(costoConIgvInput) / 1.18).toFixed(2)) : parseFloat(costoConIgvInput)) || 0;
+        if (Math.abs(implicitoNet - _costoNet) > 0.005) {
+            setCostoConIgvInput(_costoBrutoDerivado > 0 ? String(_costoBrutoDerivado) : '');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [_costoNet, _esGravadoCosto]);
+
     const esServicio = String(((formValues as any)?.atributosTecnicos || {})?.tipoProducto || '').toUpperCase() === 'SERVICIO';
 
     // Moneda del producto: 'PEN' (soles) o 'USD' (dólares). Al facturar, USD se convierte a soles con el TC del día.
@@ -742,6 +761,12 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         const precioSinIgv = esGravado ? parseFloat((precio / 1.18).toFixed(2)) : precio;
                         const igvMonto = parseFloat((precioConIgv - precioSinIgv).toFixed(2));
 
+                        // El costo se INGRESA con IGV, pero se guarda NETO (sin IGV) en costoUnitario.
+                        // costo = neto almacenado; costoConIgv = bruto (lo que el usuario ve/teclea); costoIgvMonto = IGV del costo.
+                        const costo = Number((formValues as any)?.costoUnitario) || 0;
+                        const costoConIgv = esGravado ? parseFloat((costo * 1.18).toFixed(2)) : costo;
+                        const costoIgvMonto = parseFloat((costoConIgv - costo).toFixed(2));
+
                         const handlePrecioChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                             const num = parseFloat(e.target.value) || 0;
                             const conIgv = modoConIgv ? num : parseFloat((num * (1 + igvPct)).toFixed(2));
@@ -819,7 +844,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                     {esGravado && precio > 0 && (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-8">
                                             <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg px-3 py-2 text-center">
-                                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Neto</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Bruto</p>
                                                 <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mt-0.5">{simbolo} {precioSinIgv.toFixed(2)}</p>
                                             </div>
                                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 text-center">
@@ -827,7 +852,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">{simbolo} {igvMonto.toFixed(2)}</p>
                                             </div>
                                             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2 text-center">
-                                                <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide">Total</p>
+                                                <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide">Neto</p>
                                                 <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{simbolo} {precioConIgv.toFixed(2)}</p>
                                             </div>
                                         </div>
@@ -842,10 +867,33 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                 name="costoUnitario"
                                                 placeholder="0.00"
                                                 isLabel
-                                                label={`Costo unitario ${simbolo} (neto sin IGV)`}
-                                                value={(formValues as any)?.costoUnitario != null ? parseFloat(Number((formValues as any).costoUnitario).toFixed(2)) : ''}
-                                                onChange={(e) => setFormValues({ ...formValues, costoUnitario: parseFloat(e.target.value) || 0 } as any)}
+                                                label={`Costo de venta con IGV (${simbolo})${esGravado ? '' : ' — ' + ((formValues as any).tipoAfectacionIGV === '20' ? 'Exonerado' : 'Inafecto')}`}
+                                                value={costoConIgvInput}
+                                                onChange={(e) => {
+                                                    const raw = e.target.value;
+                                                    setCostoConIgvInput(raw);
+                                                    const num = parseFloat(raw) || 0;
+                                                    const neto = esGravado ? parseFloat((num / 1.18).toFixed(2)) : num;
+                                                    setFormValues({ ...formValues, costoUnitario: neto } as any);
+                                                }}
                                             />
+                                            {/* Desglose IGV del costo (referenciado al costo de venta) */}
+                                            {esGravado && costo > 0 && (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+                                                    <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg px-3 py-2 text-center">
+                                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Bruto</p>
+                                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mt-0.5">{simbolo} {costo.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 text-center">
+                                                        <p className="text-[10px] text-blue-500 font-medium uppercase tracking-wide">IGV 18%</p>
+                                                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">{simbolo} {costoIgvMonto.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2 text-center">
+                                                        <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide">Neto</p>
+                                                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{simbolo} {costoConIgv.toFixed(2)}</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

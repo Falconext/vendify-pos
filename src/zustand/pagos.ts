@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { get, post, del } from '../utils/fetch';
+import apiClient from '../utils/apiClient';
 import { IPago, IPagosFilters, IRegistroPago } from '../interfaces/pagos';
 import { devtools } from 'zustand/middleware';
 import useAlertStore from './alert';
@@ -38,7 +39,8 @@ export interface IPagosState {
   resetPagos: () => void;
   // Nuevos métodos para Cuentas por Cobrar
   getCuentasPorCobrar: (params: any) => Promise<{ success: boolean; error?: string }>;
-  registrarPagoComprobante: (comprobanteId: number, data: { monto: number; medioPago: string; observacion?: string; referencia?: string; cuentaBancariaId?: number }) => Promise<{ success: boolean; pago?: any; nuevoSaldo?: number; nuevoEstado?: string; error?: string }>;
+  registrarPagoComprobante: (comprobanteId: number, data: { monto: number; medioPago: string; observacion?: string; referencia?: string; cuentaBancariaId?: number; dirigidoA?: string; vendedorId?: number; vendedorNombre?: string }) => Promise<{ success: boolean; pago?: any; nuevoSaldo?: number; nuevoEstado?: string; error?: string }>;
+  subirComprobantePago: (pagoId: number, file: File) => Promise<{ success: boolean; comprobanteUrl?: string; error?: string }>;
   getHistorialPagos: (comprobanteId: number) => Promise<{ success: boolean; pagos?: any[]; totalPagado?: number; error?: string }>;
 }
 
@@ -222,6 +224,24 @@ export const usePagosStore = create<IPagosState>()(
           set({ loading: false });
           useAlertStore.getState().alert(error.message || 'Error al registrar el pago', 'error');
           return { success: false, error: error.message };
+        }
+      },
+
+      // Sube la imagen del comprobante de pago (multipart) a un pago ya registrado.
+      subirComprobantePago: async (pagoId: number, file: File) => {
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const resp: any = await apiClient.post(`pago/${pagoId}/comprobante`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          const body = resp?.data ?? resp;
+          if (body?.code === 1) {
+            return { success: true, comprobanteUrl: body?.data?.comprobanteUrl };
+          }
+          return { success: false, error: body?.message || 'Error al subir el comprobante' };
+        } catch (error: any) {
+          return { success: false, error: error?.message || 'Error al subir el comprobante' };
         }
       },
 

@@ -527,6 +527,20 @@ export default function PerfilIndex() {
                                         {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean(perfil.empresa.cobranzaCampo)}
+                                        disabled={vm.savingCobranzaCampoConfig}
+                                        onChange={(e) => vm.handleCobranzaCampoToggle(e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-emerald-600 dark:text-emerald-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-emerald-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Cobranza con vendedores de campo</p>
+                                        <p className="text-xs text-slate-500 mt-1">Actívalo solo si tu negocio cobra a través de vendedores en el campo. Al registrar un pago, la encargada deberá indicar qué vendedor de campo envió el comprobante, a quién se dirigió el pago (administrador/empresa/vendedor) y podrá adjuntar la imagen del comprobante.</p>
+                                        {vm.savingCobranzaCampoConfig && <p className="text-xs text-emerald-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:document-text-bold-duotone" width={14} />

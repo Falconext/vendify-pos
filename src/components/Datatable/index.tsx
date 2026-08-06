@@ -6,7 +6,7 @@ import { IDataTableProps } from './types';
 import styles from './table.module.css';
 import AutoScrollTable from '../Autoscrolltable';
 import { AnimatePresence, motion } from 'framer-motion';
-import { fadeUp, interactiveHover } from '@/lib/motion/presets';
+import { fadeUp } from '@/lib/motion/presets';
 
 const DataTable: FC<IDataTableProps> = ({
     formValues,
@@ -25,6 +25,9 @@ const DataTable: FC<IDataTableProps> = ({
 }: any) => {
     const [data, setData] = useState(Array.isArray(bodyData) ? bodyData : []);
     const [currentPage, setCurrentPage] = useState(1);
+    // Tamaño de página interno (permite el selector "Filas/pág"); se siembra del prop.
+    const [perPage, setPerPage] = useState<number | undefined>(pageSize);
+    useEffect(() => { setPerPage(pageSize); }, [pageSize]);
 
     const resolvedColumns = useMemo(() => {
         if (!Array.isArray(headerColumns)) return headerColumns;
@@ -113,9 +116,9 @@ const DataTable: FC<IDataTableProps> = ({
 
     // ── Pagination ──────────────────────────────────────────────────
     const totalItems = data?.length ?? 0;
-    const totalPages = pageSize && pageSize > 0 ? Math.ceil(totalItems / pageSize) : 1;
-    const paginatedData = pageSize && pageSize > 0
-        ? (data ?? []).slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    const totalPages = perPage && perPage > 0 ? Math.ceil(totalItems / perPage) : 1;
+    const paginatedData = perPage && perPage > 0
+        ? (data ?? []).slice((currentPage - 1) * perPage, currentPage * perPage)
         : data;
 
     const getPageNumbers = () => {
@@ -133,59 +136,56 @@ const DataTable: FC<IDataTableProps> = ({
     };
 
     const renderPagination = () => {
-        if (!pageSize || totalPages <= 1) return null;
-        const start = (currentPage - 1) * pageSize + 1;
-        const end = Math.min(currentPage * pageSize, totalItems);
+        if (!perPage) return null;
+        const start = totalItems === 0 ? 0 : (currentPage - 1) * perPage + 1;
+        const end = Math.min(currentPage * perPage, totalItems);
+        const perPageOptions = Array.from(new Set([10, 20, 50, perPage].filter(Boolean) as number[])).sort((a, b) => a - b);
+        const navBtn = 'h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors';
 
         return (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-slate-800">
-                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-                    Mostrando <span className="text-gray-600 dark:text-gray-300 font-semibold">{start}</span> a{' '}
-                    <span className="text-gray-600 dark:text-gray-300 font-semibold">{end}</span> de{' '}
-                    <span className="text-gray-600 dark:text-gray-300 font-semibold">{totalItems}</span> registros
-                </p>
-                <div className="flex items-center gap-1">
-                    <motion.button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        whileHover={interactiveHover.whileHover}
-                        whileTap={interactiveHover.whileTap}
-                    >
-                        <Icon icon="solar:alt-arrow-left-linear" className="text-sm" />
-                    </motion.button>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-sm text-slate-400 dark:text-gray-400">
+                    {start}-{end} de {totalItems.toLocaleString('es-PE')}
+                </span>
 
-                    {getPageNumbers().map((page, idx) =>
-                        page === '...' ? (
-                            <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm">
-                                ···
-                            </span>
-                        ) : (
-                            <motion.button
-                                key={page}
-                                onClick={() => setCurrentPage(page as number)}
-                                className={`w-8 h-8 rounded-lg text-sm font-semibold transition-all ${
-                                    page === currentPage
-                                        ? 'bg-violet-600 text-white shadow-sm shadow-violet-200'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-                                }`}
-                                whileHover={interactiveHover.whileHover}
-                                whileTap={interactiveHover.whileTap}
-                            >
-                                {page}
-                            </motion.button>
-                        )
-                    )}
+                {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className={navBtn}><Icon icon="solar:double-alt-arrow-left-linear" /></button>
+                        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className={navBtn}><Icon icon="solar:alt-arrow-left-linear" /></button>
+                        {getPageNumbers().map((page, idx) =>
+                            page === '...' ? (
+                                <span key={`ellipsis-${idx}`} className="w-8 h-8 grid place-items-center text-slate-300 dark:text-slate-600 text-sm">…</span>
+                            ) : (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page as number)}
+                                    className={`h-8 min-w-8 px-2 grid place-items-center rounded-lg text-sm font-semibold transition-all ${
+                                        page === currentPage
+                                            ? 'btn-accent shadow-sm'
+                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            )
+                        )}
+                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className={navBtn}><Icon icon="solar:alt-arrow-right-linear" /></button>
+                        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)} className={navBtn}><Icon icon="solar:double-alt-arrow-right-linear" /></button>
+                    </div>
+                )}
 
-                    <motion.button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        whileHover={interactiveHover.whileHover}
-                        whileTap={interactiveHover.whileTap}
-                    >
-                        <Icon icon="solar:alt-arrow-right-linear" className="text-sm" />
-                    </motion.button>
+                <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-gray-400">
+                    <span>Filas/pág</span>
+                    <div className="relative">
+                        <select
+                            value={perPage}
+                            onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                            className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-gray-200 focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+                        >
+                            {perPageOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <Icon icon="solar:alt-arrow-down-linear" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                    </div>
                 </div>
             </div>
         );
@@ -194,7 +194,7 @@ const DataTable: FC<IDataTableProps> = ({
     return (
         <div className="flex flex-col">
             <AutoScrollTable>
-                <div className="px-4 w-max min-w-full">
+                <div className="px-0 w-max min-w-full">
                     {data?.length > 0 && safeResolvedColumns.length > 0 ? (
                         <AnimatePresence mode="sync">
                             <motion.table
