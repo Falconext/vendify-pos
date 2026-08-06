@@ -663,7 +663,7 @@ export default function PerfilIndex() {
                         <div className="space-y-4">
                             <Field label="Nombre del Plan"><p className={`${theme.text} font-bold text-sm`}>{perfil.empresa.plan.nombre}</p></Field>
                             <Field label="Descripción"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.plan.descripcion}</p></Field>
-                            <Field label="Precio"><p className="text-slate-800 font-extrabold text-lg">S/ {Number(perfil.empresa?.plan?.costo).toFixed(2)}</p></Field>
+                            <Field label="Precio"><p className="text-slate-800 font-extrabold text-lg">S/ {(Number((perfil.empresa as any)?.precioClienteFinal) > 0 ? Number((perfil.empresa as any).precioClienteFinal) : Number(perfil.empresa?.plan?.costo)).toFixed(2)}</p></Field>
                             <Field label="Duración"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.plan.duracionDias} días</p></Field>
                             <Field label="Tipo de Plan"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.plan.esPrueba ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'}`}>{perfil.empresa.plan.esPrueba ? 'Versión de Prueba' : 'Plan Premium'}</span></Field>
                         </div>
