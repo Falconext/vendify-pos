@@ -29,8 +29,84 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
         isCategorizing, tieneGestionProvisiones, tieneTienda, tieneGestionLotes,
         handleChange, handleChangeSelect, handleAutoCategorize, handlePrecioUnitarioBlur,
         setShowMedicamentoModal, setShowLotesModal, toggleGrupoSeleccionado,
-        setFormValues,
+        setFormValues, addCategory, addBrand,
     } = vm;
+
+    // Creación inline de categoría/marca (sin salir del modal de producto)
+    const [creatingCat, setCreatingCat] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [savingCat, setSavingCat] = useState(false);
+    const [creatingBrand, setCreatingBrand] = useState(false);
+    const [newBrandName, setNewBrandName] = useState('');
+    const [savingBrand, setSavingBrand] = useState(false);
+
+    const handleCrearCategoria = async () => {
+        const nombre = newCatName.trim();
+        if (!nombre || savingCat) return;
+        setSavingCat(true);
+        try {
+            const creada: any = await (addCategory as any)({ nombre });
+            if (creada?.id) {
+                handleChangeSelect(creada.id, creada.nombre ?? nombre, 'categoriaNombre', 'categoriaId');
+                setCreatingCat(false);
+                setNewCatName('');
+            }
+        } finally {
+            setSavingCat(false);
+        }
+    };
+
+    const handleCrearMarca = async () => {
+        const nombre = newBrandName.trim();
+        if (!nombre || savingBrand) return;
+        setSavingBrand(true);
+        try {
+            const creada: any = await (addBrand as any)({ nombre });
+            if (creada?.id) {
+                handleChangeSelect(creada.id, creada.nombre ?? nombre, 'marcaNombre', 'marcaId');
+                setCreatingBrand(false);
+                setNewBrandName('');
+            }
+        } finally {
+            setSavingBrand(false);
+        }
+    };
+
+    // Render del control inline "+ Nueva …" reutilizable para categoría y marca.
+    const renderInlineCreate = (
+        active: boolean,
+        setActive: (v: boolean) => void,
+        name: string,
+        setName: (v: string) => void,
+        saving: boolean,
+        onCreate: () => void,
+        labelNuevo: string,
+        placeholder: string,
+    ) => active ? (
+        <div className="flex items-center gap-1.5 mt-1.5">
+            <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); onCreate(); }
+                    else if (e.key === 'Escape') { setActive(false); setName(''); }
+                }}
+                placeholder={placeholder}
+                className="flex-1 min-w-0 px-2.5 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button type="button" onClick={onCreate} disabled={saving || !name.trim()} className="p-1.5 rounded-lg bg-blue-600 text-white shrink-0 disabled:opacity-50">
+                <Icon icon={saving ? 'line-md:loading-twotone-loop' : 'mdi:check'} className="text-base" />
+            </button>
+            <button type="button" onClick={() => { setActive(false); setName(''); }} className="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 shrink-0">
+                <Icon icon="mdi:close" className="text-base" />
+            </button>
+        </div>
+    ) : (
+        <button type="button" onClick={() => setActive(true)} className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+            <Icon icon="solar:add-circle-linear" className="text-sm" /> {labelNuevo}
+        </button>
+    );
 
     const [modoConIgv, setModoConIgv] = useState(true);
     const [simVentasDia, setSimVentasDia] = useState('');
@@ -333,8 +409,14 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                     <InputPro autocomplete="off" value={formValues?.descripcion} error={errors.descripcion} name="descripcion" onChange={handleChange} isLabel label="Nombre del medicamento" />
 
                     <Select defaultValue={formValues?.unidadMedidaNombre} error={""} isSearch options={unitOfMeasure?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="unidadMedidaId" name="unidadMedidaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Unidad de medida" withLabel />
-                    <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
-                    <Select defaultValue={formValues.marcaNombre} error={""} isSearch options={brands?.map((item: IBrand) => ({ id: item?.id, value: `${item?.nombre}` }))} id="marcaId" name="marcaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Laboratorio/Marca" withLabel />
+                    <div>
+                        <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
+                        {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
+                    </div>
+                    <div>
+                        <Select defaultValue={formValues.marcaNombre} error={""} isSearch options={brands?.map((item: IBrand) => ({ id: item?.id, value: `${item?.nombre}` }))} id="marcaId" name="marcaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Laboratorio/Marca" withLabel />
+                        {renderInlineCreate(creatingBrand, setCreatingBrand, newBrandName, setNewBrandName, savingBrand, handleCrearMarca, 'Nueva marca', 'Nombre de la marca')}
+                    </div>
                 </div>
 
                 {/* Botones Selectores de Drawers */}
@@ -520,10 +602,12 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             <div className={`col-span-1 md:col-span-1 ${isRestaurante ? '' : 'flex gap-2'} w-full`}>
                 <div className="w-full">
                     <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value={formValues?.categoriaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoria" />
+                    {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
                 </div>
                 {!isRestaurante && (
                     <div className="w-full">
                         <Select defaultValue={formValues.marcaNombre} error={""} isSearch options={brands?.map((item: IBrand) => ({ id: item?.id, value: `${item?.nombre}` }))} id="marcaId" name="marcaNombre" value={formValues?.marcaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Marca" />
+                        {renderInlineCreate(creatingBrand, setCreatingBrand, newBrandName, setNewBrandName, savingBrand, handleCrearMarca, 'Nueva marca', 'Nombre de la marca')}
                     </div>
                 )}
             </div>

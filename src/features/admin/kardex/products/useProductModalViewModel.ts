@@ -35,7 +35,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const { getUnitOfMeasure, unitOfMeasure }: IExtentionsState =
     useExtentionsStore();
   const { auth, sedeActiva } = useAuthStore();
-  const { getAllCategories, categories } = useCategoriesStore();
+  const { getAllCategories, categories, addCategory } = useCategoriesStore();
   const {
     editProduct,
     addProduct,
@@ -1690,6 +1690,8 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     unitOfMeasure,
     categories,
     brands,
+    addCategory,
+    addBrand,
     gruposModificadores,
     gruposSeleccionados,
     filePrincipal,

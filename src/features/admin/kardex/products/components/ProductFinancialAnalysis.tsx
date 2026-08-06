@@ -13,6 +13,8 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
 
     const precioUnitario = Number(formValues?.precioUnitario || 0);
     const costoUnitario = Number(formValues?.costoUnitario || 0);
+    // Símbolo según la moneda del producto (soles o dólares).
+    const simbolo = (formValues as any)?.moneda === 'USD' ? '$' : 'S/';
     // El precio de venta se digita CON IGV, pero el IGV no es ganancia (va a
     // SUNAT): la rentabilidad se calcula sobre el valor de venta SIN IGV.
     // Solo los productos gravados (afectación 10) llevan 18%.
@@ -63,7 +65,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                         <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mx-auto mb-1">
                             <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                         </div>
-                        <p className="text-base font-bold text-gray-900 dark:text-white leading-none">S/ {precioUnitario.toFixed(2)}</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{simbolo} {precioUnitario.toFixed(2)}</p>
                         <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">{esGravado ? 'Precio con IGV' : 'Precio'}</p>
                     </div>
 
@@ -73,7 +75,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mx-auto mb-1">
                                 <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                             </div>
-                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {precioSinIgv.toFixed(2)}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{simbolo} {precioSinIgv.toFixed(2)}</p>
                             <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Precio sin IGV</p>
                         </div>
                     )}
@@ -83,7 +85,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                         <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-1">
                             <Icon icon="solar:box-bold" className="text-slate-500 dark:text-slate-400" width={12} />
                         </div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">S/ {costoUnitario.toFixed(2)}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{simbolo} {costoUnitario.toFixed(2)}</p>
                         <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Costo</p>
                     </div>
 
@@ -93,7 +95,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon={gananciaPositiva ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'} className={gananciaPositiva ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'} width={12} />
                         </div>
                         <p className={`text-sm font-bold leading-none ${gananciaPositiva ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                            {gananciaPositiva ? '+' : ''}S/ {ganancia.toFixed(2)}
+                            {gananciaPositiva ? '+' : ''}{simbolo} {ganancia.toFixed(2)}
                         </p>
                         <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">Ganancia</p>
                     </div>
@@ -118,16 +120,16 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div className="text-center">
-                            <p className="text-xs font-bold text-gray-700 dark:text-gray-200">S/ {(precioSinIgv * stockParaProyeccion).toFixed(2)}</p>
+                            <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{simbolo} {(precioSinIgv * stockParaProyeccion).toFixed(2)}</p>
                             <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Venta (sin IGV)</p>
                         </div>
                         <div className="text-center border-x border-blue-100/50 dark:border-blue-900/30">
-                            <p className="text-xs font-bold text-red-500 dark:text-red-400">S/ {(costoUnitario * stockParaProyeccion).toFixed(2)}</p>
+                            <p className="text-xs font-bold text-red-500 dark:text-red-400">{simbolo} {(costoUnitario * stockParaProyeccion).toFixed(2)}</p>
                             <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Inversión</p>
                         </div>
                         <div className="text-center">
                             <p className={`text-xs font-bold ${gananciaPositiva ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                                S/ {(ganancia * stockParaProyeccion).toFixed(2)}
+                                {simbolo} {(ganancia * stockParaProyeccion).toFixed(2)}
                             </p>
                             <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-0.5">Ganancia</p>
                         </div>

@@ -77,7 +77,7 @@ export interface IInvoicesState {
     completePay: (data: any, medioPago: string, montoPagado?: number) => Promise<{ success: boolean, error?: string }>;
     cancelInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
-    updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string }>;
+    updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
 }
 
@@ -525,7 +525,16 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             const resp: any = await patch(`/comprobante/${id}`, data);
             if (resp.code === 1) {
                 useAlertStore.getState().alert('Cotización actualizada exitosamente', 'success');
-                return { success: true };
+                // Devolver serie/correlativo del comprobante actualizado para que el modal
+                // de éxito muestre el número editado (no el "siguiente" correlativo).
+                return {
+                    success: true,
+                    serie: resp.data?.serie,
+                    correlativo: resp.data?.correlativo,
+                    id: resp.data?.id,
+                    mtoImpVenta: resp.data?.mtoImpVenta,
+                    isUpdate: true,
+                };
             }
             useAlertStore.getState().alert(resp.error || 'Error al actualizar la cotización', 'error');
             return { success: false, error: resp.error };

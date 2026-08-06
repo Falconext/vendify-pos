@@ -20,6 +20,7 @@ export interface IEmitidoContentProps {
     formValues?: any
     observation?: string
     isPendiente?: boolean
+    isUpdate?: boolean
     hasDespacho?: boolean
 }
 
@@ -27,7 +28,7 @@ export interface IEmitidoContentProps {
  * Contenido del comprobante emitido (éxito / procesando) SIN el wrapper de modal.
  * Se reutiliza dentro del modal "Continuar pago" para la transición inline.
  */
-const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, closeModal, handleOpenNewTab, formValues, isPendiente, hasDespacho }: IEmitidoContentProps) => {
+const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, closeModal, handleOpenNewTab, formValues, isPendiente, isUpdate, hasDespacho }: IEmitidoContentProps) => {
     const { resetInvoice, resetProductInvoice }: IInvoicesState = useInvoiceStore();
     const navigate = useNavigate();
     const { isDarkMode } = useThemeStore();
@@ -81,7 +82,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
             <div className="flex flex-col">
                 {/* Header con estado */}
                 <div className={`px-6 pt-7 pb-5 flex flex-col items-center gap-3 text-center border-b ${isDarkMode ? 'border-slate-800' : 'border-gray-100'}`}>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500 font-medium">Comprobante emitido</p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500 font-medium">{isUpdate ? 'Comprobante actualizado' : 'Comprobante emitido'}</p>
 
                     {isPendiente ? (
                         <div className={`flex items-center justify-center w-16 h-16 rounded-full border-2 ${isDarkMode ? 'bg-amber-950/40 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
@@ -102,7 +103,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                                 </>
                             ) : (
                                 <>
-                                    Hola, <strong>{auth?.nombre}</strong>. La {comprobante?.toLowerCase()} del cliente <strong>{client?.nombre}</strong> fue generada con éxito.
+                                    Hola, <strong>{auth?.nombre}</strong>. La {comprobante?.toLowerCase()} del cliente <strong>{client?.nombre}</strong> fue {isUpdate ? 'actualizada' : 'generada'} con éxito.
                                 </>
                             )}
                         </p>
