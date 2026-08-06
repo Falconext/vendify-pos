@@ -57,6 +57,10 @@ export default function AdminLayout() {
   const [nameNavbar, setNameNavbar] = useState<string>('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [navQuery, setNavQuery] = useState('')
+  // Chrome ignora autocomplete="off" y autocompleta el email en el primer input de
+  // texto de la página (este buscador) cuando el Perfil tiene form de contraseña.
+  // readOnly hasta el primer foco evita ese autofill; se habilita al hacer clic.
+  const [navSearchReadOnly, setNavSearchReadOnly] = useState(true)
   const matchesNavQuery = (label: string) => !navQuery.trim() || label.toLowerCase().includes(navQuery.trim().toLowerCase())
   const [openModuleCode, setOpenModuleCode] = useState<string | null>(null)
   const toggleModule = (codigo: string) => setOpenModuleCode(prev => prev === codigo ? null : codigo)
@@ -410,6 +414,8 @@ export default function AdminLayout() {
                 spellCheck={false}
                 data-1p-ignore
                 data-lpignore="true"
+                readOnly={navSearchReadOnly}
+                onFocus={() => setNavSearchReadOnly(false)}
                 value={navQuery}
                 onChange={(e) => setNavQuery(e.target.value)}
                 placeholder="Buscar en el menú…"
