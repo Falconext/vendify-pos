@@ -46,6 +46,7 @@ const NotificacionesCampana: React.FC = () => {
 
   const panelRef = useRef<HTMLDivElement>(null);
   const [mostrarConfig, setMostrarConfig] = useState(false);
+  const [tab, setTab] = useState<'todas' | 'noleidas'>('todas');
 
   // Estado para alertas de lotes
   const [lotesVencidos, setLotesVencidos] = useState<LoteAlerta[]>([]);
@@ -187,21 +188,47 @@ const NotificacionesCampana: React.FC = () => {
       </button>
 
       {mostrarPanel && (
-        <div className="absolute z-[999999] right-0 mt-3 w-[400px] bg-[#F8F9FA] dark:bg-[#0F1219] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-transparent z-50 overflow-hidden font-sans">
-          {/* Header Limpio */}
-          <div className="flex items-center justify-between px-5 py-4 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-              {/* <button onClick={cerrarPanel} className="text-gray-400 hover:text-gray-600">
-                  <Icon icon="mdi:chevron-left" width={24} />
-              </button> */}
-              <h3 className="text-[17px] font-bold text-gray-900 dark:text-white">Notificaciones</h3>
+        <div className="absolute z-[999999] right-0 mt-3 w-[400px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] border border-gray-100 dark:border-slate-700 overflow-hidden font-sans">
+          {/* Header */}
+          <div className="px-5 pt-4 pb-0 bg-white dark:bg-slate-900 sticky top-0 z-10">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[19px] font-extrabold tracking-tight text-gray-900 dark:text-white">Notificaciones</h3>
+              {totalNoLeidas > 0 && (
+                <button
+                  onClick={marcarTodasComoLeidas}
+                  className="text-[13px] font-medium text-gray-500 dark:text-gray-400 underline underline-offset-2 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  Marcar todo como leído
+                </button>
+              )}
             </div>
-            <button
-              onClick={() => setMostrarConfig(!mostrarConfig)}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
-            >
-              <Icon icon="solar:settings-linear" width={22} />
-            </button>
+
+            {/* Tabs */}
+            <div className="mt-3 flex items-center justify-between border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center gap-5">
+                {([
+                  { key: 'todas', label: 'Todas', count: notificaciones?.length || 0 },
+                  { key: 'noleidas', label: 'No leídas', count: noLeidas },
+                ] as const).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`relative flex items-center gap-1.5 pb-2.5 text-[14px] font-semibold transition-colors ${tab === t.key ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
+                  >
+                    {t.label}
+                    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-md text-[11px] font-bold ${tab === t.key ? 'bg-gray-900 text-white dark:bg-white dark:text-slate-900' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}>{t.count}</span>
+                    {tab === t.key && <span className="absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-gray-900 dark:bg-white" />}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setMostrarConfig(!mostrarConfig)}
+                className="pb-2.5 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 transition-colors"
+                title="Configuración"
+              >
+                <Icon icon="solar:settings-linear" width={20} />
+              </button>
+            </div>
           </div>
 
           {/* Configuración Expandible */}
@@ -227,11 +254,11 @@ const NotificacionesCampana: React.FC = () => {
             </div>
           )}
 
-          {/* Lista tipo Cards */}
-          <div className="max-h-[500px] overflow-y-auto p-4 space-y-3">
+          {/* Lista */}
+          <div className="max-h-[460px] overflow-y-auto">
             {/* 🆕 ALERTAS DE LOTES PARA FARMACIAS */}
             {(lotesVencidos.length > 0 || lotesPorVencer.length > 0) && (
-              <>
+              <div className="px-3 pt-3 space-y-2">
                 {/* Lotes Vencidos */}
                 {lotesVencidos.length > 0 && (
                   <Link
@@ -289,30 +316,32 @@ const NotificacionesCampana: React.FC = () => {
                   </Link>
                 )}
 
-                {/* Separador */}
-                {notificaciones?.length > 0 && (
-                  <div className="border-t border-gray-200 dark:border-slate-700 my-2"></div>
-                )}
-              </>
+              </div>
             )}
 
-            {/* Notificaciones regulares */}
-            {loading && notificaciones?.length === 0 ? (
-              <div className="flex justify-center py-8">
-                <Icon icon="line-md:loading-loop" className="text-gray-400" width={24} />
-              </div>
-            ) : notificaciones?.length === 0 && lotesVencidos.length === 0 && lotesPorVencer.length === 0 ? (
-              <div className="text-center py-10">
-                <Icon icon="solar:bell-off-linear" className="mx-auto text-gray-300 dark:text-slate-600 mb-2" width={48} />
-                <p className="text-gray-400 dark:text-slate-500 text-sm">No tienes notificaciones recientes</p>
-              </div>
-            ) : (
-              notificaciones?.slice(0, 5).map((notificacion) => {
+            {/* Notificaciones */}
+            {(() => {
+              const visibles = (notificaciones || []).filter((n: any) => (tab === 'noleidas' ? !n.leida : true));
+              if (loading && (notificaciones?.length || 0) === 0) {
+                return (
+                  <div className="flex justify-center py-10">
+                    <Icon icon="line-md:loading-loop" className="text-gray-400" width={24} />
+                  </div>
+                );
+              }
+              if (visibles.length === 0 && lotesVencidos.length === 0 && lotesPorVencer.length === 0) {
+                return (
+                  <div className="text-center py-12 px-5">
+                    <Icon icon="solar:bell-off-linear" className="mx-auto text-gray-300 dark:text-slate-600 mb-2" width={44} />
+                    <p className="text-gray-400 dark:text-slate-500 text-sm">
+                      {tab === 'noleidas' ? 'No tienes notificaciones sin leer' : 'No tienes notificaciones recientes'}
+                    </p>
+                  </div>
+                );
+              }
+              return visibles.map((notificacion: any) => {
                 const styles = getTipoEstilos(notificacion.tipo || 'INFO', notificacion.titulo);
-
-                // Limpiar emojis del título (Caja, Alerta, Check, Info)
                 const cleanTitle = notificacion.titulo.replace(/📦|⚠️|❗|✅/g, '').trim();
-
                 const meta = notificacion.metaData as any;
                 const sunatLink = meta?.comprobanteId
                   ? `/administrador/facturacion/comprobantes`
@@ -320,61 +349,58 @@ const NotificacionesCampana: React.FC = () => {
                   ? `/administrador/guia-remision`
                   : null;
 
-                const cardContent = (
-                  <div className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${styles.bgColor} ${styles.bgColorDark} flex items-center justify-center mt-0.5`}>
-                      <Icon icon={styles.icon} className={`${styles.color} ${styles.colorDark}`} width={18} />
+                const rowClass = `flex gap-3 px-5 py-3.5 border-b border-gray-50 dark:border-slate-800/60 cursor-pointer transition-colors ${
+                  !notificacion.leida
+                    ? 'bg-amber-50/70 dark:bg-amber-500/[0.06] hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                    : 'hover:bg-gray-50 dark:hover:bg-slate-800/40'
+                }`;
+
+                const rowContent = (
+                  <>
+                    <div className="relative shrink-0">
+                      <div className={`w-10 h-10 rounded-xl ${styles.bgColor} ${styles.bgColorDark} flex items-center justify-center`}>
+                        <Icon icon={styles.icon} className={`${styles.color} ${styles.colorDark}`} width={20} />
+                      </div>
+                      {!notificacion.leida && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-0.5">
-                        <h4 className={`text-[14px] font-bold text-gray-900 dark:text-white leading-tight ${!notificacion.leida ? 'font-extrabold' : ''}`}>
-                          {cleanTitle}
-                        </h4>
-                        <span className="text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap ml-2">
-                          {formatFecha(notificacion.creadoEn)}
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2">
+                      <p className="text-[14px] text-gray-900 dark:text-white leading-snug">
+                        <span className={!notificacion.leida ? 'font-extrabold' : 'font-bold'}>{cleanTitle}</span>
+                      </p>
+                      <p className="text-[12.5px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2 mt-0.5">
                         {notificacion.mensaje}
                       </p>
+                      <p className="text-[11.5px] text-gray-400 dark:text-slate-500 mt-1">{formatFecha(notificacion.creadoEn)}</p>
                       {sunatLink && (
-                        <span className="text-[11px] font-semibold mt-1 inline-block" style={{ color: styles.color.includes('red') ? '#dc2626' : styles.color.includes('orange') ? '#ea580c' : '#2563eb' }}>
+                        <span className="text-[11.5px] font-semibold mt-1 inline-block" style={{ color: styles.color.includes('red') ? '#dc2626' : styles.color.includes('orange') ? '#ea580c' : '#2563eb' }}>
                           Ver comprobante →
                         </span>
                       )}
                     </div>
-                  </div>
+                  </>
                 );
 
                 if (sunatLink) {
                   return (
-                    <Link
-                      key={notificacion.id}
-                      to={sunatLink}
-                      onClick={() => { handleNotificacionClick(notificacion); cerrarPanel(); }}
-                      className={`block bg-white dark:bg-slate-900/80 p-3 rounded-xl shadow-sm border hover:border-gray-300 dark:hover:border-slate-600 transition-all relative group ${!notificacion.leida ? 'border-red-200 dark:border-red-900/50' : 'border-transparent dark:border-transparent'}`}
-                    >
-                      {cardContent}
+                    <Link key={notificacion.id} to={sunatLink} onClick={() => { handleNotificacionClick(notificacion); cerrarPanel(); }} className={rowClass}>
+                      {rowContent}
                     </Link>
                   );
                 }
-
                 return (
-                  <div
-                    key={notificacion.id}
-                    onClick={() => handleNotificacionClick(notificacion)}
-                    className={`bg-white dark:bg-slate-900/80 p-3 rounded-xl shadow-sm border border-transparent dark:border-transparent hover:border-gray-200 dark:hover:border-slate-600 transition-all cursor-pointer relative group`}
-                  >
-                    {cardContent}
+                  <div key={notificacion.id} onClick={() => handleNotificacionClick(notificacion)} className={rowClass}>
+                    {rowContent}
                   </div>
                 );
-              })
-            )}
+              });
+            })()}
           </div>
 
-          {notificaciones?.length > 5 && (
-            <div className="bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700 p-3 text-center">
-              <Link to="/administrador/notificaciones" onClick={cerrarPanel} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium transition-colors">
+          {(notificaciones?.length || 0) > 0 && (
+            <div className="bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700 py-3 text-center">
+              <Link to="/administrador/notificaciones" onClick={cerrarPanel} className="text-[13px] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-semibold transition-colors">
                 Ver historial completo
               </Link>
             </div>
