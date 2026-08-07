@@ -28,10 +28,13 @@ interface ModalNuevaCompraProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    // Si viene una compra (con id), el modal opera en modo EDICIÓN.
+    compra?: any;
 }
 
-const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps) => {
-    const { crearCompra } = useComprasStore();
+const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaCompraProps) => {
+    const isEdit = !!compra?.id;
+    const { crearCompra, editarCompra } = useComprasStore();
     const { getAllClients, clients, resetClients, getClientFromDoc } = useClientsStore();
     const { getAllProducts, products, resetProducts } = useProductsStore();
     const { alert } = useAlertStore();
@@ -140,6 +143,52 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
             setProductSelectKey(k => k + 1);
         }
     }, [isOpen]);
+
+    // Modo EDICIÓN: precargar la compra existente. Corre DESPUÉS del reset de
+    // arriba (mismo trigger isOpen), por lo que sobreescribe los valores en blanco.
+    useEffect(() => {
+        if (!isOpen || !compra?.id) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const resp: any = await get(`compras/${compra.id}`);
+                const d = resp?.data;
+                if (!d || cancelled) return;
+                setHeader({
+                    serie: d.serie || 'F001',
+                    tipoDoc: d.tipoDoc || 'FACTURA',
+                    numero: d.numero || '',
+                    fechaEmision: d.fechaEmision ? moment(d.fechaEmision).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+                    fechaVencimiento: d.fechaVencimiento ? moment(d.fechaVencimiento).format('YYYY-MM-DD') : (d.fechaEmision ? moment(d.fechaEmision).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD')),
+                    moneda: d.moneda || 'PEN',
+                    tipoCambio: Number(d.tipoCambio || 1) || 1,
+                    proveedorId: Number(d.proveedorId || 0),
+                    observaciones: d.observaciones || '',
+                });
+                const provLabel = `${d.proveedor?.nroDoc || ''} - ${d.proveedor?.nombre || ''}`.trim();
+                if (d.proveedorId) {
+                    setSupplierOptions([{ id: Number(d.proveedorId), value: provLabel }]);
+                    setSupplierDisplay(provLabel);
+                }
+                setSedeDestinoId(Number(d.sedeId || 0));
+                // El precioUnitario se guarda NETO (sin IGV) → interpretarlo como neto.
+                setIncluyeIgv(false);
+                setItems((d.detalles || []).map((det: any) => ({
+                    productoId: Number(det.productoId || 0),
+                    descripcion: det.descripcion || det.producto?.descripcion || '',
+                    cantidad: Number(det.cantidad || 0),
+                    precioUnitario: Number(det.precioUnitario || 0),
+                    lote: det.lote || '',
+                    fechaVencimiento: det.fechaVencimiento ? moment(det.fechaVencimiento).format('YYYY-MM-DD') : '',
+                    numerosSerie: Array.isArray(det.seriesGarantias) ? det.seriesGarantias.map((s: any) => s.numeroSerie) : undefined,
+                    garantiaMeses: Array.isArray(det.seriesGarantias) && det.seriesGarantias[0]?.garantiaMeses != null ? Number(det.seriesGarantias[0].garantiaMeses) : undefined,
+                })));
+            } catch {
+                if (!cancelled) alert('No se pudo cargar la compra para editar.', 'error');
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isOpen, compra?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-focus barcode input when modal opens
     useEffect(() => {
@@ -588,7 +637,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
             total
         };
 
-        const success = await crearCompra(payload);
+        const success = isEdit
+            ? await editarCompra(Number(compra.id), payload)
+            : await crearCompra(payload);
         if (success) {
             onClose();
             if (onSuccess) onSuccess();
@@ -613,13 +664,19 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
         <Modal
             isOpenModal={isOpen}
             closeModal={onClose}
-            title="Nueva Compra"
+            title={isEdit ? "Editar Compra" : "Nueva Compra"}
             icon="solar:cart-plus-bold-duotone"
             width="1200px"
             position="right"
         >
             <form autoComplete="off" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
                 <div className="px-4 pb-4 space-y-5">
+                    {isEdit && (
+                        <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                            <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 text-base shrink-0" />
+                            <span>Estás editando una compra. Se ajustará el stock según los cambios. Los pagos ya registrados no se modifican aquí.</span>
+                        </div>
+                    )}
                     {/* Datos del Documento */}
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-transparent mt-5">
                         <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-3 uppercase tracking-wide">Datos del Documento</h3>
@@ -1167,7 +1224,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess }: ModalNuevaCompraProps)
                     {/* Actions */}
                     <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-slate-800">
                         <Button color="gray" onClick={onClose} type="button">Cancelar</Button>
-                        <Button outline color="black" onClick={handleSubmit} className="!bg-emerald-500 !text-white !border-none shadow-md shadow-emerald-200 dark:shadow-emerald-900/20 hover:opacity-90">Guardar Compra</Button>
+                        <Button outline color="black" onClick={handleSubmit} className="!bg-emerald-500 !text-white !border-none shadow-md shadow-emerald-200 dark:shadow-emerald-900/20 hover:opacity-90">{isEdit ? 'Guardar Cambios' : 'Guardar Compra'}</Button>
                     </div>
                 </div>
             </form>

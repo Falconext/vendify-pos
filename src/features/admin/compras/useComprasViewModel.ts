@@ -12,7 +12,7 @@ import {
 } from './ComprasModel';
 
 export const useComprasViewModel = () => {
-    const { listarCompras, compras, totalCompras } = useComprasStore();
+    const { listarCompras, compras, totalCompras, anularCompra } = useComprasStore();
     const [state, setState] = useState<IComprasViewModelState>(INITIAL_COMPRAS_STATE);
 
     const debounce = useDebounce(state.filters.search, 600);
@@ -146,6 +146,23 @@ export const useComprasViewModel = () => {
         closeNuevaCompra: () => setState(prev => ({ ...prev, showNuevaCompraModal: false })),
         handleNuevaCompraSuccess: () => {
             setState(prev => ({ ...prev, showNuevaCompraModal: false }));
+        },
+        // Modal: Editar Compra
+        openEditar: (compra: ICompra) => setState(prev => ({ ...prev, showEditarModal: true, compraEditar: compra })),
+        closeEditar: () => setState(prev => ({ ...prev, showEditarModal: false, compraEditar: null })),
+        handleEditarSuccess: () => {
+            setState(prev => ({ ...prev, showEditarModal: false, compraEditar: null }));
+            refresh();
+        },
+        // Anular Compra (con confirmación)
+        openAnular: (compra: ICompra) => setState(prev => ({ ...prev, showAnularConfirm: true, compraAnular: compra })),
+        closeAnular: () => setState(prev => ({ ...prev, showAnularConfirm: false, compraAnular: null })),
+        confirmAnular: async () => {
+            const compra = state.compraAnular;
+            if (!compra) return;
+            const ok = await anularCompra(compra.id);
+            setState(prev => ({ ...prev, showAnularConfirm: false, compraAnular: null }));
+            if (ok) refresh();
         },
         // Refresh
         refresh,

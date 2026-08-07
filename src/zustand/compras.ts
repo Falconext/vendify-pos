@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { get, post } from '../utils/fetch';
+import { get, post, put, del } from '../utils/fetch';
 import useAlertStore from './alert';
 import { devtools } from 'zustand/middleware';
 
@@ -28,6 +28,8 @@ export interface IComprasState {
     compraDetalle: ICompra | null;
     listarCompras: (params: any) => Promise<void>;
     crearCompra: (data: any) => Promise<boolean>;
+    editarCompra: (id: number, data: any) => Promise<boolean>;
+    anularCompra: (id: number) => Promise<boolean>;
     obtenerCompra: (id: number) => Promise<void>;
     registrarPagoCompra: (compraId: number, data: any) => Promise<any>;
     getHistorialPagos: (compraId: number) => Promise<any>;
@@ -117,6 +119,60 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || "Error al registrar compra", "error");
+            return false;
+        }
+    },
+
+    editarCompra: async (id: number, data: any) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await put(`compras/${id}`, data);
+            const updated = resp?.data || null;
+            if (resp.code === 1 || (updated && updated.id)) {
+                useAlertStore.setState({ loading: false });
+                const warnings = updated?.stockWarnings as string[] | undefined;
+                if (warnings && warnings.length) {
+                    useAlertStore.getState().alert(warnings.join(' '), "warning");
+                } else {
+                    useAlertStore.getState().alert("Compra actualizada correctamente", "success");
+                }
+                return true;
+            }
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert((resp as any).error || (resp as any).msg || "Error al actualizar compra", "error");
+            return false;
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error?.message || "Error al actualizar compra", "error");
+            return false;
+        }
+    },
+
+    anularCompra: async (id: number) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await del(`compras/${id}`);
+            const result = resp?.data || resp;
+            if (resp.code === 1 || result?.success) {
+                useAlertStore.setState({ loading: false });
+                const warnings = result?.stockWarnings as string[] | undefined;
+                if (warnings && warnings.length) {
+                    useAlertStore.getState().alert(warnings.join(' '), "warning");
+                } else {
+                    useAlertStore.getState().alert(result?.message || "Compra anulada correctamente", "success");
+                }
+                set((state) => ({
+                    compras: (state.compras || []).filter((c) => c.id !== id),
+                    totalCompras: Math.max(0, Number(state.totalCompras || 0) - 1),
+                }));
+                return true;
+            }
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert((resp as any).error || (resp as any).msg || "Error al anular compra", "error");
+            return false;
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error?.message || "Error al anular compra", "error");
             return false;
         }
     },

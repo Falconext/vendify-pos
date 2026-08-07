@@ -22,6 +22,11 @@ export interface IComprasViewModelState {
     showPaymentModal: boolean;
     showHistorialModal: boolean;
     showNuevaCompraModal: boolean;
+    // Editar / Anular
+    showEditarModal: boolean;
+    compraEditar: ICompra | null;
+    showAnularConfirm: boolean;
+    compraAnular: ICompra | null;
 }
 
 export const INITIAL_COMPRAS_STATE: IComprasViewModelState = {
@@ -40,6 +45,10 @@ export const INITIAL_COMPRAS_STATE: IComprasViewModelState = {
     showPaymentModal: false,
     showHistorialModal: false,
     showNuevaCompraModal: false,
+    showEditarModal: false,
+    compraEditar: null,
+    showAnularConfirm: false,
+    compraAnular: null,
 };
 
 export const VISIBLE_COMPRAS_COLUMNS = [
