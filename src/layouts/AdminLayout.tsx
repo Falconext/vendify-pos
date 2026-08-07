@@ -722,7 +722,7 @@ export default function AdminLayout() {
         ref={mainRef}
         className="flex-1 min-h-0 flex flex-col min-w-0 overflow-y-auto print:overflow-visible bg-[#F9FAFC] dark:bg-transparent"
       >
-        <div className={`shrink-0 z-[40] transition-all duration-300 ${navbarFixed ? 'sticky top-0' : 'relative'}`}>
+        <div className={`shrink-0 z-[60] transition-all duration-300 ${navbarFixed ? 'sticky top-0' : 'relative'}`}>
           <motion.header className="print:hidden relative flex items-center justify-between px-4 md:px-6 py-3 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 dark:bg-slate-950/30 dark:border-white/5 transition-all duration-300" variants={fadeUp} initial="initial" animate="animate">
           {/* Hairline de acento inferior */}
           <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#7551FF]/40 to-transparent" />
