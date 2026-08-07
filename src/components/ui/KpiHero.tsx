@@ -72,9 +72,12 @@ export default function KpiHero({ cards, loading, className }: { cards: KpiHeroC
   const sidebarColor = useThemeStore((s) => s.sidebarColor)
   const accent = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF'
 
+  const lgCols = cards.length >= 4 ? 'lg:grid-cols-4' : cards.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+  const smCols = cards.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'
+
   return (
     <div className={`rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden ${className ?? ''}`}>
-      <div className="grid grid-cols-2 lg:grid-cols-4">
+      <div className={`grid ${smCols} ${lgCols}`}>
         {cards.map((c, idx) => (
           <div
             key={c.label}

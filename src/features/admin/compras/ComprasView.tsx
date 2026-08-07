@@ -13,6 +13,7 @@ import ModalRegistrarPagoCompra from '@/pages/admin/compras/ModalRegistrarPagoCo
 import ModalHistorialPagosCompra from '@/pages/admin/compras/ModalHistorialPagosCompra';
 import ModalNuevaCompra from '@/pages/admin/compras/ModalNuevaCompra';
 import ModalConfirm from '@/components/ModalConfirm';
+import KpiHero from '@/components/ui/KpiHero';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -109,44 +110,15 @@ export default function ComprasView() {
                 </button>
             </div>
 
-            {/* Stats */}
-            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {/* KPI 1 */}
-                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
-                    <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Facturas (Vista)</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400">
-                            <Icon icon="solar:bill-list-bold-duotone" className="text-xl" />
-                        </div>
-                    </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">{totalCompras || 0}</h2>
-                    <p className="mt-2 h-4 text-xs font-medium text-transparent">.</p>
-                </div>
-
-                {/* KPI 2 */}
-                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
-                    <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Saldo por Pagar</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
-                            <Icon icon="solar:money-bag-bold-duotone" className="text-xl" />
-                        </div>
-                    </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">S/ {totalPorPagar.toFixed(2)}</h2>
-                    <p className="mt-2 text-xs font-medium text-slate-400 dark:text-gray-400">(Página actual)</p>
-                </div>
-
-                {/* KPI 3 */}
-                <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
-                    <div className="mb-4 flex items-start justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">Vencidos (+1 día)</h3>
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
-                            <Icon icon="solar:calendar-bold-duotone" className="text-xl" />
-                        </div>
-                    </div>
-                    <h2 className="text-[28px] font-extrabold leading-none text-slate-800 dark:text-white">{totalVencidos}</h2>
-                    <p className="mt-2 h-4 text-xs font-medium text-transparent">.</p>
-                </div>
-            </div>
+            {/* Stats — diseño hero del dashboard */}
+            <KpiHero
+                className="mb-5"
+                cards={[
+                    { label: 'Facturas (Vista)', value: String(totalCompras || 0), mini: 'line' },
+                    { label: 'Saldo por Pagar', value: `S/ ${totalPorPagar.toFixed(2)}`, detail: '(Página actual)', mini: 'wave' },
+                    { label: 'Vencidos (+1 día)', value: String(totalVencidos), mini: 'bars' },
+                ]}
+            />
 
             {/* Card contenedora */}
             <div className="rounded-3xl bg-white dark:bg-slate-800 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">

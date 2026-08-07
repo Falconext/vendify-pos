@@ -5,6 +5,9 @@ import { get } from '@/utils/fetch';
 import { fadeUp, interactiveHover, listItemFadeUp, listItemHidden, listStagger } from '@/lib/motion/presets';
 import { Calendar } from '@/components/Date';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+import { useAuthStore } from '@/zustand/auth';
+import ComisionesView from '@/features/admin/finanzas/comisiones/ComisionesView';
+import KpiHero from '@/components/ui/KpiHero';
 
 interface Comision {
     id: number;
@@ -88,6 +91,9 @@ function EstadoPill({ estado }: { estado: 'PENDIENTE' | 'PAGADO' }) {
 export default function MisComisionesPage() {
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
+    const { auth } = useAuthStore();
+    const isAdmin = auth?.rol === 'ADMIN_EMPRESA';
+    const [vista, setVista] = useState<'mias' | 'equipo'>('mias');
     const now = new Date();
     const [mes, setMes] = useState(now.getMonth() + 1);
     const [anio, setAnio] = useState(now.getFullYear());
@@ -202,8 +208,30 @@ export default function MisComisionesPage() {
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
                 <span>Finanzas</span>
                 <Icon icon="solar:alt-arrow-right-linear" className="text-xs" />
-                <span className="font-semibold" style={{ color: ACCENT }}>Mis Comisiones</span>
+                <span className="font-semibold" style={{ color: ACCENT }}>Comisiones</span>
             </div>
+
+            {/* Pestañas — el admin ve además 'Del equipo' */}
+            {isAdmin && (
+                <div className="flex items-center gap-1 mb-5 bg-white dark:bg-slate-800 rounded-2xl p-1 w-fit shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                    {([['mias', 'Mis comisiones', 'solar:hand-money-bold-duotone'], ['equipo', 'Del equipo', 'solar:users-group-rounded-bold-duotone']] as const).map(([id, label, icon]) => (
+                        <button
+                            key={id}
+                            onClick={() => setVista(id)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${vista === id ? 'text-white' : 'text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-white'}`}
+                            style={vista === id ? { background: ACCENT } : undefined}
+                        >
+                            <Icon icon={icon} className="text-base" />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {vista === 'equipo' ? (
+                <ComisionesView />
+            ) : (
+            <>
 
             {/* Header */}
             <motion.div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5" variants={fadeUp} initial="initial" animate="animate">
@@ -301,32 +329,12 @@ export default function MisComisionesPage() {
                 </AnimatePresence>
             </div>
 
-            {/* KPI Cards */}
-            <motion.div
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-5"
-                variants={listStagger}
-                initial="initial"
-                animate="animate"
-            >
-                {kpis.map((kpi, i) => (
-                    <motion.div
-                        key={i}
-                        className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none flex items-center justify-between gap-4"
-                        variants={{ initial: listItemHidden, animate: listItemFadeUp }}
-                        whileHover={interactiveHover.whileHover}
-                        whileTap={interactiveHover.whileTap}
-                        layout
-                    >
-                        <div className="min-w-0">
-                            <h3 className="text-slate-400 dark:text-gray-400 uppercase tracking-wide text-xs font-bold">{kpi.label}</h3>
-                            <h2 className="text-[26px] leading-none font-extrabold text-slate-800 dark:text-white mt-2">{kpi.value}</h2>
-                        </div>
-                        <div className={`w-12 h-12 rounded-2xl ${kpi.iconBg} ${kpi.iconColor} grid place-items-center shrink-0`}>
-                            <Icon icon={kpi.icon} className="text-2xl" />
-                        </div>
-                    </motion.div>
-                ))}
-            </motion.div>
+            {/* KPI Cards — diseño hero del dashboard */}
+            <KpiHero
+                className="mb-5"
+                loading={isLoading}
+                cards={kpis.map((kpi) => ({ label: kpi.label, value: kpi.value }))}
+            />
 
             {/* Card contenedora de la tabla */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
@@ -411,6 +419,8 @@ export default function MisComisionesPage() {
                     </div>
                 )}
             </div>
+            </>
+            )}
         </div>
     );
 }
