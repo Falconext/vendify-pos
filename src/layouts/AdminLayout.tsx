@@ -346,8 +346,9 @@ export default function AdminLayout() {
       className="flex overflow-hidden bg-[#F0F2FA] dark:bg-slate-950 transition-all duration-300"
       style={{
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        zoom: String(ZOOM_OPTIONS[zoomLevel]?.zoom ?? 1),
-        height: ZOOM_OPTIONS[zoomLevel]?.height ?? '100vh',
+        // El zoom NO se aplica aquí: solo debe afectar al contenido (Outlet),
+        // no al header ni al sidebar. Ver el contenedor del <Outlet /> más abajo.
+        height: '100vh',
         // Fondo del dashboard = imagen fondo.png (sin color de fondo), solo en
         // modo oscuro. El shell (main/navbar) queda transparente para dejarlo ver.
         ...(isDarkMode
@@ -935,7 +936,10 @@ export default function AdminLayout() {
           </motion.header>
         </div>
 
-        <div className={`flex-1 ${theme.mainPadding} transition-all duration-300`}>
+        <div
+          className={`flex-1 ${theme.mainPadding} transition-all duration-300`}
+          style={{ zoom: String(ZOOM_OPTIONS[zoomLevel]?.zoom ?? 1) }}
+        >
           <Outlet />
         </div>
       </main>
