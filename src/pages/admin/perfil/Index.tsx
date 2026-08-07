@@ -5,6 +5,7 @@ import Loading from '@/components/Loading';
 import { usaLotesFarmaciaRubro } from '@/utils/rubro-features';
 import { hasPlanFeature } from '@/utils/permissions';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import CuentasBancariasConfig from '@/pages/admin/empresa/CuentasBancariasConfig';
 
 const ACCENT = 'var(--accent, #7551FF)';
@@ -15,6 +16,10 @@ export default function PerfilIndex() {
     const [showActual, setShowActual] = useState(false);
     const [showNueva, setShowNueva] = useState(false);
     const [directorInput, setDirectorInput] = useState<string | null>(null);
+    // Pestañas Perfil / Configuración (sincronizadas con la URL para deep-link desde el menú)
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab: 'perfil' | 'configuracion' = searchParams.get('tab') === 'configuracion' ? 'configuracion' : 'perfil';
+    const goTab = (t: 'perfil' | 'configuracion') => setSearchParams(t === 'configuracion' ? { tab: 'configuracion' } : {}, { replace: true });
 
     if (loading) return <div className="flex justify-center items-center h-96"><Loading /></div>;
     if (!perfil) return <div className="text-center text-slate-400 py-8">No se pudo cargar la información del perfil</div>;
@@ -38,6 +43,9 @@ export default function PerfilIndex() {
 
     // Estilos base reutilizables — CRM claro
     const cardCls = 'bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-800';
+    // Visibilidad por pestaña
+    const perfilTab = activeTab === 'perfil' ? '' : 'hidden';
+    const configTab = activeTab === 'configuracion' ? '' : 'hidden';
     const inputCls = 'w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-colors focus:border-[var(--accent)]';
     const primaryBtn = 'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none';
 
@@ -111,9 +119,27 @@ export default function PerfilIndex() {
                 </div>
             </div>
 
+            {/* Pestañas Perfil / Configuración */}
+            <div className="flex items-center gap-1 mb-4 p-1 rounded-2xl bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 w-fit shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                {([
+                    { key: 'perfil', label: 'Perfil', icon: 'solar:user-circle-bold-duotone' },
+                    { key: 'configuracion', label: 'Configuración', icon: 'solar:settings-bold-duotone' },
+                ] as const).map(t => (
+                    <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => goTab(t.key)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === t.key ? 'text-white' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5'}`}
+                        style={activeTab === t.key ? { background: ACCENT } : undefined}
+                    >
+                        <Icon icon={t.icon} width={16} /> {t.label}
+                    </button>
+                ))}
+            </div>
+
             <div className="space-y-4">
                 {/* Cabecera de perfil */}
-                <div className={`${cardCls} p-5`}>
+                <div className={`${cardCls} p-5 ${perfilTab}`}>
                     <div className="flex items-center gap-5">
                         <div className={`w-24 h-24 rounded-2xl p-1 border-2 ${theme.border} bg-white dark:bg-slate-800`}>
                             <div className="w-full h-full bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden relative group cursor-pointer">
@@ -134,7 +160,7 @@ export default function PerfilIndex() {
                 </div>
 
                 {/* Cambiar contraseña — visible para todos los roles */}
-                <div className={`${cardCls} p-5`}>
+                <div className={`${cardCls} p-5 ${perfilTab}`}>
                     <SectionHeader icon="solar:lock-password-bold-duotone" title="Cambiar Contraseña" chip="bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300" />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
@@ -195,7 +221,7 @@ export default function PerfilIndex() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className={`${cardCls} p-5 lg:order-1`}>
+                    <div className={`${cardCls} p-5 lg:order-1 ${perfilTab}`}>
                         <SectionHeader icon="solar:user-id-bold-duotone" title="Información Personal" />
                         <div className="space-y-4">
                             <div>
@@ -272,7 +298,7 @@ export default function PerfilIndex() {
                     </div>
                     {/* ── Envío automático por WhatsApp — DESACTIVADO temporalmente (a pedido) ── */}
                     {SHOW_WHATSAPP && (
-                    <div className="lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                    <div className={`lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)] ${configTab}`}>
                         <div className="relative border-b border-emerald-100/70 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5">
                             <div className="absolute right-5 top-5 hidden rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm sm:inline-flex">
                                 WhatsApp Cloud API
@@ -405,7 +431,7 @@ export default function PerfilIndex() {
 
                     {/* ── Conexión Shalom Pro (courier) — solo planes Negocio / Corporativo ── */}
                     {puedeShalom && (
-                    <div className="lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-rose-100 dark:border-rose-900/40 bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+                    <div className={`lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-rose-100 dark:border-rose-900/40 bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none ${configTab}`}>
                         <div className="relative border-b border-rose-100/70 dark:border-rose-900/40 bg-gradient-to-br from-rose-50 via-white to-orange-50 dark:from-rose-900/20 dark:via-[#111827] dark:to-orange-900/10 p-5">
                             <div className="flex items-start gap-3">
                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-500/20">
@@ -467,7 +493,7 @@ export default function PerfilIndex() {
                         </div>
                     </div>
                     )}
-                    <div className={`${cardCls} p-5 lg:order-2`}>
+                    <div className={`${cardCls} p-5 lg:order-2 ${perfilTab}`}>
                         <SectionHeader icon="solar:buildings-bold-duotone" title="Información de la Empresa" chip="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300" />
                         <div className="space-y-4">
                             <Field label="Razón Social"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.razonSocial}</p></Field>
@@ -477,7 +503,13 @@ export default function PerfilIndex() {
                             <Field label="Tipo de Empresa"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.tipoEmpresa === 'FORMAL' ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{perfil.empresa.tipoEmpresa === 'FORMAL' ? 'Formal' : 'Informal'}</span></Field>
                             <Field label="Rubro"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.rubro.nombre}</p></Field>
                             {perfil.empresa.ubicacion && <Field label="Ubicación"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{perfil.empresa.ubicacion.distrito}, {perfil.empresa.ubicacion.provincia}, {perfil.empresa.ubicacion.departamento}</p></Field>}
-                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                        </div>
+                    </div>
+                    {/* Ajustes del negocio (antes dentro de "Información de la Empresa") */}
+                    <div className={`${cardCls} p-5 lg:order-2 ${configTab}`}>
+                        <SectionHeader icon="solar:settings-bold-duotone" title="Configuración del Negocio" chip="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300" />
+                        <div className="space-y-4">
+                            <div>
                                 <label className="flex items-start gap-3 p-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-900/10 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                                     <input
                                         type="checkbox"
@@ -601,8 +633,10 @@ export default function PerfilIndex() {
                             </div>
                         </div>
                     </div>
-                    {perfil.empresa.tipoEmpresa === 'FORMAL' && usageStats && (
-                        <div className={`lg:order-4 bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border ${usageStats.limiteAlcanzado ? 'border-rose-200 dark:border-rose-900/50' : usageStats.alerta80 ? 'border-orange-200 dark:border-orange-900/50' : 'border-slate-100 dark:border-slate-800'} p-5`}>
+                    {/* Uso de Comprobantes + Plan Actual en una sola caja, al lado de Configuración del Negocio */}
+                    <div className={`${cardCls} p-5 lg:order-2 ${configTab}`}>
+                        {perfil.empresa.tipoEmpresa === 'FORMAL' && usageStats && (
+                        <div className="mb-5 pb-5 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
                                     <span className={`p-2 rounded-xl ${usageStats.limiteAlcanzado ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' : usageStats.alerta80 ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'}`}>
@@ -657,8 +691,7 @@ export default function PerfilIndex() {
                                 !usageStats.alerta80 && !usageStats.limiteAlcanzado && (<p className="text-sm text-slate-500">Te quedan <span className="font-bold text-blue-600">{usageStats.restantes}</span> comprobantes disponibles este mes.</p>)
                             )}
                         </div>
-                    )}
-                    <div className={`${cardCls} p-5 lg:order-5`}>
+                        )}
                         <SectionHeader icon="solar:card-bold-duotone" title="Plan Actual" chip="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300" />
                         <div className="space-y-4">
                             <Field label="Nombre del Plan"><p className={`${theme.text} font-bold text-sm`}>{perfil.empresa.plan.nombre}</p></Field>
@@ -668,7 +701,7 @@ export default function PerfilIndex() {
                             <Field label="Tipo de Plan"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${perfil.empresa.plan.esPrueba ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'}`}>{perfil.empresa.plan.esPrueba ? 'Versión de Prueba' : 'Plan Premium'}</span></Field>
                         </div>
                     </div>
-                    <div className={`${cardCls} p-5 lg:order-6`}>
+                    <div className={`${cardCls} p-5 lg:order-6 ${configTab}`}>
                         <SectionHeader icon="solar:calendar-mark-bold-duotone" title="Suscripción Actual" chip="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300" />
                         <div className="space-y-4">
                             {perfil.empresa.fechaActivacion && <Field label="Fecha de Activación"><p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{vm.formatearFechaSolo(perfil.empresa.fechaActivacion)}</p></Field>}
@@ -677,7 +710,7 @@ export default function PerfilIndex() {
                         </div>
                     </div>
                     {/* Cuentas Bancarias — al lado de Suscripción Actual */}
-                    <div className={`${cardCls} p-5 lg:order-7`}>
+                    <div className={`${cardCls} p-5 lg:order-7 ${configTab}`}>
                         <CuentasBancariasConfig />
                     </div>
                 </div>

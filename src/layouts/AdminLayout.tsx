@@ -5,7 +5,6 @@ import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
 import { hasPermission, hasPlanFeature, hasSubPermission, getRedirectPath } from '@/utils/permissions'
 import { useThemeStore, SIDEBAR_COLOR_HEX, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
-import Configurator from '@/components/ui/Configurator'
 import { BRAND, getBrandByKey } from '@/lib/branding'
 import { esRubroFabricacion } from '@/utils/rubro-features'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -36,7 +35,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { auth, sedeActiva, selectSede }: IAuthState = useAuthStore()
-  const { sidebarColor, sidebarType, sidebarCollapsed, setSidebarCollapsed, navbarFixed, toggleConfigurator, zoomLevel, setZoomLevel, isDarkMode, toggleDarkMode, initTheme } = useThemeStore()
+  const { sidebarColor, sidebarType, sidebarCollapsed, setSidebarCollapsed, navbarFixed, zoomLevel, setZoomLevel, isDarkMode, toggleDarkMode, initTheme } = useThemeStore()
 
   // El color de acento elegido en Personalización se publica como variable CSS
   // global (--accent): los botones principales del panel la consumen.
@@ -664,17 +663,8 @@ export default function AdminLayout() {
           </motion.nav>
         </div>
 
-        {/* Divider y configuración abajo */}
+        {/* Divider e info abajo (Configuración y Cerrar sesión ahora viven en el menú del usuario) */}
         <div className="mt-3 w-full space-y-0.5 border-t border-[#e5e5e5] pt-3 dark:border-[#262626]">
-          <NavLink onClick={() => { setIsSidebarOpen(false); setNameNavbar('Configuración') }} to="/administrador/perfil" className={() => theme.inactiveLink} title="Configuración">
-            <Icon icon="solar:settings-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px]'}`} />
-            {!isSidebarCollapsed && <span>Configuración</span>}
-          </NavLink>
-          <button onClick={() => { setIsSidebarOpen(false); logout() }} className={theme.inactiveLink} title="Logout">
-            <Icon icon="solar:logout-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px] text-red-400'}`} />
-            {!isSidebarCollapsed && <span className="text-red-500">Cerrar sesión</span>}
-          </button>
-
           {/* Upgrade card */}
           {!isSidebarCollapsed && auth?.rol === 'ADMIN_EMPRESA' && (
             <button
@@ -733,11 +723,22 @@ export default function AdminLayout() {
             >
               <Icon icon="solar:hamburger-menu-linear" width="22" />
             </motion.button>
-            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200/60 bg-slate-100/60 px-3 py-1.5 text-[13px] font-medium backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-              <Icon icon="solar:widget-5-bold-duotone" width="15" className="text-[#7551FF]" />
-              <span className="text-slate-400 dark:text-slate-500">Administrador</span>
-              <Icon icon="solar:alt-arrow-right-linear" width="12" className="text-slate-300 dark:text-slate-600" />
-              <span className="font-bold text-[#7551FF] dark:text-violet-300">{nameNavbar}</span>
+            {/* Accesos rápidos del header */}
+            <div className="hidden sm:flex items-center gap-1 rounded-xl border border-slate-200/60 bg-slate-100/60 p-1 text-[13px] font-medium backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+              {[
+                { to: '/administrador/facturacion/comprobantes', label: 'Comprobantes SUNAT', icon: 'solar:document-text-bold-duotone' },
+                { to: '/administrador/ventas', label: 'Panel de ventas', icon: 'solar:cart-large-2-bold-duotone' },
+                { to: '/administrador/facturacion/cotizaciones', label: 'Cotizaciones', icon: 'solar:bill-list-bold-duotone' },
+              ].map(({ to, label, icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) => `flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors ${isActive ? 'bg-[#7551FF] text-white' : 'text-slate-500 hover:bg-white hover:text-[#7551FF] dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-violet-300'}`}
+                >
+                  <Icon icon={icon} width={14} className="shrink-0" />
+                  <span className="whitespace-nowrap">{label}</span>
+                </NavLink>
+              ))}
             </div>
             {/* Sede activa badge / switcher */}
             {sedeActiva && (() => {
@@ -800,18 +801,7 @@ export default function AdminLayout() {
 
           <div className="flex items-center gap-2.5">
             {/* Isla de acciones (glass toolbar) */}
-            <div className="flex items-center gap-0.5 rounded-2xl border border-slate-200/60 bg-slate-100/50 p-1 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-            {/* Dark mode toggle */}
-            <motion.button
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={toggleDarkMode}
-              className={`grid h-9 w-9 place-items-center rounded-xl transition-colors ${isDarkMode ? 'text-amber-400 hover:bg-white/10' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}
-              title={isDarkMode ? 'Desactivar Modo Oscuro' : 'Activar Modo Oscuro'}
-            >
-              <Icon icon={isDarkMode ? 'solar:sun-bold-duotone' : 'solar:moon-bold-duotone'} width="20" />
-            </motion.button>
-
+            <div className="hidden md:flex items-center gap-0.5 rounded-2xl border border-slate-200/60 bg-slate-100/50 p-1 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
             {/* Zoom selector */}
             <div className="relative hidden md:block" ref={zoomMenuRef}>
               <motion.button
@@ -861,16 +851,6 @@ export default function AdminLayout() {
               )}
             </div>
 
-            {/* Configurator */}
-            <motion.button
-              whileHover={{ scale: 1.06, rotate: 45 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={toggleConfigurator}
-              className="hidden md:grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-white hover:text-[#7551FF] dark:text-slate-400 dark:hover:bg-white/10 transition-colors"
-              title="Configuración de UI"
-            >
-              <Icon icon="solar:settings-bold-duotone" width="20" />
-            </motion.button>
             </div>
             {/* Fin isla de acciones */}
 
@@ -934,6 +914,16 @@ export default function AdminLayout() {
                         </button>
                       </li>
                     )}
+                    <li>
+                      <button
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                        onClick={() => { setIsUserMenuOpen(false); navigate('/administrador/perfil?tab=configuracion') }}
+                        role="menuitem"
+                      >
+                        <Icon icon="solar:settings-bold-duotone" width="18" />
+                        Configuración
+                      </button>
+                    </li>
                     {!isDesktopBuild && !isAlmacen && (auth?.empresa?.slugTienda || hasPlanFeature(auth, 'tieneTienda')) && (
                       <li>
                         <button
@@ -946,6 +936,21 @@ export default function AdminLayout() {
                         </button>
                       </li>
                     )}
+                    <li className="border-t border-gray-100 dark:border-slate-700 mt-1 pt-1">
+                      <button
+                        className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                        onClick={toggleDarkMode}
+                        role="menuitem"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon icon={isDarkMode ? 'solar:sun-bold-duotone' : 'solar:moon-bold-duotone'} width="18" className={isDarkMode ? 'text-amber-400' : ''} />
+                          Modo oscuro
+                        </span>
+                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isDarkMode ? 'bg-violet-600' : 'bg-gray-300 dark:bg-slate-600'}`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isDarkMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        </span>
+                      </button>
+                    </li>
                     <li className="border-t border-gray-100 dark:border-slate-700 mt-1 pt-1">
                       <button
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -969,7 +974,6 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
-      <Configurator />
     </motion.div>
   )
 }
