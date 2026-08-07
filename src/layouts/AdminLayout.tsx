@@ -308,12 +308,26 @@ export default function AdminLayout() {
       return sidebarType === 'dark' ? 'text-neutral-400' : 'text-neutral-500 dark:text-neutral-500';
     },
 
+    // Superficie de tarjetas/inputs dentro del sidebar (logo, buscador, upgrade).
+    // Respeta el tipo de sidebar (claro/oscuro), no solo el modo oscuro global.
+    get sidebarSurface() {
+      return sidebarType === 'dark'
+        ? 'border-white/10 bg-white/5'
+        : 'border-[#e5e5e5] bg-white dark:border-[#262626] dark:bg-white/5';
+    },
+    get sidebarSurfaceHover() {
+      return sidebarType === 'dark'
+        ? 'border-white/10 bg-white/5 hover:bg-white/10'
+        : 'border-[#e5e5e5] bg-white hover:bg-[#f1f1f3] dark:border-[#262626] dark:bg-white/5 dark:hover:bg-white/10';
+    },
+
     // Item activo — superficie neutra suave + barra de acento a la izquierda + texto oscuro
     get activeLink() {
       const base = isSidebarCollapsed
         ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg'
         : "w-full h-10 px-3 rounded-lg before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-full before:bg-[var(--accent)]";
-      return `relative flex items-center ${base} text-[14px] font-semibold text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10 transition-colors duration-150 group`;
+      const surface = sidebarType === 'dark' ? 'text-white bg-white/10' : 'text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10';
+      return `relative flex items-center ${base} text-[14px] font-semibold ${surface} transition-colors duration-150 group`;
     },
     // Item inactivo
     get inactiveLink() {
@@ -324,7 +338,8 @@ export default function AdminLayout() {
       const base = isSidebarCollapsed
         ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg'
         : "justify-between w-full h-10 px-3 rounded-lg before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-full before:bg-[var(--accent)]";
-      return `relative flex items-center ${base} text-[14px] font-semibold text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10 transition-colors text-left`;
+      const surface = sidebarType === 'dark' ? 'text-white bg-white/10' : 'text-[#171717] dark:text-white bg-[#f1f1f3] dark:bg-white/10';
+      return `relative flex items-center ${base} text-[14px] font-semibold ${surface} transition-colors text-left`;
     },
     get accordionInactive() {
       return `relative flex items-center ${isSidebarCollapsed ? 'justify-center mx-auto h-9 w-9 p-0 rounded-lg' : 'justify-between w-full h-10 px-3 rounded-lg'} text-[14px] font-medium ${sidebarType === 'dark' ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-[#171717] hover:bg-[#f1f1f3] dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'} transition-colors text-left`;
@@ -374,7 +389,7 @@ export default function AdminLayout() {
       >
         {/* Company card */}
         <div className={`mb-3 ${isSidebarCollapsed ? 'flex justify-center px-0' : 'px-1'}`}>
-          <div className={`flex items-center gap-2.5 rounded-xl border border-[#e5e5e5] bg-white dark:border-[#262626] dark:bg-white/5 ${isSidebarCollapsed ? 'p-1.5' : 'p-2.5'}`}>
+          <div className={`flex items-center gap-2.5 rounded-xl border ${theme.sidebarSurface} ${isSidebarCollapsed ? 'p-1.5' : 'p-2.5'}`}>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#111827]">
               <img src={sidebarBrand.logoWhite} alt={sidebarBrand.name} className="h-6 w-6 object-contain" />
             </div>
@@ -401,7 +416,7 @@ export default function AdminLayout() {
         {/* Search */}
         {!isSidebarCollapsed && (auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'USUARIO_EMPRESA') && (
           <div className="mb-3 px-1">
-            <div className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-2.5 h-9 dark:border-[#262626] dark:bg-white/5 focus-within:border-[var(--accent)] transition-colors">
+            <div className={`flex items-center gap-2 rounded-lg border ${theme.sidebarSurface} px-2.5 h-9 focus-within:border-[var(--accent)] transition-colors`}>
               <Icon icon="solar:magnifer-linear" width={16} className="text-neutral-400 shrink-0" />
               <input
                 type="text"
@@ -417,14 +432,14 @@ export default function AdminLayout() {
                 value={navQuery}
                 onChange={(e) => setNavQuery(e.target.value)}
                 placeholder="Buscar en el menú…"
-                className="min-w-0 flex-1 bg-transparent border-none focus:border-none outline-none text-[13px] text-[#171717] placeholder:text-neutral-400 focus:outline-none dark:text-white"
+                className={`min-w-0 flex-1 bg-transparent border-none focus:border-none outline-none text-[13px] placeholder:text-neutral-400 focus:outline-none ${sidebarType === 'dark' ? 'text-white' : 'text-[#171717] dark:text-white'}`}
               />
               {navQuery ? (
                 <button onClick={() => setNavQuery('')} className="text-neutral-400 hover:text-[#171717] dark:hover:text-white shrink-0" title="Limpiar">
                   <Icon icon="solar:close-circle-linear" width={15} />
                 </button>
               ) : (
-                <span className="text-[10px] font-semibold text-neutral-400 border border-[#e5e5e5] dark:border-[#262626] rounded px-1 shrink-0">⌘K</span>
+                <span className={`text-[10px] font-semibold text-neutral-400 border rounded px-1 shrink-0 ${sidebarType === 'dark' ? 'border-white/15' : 'border-[#e5e5e5] dark:border-[#262626]'}`}>⌘K</span>
               )}
             </div>
           </div>
@@ -668,14 +683,14 @@ export default function AdminLayout() {
           {!isSidebarCollapsed && auth?.rol === 'ADMIN_EMPRESA' && (
             <button
               onClick={() => { setIsSidebarOpen(false); setNameNavbar('Configuración'); navigate('/administrador/perfil') }}
-              className="mt-2 w-full flex items-center gap-3 rounded-xl border border-[#e5e5e5] bg-white p-2.5 text-left hover:bg-[#f1f1f3] dark:border-[#262626] dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+              className={`mt-2 w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors ${theme.sidebarSurfaceHover}`}
               title="Mejora tu plan"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--accent)] text-white">
                 <Icon icon="solar:rocket-2-bold" width={18} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-bold text-[#171717] dark:text-white">Mejora tu plan</span>
+                <span className={`block truncate text-[13px] font-bold ${theme.sidebarText}`}>Mejora tu plan</span>
                 <span className="block truncate text-[11px] text-neutral-400">Desbloquea más funciones</span>
               </span>
               <Icon icon="solar:alt-arrow-right-linear" width={16} className="shrink-0 text-neutral-400" />
