@@ -1057,9 +1057,30 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                     );
                                                 })()}
                                             </td>
-                                            <td className="px-3 py-3 text-center text-gray-600 dark:text-gray-300">{item.cantidad}</td>
-                                            <td className="px-3 py-3 text-right text-gray-600 dark:text-gray-300">S/ {Number(item.precioUnitario).toFixed(2)}</td>
-                                            <td className="px-3 py-3 text-right font-semibold text-gray-800 dark:text-white">S/ {Number(item.cantidad * item.precioUnitario).toFixed(2)}</td>
+                                            <td className="px-3 py-3 text-center">
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    step="any"
+                                                    value={item.cantidad}
+                                                    onChange={e => updateItem(idx, 'cantidad', e.target.value === '' ? '' : Number(e.target.value))}
+                                                    className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm text-gray-700 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200"
+                                                />
+                                            </td>
+                                            <td className="px-3 py-3 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <span className="text-xs text-gray-400">S/</span>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        step="any"
+                                                        value={item.precioUnitario}
+                                                        onChange={e => updateItem(idx, 'precioUnitario', e.target.value === '' ? '' : Number(e.target.value))}
+                                                        className="w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-right text-sm text-gray-700 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200"
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-3 text-right font-semibold text-gray-800 dark:text-white">S/ {Number((Number(item.cantidad) || 0) * (Number(item.precioUnitario) || 0)).toFixed(2)}</td>
                                             <td className="px-3 py-3 text-center">
                                                 <button type="button" onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                                     <Icon icon="solar:trash-bin-trash-bold" width={16} />
