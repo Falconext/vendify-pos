@@ -177,7 +177,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     productoId: Number(det.productoId || 0),
                     descripcion: det.descripcion || det.producto?.descripcion || '',
                     cantidad: Number(det.cantidad || 0),
-                    precioUnitario: Number(det.precioUnitario || 0),
+                    precioUnitario: Math.round((Number(det.precioUnitario) || 0) * 100) / 100,
                     lote: det.lote || '',
                     fechaVencimiento: det.fechaVencimiento ? moment(det.fechaVencimiento).format('YYYY-MM-DD') : '',
                     numerosSerie: Array.isArray(det.seriesGarantias) ? det.seriesGarantias.map((s: any) => s.numeroSerie) : undefined,
