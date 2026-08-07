@@ -14,6 +14,7 @@ import {
 } from './usePanelVentasViewModel';
 import { EditarDespachoModal } from './EditarDespachoModal';
 import { ModalTrazabilidad } from './ModalTrazabilidad';
+import KpiHero from '@/components/ui/KpiHero';
 import ModalDetalleComprobante from '@/pages/admin/facturacion/ModalDetalleComprobante';
 import ModalEnviarWhatsApp from '@/pages/admin/facturacion/ModalEnviarWhatsApp';
 import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
@@ -728,11 +729,10 @@ export default function PanelVentasView() {
                 </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-5">
-                {kpis.map((kpi) => (
-                    <KpiCard key={kpi.label} {...kpi} />
-                ))}
-            </div>
+            <KpiHero
+                className="mb-5"
+                cards={kpis.map((k) => ({ label: k.label, value: k.value, detail: k.detail }))}
+            />
 
             {/* Tabs + filtros */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap mb-4">

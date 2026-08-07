@@ -7,8 +7,10 @@ import { Calendar } from "@/components/Date";
 import { Icon } from "@iconify/react";
 import Select from "@/components/Select";
 import useOutsideClick from "@/hooks/useOutsideClick";
+import KpiHero from "@/components/ui/KpiHero";
 
-const ACCENT = '#7551FF';
+const ACCENT = 'var(--accent, #7551FF)';
+const ACCENT_SOFT = 'var(--accent-soft, #7551FF33)';
 
 const FORMAL_COLUMNS = [
     { label: 'Sede', key: 'sede' },
@@ -83,7 +85,7 @@ const SummaryBox = ({ items, total }: { items: [string, number, string?][]; tota
                 <span className={`text-sm font-semibold text-slate-700 dark:text-slate-200 ${colorClass}`}>{money(val)}</span>
             </div>
         ))}
-        <div className="mt-2 flex justify-between border-t-2 pt-4" style={{ borderColor: `${ACCENT}33` }}>
+        <div className="mt-2 flex justify-between border-t-2 pt-4" style={{ borderColor: ACCENT_SOFT }}>
             <span className="text-base font-bold text-slate-800 dark:text-white">Total:</span>
             <strong className="text-lg font-black" style={{ color: ACCENT }}>{money(total)}</strong>
         </div>
@@ -215,6 +217,17 @@ const TabFormal = () => {
             <div className="p-4">
                 {vm.reports?.length > 0 ? (
                     <>
+                        {vm.resumenReporte !== null && (
+                            <KpiHero
+                                className="mb-4"
+                                cards={[
+                                    { label: 'Total Venta', value: money(vm.resumenReporte.totalVenta), mini: 'line' },
+                                    { label: 'Op. Gravadas', value: money(vm.resumenReporte.totalGravadas), mini: 'wave' },
+                                    { label: 'IGV (18%)', value: money(vm.resumenReporte.totalIGV), mini: 'donut' },
+                                    { label: 'N° Comprobantes', value: String(vm.reports.length), mini: 'bars' },
+                                ]}
+                            />
+                        )}
                         <div className="mb-3 flex items-center gap-2">
                             <Icon icon="solar:documents-bold-duotone" className="text-lg" style={{ color: ACCENT }} />
                             <h3 className="text-sm font-bold text-slate-800 dark:text-white">
