@@ -5,6 +5,7 @@ import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
 import { hasPermission, hasPlanFeature, hasSubPermission, getRedirectPath } from '@/utils/permissions'
 import { useThemeStore, SIDEBAR_COLOR_HEX, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
+import Configurator from '@/components/ui/Configurator'
 import { BRAND, getBrandByKey } from '@/lib/branding'
 import { esRubroFabricacion } from '@/utils/rubro-features'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -35,7 +36,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { auth, sedeActiva, selectSede }: IAuthState = useAuthStore()
-  const { sidebarColor, sidebarType, sidebarCollapsed, setSidebarCollapsed, navbarFixed, zoomLevel, setZoomLevel, isDarkMode, toggleDarkMode, initTheme } = useThemeStore()
+  const { sidebarColor, sidebarType, sidebarCollapsed, setSidebarCollapsed, navbarFixed, zoomLevel, setZoomLevel, isDarkMode, toggleDarkMode, toggleConfigurator, initTheme } = useThemeStore()
 
   // El color de acento elegido en Personalización se publica como variable CSS
   // global (--accent): los botones principales del panel la consumen.
@@ -798,6 +799,17 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Personalizar colores de la UI */}
+            <motion.button
+              whileHover={{ scale: 1.06, rotate: 45 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={toggleConfigurator}
+              className="hidden md:grid h-10 w-10 place-items-center rounded-2xl border border-slate-200/60 bg-slate-100/50 text-slate-500 hover:bg-white hover:text-[#7551FF] dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 transition-colors"
+              title="Personalizar colores"
+            >
+              <Icon icon="solar:palette-bold-duotone" width="20" />
+            </motion.button>
+
             {/* Notificaciones */}
             {(auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'USUARIO_EMPRESA') && (
               <div className="hidden md:block">
@@ -943,6 +955,9 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Panel de personalización de UI (colores, tipo de sidebar, etc.) */}
+      <Configurator />
     </motion.div>
   )
 }
