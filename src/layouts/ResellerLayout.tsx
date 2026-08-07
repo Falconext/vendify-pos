@@ -28,7 +28,9 @@ export default function ResellerLayout() {
     } = useThemeStore()
 
     useEffect(() => {
-        document.documentElement.style.setProperty('--accent', SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF');
+        const accentHex = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
+        document.documentElement.style.setProperty('--accent', accentHex);
+        document.documentElement.style.setProperty('--accent-soft', `${accentHex}4D`);
     }, [sidebarColor]);
 
     // Marca blanca del reseller: su logo/nombre configurados en "Mi Marca".

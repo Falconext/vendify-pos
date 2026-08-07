@@ -105,13 +105,13 @@
     color: #111827 !important;
 }
 
-/* Opcion actualmente elegida — estilo "Filtro": violeta + check */
+/* Opcion actualmente elegida — estilo "Filtro": color de acento + check */
 .chosen {
-    background-color: #f5f3ff;
+    background-color: color-mix(in srgb, var(--accent, #7c3aed) 10%, transparent);
 }
 
 .chosen p {
-    color: #7c3aed !important;
+    color: var(--accent, #7c3aed) !important;
     font-weight: 700;
 }
 
@@ -120,21 +120,21 @@
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #7c3aed;
+    color: var(--accent, #7c3aed);
     font-size: 16px;
     pointer-events: none;
 }
 
 :global(.dark) .chosen {
-    background-color: rgba(124, 58, 237, 0.18);
+    background-color: color-mix(in srgb, var(--accent, #7c3aed) 22%, transparent);
 }
 
 :global(.dark) .chosen p {
-    color: #c4b5fd !important;
+    color: color-mix(in srgb, var(--accent, #7c3aed) 55%, white) !important;
 }
 
 :global(.dark) .check {
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--accent, #7c3aed) 55%, white);
 }
 
 .content__listOptions input:focus-within,

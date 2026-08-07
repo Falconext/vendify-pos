@@ -70,7 +70,7 @@ const InputPro: FC<IInput> = ({
   const commonClasses =
     "w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 font-normal" +
     " dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500" +
-    " outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400" +
+    " outline-none focus:ring-2 focus:ring-[var(--accent-soft,rgba(129,140,248,0.3))] focus:border-[var(--accent,#818cf8)]" +
     " disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-slate-900 transition-all duration-150";
 
   useEffect(() => {

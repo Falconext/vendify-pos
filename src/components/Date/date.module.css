@@ -125,9 +125,9 @@
 }
 
 .date button:hover {
-    background: #f5f3ff;
-    border-color: #ddd6fe;
-    color: #7551ff;
+    background: color-mix(in srgb, var(--accent, #7551ff) 8%, transparent);
+    border-color: color-mix(in srgb, var(--accent, #7551ff) 35%, transparent);
+    color: var(--accent, #7551ff);
 }
 
 .icon__date {
@@ -215,15 +215,15 @@
 }
 
 .day:hover {
-    background: #f5f3ff;
-    color: #7551ff;
+    background: color-mix(in srgb, var(--accent, #7551ff) 8%, transparent);
+    color: var(--accent, #7551ff);
     transform: translateY(-1px);
 }
 
 .day.selected {
-    background: #7551ff;
+    background: var(--accent, #7551ff);
     color: #fff;
-    box-shadow: 0 10px 20px rgba(117, 81, 255, 0.22);
+    box-shadow: 0 10px 20px color-mix(in srgb, var(--accent, #7551ff) 22%, transparent);
 }
 
 .date__select > div

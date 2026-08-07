@@ -41,7 +41,10 @@ export default function AdminLayout() {
   // El color de acento elegido en Personalización se publica como variable CSS
   // global (--accent): los botones principales del panel la consumen.
   useEffect(() => {
-    document.documentElement.style.setProperty('--accent', SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF')
+    const accentHex = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF'
+    document.documentElement.style.setProperty('--accent', accentHex)
+    // Variante translúcida (~30%) para anillos de foco de inputs/selects/calendars.
+    document.documentElement.style.setProperty('--accent-soft', `${accentHex}4D`)
   }, [sidebarColor])
 
   // Detectar si el rubro es restaurante para cambiar nombres del menú
