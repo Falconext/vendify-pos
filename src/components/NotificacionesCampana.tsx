@@ -188,7 +188,10 @@ const NotificacionesCampana: React.FC = () => {
       </button>
 
       {mostrarPanel && (
-        <div className="absolute z-[999999] right-0 mt-3 w-[400px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] border border-gray-100 dark:border-slate-700 overflow-hidden font-sans">
+        <div
+          className="absolute z-[999999] right-0 mt-3 w-[400px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] border border-gray-100 dark:border-slate-700 overflow-hidden"
+          style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+        >
           {/* Header */}
           <div className="px-5 pt-4 pb-0 bg-white dark:bg-slate-900 sticky top-0 z-10">
             <div className="flex items-center justify-between">
@@ -349,14 +352,13 @@ const NotificacionesCampana: React.FC = () => {
                   ? `/administrador/guia-remision`
                   : null;
 
-                const rowClass = `flex gap-3 px-5 py-3.5 border-b border-gray-50 dark:border-slate-800/60 cursor-pointer transition-colors ${
-                  !notificacion.leida
-                    ? 'bg-amber-50/70 dark:bg-amber-500/[0.06] hover:bg-amber-50 dark:hover:bg-amber-500/10'
-                    : 'hover:bg-gray-50 dark:hover:bg-slate-800/40'
-                }`;
+                const rowClass = `relative flex gap-3 px-5 py-3.5 border-b border-gray-100 dark:border-slate-800/60 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40`;
 
                 const rowContent = (
                   <>
+                    {!notificacion.leida && (
+                      <span className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r bg-violet-500/70 dark:bg-violet-400/70" />
+                    )}
                     <div className="relative shrink-0">
                       <div className={`w-10 h-10 rounded-xl ${styles.bgColor} ${styles.bgColorDark} flex items-center justify-center`}>
                         <Icon icon={styles.icon} className={`${styles.color} ${styles.colorDark}`} width={20} />
