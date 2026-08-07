@@ -57,6 +57,13 @@ export default function AdminLayout() {
     return esRubroFabricacion(auth?.empresa?.rubro?.nombre)
   }, [auth?.empresa?.rubro?.nombre])
 
+  // Plan tope: si ya está en el plan más alto (Corporativo), no tiene sentido
+  // mostrar "Mejora tu plan". No hay campo de nivel, así que se detecta por nombre.
+  const esPlanTope = useMemo(() => {
+    const nombre = (auth?.empresa?.plan?.nombre || '').toLowerCase()
+    return ['corporativo', 'corporate', 'enterprise'].some((t) => nombre.includes(t))
+  }, [auth?.empresa?.plan?.nombre])
+
   const [nameNavbar, setNameNavbar] = useState<string>('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [navQuery, setNavQuery] = useState('')
@@ -649,28 +656,17 @@ export default function AdminLayout() {
                   </NavLink>
                 )}
 
-                {/* Comisiones — parte del módulo financiero (reportes); sigue el patrón de las demás opciones */}
-                {planTieneFinanzas && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && matchesNavQuery('Mis Comisiones') && (
+                {/* Comisiones — parte del módulo financiero. Una sola entrada;
+                    el admin ve además la pestaña "Del equipo" dentro de la página. */}
+                {planTieneFinanzas && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && matchesNavQuery('Comisiones') && (
                   <NavLink
-                    onClick={() => { setIsSidebarOpen(false); setNameNavbar('Mis Comisiones'); }}
+                    onClick={() => { setIsSidebarOpen(false); setNameNavbar('Comisiones'); }}
                     to="/administrador/mis-comisiones"
                     className={({ isActive }) => isActive ? theme.activeLink : theme.inactiveLink}
-                    title="Mis Comisiones"
+                    title="Comisiones"
                   >
                     <Icon icon="solar:hand-money-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px]'}`} />
-                    {!isSidebarCollapsed && <span>Mis Comisiones</span>}
-                  </NavLink>
-                )}
-
-                {planTieneFinanzas && auth?.rol === 'ADMIN_EMPRESA' && matchesNavQuery('Comisiones del equipo') && (
-                  <NavLink
-                    onClick={() => { setIsSidebarOpen(false); setNameNavbar('Comisiones del equipo'); }}
-                    to="/administrador/finanzas/dashboard?tab=comisiones"
-                    className={({ isActive }) => isActive ? theme.activeLink : theme.inactiveLink}
-                    title="Comisiones del equipo"
-                  >
-                    <Icon icon="solar:users-group-rounded-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px]'}`} />
-                    {!isSidebarCollapsed && <span>Comisiones del equipo</span>}
+                    {!isSidebarCollapsed && <span>Comisiones</span>}
                   </NavLink>
                 )}
 
@@ -682,8 +678,8 @@ export default function AdminLayout() {
 
         {/* Divider e info abajo (Configuración y Cerrar sesión ahora viven en el menú del usuario) */}
         <div className="mt-3 w-full space-y-0.5 border-t border-[#e5e5e5] pt-3 dark:border-[#262626]">
-          {/* Upgrade card */}
-          {!isSidebarCollapsed && auth?.rol === 'ADMIN_EMPRESA' && (
+          {/* Upgrade card — oculto si ya está en el plan tope */}
+          {!isSidebarCollapsed && auth?.rol === 'ADMIN_EMPRESA' && !esPlanTope && (
             <button
               onClick={() => { setIsSidebarOpen(false); setNameNavbar('Configuración'); navigate('/administrador/perfil') }}
               className={`mt-2 w-full flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors ${theme.sidebarSurfaceHover}`}
