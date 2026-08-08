@@ -20,6 +20,10 @@ import useAlertStore from '@/zustand/alert';
 import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
 
 const ACCENT = 'var(--accent, #7551FF)';
+// Estilo unificado para los botones de acción del toolbar (Categorías, Marcas,
+// Excel/CSV, Catálogo PDF): borde neutro + hover con tinte de acento, para que
+// se sientan como un mismo grupo y sigan el color de la UI.
+const TOOLBAR_BTN = 'h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 hover:text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] hover:border-[color-mix(in_srgb,var(--accent)_45%,transparent)]';
 
 export default function ProductsView() {
     const navigate = useNavigate();
@@ -582,24 +586,24 @@ export default function ProductsView() {
                             <button
                                 type="button"
                                 onClick={() => actions.toggleStockSort()}
-                                className="h-10 shrink-0 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-slate-600 flex items-center gap-1.5 hover:bg-slate-50 transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                                className={TOOLBAR_BTN}
                             >
                                 <Icon icon="solar:sort-vertical-linear" /> {vm.stockSort === 'asc' ? 'Stock ↑' : vm.stockSort === 'desc' ? 'Stock ↓' : 'Ordenar'}
                             </button>
                             <div className="ml-auto flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
-                                    <Icon icon="solar:tag-bold-duotone" className="text-blue-500" /> Categorías
+                                <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className={TOOLBAR_BTN}>
+                                    <Icon icon="solar:tag-bold-duotone" style={{ color: ACCENT }} /> Categorías
                                 </button>
-                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
-                                    <Icon icon="solar:star-bold-duotone" className="text-emerald-500" /> Marcas
+                                <button type="button" onClick={() => actions.setIsOpenModalBrands(true)} className={TOOLBAR_BTN}>
+                                    <Icon icon="solar:star-bold-duotone" style={{ color: ACCENT }} /> Marcas
                                 </button>
                                 <div className="relative inline-block shrink-0" ref={dropdownRef}>
                                     <button
                                         type="button"
                                         onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                                        className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                        className={TOOLBAR_BTN}
                                     >
-                                        <Icon icon="solar:file-bold-duotone" className="text-amber-500" width={16} />
+                                        <Icon icon="solar:file-bold-duotone" style={{ color: ACCENT }} width={16} />
                                         Excel / CSV
                                         <Icon icon={showOptionsDropdown ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} className="text-slate-400 dark:text-slate-500" width={14} />
                                     </button>
@@ -654,8 +658,8 @@ export default function ProductsView() {
                                         </div>
                                     )}
                                 </div>
-                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
-                                    <Icon icon="solar:shop-bold" className="text-indigo-500" /> Catálogo PDF
+                                <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className={TOOLBAR_BTN}>
+                                    <Icon icon="solar:shop-bold" style={{ color: ACCENT }} /> Catálogo PDF
                                 </button>
                                 {/* Botón "Autocompletar" oculto a pedido del usuario. */}
                             </div>
