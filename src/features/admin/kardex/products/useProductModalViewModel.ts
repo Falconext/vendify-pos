@@ -322,6 +322,31 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         }
       } catch {}
 
+      // 1.5 Tabla Maestra global (por código de barras) si el catálogo local no tuvo hit.
+      // Autocompleta imagen/nombre/marca desde la maestra ANTES de recurrir a la IA.
+      if (!filled) {
+        try {
+          const rm = await apiClient.get(`productos/maestro?codigoBarras=${encodeURIComponent(code)}`);
+          const m = (rm.data as any)?.data;
+          if (m) {
+            let brandUpdate: { marcaId?: number | null; marcaNombre?: string } = {};
+            if (m.marca) {
+              const bd = await resolveBrand(m.marca);
+              if (bd) brandUpdate = { marcaId: bd.marcaId, marcaNombre: bd.marcaNombre };
+            }
+            setFormValues((prev: any) => ({
+              ...prev,
+              codigoBarras: code,
+              ...(prev.descripcion ? {} : m.nombre ? { descripcion: m.nombre } : {}),
+              ...(m.imagenUrl ? { imagenUrl: m.imagenUrl, imagenUrlDisplay: m.imagenUrl } : {}),
+              ...brandUpdate,
+            }));
+            if (m.imagenUrl) setPreviewPrincipal(m.imagenUrl);
+            filled = true;
+          }
+        } catch {}
+      }
+
       // El backend ya maneja el cascade completo (local → FDA/OFF según rubro).
       // Si no se encontró nada, solo registrar el código de barras.
       if (!filled) setFormValues({ ...formValues, codigoBarras: code });
@@ -709,6 +734,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         nombre: query,
         marca: (formValues as any)?.marcaNombre || "",
         categoria: (formValues as any)?.categoriaNombre || "",
+        codigoBarras: (formValues as any)?.codigoBarras || "",
       });
       const result = response.data?.data || response.data;
       const candidates = Array.isArray(result?.candidates)
@@ -759,6 +785,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         nombre: query,
         marca: (formValues as any)?.marcaNombre || "",
         categoria: (formValues as any)?.categoriaNombre || "",
+        codigoBarras: (formValues as any)?.codigoBarras || "",
       });
       const result = response.data?.data || response.data;
       if (result?.success && result?.url) {
