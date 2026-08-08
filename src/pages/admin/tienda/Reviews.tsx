@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import apiClient from '@/utils/apiClient';
 import DataTable from '@/components/Datatable';
 import Select from '@/components/Select';
+import KpiHero from '@/components/ui/KpiHero';
 
 type ReviewEstado = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'OCULTO';
 
@@ -173,25 +174,13 @@ export default function ReviewsTienda() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          ['Total vista', stats.total, 'solar:chat-round-like-bold-duotone', 'text-violet-600 bg-violet-50'],
-          ['Pendientes', stats.pendientes, 'solar:clock-circle-bold-duotone', 'text-amber-600 bg-amber-50'],
-          ['Aprobadas', stats.aprobadas, 'solar:star-bold-duotone', 'text-emerald-600 bg-emerald-50'],
-        ].map(([label, value, icon, color]) => (
-          <div key={String(label)} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-transparent dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-              </div>
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}>
-                <Icon icon={String(icon)} className="h-5 w-5" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <KpiHero
+        cards={[
+          { label: 'Total vista', value: String(stats.total), mini: 'line' },
+          { label: 'Pendientes', value: String(stats.pendientes), mini: 'wave' },
+          { label: 'Aprobadas', value: String(stats.aprobadas), mini: 'bars' },
+        ]}
+      />
 
       <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent relative z-0 overflow-hidden">
         <div className="p-4 overflow-x-auto">

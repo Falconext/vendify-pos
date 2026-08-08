@@ -1,5 +1,6 @@
 import { useNotificacionesViewModel } from '@/features/admin/notificaciones/useNotificacionesViewModel';
 import { Icon } from '@iconify/react';
+import KpiHero from '@/components/ui/KpiHero';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -43,22 +44,15 @@ const NotificacionesPage = () => {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-gray-400">{s.label}</p>
-                <p className={`text-3xl font-extrabold mt-1 ${s.num}`}>{s.value}</p>
-              </div>
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${s.chip}`}>
-                <Icon icon={s.icon} className="text-xl" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Stats — diseño hero del dashboard */}
+      <KpiHero
+        className="mb-6"
+        cards={[
+          { label: 'Total', value: String(totalNotificaciones), mini: 'line' },
+          { label: 'Sin Leer', value: String(sinLeer), mini: 'wave' },
+          { label: 'Leídas', value: String(leidas), mini: 'bars' },
+        ]}
+      />
 
       {/* Contenido */}
       {vm.loading && vm.notificaciones.length === 0 ? (
