@@ -162,8 +162,8 @@ export default function FinanceDashboardView() {
                     <button
                         type="button"
                         onClick={() => setIsMobileFiltersOpen((value) => !value)}
-                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all sm:w-auto md:hidden"
-                        style={{ background: ACCENT }}
+                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-lg hover:brightness-105 transition-all sm:w-auto md:hidden"
+                        style={{ background: ACCENT, boxShadow: `0 10px 25px -6px ${ACCENT}59` }}
                     >
                         <Icon icon="solar:filter-bold-duotone" className="text-lg" />
                         {isMobileFiltersOpen ? 'Ocultar filtros' : 'Ver filtros'}
@@ -219,7 +219,7 @@ export default function FinanceDashboardView() {
                     <div className="flex gap-3 md:ml-auto">
                         <button
                             onClick={vm.refreshData}
-                            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border-2 transition-colors hover:bg-violet-50"
+                            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border-2 transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)]"
                             style={{ borderColor: `${ACCENT}55`, color: ACCENT }}
                         >
                             <Icon icon="solar:refresh-bold" />
@@ -422,8 +422,8 @@ export default function FinanceDashboardView() {
                         {/* Columna derecha: tarjetas resumen */}
                         <div className="space-y-6">
                             <div
-                                className="rounded-3xl p-6 shadow-lg shadow-violet-500/30 text-white transition-all"
-                                style={{ background: ACCENT }}
+                                className="rounded-3xl p-6 shadow-lg text-white transition-all"
+                                style={{ background: ACCENT, boxShadow: `0 12px 30px -8px ${ACCENT}59` }}
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-2 bg-white/20 rounded-2xl">
@@ -448,9 +448,9 @@ export default function FinanceDashboardView() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-violet-50 dark:hover:bg-slate-800 transition-colors group">
+                                    <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] dark:hover:bg-slate-800 transition-colors group">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-sm dark:shadow-none group-hover:scale-110 transition-transform">
+                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm dark:shadow-none group-hover:scale-110 transition-transform" style={{ color: ACCENT }}>
                                                 <Icon icon="solar:card-send-bold-duotone" />
                                             </div>
                                             <div>
@@ -493,8 +493,8 @@ export default function FinanceDashboardView() {
                                 <button
                                     onClick={vm.handleExportPDF}
                                     disabled={vm.isGeneratingPDF}
-                                    className="w-full mt-6 py-3 text-white rounded-2xl font-bold hover:brightness-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
-                                    style={{ background: ACCENT }}
+                                    className="w-full mt-6 py-3 text-white rounded-2xl font-bold hover:brightness-105 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                    style={{ background: ACCENT, boxShadow: `0 10px 25px -6px ${ACCENT}59` }}
                                 >
                                     {vm.isGeneratingPDF ? (
                                         <>

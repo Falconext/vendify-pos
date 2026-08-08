@@ -73,7 +73,7 @@ export default function FinanzasTabs() {
                     <div className="mb-1 flex min-w-0 items-center gap-2 text-sm font-medium text-gray-400">
                         <span>Finanzas</span>
                         <Icon icon="solar:alt-arrow-right-linear" className="shrink-0" />
-                        <span className="truncate text-indigo-600 dark:text-indigo-400">
+                        <span className="truncate text-[var(--accent)]">
                             {TABS.find(t => t.id === activeTab)?.label}
                         </span>
                     </div>
@@ -89,9 +89,10 @@ export default function FinanzasTabs() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
+                                style={activeTab === tab.id ? { background: 'var(--accent)', boxShadow: '0 4px 14px -4px var(--accent-soft)' } : undefined}
                                 className={`flex min-w-[92px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all sm:min-w-0 sm:flex-row sm:gap-2 sm:px-5 sm:text-sm ${
                                     activeTab === tab.id
-                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30'
+                                        ? 'text-white shadow-sm'
                                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200'
                                 }`}
                             >
