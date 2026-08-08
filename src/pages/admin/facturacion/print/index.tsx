@@ -358,7 +358,7 @@ const PrintPDF = ({
                             <Text style={styles.separator}>-------------------------------------------------------------------</Text>
                             <View>
                                 <Text style={{ fontWeight: "bold", textAlign: "center", fontSize: 8 }}>
-                                    {receipt === 'COTIZACIÓN' ? 'COTIZACIÓN' : receipt === 'ORDEN DE PAGO' ? 'ORDEN DE PAGO' : `${receipt || ''} DE VENTA ELECTRÓNICA`}
+                                    {receipt === 'COTIZACIÓN' ? 'COTIZACIÓN' : receipt === 'ORDEN DE PAGO' ? 'ORDEN DE PAGO' : /VENTA$/i.test(String(receipt || '')) ? `${receipt} ELECTRÓNICA` : `${receipt || ''} DE VENTA ELECTRÓNICA`}
                                     {'\n'}
                                     <Text>{formValues.serie}-{formValues.correlativo}</Text>
                                 </Text>

@@ -222,7 +222,7 @@ console.log(formValues)
                             <span className="">RUC: {company?.empresa?.ruc}</span>
                         </p>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        <h2 className={`text-center font-bold ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{receipt === "COTIZACIÓN" ? "COTIZACIÓN" : receipt} DE VENTA ELECTRÓNICA<br />{formValues?.serie}-{formValues?.correlativo}</h2>
+                        <h2 className={`text-center font-bold ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{receipt === "COTIZACIÓN" ? "COTIZACIÓN DE VENTA ELECTRÓNICA" : /VENTA$/i.test(String(receipt || '')) ? `${receipt} ELECTRÓNICA` : `${receipt} DE VENTA ELECTRÓNICA`}<br />{formValues?.serie}-{formValues?.correlativo}</h2>
                         <hr className="my-1 border-dashed border-[#222]" />
                         <div>
                             <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">FECHA/HORA:</span> {moment(formValues?.fechaEmision).format('DD/MM/YYYY HH:mm:ss')}</p>
