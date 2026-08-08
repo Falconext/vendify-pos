@@ -5,6 +5,7 @@ import Select from '@/components/Select';
 import { Calendar } from '@/components/Date';
 import { useAuthStore } from '@/zustand/auth';
 import moment from 'moment';
+import KpiHero from '@/components/ui/KpiHero';
 
 // ── Resumen del Negocio — estilo dashboard (Brix UI, tema claro) ──────────────
 const ACCENT = 'var(--accent, #7551FF)';
@@ -206,24 +207,14 @@ export default function ResumenView() {
         </div>
       ) : (
         <div className="space-y-5">
-          {/* KPIs rápidos */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { label: 'Ventas realizadas', value: `${r.totalVentas}`, icon: 'solar:cart-large-4-bold-duotone', chip: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' },
-              { label: 'Ticket promedio', value: fmt(r.ticketPromedio), icon: 'solar:tag-price-bold-duotone', chip: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' },
-              { label: 'Productos vendidos', value: `${r.productosDistintos}`, icon: 'solar:box-minimalistic-bold-duotone', chip: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
-            ].map((k, i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5 flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${k.chip}`}>
-                  <Icon icon={k.icon} className="text-2xl" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none">{k.value}</p>
-                  <p className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wide font-semibold mt-1.5">{k.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* KPIs rápidos — diseño hero del dashboard */}
+          <KpiHero
+            cards={[
+              { label: 'Ventas realizadas', value: `${r.totalVentas}`, mini: 'line' },
+              { label: 'Ticket promedio', value: fmt(r.ticketPromedio), mini: 'donut' },
+              { label: 'Productos vendidos', value: `${r.productosDistintos}`, mini: 'bars' },
+            ]}
+          />
 
           {/* Waterfall principal */}
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5 sm:p-6">

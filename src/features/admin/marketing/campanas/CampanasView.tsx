@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useCampanasViewModel } from './useCampanasViewModel';
 import CampanaFormModal from './CampanaFormModal';
 import { Campana, MESES, formatCurrency, PlataformaAds } from './CampanasModel';
+import KpiHero from '@/components/ui/KpiHero';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -151,12 +152,15 @@ export default function CampanasView() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard label="Gasté en publicidad" value={resumen ? formatCurrency(resumen.gastoTotalEstimado) : '—'} icon="solar:wallet-bold-duotone" chipClass="bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400" />
-        <KpiCard label="Ventas logradas con ads" value={resumen ? `${resumen.ventasAtribuidas} ventas` : '—'} icon="solar:cart-large-4-bold-duotone" chipClass="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" />
-        <KpiCard label="Cuánto me costó cada venta" value={resumen ? formatCurrency(resumen.cpaPromedio) : '—'} icon="solar:target-bold-duotone" chipClass="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" />
-        <KpiCard label="Campañas activas" value={data ? `${data.campanas.filter(c => c.estado === 'ACTIVA').length} de ${data.campanas.length}` : '—'} icon="solar:play-circle-bold-duotone" chipClass="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" />
-      </div>
+      <KpiHero
+        className="mb-6"
+        cards={[
+          { label: 'Gasté en publicidad', value: resumen ? formatCurrency(resumen.gastoTotalEstimado) : '—', mini: 'wave' },
+          { label: 'Ventas logradas con ads', value: resumen ? `${resumen.ventasAtribuidas} ventas` : '—', mini: 'line' },
+          { label: 'Cuánto me costó cada venta', value: resumen ? formatCurrency(resumen.cpaPromedio) : '—', mini: 'donut' },
+          { label: 'Campañas activas', value: data ? `${data.campanas.filter(c => c.estado === 'ACTIVA').length} de ${data.campanas.length}` : '—', mini: 'bars' },
+        ]}
+      />
 
       {/* Filtros + navegación mes */}
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
