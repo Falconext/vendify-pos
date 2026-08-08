@@ -15,6 +15,7 @@ import {
 import { EditarDespachoModal } from './EditarDespachoModal';
 import { ModalTrazabilidad } from './ModalTrazabilidad';
 import KpiHero from '@/components/ui/KpiHero';
+import { Calendar } from '@/components/Date';
 import ModalDetalleComprobante from '@/pages/admin/facturacion/ModalDetalleComprobante';
 import ModalEnviarWhatsApp from '@/pages/admin/facturacion/ModalEnviarWhatsApp';
 import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
@@ -403,6 +404,16 @@ export default function PanelVentasView() {
     const queryFecha = searchParams.get('fecha');
     const queryComprobanteId = Number(searchParams.get('comprobanteId') || 0) || null;
 
+    // El componente Calendar entrega la fecha en DD/MM/YYYY; el VM trabaja en YYYY-MM-DD.
+    const handleFecha = (date: string, name: string) => {
+        const iso = date ? moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD') : '';
+        if (name === 'fecha') {
+            if (iso) vm.setFecha(iso); // la fecha de inicio siempre debe tener valor
+        } else if (name === 'fechaFin') {
+            vm.setFechaFin(iso); // vacío = quitar rango (un solo día)
+        }
+    };
+
     const [mostrarProductos, setMostrarProductos] = useState<boolean>(
         () => localStorage.getItem('panel_mostrar_productos') !== 'false',
     );
@@ -669,21 +680,25 @@ export default function PanelVentasView() {
                     >
                         <Icon icon="solar:arrow-left-linear" className="text-lg" />
                     </button>
-                    <input
-                        type="date"
-                        value={vm.fecha}
-                        onChange={(e) => vm.setFecha(e.target.value)}
-                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-gray-200 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
-                    />
+                    <div className="w-40 shrink-0">
+                        <Calendar
+                            name="fecha"
+                            value={vm.fecha ? moment(vm.fecha).format('DD/MM/YYYY') : ''}
+                            onChange={handleFecha}
+                            className="admin-date-filter"
+                            portal
+                        />
+                    </div>
                     <span className="text-xs font-semibold text-slate-400">hasta</span>
-                    <input
-                        type="date"
-                        value={vm.fechaFin}
-                        min={vm.fecha}
-                        onChange={(e) => vm.setFechaFin(e.target.value)}
-                        title="Fecha final del rango (opcional) — déjalo vacío para ver un solo día"
-                        className="h-11 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-gray-200 text-sm font-medium focus:outline-none focus:border-[var(--accent)] transition-colors"
-                    />
+                    <div className="w-40 shrink-0">
+                        <Calendar
+                            name="fechaFin"
+                            value={vm.fechaFin ? moment(vm.fechaFin).format('DD/MM/YYYY') : ''}
+                            onChange={handleFecha}
+                            className="admin-date-filter"
+                            portal
+                        />
+                    </div>
                     {vm.fechaFin && (
                         <button
                             onClick={() => vm.setFechaFin('')}
