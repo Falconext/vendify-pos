@@ -36,7 +36,10 @@ export default function ResellerRecargas() {
     // Flujo del mes: recargado (entra) vs consumido en renovaciones (sale).
     const inicioMes = moment().startOf('month');
     const recargadoMes = useMemo(() => recargas.filter((r: any) => moment(r.fecha).isSameOrAfter(inicioMes)).reduce((a: number, r: any) => a + Number(r.monto || 0), 0), [recargas]);
-    const consumidoMes = useMemo(() => renovaciones.filter((m: any) => String(m.estado).toUpperCase() === 'APLICADO' && moment(m.fecha).isSameOrAfter(inicioMes)).reduce((a: number, m: any) => a + Number(m.monto || 0), 0), [renovaciones]);
+    // Los movimientos MENSUALIDAD se guardan con monto NEGATIVO (cobro). Aquí el
+    // "consumido" es una magnitud (sale), por eso tomamos el valor absoluto para
+    // que el widget muestre "-S/ 202" (no "-S/ -202") y el neto reste correctamente.
+    const consumidoMes = useMemo(() => renovaciones.filter((m: any) => String(m.estado).toUpperCase() === 'APLICADO' && moment(m.fecha).isSameOrAfter(inicioMes)).reduce((a: number, m: any) => a + Math.abs(Number(m.monto || 0)), 0), [renovaciones]);
     const netoMes = recargadoMes - consumidoMes;
 
     // Recargas por mes (últimos 6) para el gráfico de barras.
