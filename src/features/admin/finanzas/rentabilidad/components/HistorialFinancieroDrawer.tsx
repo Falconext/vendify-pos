@@ -80,12 +80,12 @@ export default function HistorialFinancieroDrawer({
         <>
             {/* Overlay */}
             <div
-                className="fixed top-[-30px] inset-0 z-[9999999] bg-black/30 backdrop-blur-[2px]"
+                className="fixed inset-0 z-[9999999] bg-black/30 backdrop-blur-[2px]"
                 onClick={onClose}
             />
 
             {/* Drawer */}
-            <div className="fixed right-0 top-[-30px] bottom-0 z-[9999999] w-full max-w-[420px] bg-white dark:bg-[#0F1219] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed right-0 top-0 bottom-0 z-[9999999] w-full max-w-[420px] bg-white dark:bg-[#0F1219] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
 
                 {/* Header */}
                 <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
