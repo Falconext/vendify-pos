@@ -170,7 +170,26 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     setSupplierOptions([{ id: Number(d.proveedorId), value: provLabel }]);
                     setSupplierDisplay(provLabel);
                 }
-                setSedeDestinoId(Number(d.sedeId || 0));
+                // Restaurar condición de pago: si la compra tiene cuotas guardadas es
+                // a CRÉDITO; de lo contrario, CONTADO. El método de pago se toma del
+                // primer pago registrado, si existe.
+                let cuotasGuardadas: any[] = [];
+                if (d.cuotas) {
+                    try {
+                        cuotasGuardadas = Array.isArray(d.cuotas) ? d.cuotas : JSON.parse(d.cuotas);
+                    } catch { cuotasGuardadas = []; }
+                }
+                const esCredito = Array.isArray(cuotasGuardadas) && cuotasGuardadas.length > 0;
+                const primerPago = Array.isArray(d.pagos) && d.pagos.length > 0 ? d.pagos[0] : null;
+                setPayment((p) => ({
+                    ...p,
+                    condicionPago: esCredito ? 'CREDITO' : 'CONTADO',
+                    metodoPagoInicial: primerPago?.metodoPago || p.metodoPagoInicial,
+                }));
+                setCuotas(esCredito ? cuotasGuardadas.map((c: any) => ({
+                    monto: Number(c.monto || 0),
+                    fechaVencimiento: c.fechaVencimiento ? moment(c.fechaVencimiento).format('YYYY-MM-DD') : moment().add(30, 'days').format('YYYY-MM-DD'),
+                })) : []);
                 // El precioUnitario se guarda NETO (sin IGV) → interpretarlo como neto.
                 setIncluyeIgv(false);
                 setItems((d.detalles || []).map((det: any) => ({
@@ -789,6 +808,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             <Calendar
                                 text="Fecha Emisión"
                                 name="fechaEmision"
+                                value={header.fechaEmision ? moment(header.fechaEmision).format('DD/MM/YYYY') : ''}
                                 onChange={(date: string, name: string) => {
                                     if (moment(date, 'DD/MM/YYYY', true).isValid()) {
                                         setHeader({ ...header, fechaEmision: moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD') });
@@ -798,6 +818,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             <Calendar
                                 text="Fecha Vencimiento"
                                 name="fechaVencimiento"
+                                value={header.fechaVencimiento ? moment(header.fechaVencimiento).format('DD/MM/YYYY') : ''}
                                 onChange={(date: string, name: string) => {
                                     if (moment(date, 'DD/MM/YYYY', true).isValid()) {
                                         setHeader({ ...header, fechaVencimiento: moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD') });
@@ -1012,6 +1033,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                         <Calendar
                                                             text=""
                                                             name={`venc_${idx}`}
+                                                            value={item.fechaVencimiento ? moment(item.fechaVencimiento).format('DD/MM/YYYY') : ''}
                                                             onChange={(date: string) => {
                                                                 if (moment(date, 'DD/MM/YYYY', true).isValid()) {
                                                                     updateItem(idx, 'fechaVencimiento', moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD'));
