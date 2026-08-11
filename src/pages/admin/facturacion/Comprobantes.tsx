@@ -83,7 +83,7 @@ const Comprobantes = () => {
     const { auth, sedeActiva } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
     const { usuarios, getAllUsers } = useUsersStore();
-    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice }: IInvoicesState = useInvoiceStore();
+    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice, conciliarInvoice }: IInvoicesState = useInvoiceStore();
     const { success } = useAlertStore();
     const [invoicesList, setInvoicesList] = useState<IInvoices[]>([]);
     const [totalInvoicesList, setTotalInvoicesList] = useState(0);
@@ -1121,6 +1121,25 @@ const Comprobantes = () => {
                                 <Icon icon="mdi:whatsapp" width={16} height={16} />
                                 <span>Enviar WhatsApp</span>
                             </button>
+
+                            {/* Conciliar: la boleta ya está registrada en SUNAT (error 1033) pero
+                                el CDR no es recuperable vía QPSE. Marca el comprobante como aceptado. */}
+                            {rowBase.estadoSunatRaw === 'PENDIENTE_CONCILIACION' && (
+                                <>
+                                    <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            handleCloseMenu();
+                                            await conciliarInvoice(rowBase.id);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                    >
+                                        <Icon icon="solar:check-circle-bold-duotone" width={16} height={16} />
+                                        <span>Marcar como conciliado</span>
+                                    </button>
+                                </>
+                            )}
 
                             {/* ── Sección: acciones especiales ── */}
                             {(rowBase.comprobante?.includes('COTIZACI') || rowBase.tipoDoc === 'COT') && (

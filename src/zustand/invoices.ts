@@ -77,6 +77,7 @@ export interface IInvoicesState {
     completePay: (data: any, medioPago: string, montoPagado?: number) => Promise<{ success: boolean, error?: string }>;
     cancelInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
+    conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
 }
@@ -517,6 +518,32 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             }
         } catch (error: any) {
             useAlertStore.getState().alert(error.message || 'Error al descartar el comprobante', 'error');
+            return { success: false, error: error.message };
+        }
+    },
+    conciliarInvoice: async (id: number) => {
+        try {
+            const resp: any = await patch(`/comprobante/${id}/conciliar`, {});
+            if (resp.code === 1) {
+                set(
+                    (state) => ({
+                        invoices: state.invoices.map((inv: any) =>
+                            inv.id === id
+                                ? { ...inv, estadoEnvioSunat: 'EMITIDO', estadoSunatRaw: 'EMITIDO' }
+                                : inv,
+                        ),
+                    }),
+                    false,
+                    'CONCILIAR_COMPROBANTE'
+                );
+                useAlertStore.getState().alert('Boleta conciliada: marcada como aceptada.', 'success');
+                return { success: true };
+            } else {
+                useAlertStore.getState().alert(resp.error || 'Error al conciliar el comprobante', 'error');
+                return { success: false, error: resp.error };
+            }
+        } catch (error: any) {
+            useAlertStore.getState().alert(error.message || 'Error al conciliar el comprobante', 'error');
             return { success: false, error: error.message };
         }
     },
