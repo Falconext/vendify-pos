@@ -24,11 +24,15 @@ const DIRIGIDO_LABEL: Record<string, string> = {
 };
 
 const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps) => {
-    const { getHistorialPagos } = usePagosStore();
+    const { getHistorialPagos, editarReferenciaPago } = usePagosStore();
     const [pagos, setPagos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalPagado, setTotalPagado] = useState(0);
     const [imgPreview, setImgPreview] = useState<string>('');
+    // Edición del N° de operación de un pago
+    const [editandoId, setEditandoId] = useState<number | null>(null);
+    const [refEdit, setRefEdit] = useState('');
+    const [guardandoRef, setGuardandoRef] = useState(false);
 
     useEffect(() => {
         const fetchPagos = async () => {
@@ -45,6 +49,24 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
         };
         if (comprobante?.id) fetchPagos();
     }, [comprobante?.id, getHistorialPagos]);
+
+    const iniciarEdicion = (pago: any) => {
+        setEditandoId(pago.id);
+        setRefEdit(pago.referencia || '');
+    };
+
+    const guardarReferencia = async (pagoId: number) => {
+        setGuardandoRef(true);
+        try {
+            const res = await editarReferenciaPago(pagoId, { referencia: refEdit.trim() || null });
+            if (res.success) {
+                setPagos((prev) => prev.map((p) => (p.id === pagoId ? { ...p, referencia: refEdit.trim() || null } : p)));
+                setEditandoId(null);
+            }
+        } finally {
+            setGuardandoRef(false);
+        }
+    };
 
     const totalComprobante = Number(comprobante?.mtoImpVenta || 0);
     // comprobante.saldo viene del panel y ya descuenta adelanto + pagos anteriores.
@@ -128,8 +150,44 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                                                 <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">{pago.medioPago}</span>
                                             </p>
                                             <p className="text-xs text-gray-400 dark:text-gray-500">{moment(pago.fecha).format('DD/MM/YYYY HH:mm')}</p>
-                                            {pago.referencia && (
-                                                <p className="text-xs text-gray-400 dark:text-gray-500">Ref: {pago.referencia.toUpperCase()}</p>
+                                            {editandoId === pago.id ? (
+                                                <div className="mt-1 flex items-center gap-1.5">
+                                                    <input
+                                                        autoFocus
+                                                        value={refEdit}
+                                                        onChange={(e) => setRefEdit(e.target.value)}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter') guardarReferencia(pago.id); if (e.key === 'Escape') setEditandoId(null); }}
+                                                        placeholder="N° de operación"
+                                                        className="w-36 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => guardarReferencia(pago.id)}
+                                                        disabled={guardandoRef}
+                                                        className="rounded-md bg-emerald-500 p-1 text-white hover:bg-emerald-600 disabled:opacity-50"
+                                                        title="Guardar"
+                                                    >
+                                                        <Icon icon={guardandoRef ? 'svg-spinners:180-ring' : 'mdi:check'} className="text-sm" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditandoId(null)}
+                                                        className="rounded-md bg-gray-100 p-1 text-gray-500 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-400"
+                                                        title="Cancelar"
+                                                    >
+                                                        <Icon icon="mdi:close" className="text-sm" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => iniciarEdicion(pago)}
+                                                    className="mt-0.5 flex items-center gap-1 text-xs text-gray-400 hover:text-violet-600 dark:text-gray-500 dark:hover:text-violet-400"
+                                                    title="Editar N° de operación"
+                                                >
+                                                    Ref: {pago.referencia ? pago.referencia.toUpperCase() : '—'}
+                                                    <Icon icon="solar:pen-2-linear" className="text-[12px]" />
+                                                </button>
                                             )}
                                             {pago.observacion && (
                                                 <p className="text-xs text-gray-400 dark:text-gray-500">{pago.observacion}</p>

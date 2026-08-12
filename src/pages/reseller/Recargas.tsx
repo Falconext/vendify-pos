@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BRAND } from '@/lib/branding';
 import { THEAD_TR, BODY_TR, EntityCell, EstadoPill } from './resellerTableUi';
+import { PageHead, KpiHero, type KpiHeroItem } from './resellerUi';
 
 const ACCENT = 'var(--accent, #7551FF)';
 const money = (v: number) => `S/ ${Number(v ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -85,31 +86,21 @@ export default function ResellerRecargas() {
         [renovaciones],
     );
 
-    const kpis = [
-        { label: 'Saldo disponible', value: money(saldo), icon: 'solar:wallet-bold', tone: saldoBajo ? 'rose' : 'indigo', sub: saldoBajo ? 'Saldo bajo — recarga' : 'Disponible' },
-        { label: 'Consumo mensual', value: money(consumoMensual), icon: 'solar:card-transfer-bold-duotone', tone: 'amber', sub: 'En renovaciones de clientes' },
-        { label: 'Te alcanza para', value: runwayLabel, icon: 'solar:hourglass-bold-duotone', tone: saldoBajo ? 'rose' : 'emerald', sub: 'Al ritmo de consumo actual' },
-        { label: 'Total recargado', value: money(totalRecargado), icon: 'solar:course-up-bold-duotone', tone: 'indigo', sub: `${recargas.length} recarga${recargas.length !== 1 ? 's' : ''}` },
+    const kpis: KpiHeroItem[] = [
+        { label: 'Saldo disponible', value: money(saldo), mini: 'donut', warn: saldoBajo, sub: saldoBajo ? 'Saldo bajo — recarga' : 'Disponible' },
+        { label: 'Consumo mensual', value: money(consumoMensual), mini: 'wave', sub: 'En renovaciones de clientes' },
+        { label: 'Te alcanza para', value: runwayLabel, mini: 'line', warn: saldoBajo, sub: 'Al ritmo de consumo actual' },
+        { label: 'Total recargado', value: money(totalRecargado), mini: 'bars', sub: `${recargas.length} recarga${recargas.length !== 1 ? 's' : ''}` },
     ];
-    const toneMap: Record<string, string> = {
-        indigo: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-        rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
-    };
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Mis recargas</h1>
-                    <p className="text-slate-500 dark:text-gray-400">Tu saldo, recargas y renovaciones de clientes</p>
-                </div>
+            <PageHead title="Mis recargas" subtitle="Tu saldo, recargas y renovaciones de clientes">
                 <button onClick={openSupportChat} className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all" style={{ background: ACCENT }}>
                     <Icon icon="solar:add-circle-bold" className="text-lg" /> Recargar saldo
                 </button>
-            </div>
+            </PageHead>
 
             {/* Alerta de saldo bajo */}
             {saldoBajo && (
@@ -121,16 +112,7 @@ export default function ResellerRecargas() {
             )}
 
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {kpis.map((c) => (
-                    <div key={c.label} className={`bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border ${c.tone === 'rose' ? 'border-rose-200 dark:border-rose-900/40' : 'border-slate-100 dark:border-slate-700'}`}>
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${toneMap[c.tone]}`}><Icon icon={c.icon} width="24" /></div>
-                        <p className="mt-3 text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-gray-500">{c.label}</p>
-                        <p className={`mt-0.5 text-2xl font-extrabold ${c.tone === 'rose' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{c.value}</p>
-                        <p className="mt-0.5 text-xs font-medium text-slate-400 dark:text-gray-500 truncate">{c.sub}</p>
-                    </div>
-                ))}
-            </div>
+            <KpiHero items={kpis} />
 
             {/* Flujo del mes */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-5">
@@ -167,7 +149,7 @@ export default function ResellerRecargas() {
                                     <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
                                     <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
                                     <Tooltip formatter={(v: any) => [money(v), 'Recargado']} contentStyle={{ fontSize: 12, borderRadius: 10, borderColor: '#e5e7eb' }} cursor={{ fill: 'rgba(99,102,241,0.06)' }} />
-                                    <Bar dataKey="total" fill={ACCENT} radius={[6, 6, 0, 0]} maxBarSize={44} />
+                                    <Bar dataKey="total" fill={ACCENT} radius={[6, 6, 0, 0]} maxBarSize={44} isAnimationActive={false} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (

@@ -4,8 +4,10 @@ import {
     GastoOperativo,
     GastoFormData,
     CATEGORIAS_FIJAS,
+    MEDIOS_PAGO_GASTO,
     getMesFullLabel,
 } from '../RentabilidadModel';
+import { useCuentasBancariasStore } from '../../../../../zustand/cuentasBancarias';
 
 interface GastoFormModalProps {
     isOpen: boolean;
@@ -22,6 +24,10 @@ const INITIAL_FORM = {
     categoria: 'PUBLICIDAD',
     etiqueta: '',
     monto: '',
+    moneda: 'PEN',
+    tipoCambio: '',
+    cuentaBancariaId: '',
+    medioPago: '',
     fecha: '',
     recurrenteDiario: false,
     fechaFin: '',
@@ -58,6 +64,16 @@ export default function GastoFormModal({
     const minDate = `${anioActual}-${String(mesActual).padStart(2, '0')}-01`;
     const maxDate = toDateInputValue(new Date(anioActual, mesActual, 0));
 
+    const { cuentas, listar: listarCuentas } = useCuentasBancariasStore();
+    const cuentasActivas = cuentas.filter(c => c.activo);
+
+    // Cargar cuentas bancarias al abrir el modal (para el selector)
+    useEffect(() => {
+        if (isOpen && cuentas.length === 0) {
+            listarCuentas();
+        }
+    }, [isOpen, cuentas.length, listarCuentas]);
+
     // Populate form when editing
     useEffect(() => {
         if (gastoEditando) {
@@ -65,6 +81,10 @@ export default function GastoFormModal({
                 categoria: gastoEditando.categoria,
                 etiqueta: gastoEditando.etiqueta ?? '',
                 monto: String(gastoEditando.monto),
+                moneda: gastoEditando.moneda ?? 'PEN',
+                tipoCambio: gastoEditando.tipoCambio != null ? String(gastoEditando.tipoCambio) : '',
+                cuentaBancariaId: gastoEditando.cuentaBancariaId != null ? String(gastoEditando.cuentaBancariaId) : '',
+                medioPago: gastoEditando.medioPago ?? '',
                 fecha: gastoEditando.fechaInicio?.slice(0, 10) ?? gastoEditando.fecha?.slice(0, 10) ?? getDefaultDate(mesActual, anioActual),
                 recurrenteDiario: gastoEditando.recurrenteDiario,
                 fechaFin: gastoEditando.fechaFin?.slice(0, 10) ?? '',
@@ -97,6 +117,12 @@ export default function GastoFormModal({
         if (!form.monto || isNaN(montoNum) || montoNum <= 0) {
             newErrors.monto = 'Ingresa un monto válido mayor a 0';
         }
+        if (form.moneda === 'USD') {
+            const tcNum = parseFloat(form.tipoCambio);
+            if (!form.tipoCambio || isNaN(tcNum) || tcNum <= 0) {
+                newErrors.tipoCambio = 'Ingresa el tipo de cambio (USD → S/)';
+            }
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -114,6 +140,10 @@ export default function GastoFormModal({
             ...(form.recurrenteDiario && form.fechaFin ? { fechaFin: form.fechaFin } : {}),
             categoria: form.categoria,
             monto: parseFloat(form.monto),
+            moneda: form.moneda,
+            ...(form.moneda === 'USD' && form.tipoCambio ? { tipoCambio: parseFloat(form.tipoCambio) } : {}),
+            ...(form.cuentaBancariaId ? { cuentaBancariaId: parseInt(form.cuentaBancariaId, 10) } : {}),
+            ...(form.medioPago ? { medioPago: form.medioPago } : {}),
             ...(form.etiqueta.trim() ? { etiqueta: form.etiqueta.trim() } : {}),
             ...(form.descripcion.trim() ? { descripcion: form.descripcion.trim() } : {}),
         };
@@ -225,15 +255,70 @@ export default function GastoFormModal({
                         </div>
                     )}
 
+                    {/* Moneda */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Moneda
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                { key: 'PEN', label: 'Soles (S/)', icon: 'solar:banknote-2-bold-duotone' },
+                                { key: 'USD', label: 'Dólares (US$)', icon: 'solar:dollar-bold-duotone' },
+                            ].map(m => (
+                                <button
+                                    key={m.key}
+                                    type="button"
+                                    onClick={() => handleChange('moneda', m.key)}
+                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                                        form.moneda === m.key
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
+                                            : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600'
+                                    }`}
+                                >
+                                    <Icon icon={m.icon} className="text-base flex-shrink-0" />
+                                    <span className="truncate">{m.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Tipo de cambio (solo USD) */}
+                    {form.moneda === 'USD' && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Tipo de cambio (US$ → S/) <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                min="0.0001"
+                                step="0.0001"
+                                value={form.tipoCambio}
+                                onChange={e => handleChange('tipoCambio', e.target.value)}
+                                placeholder="Ej: 3.7500"
+                                className={`w-full px-3 py-2.5 rounded-xl border text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors tabular-nums ${
+                                    errors.tipoCambio
+                                        ? 'border-rose-400 dark:border-rose-500'
+                                        : 'border-gray-200 dark:border-slate-700'
+                                }`}
+                            />
+                            {errors.tipoCambio && (
+                                <p className="mt-1 text-xs text-rose-500">{errors.tipoCambio}</p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Monto */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                {form.recurrenteDiario ? 'Monto diario (S/)' : 'Monto (S/)'} <span className="text-rose-500">*</span>
+                                {(() => {
+                                    const sim = form.moneda === 'USD' ? 'US$' : 'S/';
+                                    return form.recurrenteDiario ? `Monto diario (${sim})` : `Monto (${sim})`;
+                                })()} <span className="text-rose-500">*</span>
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-400 text-sm font-semibold">S/</span>
+                                    <span className="text-gray-400 text-sm font-semibold">{form.moneda === 'USD' ? 'US$' : 'S/'}</span>
                                 </div>
                                 <input
                                     type="number"
@@ -273,6 +358,45 @@ export default function GastoFormModal({
                             {errors.fecha && (
                                 <p className="mt-1 text-xs text-rose-500">{errors.fecha}</p>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Cuenta bancaria + Medio de pago */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Cuenta bancaria
+                                <span className="ml-1 text-xs font-normal text-gray-400">(opcional)</span>
+                            </label>
+                            <select
+                                value={form.cuentaBancariaId}
+                                onChange={e => handleChange('cuentaBancariaId', e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                            >
+                                <option value="">Sin cuenta</option>
+                                {cuentasActivas.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.banco}{c.alias ? ` · ${c.alias}` : ''} · {c.numeroCuenta} ({c.moneda})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Medio de pago
+                                <span className="ml-1 text-xs font-normal text-gray-400">(opcional)</span>
+                            </label>
+                            <select
+                                value={form.medioPago}
+                                onChange={e => handleChange('medioPago', e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                            >
+                                <option value="">Seleccionar...</option>
+                                {MEDIOS_PAGO_GASTO.map(m => (
+                                    <option key={m.key} value={m.key}>{m.label}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

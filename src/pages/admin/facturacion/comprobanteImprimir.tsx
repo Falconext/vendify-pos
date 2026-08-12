@@ -177,7 +177,9 @@ console.log(formValues)
         }
         return extras;
     };
-    const vendedorNombre = (formValues?.vendedor || company?.nombre || 'ADMIN').toString().toUpperCase();
+    // Cobranza en campo: prioriza el vendedor de campo atribuido. Soporta tanto el
+    // row plano del panel (formValues.vendedor) como el comprobante crudo del detalle.
+    const vendedorNombre = (formValues?.vendedorCampoNombre || formValues?.vendedor || formValues?.usuario?.nombre || company?.nombre || 'ADMIN').toString().toUpperCase();
     const empresaNumero = (
         company?.empresa?.celular ||
         company?.empresa?.telefono ||

@@ -36,6 +36,8 @@ export interface VentaPanelItem {
     nroPaquetes: number | null;
     turnoEnvio: string;
     vendedor: string;
+    // Cobranza en campo: id del vendedor de campo atribuido (para preseleccionar al cobrar).
+    vendedorCampoId?: number | null;
     sede: string;
     comprobanteId: number | null;
     pedidoId: number | null;

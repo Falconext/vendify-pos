@@ -24,6 +24,9 @@ export type IInvoices = {
     id: number
     nombre: string
   } | null
+  // Cobranza en campo: vendedor de campo atribuido (se muestra en vez del usuario).
+  vendedorCampoId?: number | null
+  vendedorCampoNombre?: string | null
   numeroOrdenTrabajo: string
   mtoDescuentoGlobal: number
   mtoOperGravadas: number

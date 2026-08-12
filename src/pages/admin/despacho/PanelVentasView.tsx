@@ -485,6 +485,9 @@ export default function PanelVentasView() {
         observaciones: item.observaciones,
         cliente: { nombre: item.cliente, nroDoc: null },
         comprobante: TIPO_CONFIG[item.tipo]?.label ?? item.tipo,
+        // Cobranza en campo: para preseleccionar el vendedor de campo al registrar el cobro.
+        vendedorCampoId: item.vendedorCampoId ?? null,
+        vendedorCampoNombre: item.vendedor,
     });
 
     const puedeRegistrarCobro = (item: VentaPanelItem) =>
@@ -1037,6 +1040,7 @@ export default function PanelVentasView() {
                     comprobanteId={detalleId}
                     isOpen={true}
                     onClose={() => setDetalleId(null)}
+                    onUpdated={vm.cargar}
                 />
             )}
             {editDespachoId && (

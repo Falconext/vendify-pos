@@ -45,6 +45,14 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
         if (cobranzaCampo) getAllUsers({ page: 1, limit: 100 });
     }, [cobranzaCampo, getAllUsers]);
 
+    // Preseleccionar el vendedor de campo que ya tiene atribuido el comprobante,
+    // para que la encargada no lo vuelva a elegir en cada cobro.
+    useEffect(() => {
+        if (cobranzaCampo && comprobante?.vendedorCampoId) {
+            setVendedorId(Number(comprobante.vendedorCampoId));
+        }
+    }, [cobranzaCampo, comprobante?.vendedorCampoId]);
+
     const handleComprobanteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
         if (!f) return;
@@ -278,6 +286,7 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
                                     error=""
                                     label="Vendedor de campo * (quién envió el comprobante)"
                                     name="vendedorId"
+                                    value={usuarios.find((u: any) => u.id === vendedorId)?.nombre || ''}
                                     onChange={(id: any) => { setVendedorId(Number(id) || null); setError(''); }}
                                     options={(usuarios || []).map((u: any) => ({ id: u.id, value: u.nombre || u.email || `Usuario ${u.id}` }))}
                                 />

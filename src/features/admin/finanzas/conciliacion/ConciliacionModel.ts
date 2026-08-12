@@ -55,6 +55,34 @@ export interface IResultadoConciliacion {
   sistemaPendientes: IPagoSistema[];
 }
 
+// ── Historial de conciliaciones guardadas ──────────────────────────────────
+export interface IConciliacionGuardadaResumen {
+  movimientosBanco: number;
+  conciliados: number;
+  pendientesBanco: number;
+  pendientesSistema: number;
+  montoBanco: number;
+  montoConciliado: number;
+}
+
+export interface IConciliacionGuardadaItem {
+  id: number;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  observaciones: string | null;
+  creadoEn: string;
+  resumen: IConciliacionGuardadaResumen;
+}
+
+export interface IConciliacionGuardadaDetalle {
+  id: number;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  observaciones: string | null;
+  creadoEn: string;
+  resultado: IResultadoConciliacion;
+}
+
 // Columnas esperadas en el Excel del banco (para mostrar en la UI).
 export const COLUMNAS_BANCO = [
   'Fecha',

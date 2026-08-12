@@ -7,6 +7,7 @@ import Select from '@/components/Select';
 import { Calendar } from '@/components/Date';
 import { useResellerEstadoCuentaViewModel } from '@/features/reseller/useResellerViewModel';
 import type { ResellerEstadoCuentaMovimiento } from '@/zustand/reseller-panel';
+import { PageHead, KpiHero, type KpiHeroItem } from './resellerUi';
 
 const money = (v: number) => `S/ ${Number(v ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -97,11 +98,7 @@ export default function ResellerEstadoCuenta() {
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Estado de Cuenta</h1>
-                    <p className="text-sm text-slate-500 dark:text-gray-400">Control de recargas, activaciones y renovaciones de tus clientes.</p>
-                </div>
+            <PageHead title="Estado de Cuenta" subtitle="Control de recargas, activaciones y renovaciones de tus clientes">
                 <button
                     onClick={exportarCSV}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold"
@@ -109,7 +106,7 @@ export default function ResellerEstadoCuenta() {
                     <Icon icon="solar:download-minimalistic-linear" width="18" />
                     Exportar CSV
                 </button>
-            </div>
+            </PageHead>
 
             {/* Periodo rápido */}
             <div className="flex flex-wrap gap-2">
@@ -170,12 +167,12 @@ export default function ResellerEstadoCuenta() {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <CardKpi title="Saldo Actual" value={`S/ ${Number(estadoCuenta?.reseller?.saldoActual || 0).toFixed(2)}`} color="text-violet-700 dark:text-violet-400" />
-                <CardKpi title="Total Recargado" value={`S/ ${Number(resumen?.recargas.total || 0).toFixed(2)}`} color="text-emerald-700 dark:text-emerald-400" />
-                <CardKpi title="Total Cobrado" value={`S/ ${Number(resumen?.totalCobrado || 0).toFixed(2)}`} color="text-rose-700 dark:text-rose-400" />
-                <CardKpi title="Flujo Neto Periodo" value={`S/ ${Number(resumen?.flujoNeto || 0).toFixed(2)}`} color="text-slate-700 dark:text-slate-200" />
-            </div>
+            <KpiHero items={([
+                { label: 'Saldo Actual', value: money(estadoCuenta?.reseller?.saldoActual || 0), mini: 'donut', sub: 'Saldo disponible' },
+                { label: 'Total Recargado', value: money(resumen?.recargas.total || 0), mini: 'bars', sub: 'Entradas del periodo' },
+                { label: 'Total Cobrado', value: money(resumen?.totalCobrado || 0), mini: 'wave', sub: 'Salidas del periodo' },
+                { label: 'Flujo Neto Periodo', value: money(resumen?.flujoNeto || 0), mini: 'line', warn: Number(resumen?.flujoNeto || 0) < 0, sub: 'Entradas − salidas' },
+            ] as KpiHeroItem[])} />
 
             {/* Desglose de flujo + cobros + salud de mensualidades */}
             {resumen && (() => {
@@ -302,15 +299,6 @@ export default function ResellerEstadoCuenta() {
                     </div>
                 )}
             </div>
-        </div>
-    );
-}
-
-function CardKpi({ title, value, color }: { title: string; value: string; color: string }) {
-    return (
-        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">{title}</p>
-            <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
         </div>
     );
 }

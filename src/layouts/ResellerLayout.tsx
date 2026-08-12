@@ -47,9 +47,7 @@ export default function ResellerLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [logoBroken, setLogoBroken] = useState(false)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-    const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false)
     const userMenuRef = useRef<HTMLDivElement | null>(null)
-    const zoomMenuRef = useRef<HTMLDivElement | null>(null)
 
     // El portal reseller arranca en modo CLARO por defecto (marca blanca de cara
     // al cliente). Se fuerza una sola vez por navegador; si el reseller luego
@@ -77,7 +75,6 @@ export default function ResellerLayout() {
     useEffect(() => {
         const onClick = (e: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setIsUserMenuOpen(false)
-            if (zoomMenuRef.current && !zoomMenuRef.current.contains(e.target as Node)) setIsZoomMenuOpen(false)
         }
         document.addEventListener('mousedown', onClick)
         return () => document.removeEventListener('mousedown', onClick)
@@ -221,56 +218,15 @@ export default function ResellerLayout() {
 
                         {/* Derecha */}
                         <div className="flex items-center gap-2.5">
-                            {/* Isla de acciones */}
-                            <div className="flex items-center gap-0.5 rounded-2xl border border-slate-200/60 bg-slate-100/50 p-1 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-                                <motion.button
-                                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.92 }}
-                                    onClick={toggleDarkMode}
-                                    className={`grid h-9 w-9 place-items-center rounded-xl transition-colors ${isDarkMode ? 'text-amber-400 hover:bg-white/10' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}
-                                    title={isDarkMode ? 'Desactivar Modo Oscuro' : 'Activar Modo Oscuro'}
-                                >
-                                    <Icon icon={isDarkMode ? 'solar:sun-bold-duotone' : 'solar:moon-bold-duotone'} width="20" />
-                                </motion.button>
-
-                                <div className="relative hidden md:block" ref={zoomMenuRef}>
-                                    <motion.button
-                                        whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.94 }}
-                                        onClick={() => setIsZoomMenuOpen(o => !o)}
-                                        className={`flex items-center gap-1.5 h-9 px-2.5 rounded-xl transition-colors text-xs font-bold ${zoomLevel > 0 ? 'text-[#7551FF] bg-[#7551FF]/10' : 'text-slate-500 hover:bg-white hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10'}`}
-                                        title="Ajustar nivel de zoom"
-                                    >
-                                        <Icon icon="solar:minimize-square-3-bold" width="16" />
-                                        <span>{ZOOM_OPTIONS[zoomLevel]?.label}</span>
-                                    </motion.button>
-                                    {isZoomMenuOpen && (
-                                        <div className="absolute right-0 top-full mt-2 z-50 w-44 rounded-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-xl py-1.5 overflow-hidden">
-                                            <p className="px-3 pb-1.5 pt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-700 mb-1">Nivel de zoom</p>
-                                            {ZOOM_OPTIONS.map(opt => (
-                                                <button
-                                                    key={opt.level}
-                                                    onClick={() => { setZoomLevel(opt.level as ZoomLevel); setIsZoomMenuOpen(false) }}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${zoomLevel === opt.level ? 'bg-[#7551FF]/10 text-[#7551FF] dark:text-violet-300 font-bold' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
-                                                >
-                                                    <span className="flex items-center gap-2">
-                                                        <Icon icon={opt.level === 0 ? 'solar:maximize-square-3-linear' : 'solar:minimize-square-3-bold'} width="15" className={zoomLevel === opt.level ? 'text-[#7551FF]' : 'text-gray-400 dark:text-slate-500'} />
-                                                        {opt.level === 0 ? 'Normal' : opt.level === 1 ? 'Compacto' : opt.level === 2 ? 'Más compacto' : 'Mínimo'}
-                                                    </span>
-                                                    <span className={`text-xs font-mono ${zoomLevel === opt.level ? 'text-[#7551FF]' : 'text-gray-400 dark:text-slate-500'}`}>{opt.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.06, rotate: 45 }} whileTap={{ scale: 0.92 }}
-                                    onClick={toggleConfigurator}
-                                    className="hidden md:grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-white hover:text-[#7551FF] dark:text-slate-400 dark:hover:bg-white/10 transition-colors"
-                                    title="Configuración de UI"
-                                >
-                                    <Icon icon="solar:settings-bold-duotone" width="20" />
-                                </motion.button>
-                            </div>
+                            {/* Personalizar colores de la UI */}
+                            <motion.button
+                                whileHover={{ scale: 1.06, rotate: 45 }} whileTap={{ scale: 0.92 }}
+                                onClick={toggleConfigurator}
+                                className="hidden md:grid h-10 w-10 place-items-center rounded-2xl border border-slate-200/60 bg-slate-100/50 text-slate-500 hover:bg-white hover:text-[#7551FF] dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 transition-colors"
+                                title="Personalizar colores"
+                            >
+                                <Icon icon="solar:palette-bold-duotone" width="20" />
+                            </motion.button>
 
                             {/* Perfil */}
                             <div className="relative" ref={userMenuRef}>
@@ -313,6 +269,42 @@ export default function ResellerLayout() {
                                                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:bg-[#7551FF]/[0.06] hover:text-[#7551FF] transition-colors"
                                                     >
                                                         <Icon icon="solar:crown-star-bold-duotone" width="18" /> Mi Marca
+                                                    </button>
+                                                </li>
+                                                <li className="border-t border-gray-100 dark:border-slate-700 mt-1 pt-2 px-4 pb-1">
+                                                    <div className="mb-2 flex items-center gap-2.5 text-[13px] font-medium text-gray-600 dark:text-gray-300">
+                                                        <Icon icon="solar:minimize-square-3-bold-duotone" width="18" />
+                                                        Zoom
+                                                    </div>
+                                                    <div className="grid grid-cols-4 gap-1">
+                                                        {ZOOM_OPTIONS.map(opt => (
+                                                            <button
+                                                                key={opt.level}
+                                                                onClick={() => setZoomLevel(opt.level as ZoomLevel)}
+                                                                title={opt.level === 0 ? 'Normal' : opt.level === 1 ? 'Compacto' : opt.level === 2 ? 'Más compacto' : 'Mínimo'}
+                                                                className={`rounded-lg py-1.5 text-[11px] font-bold transition-colors ${
+                                                                    zoomLevel === opt.level
+                                                                        ? 'bg-violet-600 text-white'
+                                                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'
+                                                                }`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </li>
+                                                <li className="border-t border-gray-100 dark:border-slate-700 mt-1 pt-1">
+                                                    <button
+                                                        onClick={toggleDarkMode}
+                                                        className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                                                    >
+                                                        <span className="flex items-center gap-2.5">
+                                                            <Icon icon={isDarkMode ? 'solar:sun-bold-duotone' : 'solar:moon-bold-duotone'} width="18" className={isDarkMode ? 'text-amber-400' : ''} />
+                                                            Modo oscuro
+                                                        </span>
+                                                        <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isDarkMode ? 'bg-violet-600' : 'bg-gray-300 dark:bg-slate-600'}`}>
+                                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isDarkMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                                        </span>
                                                     </button>
                                                 </li>
                                                 <li className="border-t border-gray-100 dark:border-slate-700 mt-1 pt-1">

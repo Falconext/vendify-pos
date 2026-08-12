@@ -11,6 +11,7 @@ import { calculateTotals } from "@/utils/calculateTotals";
 import useAlertStore from "@/zustand/alert";
 import { useAuthStore } from "@/zustand/auth";
 import { useEmpresasStore } from "@/zustand/empresas";
+import { useUsersStore } from "@/zustand/users";
 import { IFormClient } from "@/interfaces/clients";
 import { IFormProduct } from "@/interfaces/products";
 import { formatISO, parse } from 'date-fns';
@@ -196,6 +197,17 @@ export const useFacturacionViewModel = () => {
     // Sobreventa: si la empresa lo habilitó, el POS permite agregar/vender productos
     // aunque el stock sea 0 o insuficiente (solo se muestra una advertencia).
     const permitirVentaSinStock = Boolean((auth?.empresa as any)?.permitirVentaSinStock);
+
+    // Cobranza en campo: si la empresa la activó, al crear la venta se puede
+    // atribuir a un "vendedor de campo" (un usuario de la empresa) que se
+    // mostrará como vendedor en panel/notas/comprobante en vez de quien registra.
+    const cobranzaCampo = Boolean((auth?.empresa as any)?.cobranzaCampo);
+    const { usuarios, getAllUsers } = useUsersStore();
+    const [vendedorCampoId, setVendedorCampoId] = useState<number | null>(null);
+    useEffect(() => {
+        if (cobranzaCampo) getAllUsers({ page: 1, limit: 100 });
+    }, [cobranzaCampo]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const [togglingPrecioLote, setTogglingPrecioLote] = useState(false);
     // Toggle rápido (solo rubros con lotes) — persiste el flag de empresa y actualiza el estado
     const togglePrecioLoteFefo = async () => {
@@ -2008,6 +2020,13 @@ export const useFacturacionViewModel = () => {
             clienteId: Number(formValues?.clienteId) || invoiceData?.cliente?.id,
             clienteName: selectedClient?.nombre,
             tipoDoc: formValues?.tipoDoc,
+            // Cobranza en campo: atribuir la venta al vendedor de campo elegido.
+            ...(cobranzaCampo && vendedorCampoId
+                ? {
+                    vendedorCampoId,
+                    vendedorCampoNombre: usuarios.find((u: any) => u.id === vendedorCampoId)?.nombre,
+                }
+                : {}),
             detalles: [
                 ...(productsInvoice?.map((item: any) => ({
                     productoId: Number(item?.productoId || item?.id) || null,
@@ -2312,6 +2331,11 @@ export const useFacturacionViewModel = () => {
         showFreeQuoteItemForm, setShowFreeQuoteItemForm,
         freeQuoteItem, setFreeQuoteItem,
         anticipos, agregarAnticipo, eliminarAnticipo, totalAnticipos,
+
+        // Cobranza en campo: vendedor de campo atribuido a la venta
+        cobranzaCampo,
+        vendedoresCampo: usuarios,
+        vendedorCampoId, setVendedorCampoId,
 
         // Form & Selections
         formValues, setFormValues,

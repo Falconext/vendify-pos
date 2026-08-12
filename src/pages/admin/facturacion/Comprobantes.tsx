@@ -325,7 +325,8 @@ const Comprobantes = () => {
                     <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate max-w-[160px]">{item?.cliente?.nombre || 'Cliente varios'}</span>
                 </div>
             ),
-            vendedor: item?.usuario?.nombre || '-',
+            // Cobranza en campo: prioriza el vendedor de campo atribuido.
+            vendedor: item?.vendedorCampoNombre || item?.usuario?.nombre || '-',
             total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
             estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
                 ? item.estadoEnvioSunat
@@ -1006,6 +1007,7 @@ const Comprobantes = () => {
                 comprobanteId={detalleComprobanteId}
                 isOpen={detalleComprobanteId !== null}
                 onClose={() => setDetalleComprobanteId(null)}
+                onUpdated={fetchFormalInvoices}
             />
 
             {/* Modal error SUNAT */}

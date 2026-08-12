@@ -8,6 +8,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import useAlertStore from "@/zustand/alert";
 import { useAuthStore } from "@/zustand/auth";
 import { useComprasStore } from "@/zustand/compras";
+import { useCuentasBancariasStore } from "@/zustand/cuentasBancarias";
 import { useClientsStore } from "@/zustand/clients";
 import { useProductsStore } from "@/zustand/products";
 import { get } from "@/utils/fetch";
@@ -35,6 +36,7 @@ interface ModalNuevaCompraProps {
 const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaCompraProps) => {
     const isEdit = !!compra?.id;
     const { crearCompra, editarCompra } = useComprasStore();
+    const { cuentas, listar: listarCuentas } = useCuentasBancariasStore();
     const { getAllClients, clients, resetClients, getClientFromDoc } = useClientsStore();
     const { getAllProducts, products, resetProducts } = useProductsStore();
     const { alert } = useAlertStore();
@@ -63,7 +65,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const [payment, setPayment] = useState({
         condicionPago: 'CONTADO',
         montoPagadoInicial: 0,
-        metodoPagoInicial: 'EFECTIVO'
+        metodoPagoInicial: 'EFECTIVO',
+        cuentaBancariaId: 0,
+        numeroOperacion: ''
     });
 
     const [cuotas, setCuotas] = useState<any[]>([]);
@@ -125,8 +129,11 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             setPayment({
                 condicionPago: 'CONTADO',
                 montoPagadoInicial: 0,
-                metodoPagoInicial: 'EFECTIVO'
+                metodoPagoInicial: 'EFECTIVO',
+                cuentaBancariaId: 0,
+                numeroOperacion: ''
             });
+            listarCuentas();
             setItems([]);
             setIncluyeIgv(false);
             setCuotas([]);
@@ -185,6 +192,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     ...p,
                     condicionPago: esCredito ? 'CREDITO' : 'CONTADO',
                     metodoPagoInicial: primerPago?.metodoPago || p.metodoPagoInicial,
+                    numeroOperacion: primerPago?.referencia || '',
+                    cuentaBancariaId: Number(primerPago?.cuentaBancariaId || 0),
                 }));
                 setCuotas(esCredito ? cuotasGuardadas.map((c: any) => ({
                     monto: Number(c.monto || 0),
@@ -215,6 +224,14 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             setTimeout(() => barcodeRef.current?.focus(), 150);
         }
     }, [isOpen]);
+
+    // Al pagar por Transferencia, autoseleccionar la primera cuenta bancaria activa.
+    useEffect(() => {
+        if (payment.metodoPagoInicial === 'TRANSFERENCIA' && !payment.cuentaBancariaId) {
+            const activas = (cuentas || []).filter((c) => c.activo);
+            if (activas.length > 0) setPayment((p) => ({ ...p, cuentaBancariaId: activas[0].id }));
+        }
+    }, [payment.metodoPagoInicial, cuentas]);
 
     // Update options when store changes
     useEffect(() => {
@@ -650,6 +667,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             formaPago: payment.condicionPago,
             montoPagadoInicial: payment.condicionPago === 'CONTADO' ? total : Number(payment.montoPagadoInicial),
             metodoPagoInicial: payment.metodoPagoInicial,
+            cuentaBancariaIdInicial: payment.metodoPagoInicial === 'TRANSFERENCIA' ? (payment.cuentaBancariaId || undefined) : undefined,
+            referenciaInicial: payment.metodoPagoInicial === 'TRANSFERENCIA' ? (payment.numeroOperacion || undefined) : undefined,
             cuotas: payment.condicionPago === 'CREDITO' ? cuotas : undefined,
             subtotal,
             igv,
@@ -693,7 +712,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     {isEdit && (
                         <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                             <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 text-base shrink-0" />
-                            <span>Estás editando una compra. Se ajustará el stock según los cambios. Los pagos ya registrados no se modifican aquí.</span>
+                            <span>Estás editando una compra. Se ajustará el stock según los cambios. Puedes corregir el N° de operación del pago inicial (transferencia); los abonos adicionales se gestionan desde el historial de pagos.</span>
                         </div>
                     )}
                     {/* Datos del Documento */}
@@ -1195,6 +1214,39 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                         withLabel
                                         error={null}
                                     />
+                                )}
+
+                                {/* Pago por banco: cuenta + N° de operación.
+                                    Al editar una compra ya inscrita también se muestra
+                                    (aunque sea a crédito) para poder corregir el N° de
+                                    operación del pago inicial con el del estado de cuenta. */}
+                                {(payment.condicionPago === 'CONTADO' || isEdit) && payment.metodoPagoInicial === 'TRANSFERENCIA' && (
+                                    <div className="space-y-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3">
+                                        {(cuentas || []).filter((c) => c.activo).length === 0 ? (
+                                            <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                                                No hay cuentas bancarias registradas. Agrégalas en <strong>Mi Negocio → Cuentas Bancarias</strong> para elegir el banco.
+                                            </p>
+                                        ) : (
+                                            <Select
+                                                label="Banco / Cuenta"
+                                                name="cuentaBancaria"
+                                                options={(cuentas || []).filter((c) => c.activo).map((c) => ({ id: c.id, value: `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` }))}
+                                                onChange={(id) => setPayment((p) => ({ ...p, cuentaBancariaId: Number(id) }))}
+                                                value={(() => { const c = (cuentas || []).find((x) => x.id === payment.cuentaBancariaId); return c ? `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` : ''; })()}
+                                                withLabel
+                                                error={null}
+                                            />
+                                        )}
+                                        <InputPro
+                                            autocomplete="off"
+                                            label="N° de Operación"
+                                            name="numeroOperacion"
+                                            value={payment.numeroOperacion}
+                                            onChange={(e) => setPayment({ ...payment, numeroOperacion: e.target.value })}
+                                            isLabel
+                                            placeholder="Ej: 00123456"
+                                        />
+                                    </div>
                                 )}
 
                                 {payment.condicionPago === 'CREDITO' && (

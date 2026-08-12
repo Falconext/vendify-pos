@@ -9,6 +9,7 @@ import { POSOptionsForm } from "./POSOptionsForm";
 import { POSCalculations } from "./POSCalculations";
 
 import ModalProduct from "@/pages/admin/inventario/modal-productos";
+import Select from "@/components/Select";
 import ModalClient from "@/features/admin/clients/shared/ModalClient";
 import ModalConfirm from "@/components/ModalConfirm";
 import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
@@ -173,7 +174,11 @@ export const FacturacionNuevoView = () => {
         fechaVencimientoCredito: vm.fechaVencimientoCredito,
         cuotas: printCuotas,
         vuelto: isCreditSale ? 0 : vm.vueltoCalculado,
-        vendedor: vm.auth?.nombre,
+        // Cobranza en campo: el ticket de emisión también muestra el vendedor de
+        // campo elegido (no el usuario que registra), igual que el panel/reimpresión.
+        vendedor: (vm.cobranzaCampo && vm.vendedorCampoId
+            ? vm.vendedoresCampo?.find((u: any) => u.id === vm.vendedorCampoId)?.nombre
+            : null) || vm.auth?.nombre,
         serie: vm.dataReceipt?.serie,
         correlativo: vm.dataReceipt?.correlativo,
         numDocAfectado: `${vm.serie}-${vm.correlative}`,
@@ -399,6 +404,24 @@ export const FacturacionNuevoView = () => {
                                 Cambiar
                             </button>
                         </div>
+                        {/* Cobranza en campo: vendedor de campo atribuido a la venta.
+                            Solo si la empresa activó "Cobranza con vendedores de campo". */}
+                        {vm.cobranzaCampo && !vm.isQuotationRoute && (
+                            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/50">
+                                <p className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-slate-400">
+                                    <Icon icon="solar:user-hand-up-bold-duotone" width={12} className="text-violet-500" />
+                                    Vendedor de campo
+                                </p>
+                                <Select
+                                    error=""
+                                    label=""
+                                    name="vendedorCampo"
+                                    value={vm.vendedoresCampo?.find((u: any) => u.id === vm.vendedorCampoId)?.nombre || ''}
+                                    options={(vm.vendedoresCampo || []).map((u: any) => ({ id: u.id, value: u.nombre || u.email || `Usuario ${u.id}` }))}
+                                    onChange={(id: any) => vm.setVendedorCampoId(Number(id) || null)}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
                 <POSCartLayout vm={vm} />

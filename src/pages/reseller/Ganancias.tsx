@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import moment from 'moment';
 import { THEAD_TR, BODY_TR, EntityCell } from './resellerTableUi';
+import { PageHead, KpiHero, type KpiHeroItem } from './resellerUi';
 import { useResellerGananciasViewModel } from '@/features/reseller/useResellerViewModel';
 
 const fmt = (v: number) => `S/ ${Number(v || 0).toFixed(2)}`;
@@ -65,15 +66,13 @@ export default function ResellerGanancias() {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Ganancias y Proyección</h1>
-                <p className="text-slate-500 dark:text-gray-400">
-                    Hola {auth?.nombre}, esto es lo que ganas con tu cartera este mes y lo que proyectas para el próximo.
-                </p>
-            </div>
+            <PageHead
+                title="Ganancias y Proyección"
+                subtitle={`Hola ${auth?.nombre ?? ''}, lo que ganas con tu cartera este mes`}
+            />
 
-            {/* Hero: ganancia proyectada próximo mes */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Hero: ganancia proyectada próximo mes + KPIs */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-1 rounded-3xl p-6 text-white shadow-lg shadow-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 flex flex-col justify-between">
                     <div className="flex items-center gap-2 text-emerald-50 text-sm font-semibold">
                         <Icon icon="solar:graph-up-bold-duotone" width="20" /> Ganancia proyectada · próximo mes
@@ -92,11 +91,13 @@ export default function ResellerGanancias() {
                     </p>
                 </div>
 
-                <div className="lg:col-span-2 grid grid-cols-2 gap-3 sm:gap-6">
-                    <StatCard icon="solar:card-recive-bold-duotone" color="indigo" label="Ingreso mensual" value={fmt(r!.ingresoMensual)} hint={`${r!.clientesConPrecio} con precio · ${r!.clientesEstimados} estimados`} />
-                    <StatCard icon="solar:card-send-bold-duotone" color="rose" label="Costo plataforma" value={fmt(r!.costoMensual)} hint="Lo que pagas por tus clientes" />
-                    <StatCard icon="solar:wallet-money-bold-duotone" color="emerald" label="Ganancia mensual" value={fmt(r!.gananciaMensual)} hint={`Margen ${r!.margenPct.toFixed(1)}%`} />
-                    <StatCard icon="solar:refresh-circle-bold-duotone" color="amber" label="Renuevan en 30 días" value={String(r!.clientesPorRenovar)} hint={`Costo estimado ${fmt(r!.costoRenovacionesProximas)}`} />
+                <div className="lg:col-span-2">
+                    <KpiHero items={([
+                        { label: 'Ingreso mensual', value: fmt(r!.ingresoMensual), mini: 'line', sub: `${r!.clientesConPrecio} con precio · ${r!.clientesEstimados} estimados` },
+                        { label: 'Costo plataforma', value: fmt(r!.costoMensual), mini: 'wave', warn: true, sub: 'Lo que pagas por tus clientes' },
+                        { label: 'Ganancia mensual', value: fmt(r!.gananciaMensual), mini: 'bars', sub: `Margen ${r!.margenPct.toFixed(1)}%` },
+                        { label: 'Renuevan en 30 días', value: String(r!.clientesPorRenovar), mini: 'donut', sub: `Costo estimado ${fmt(r!.costoRenovacionesProximas)}` },
+                    ] as KpiHeroItem[])} />
                 </div>
             </div>
 
@@ -278,25 +279,6 @@ export default function ResellerGanancias() {
                         )}
                     </div>
                 )}
-            </div>
-        </div>
-    );
-}
-
-function StatCard({ icon, color, label, value, hint }: { icon: string; color: string; label: string; value: string; hint?: string }) {
-    const colorMap: Record<string, string> = {
-        indigo: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-        rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-    };
-    return (
-        <div className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-4">
-            <div className={`p-2.5 sm:p-3.5 rounded-2xl ${colorMap[color]}`}><Icon icon={icon} width="28" /></div>
-            <div className="min-w-0 w-full">
-                <p className="text-xs font-medium text-slate-400 dark:text-gray-500">{label}</p>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white truncate">{value}</h3>
-                {hint && <p className="text-[11px] text-slate-400 dark:text-gray-500 truncate">{hint}</p>}
             </div>
         </div>
     );

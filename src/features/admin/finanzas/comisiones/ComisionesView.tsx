@@ -8,8 +8,9 @@ import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 interface ComisionDetalle {
     id: number;
-    comprobante: { tipoDoc: string; serie: string; correlativo: number; fechaEmision: string };
+    comprobante: { tipoDoc: string; serie: string; correlativo: number; fechaEmision: string; mtoImpVenta: number };
     descripcion: string | null;
+    motivo: string | null;
     cantidad: number;
     montoComision: number;
     estado: 'PENDIENTE' | 'PAGADO';
@@ -530,7 +531,9 @@ export default function ComisionesView() {
                                                     <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
                                                         <th className="py-3 px-4 text-left">Comprobante</th>
                                                         <th className="py-3 px-4 text-left">Producto</th>
+                                                        <th className="py-3 px-4 text-left">Motivo</th>
                                                         <th className="py-3 px-4 text-right">Cant.</th>
+                                                        <th className="py-3 px-4 text-right">Total comprobante</th>
                                                         <th className="py-3 px-4 text-right">Comisión</th>
                                                         <th className="py-3 px-4 text-center">Estado</th>
                                                     </tr>
@@ -547,7 +550,13 @@ export default function ComisionesView() {
                                                             <td className="py-3 px-4 text-sm text-slate-700 dark:text-slate-200 max-w-[200px] truncate">
                                                                 {c.descripcion ?? '—'}
                                                             </td>
+                                                            <td className="py-3 px-4 text-sm text-slate-500 dark:text-slate-400 max-w-[280px]">
+                                                                {c.motivo ?? '—'}
+                                                            </td>
                                                             <td className="py-3 px-4 text-right text-sm text-slate-600 dark:text-slate-300">{c.cantidad}</td>
+                                                            <td className="py-3 px-4 text-right text-sm text-slate-600 dark:text-slate-300">
+                                                                {formatCurrency(c.comprobante.mtoImpVenta)}
+                                                            </td>
                                                             <td className="py-3 px-4 text-right font-bold text-slate-800 dark:text-white text-sm">
                                                                 {formatCurrency(c.montoComision)}
                                                             </td>

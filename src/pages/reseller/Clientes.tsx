@@ -11,6 +11,24 @@ import useAlertStore from '@/zustand/alert';
 import InputPro from '@/components/InputPro';
 import { BRAND } from '@/lib/branding';
 import { useExtentionsStore } from '@/zustand/extentions';
+import { PageHead, KpiHero, type KpiHeroItem } from './resellerUi';
+
+// ── Recordatorios al cliente (WhatsApp / correo) ──────────────────────────────
+// El reseller usa estos enlaces para avisar a su cliente sobre la renovación.
+// `marca` es el nombre del reseller (su white-label), NO la marca de la plataforma.
+const soloDigitos = (t: string) => String(t || '').replace(/\D/g, '');
+const planCorto = (plan: string) => String(plan || '').split(' · ')[0];
+function whatsappRecordatorioUrl(telefono: string, empresa: string, plan: string, vence: string, marca: string) {
+    const num = soloDigitos(telefono);
+    const full = num.length === 9 ? `51${num}` : num; // Perú: antepone 51 si es celular local
+    const msg = `Hola, le saluda ${marca}. Le recordamos que el plan ${planCorto(plan)} de ${empresa} ${vence && vence !== '—' ? `vence el ${vence}` : 'está por vencer'}. Renuévelo a tiempo para no interrumpir su servicio. ¡Gracias!`;
+    return `https://wa.me/${full}?text=${encodeURIComponent(msg)}`;
+}
+function correoRecordatorioUrl(email: string, empresa: string, plan: string, vence: string, marca: string) {
+    const subject = `Recordatorio de renovación · ${empresa}`;
+    const body = `Estimado cliente,\n\nLe recordamos que el plan ${planCorto(plan)} de ${empresa} ${vence && vence !== '—' ? `vence el ${vence}` : 'está por vencer'}. Le agradeceremos realizar la renovación a tiempo para no interrumpir su servicio.\n\nSaludos,\n${marca}`;
+    return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 // Costo MAYORISTA del reseller (modelo por volumen de clientes):
 //  - MENSUAL: parte del precio base del plan mensual y baja S/1 por cada tramo de
@@ -116,7 +134,9 @@ const initialFormData = {
 
 export default function ResellerClientes() {
     const { auth } = useAuthStore();
-    const { clientes, getClientes, createCliente, updateCliente, deleteDemoCliente, stats, getDashboard, planes, getPlanes, consultarDocumento, getClienteSeries, updateClienteSeries } = useResellerPanelStore();
+    const { clientes, getClientes, createCliente, updateCliente, deleteDemoCliente, stats, getDashboard, planes, getPlanes, consultarDocumento, getClienteSeries, updateClienteSeries, branding, getBranding } = useResellerPanelStore();
+    // Marca del reseller (white-label) para firmar los recordatorios al cliente.
+    const marcaReseller = branding?.whiteLabelNombre || auth?.nombre || BRAND.name;
     const { rubros, ubigeos, getRubros, getUbigeos } = useExtentionsStore();
     // Solo planes de facturación (excluir hotel)
     const planesFacturacion = useMemo(
@@ -163,6 +183,7 @@ export default function ResellerClientes() {
             console.log("Fetching Reseller Data for ID:", auth.resellerId);
             getClientes(auth.resellerId);
             getDashboard(auth.resellerId);
+            if (!branding) getBranding(auth.resellerId);
         } else {
             console.warn("No resellerId found in auth object");
         }
@@ -492,6 +513,8 @@ export default function ResellerClientes() {
                 esWhiteLabel: Boolean(cliente.esWhiteLabel),
                 estado: cliente.estado,
                 usaDemo: Boolean(cliente.usaDemo),
+                telefono: cliente.usuarios?.[0]?.celular || cliente.telefono || '',
+                email: cliente.usuarios?.[0]?.email || cliente.email || '',
             };
         });
     }, [clientes, search, marcaFilter, estadoFilter, planesFacturacion, stats.clientesActivos]);
@@ -509,49 +532,31 @@ export default function ResellerClientes() {
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Mis Clientes</h1>
-                    <p className="text-slate-500">Gestiona las empresas bajo tu distribución</p>
-                </div>
-                <div className="flex items-center gap-2.5">
-                    <button
-                        onClick={exportCSV}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm"
-                    >
-                        <Icon icon="solar:upload-minimalistic-linear" width="18" />
-                        Exportar
-                    </button>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 btn-accent font-bold rounded-xl shadow-lg shadow-black/20 transition-all active:scale-95"
-                    >
-                        <Icon icon="solar:add-circle-bold" width="20" />
-                        Nuevo Cliente
-                    </button>
-                </div>
-            </div>
+            <PageHead title="Mis Clientes" subtitle="Gestiona las empresas bajo tu distribución">
+                <button
+                    onClick={exportCSV}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-gray-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm"
+                >
+                    <Icon icon="solar:upload-minimalistic-linear" width="18" />
+                    <span className="hidden sm:inline">Exportar</span>
+                </button>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 btn-accent font-bold rounded-xl shadow-lg shadow-black/20 transition-all active:scale-95"
+                >
+                    <Icon icon="solar:add-circle-bold" width="20" />
+                    Nuevo Cliente
+                </button>
+            </PageHead>
 
             {/* Resumen — tarjetas clickeables que filtran por estado */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {[
-                    { key: 'todos' as const, label: 'Total', value: resumen.total, icon: 'solar:users-group-two-rounded-bold-duotone', tone: 'bg-violet-50 text-violet-600' },
-                    { key: 'activos' as const, label: 'Activos', value: resumen.activos, icon: 'solar:check-circle-bold-duotone', tone: 'bg-emerald-50 text-emerald-600' },
-                    { key: 'suspendidos' as const, label: 'Suspendidos', value: resumen.suspendidos, icon: 'solar:user-block-bold-duotone', tone: 'bg-rose-50 text-rose-600' },
-                    { key: 'porvencer' as const, label: 'Por vencer (7d)', value: resumen.porVencer, icon: 'solar:calendar-mark-bold-duotone', tone: 'bg-amber-50 text-amber-600' },
-                    { key: 'demo' as const, label: 'Demo', value: resumen.demo, icon: 'solar:test-tube-bold-duotone', tone: 'bg-violet-50 text-violet-600' },
-                ].map((c) => (
-                    <button
-                        key={c.key}
-                        onClick={() => setEstadoFilter(c.key)}
-                        className={`text-left rounded-3xl bg-white p-4 shadow-sm border transition-all ${estadoFilter === c.key ? 'border-violet-400 ring-2 ring-violet-100' : 'border-slate-100 hover:border-slate-200 hover:-translate-y-0.5'}`}
-                    >
-                        <div className={`h-9 w-9 grid place-items-center rounded-xl ${c.tone}`}><Icon icon={c.icon} width="20" /></div>
-                        <p className="mt-2 text-2xl font-extrabold text-slate-800">{c.value}</p>
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{c.label}</p>
-                    </button>
-                ))}
-            </div>
+            <KpiHero items={([
+                { label: 'Total', value: String(resumen.total), mini: 'bars', onClick: () => setEstadoFilter('todos'), active: estadoFilter === 'todos' },
+                { label: 'Activos', value: String(resumen.activos), mini: 'line', onClick: () => setEstadoFilter('activos'), active: estadoFilter === 'activos' },
+                { label: 'Suspendidos', value: String(resumen.suspendidos), mini: 'wave', warn: resumen.suspendidos > 0, onClick: () => setEstadoFilter('suspendidos'), active: estadoFilter === 'suspendidos' },
+                { label: 'Por vencer (7d)', value: String(resumen.porVencer), mini: 'donut', onClick: () => setEstadoFilter('porvencer'), active: estadoFilter === 'porvencer' },
+                { label: 'Demo', value: String(resumen.demo), mini: 'bars', onClick: () => setEstadoFilter('demo'), active: estadoFilter === 'demo' },
+            ] as KpiHeroItem[])} />
 
             <div className="bg-white rounded-2xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] border border-slate-100 overflow-hidden">
                 <div className="p-5 border-b border-slate-100">
@@ -662,6 +667,33 @@ export default function ResellerClientes() {
                                                         <button onClick={() => openEditModal(row)} title="Editar" aria-label="Editar" className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-violet-600 transition-colors">
                                                             <Icon icon="solar:pen-bold" width={16} />
                                                         </button>
+                                                        {row.telefono ? (
+                                                            <a
+                                                                href={whatsappRecordatorioUrl(row.telefono, row.empresa, row.plan, row.vence, marcaReseller)}
+                                                                target="_blank" rel="noopener noreferrer"
+                                                                title="Recordar por WhatsApp" aria-label="Recordar por WhatsApp"
+                                                                className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-colors"
+                                                            >
+                                                                <Icon icon="mdi:whatsapp" width={16} />
+                                                            </a>
+                                                        ) : (
+                                                            <button disabled title="Sin teléfono registrado" aria-label="Sin teléfono registrado" className="h-8 w-8 grid place-items-center rounded-lg border border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed">
+                                                                <Icon icon="mdi:whatsapp" width={16} />
+                                                            </button>
+                                                        )}
+                                                        {row.email ? (
+                                                            <a
+                                                                href={correoRecordatorioUrl(row.email, row.empresa, row.plan, row.vence, marcaReseller)}
+                                                                title="Enviar correo de recordatorio" aria-label="Enviar correo de recordatorio"
+                                                                className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-colors"
+                                                            >
+                                                                <Icon icon="solar:letter-bold" width={16} />
+                                                            </a>
+                                                        ) : (
+                                                            <button disabled title="Sin correo registrado" aria-label="Sin correo registrado" className="h-8 w-8 grid place-items-center rounded-lg border border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed">
+                                                                <Icon icon="solar:letter-bold" width={16} />
+                                                            </button>
+                                                        )}
                                                         {row.usaDemo && (
                                                             <button
                                                                 onClick={() => {

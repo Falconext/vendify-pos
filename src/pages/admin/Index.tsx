@@ -286,7 +286,8 @@ export default function AdminIndex() {
     const fin = moment().format('YYYY-MM-DD')
     if (period === 'hoy') return { fechaInicio: fin, fechaFin: fin, periodLabel: 'Hoy' }
     if (period === '7d') return { fechaInicio: moment().subtract(6, 'days').format('YYYY-MM-DD'), fechaFin: fin, periodLabel: 'Últimos 7 días' }
-    return { fechaInicio: moment().startOf('month').format('YYYY-MM-DD'), fechaFin: fin, periodLabel: 'Este mes' }
+    // "Este mes" abarca el mes en curso completo: del día 1 al último día del mes.
+    return { fechaInicio: moment().startOf('month').format('YYYY-MM-DD'), fechaFin: moment().endOf('month').format('YYYY-MM-DD'), periodLabel: 'Este mes' }
   }, [period])
 
   const effectiveSedeId = sedeActiva?.id ?? null

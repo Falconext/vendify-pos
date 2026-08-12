@@ -68,6 +68,10 @@ export interface GastoOperativo {
     categoria: string;
     etiqueta: string | null;
     monto: number;
+    moneda?: string | null;
+    tipoCambio?: number | string | null;
+    cuentaBancariaId?: number | null;
+    medioPago?: string | null;
     descripcion: string | null;
     creadoEn: string;
 }
@@ -115,7 +119,27 @@ export interface GastoFormData {
     categoria: string;
     etiqueta?: string;
     monto: number;
+    moneda?: string;
+    tipoCambio?: number;
+    cuentaBancariaId?: number;
+    medioPago?: string;
     descripcion?: string;
+}
+
+export const MEDIOS_PAGO_GASTO = [
+    { key: 'TRANSFERENCIA', label: 'Transferencia' },
+    { key: 'TARJETA',       label: 'Tarjeta' },
+    { key: 'EFECTIVO',      label: 'Efectivo' },
+    { key: 'YAPE',          label: 'Yape' },
+    { key: 'PLIN',          label: 'Plin' },
+] as const;
+
+export function formatMonto(value: number, moneda?: string | null): string {
+    const simbolo = moneda === 'USD' ? 'US$' : 'S/';
+    return `${simbolo} ${value.toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────

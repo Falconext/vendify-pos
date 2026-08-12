@@ -6,8 +6,10 @@ import { useReactToPrint } from 'react-to-print';
 import Modal from '@/components/Modal';
 import Button from '@/components/Button';
 import ModalConfirm from '@/components/ModalConfirm';
-import { get, post, put } from '@/utils/fetch';
+import { get, post, put, patch } from '@/utils/fetch';
 import { useAuthStore } from '@/zustand/auth';
+import { useUsersStore } from '@/zustand/users';
+import Select from '@/components/Select';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from './comprobanteImprimir';
 import { numberToWords } from '@/utils/numberToLetters';
@@ -119,9 +121,12 @@ interface Props {
     comprobanteId: number | null;
     isOpen: boolean;
     onClose: () => void;
+    // Se dispara cuando algo del comprobante cambió (p. ej. el vendedor de campo),
+    // para que la vista que abrió el modal refresque su listado.
+    onUpdated?: () => void;
 }
 
-export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose }: Props) {
+export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose, onUpdated }: Props) {
     const { auth } = useAuthStore();
     const { alert } = useAlertStore();
     const navigate = useNavigate();
@@ -130,6 +135,33 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
     const [comprobante, setComprobante] = useState<any>(null);
     const [envio, setEnvio] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+
+    // ── Cobranza en campo: reasignar vendedor de campo (retroactivo) ──
+    const cobranzaCampo = Boolean((auth as any)?.empresa?.cobranzaCampo);
+    const { usuarios, getAllUsers } = useUsersStore();
+    const [guardandoVendedorCampo, setGuardandoVendedorCampo] = useState(false);
+    useEffect(() => {
+        if (isOpen && cobranzaCampo) getAllUsers({ page: 1, limit: 100 });
+    }, [isOpen, cobranzaCampo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const guardarVendedorCampo = async (vendedorCampoId: number | null) => {
+        if (!comprobante?.id) return;
+        const nombre = usuarios.find((u: any) => u.id === vendedorCampoId)?.nombre ?? null;
+        setGuardandoVendedorCampo(true);
+        try {
+            await patch(`comprobante/${comprobante.id}/vendedor-campo`, {
+                vendedorCampoId,
+                vendedorCampoNombre: nombre,
+            });
+            setComprobante((prev: any) => prev ? { ...prev, vendedorCampoId, vendedorCampoNombre: nombre } : prev);
+            alert('Vendedor de campo actualizado', 'success');
+            onUpdated?.();
+        } catch (e: any) {
+            alert(e?.message || 'No se pudo actualizar el vendedor', 'error');
+        } finally {
+            setGuardandoVendedorCampo(false);
+        }
+    };
 
     // ── Print / Share state ──
     const [printSize, setPrintSize] = useState<PrintSize>('TICKET');
@@ -346,6 +378,29 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                             <SunatBadge estado={comprobante.estadoEnvioSunat} />
                         </div>
                     </div>
+
+                    {/* ── Cobranza en campo: reasignar vendedor de campo ── */}
+                    {cobranzaCampo && (
+                        <div className="px-5 pb-4">
+                            <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 dark:border-violet-900/30 dark:bg-violet-900/10">
+                                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
+                                    <Icon icon="solar:user-hand-up-bold-duotone" width={13} />
+                                    Vendedor de campo
+                                </p>
+                                <Select
+                                    error=""
+                                    label=""
+                                    name="vendedorCampoDetalle"
+                                    value={comprobante.vendedorCampoNombre || ''}
+                                    options={(usuarios || []).map((u: any) => ({ id: u.id, value: u.nombre || u.email || `Usuario ${u.id}` }))}
+                                    onChange={(id: any) => guardarVendedorCampo(Number(id) || null)}
+                                />
+                                <p className="mt-1 text-[10px] text-gray-400 dark:text-slate-500">
+                                    {guardandoVendedorCampo ? 'Guardando…' : 'Se muestra como vendedor en el panel, la nota de venta y el comprobante.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Productos ── */}
                     <div className="p-5">

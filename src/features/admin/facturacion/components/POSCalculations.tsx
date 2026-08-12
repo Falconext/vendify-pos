@@ -391,7 +391,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 </div>
                                 <div>
                                     <h3 className="text-base font-extrabold text-gray-900 dark:text-white leading-none">Continuar pago</h3>
-                                    <p className="text-xs text-gray-400">Elige el método de pago y confirma</p>
+                                    <p className="text-xs text-gray-400">{vm.formValues?.medioPago === 'Crédito' ? 'Revisa y confirma el comprobante a crédito' : 'Elige el método de pago y confirma'}</p>
                                 </div>
                             </div>
                             <button onClick={() => setShowPago(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
@@ -399,10 +399,11 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                             </button>
                         </div>
 
-                        {/* Body: split */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 overflow-y-auto flex-1 min-h-0">
-                            {/* IZQUIERDA: métodos de pago */}
-                            <div className="p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/10">
+                        {/* Body: split. En venta a crédito no hay método de pago, así que
+                            se usa una sola columna centrada (solo la vista previa). */}
+                        <div className={`grid grid-cols-1 ${vm.formValues?.medioPago === 'Crédito' ? '' : 'md:grid-cols-2'} gap-0 overflow-y-auto flex-1 min-h-0`}>
+                            {/* IZQUIERDA: métodos de pago (oculto en crédito) */}
+                            <div className={`p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/10 ${vm.formValues?.medioPago === 'Crédito' ? 'hidden' : ''}`}>
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Método de pago</h4>
                                 {vm.formValues?.medioPago === 'Crédito' ? (
                                     <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-700 dark:text-amber-300">
@@ -564,6 +565,12 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
 
                             {/* DERECHA: preview del comprobante — mismo formato que el ticket impreso */}
                             <div className="p-5 bg-gray-50 dark:bg-[#0b1030]">
+                                {vm.formValues?.medioPago === 'Crédito' && (
+                                    <div className="mx-auto mb-3 flex max-w-[300px] items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                                        <Icon icon="solar:hand-money-bold-duotone" width={16} />
+                                        Venta a crédito — no requiere método de pago.
+                                    </div>
+                                )}
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>
                                 <div className="mx-auto w-full max-w-[300px] rounded-xl bg-white text-gray-900 border border-gray-200 shadow-inner p-4 font-mono text-[10px] leading-relaxed">
                                     {/* Encabezado empresa */}

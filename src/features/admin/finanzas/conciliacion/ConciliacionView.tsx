@@ -200,29 +200,73 @@ export default function ConciliacionView() {
         </div>
       )}
 
+      {/* Observaciones (se incluyen en el PDF y el Excel) */}
+      {vm.resultado && (
+        <div className={`${CARD} p-6`}>
+          <label className="mb-1.5 block text-sm font-bold text-slate-800 dark:text-white">
+            Observaciones (opcional)
+          </label>
+          <textarea
+            value={vm.observaciones}
+            onChange={(e) => vm.setObservaciones(e.target.value)}
+            rows={3}
+            placeholder="Notas para la conciliación (se incluirán al exportar a PDF y Excel)…"
+            className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[color:var(--acc,#7551FF)] dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
+            style={{ ['--acc' as any]: ACCENT }}
+          />
+        </div>
+      )}
+
       {/* Tabla banco vs sistema */}
       {vm.resultado && (
         <div className={CARD}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
             <p className="text-sm font-bold text-slate-800 dark:text-white">Movimientos del banco</p>
-            <div className="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
-              {FILTROS.map((f) => {
-                const activo = vm.filtro === f.value;
-                return (
-                  <button
-                    key={f.value}
-                    onClick={() => vm.setFiltro(f.value)}
-                    className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                      activo
-                        ? 'bg-white shadow-sm dark:bg-slate-900'
-                        : 'text-slate-500 hover:text-slate-700 dark:text-gray-400'
-                    }`}
-                    style={activo ? { color: ACCENT } : undefined}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={vm.guardarConciliacion}
+                disabled={vm.guardando}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:brightness-105 disabled:opacity-50"
+                style={{ background: ACCENT }}
+              >
+                <Icon icon={vm.guardando ? 'svg-spinners:180-ring' : 'solar:diskette-bold'} width={15} />
+                {vm.guardando ? 'Guardando…' : 'Guardar conciliación'}
+              </button>
+              <button
+                onClick={vm.descargarExcel}
+                disabled={vm.generandoExcel}
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-900/40 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+              >
+                <Icon icon={vm.generandoExcel ? 'svg-spinners:180-ring' : 'solar:file-download-bold'} width={15} />
+                {vm.generandoExcel ? 'Generando…' : 'Exportar Excel'}
+              </button>
+              <button
+                onClick={vm.descargarPdf}
+                disabled={vm.generandoPdf}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200 dark:hover:bg-slate-800"
+              >
+                <Icon icon={vm.generandoPdf ? 'svg-spinners:180-ring' : 'solar:file-download-bold'} width={15} />
+                {vm.generandoPdf ? 'Generando…' : 'Guardar PDF'}
+              </button>
+              <div className="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                {FILTROS.map((f) => {
+                  const activo = vm.filtro === f.value;
+                  return (
+                    <button
+                      key={f.value}
+                      onClick={() => vm.setFiltro(f.value)}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activo
+                          ? 'bg-white shadow-sm dark:bg-slate-900'
+                          : 'text-slate-500 hover:text-slate-700 dark:text-gray-400'
+                      }`}
+                      style={activo ? { color: ACCENT } : undefined}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -354,6 +398,76 @@ export default function ConciliacionView() {
           </div>
         </div>
       )}
+
+      {/* Historial de conciliaciones guardadas */}
+      <div className={CARD}>
+        <div className="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
+          <div>
+            <p className="text-sm font-bold text-slate-800 dark:text-white">Conciliaciones guardadas</p>
+            <p className="text-xs text-slate-400">Historial de conciliaciones que guardaste para consultar luego.</p>
+          </div>
+          <button
+            onClick={vm.cargarGuardadas}
+            disabled={vm.cargandoGuardadas}
+            className="flex items-center gap-1.5 text-xs font-semibold transition-colors hover:brightness-110 disabled:opacity-50"
+            style={{ color: ACCENT }}
+          >
+            <Icon icon={vm.cargandoGuardadas ? 'svg-spinners:180-ring' : 'solar:refresh-bold'} width={14} />
+            Actualizar
+          </button>
+        </div>
+
+        {vm.guardadas.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no has guardado conciliaciones.</p>
+        ) : (
+          <div className="divide-y divide-slate-50 dark:divide-slate-800/60">
+            {vm.guardadas.map((g) => (
+              <div
+                key={g.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                style={vm.guardadaActivaId === g.id ? { background: `${ACCENT}10` } : undefined}
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-slate-800 dark:text-gray-100">
+                      {new Date(g.creadoEn).toLocaleString('es-PE')}
+                    </span>
+                    {(g.fechaInicio || g.fechaFin) && (
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-gray-400">
+                        {g.fechaInicio || '…'} → {g.fechaFin || '…'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">
+                    {g.resumen.conciliados} conciliados · {g.resumen.pendientesBanco} pend. banco ·{' '}
+                    {g.resumen.pendientesSistema} pend. sistema · {fmt(g.resumen.montoConciliado)} conciliado
+                  </p>
+                  {g.observaciones && (
+                    <p className="mt-0.5 truncate text-xs italic text-slate-400" title={g.observaciones}>
+                      “{g.observaciones}”
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => vm.verGuardada(g.id)}
+                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold transition hover:brightness-105 dark:border-slate-700 dark:bg-slate-900"
+                    style={{ color: ACCENT }}
+                  >
+                    <Icon icon="solar:eye-bold" width={14} /> Ver
+                  </button>
+                  <button
+                    onClick={() => vm.eliminarGuardada(g.id)}
+                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-slate-700 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-slate-800"
+                  >
+                    <Icon icon="solar:trash-bin-trash-bold" width={14} /> Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,18 @@
 import { Icon } from '@iconify/react';
-import { GastoOperativo, formatCurrency, formatDate, getCategoriaLabel, getCategoriaIcon } from '../RentabilidadModel';
+import { GastoOperativo, formatCurrency, formatMonto, formatDate, getCategoriaLabel, getCategoriaIcon, MEDIOS_PAGO_GASTO } from '../RentabilidadModel';
+
+/** Convierte un gasto a soles: si es USD usa su tipo de cambio; si no, el monto tal cual. */
+function gastoEnSoles(gasto: GastoOperativo): number {
+    if (gasto.moneda === 'USD' && gasto.tipoCambio) {
+        return Number(gasto.monto) * Number(gasto.tipoCambio);
+    }
+    return Number(gasto.monto);
+}
+
+function medioPagoLabel(key?: string | null): string | null {
+    if (!key) return null;
+    return MEDIOS_PAGO_GASTO.find(m => m.key === key)?.label ?? key;
+}
 
 interface GastosPanelProps {
     gastos: GastoOperativo[];
@@ -93,6 +106,11 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                                             hasta {formatDate(gasto.fechaFin)}
                                         </span>
                                     )}
+                                    {medioPagoLabel(gasto.medioPago) && (
+                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                            {medioPagoLabel(gasto.medioPago)}
+                                        </span>
+                                    )}
                                     {gasto.descripcion && (
                                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
                                             {gasto.descripcion}
@@ -104,8 +122,13 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                             {/* Amount */}
                             <div className="flex-shrink-0 text-right">
                                 <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">
-                                    {formatCurrency(gasto.monto)}
+                                    {formatMonto(Number(gasto.monto), gasto.moneda)}
                                 </span>
+                                {gasto.moneda === 'USD' && gasto.tipoCambio && (
+                                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 tabular-nums">
+                                        ≈ {formatCurrency(gastoEnSoles(gasto))}
+                                    </p>
+                                )}
                                 {gasto.recurrenteDiario && (
                                     <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-300">por día</p>
                                 )}
@@ -138,7 +161,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center">
                     <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Monto configurado</span>
                     <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
-                        {formatCurrency(gastos.reduce((sum, g) => sum + Number(g.monto), 0))}
+                        {formatCurrency(gastos.reduce((sum, g) => sum + gastoEnSoles(g), 0))}
                     </span>
                 </div>
             )}
