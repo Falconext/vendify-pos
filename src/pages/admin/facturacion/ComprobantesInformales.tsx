@@ -941,6 +941,15 @@ const ComprobantesInformales = () => {
                             {item?.comprobante === 'NOTA DE VENTA' && (
                                 <>
                                     <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                                    {row.estadoEnvioSunat !== 'ANULADO' && (
+                                        <button type="button" onClick={() => {
+                                            navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'NV', fromNotaDeVenta: true, isEditNV: true, notaVentaId: item.id, notaDeVentaData: { cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, vendedorCampoId: item.vendedorCampoId, vendedorCampoNombre: item.vendedorCampoNombre, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
+                                            handleCloseMenu();
+                                        }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                            <Icon icon="mdi:pencil-outline" width={16} height={16} />
+                                            <span>Editar nota de venta</span>
+                                        </button>
+                                    )}
                                     <button type="button" onClick={() => {
                                         const esRuc = item.cliente?.nroDoc?.length === 11;
                                         navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, cliente: esRuc ? item.cliente : null, clienteId: esRuc ? item.clienteId : null, observaciones: item.observaciones, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });

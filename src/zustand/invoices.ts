@@ -79,6 +79,7 @@ export interface IInvoicesState {
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
+    updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
 }
 
@@ -567,6 +568,27 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             return { success: false, error: resp.error };
         } catch (error: any) {
             useAlertStore.getState().alert(error.message || 'Error al actualizar la cotización', 'error');
+            return { success: false, error: error.message };
+        }
+    },
+    updateNotaVenta: async (id: number, data: any) => {
+        try {
+            const resp: any = await patch(`/comprobante/${id}/nota-venta`, data);
+            if (resp.code === 1) {
+                useAlertStore.getState().alert('Nota de venta actualizada exitosamente', 'success');
+                return {
+                    success: true,
+                    serie: resp.data?.serie,
+                    correlativo: resp.data?.correlativo,
+                    id: resp.data?.id,
+                    mtoImpVenta: resp.data?.mtoImpVenta,
+                    isUpdate: true,
+                };
+            }
+            useAlertStore.getState().alert(resp.error || 'Error al actualizar la nota de venta', 'error');
+            return { success: false, error: resp.error };
+        } catch (error: any) {
+            useAlertStore.getState().alert(error.message || 'Error al actualizar la nota de venta', 'error');
             return { success: false, error: error.message };
         }
     },
