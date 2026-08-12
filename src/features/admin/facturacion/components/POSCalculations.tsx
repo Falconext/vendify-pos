@@ -338,7 +338,10 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                 <button
                     onClick={() => {
                         if (!hayProductos) return;
-                        if (vm.isQuotationRoute) {
+                        // Cotización o EDICIÓN de nota de venta: guardar directo, sin el
+                        // paso de cobro. Editar cambia el contenido, no cobra (el cobro
+                        // parcial/total se hace con "Registrar Pago").
+                        if (vm.isQuotationRoute || vm.isEditNotaVenta) {
                             vm.addInvoiceReceipt();
                         } else {
                             setShowPago(true);
@@ -353,8 +356,8 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         }`}
                     title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
-                    <Icon icon={vm.isQuotationRoute ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
-                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : "CONTINUAR PAGO"}</span>
+                    <Icon icon={(vm.isQuotationRoute || vm.isEditNotaVenta) ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
+                    <span className="text-white">{vm.isEditNotaVenta ? "ACTUALIZAR NOTA" : vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : "CONTINUAR PAGO"}</span>
                 </button>
             </div>
 
