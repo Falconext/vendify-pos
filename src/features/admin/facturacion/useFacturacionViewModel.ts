@@ -869,8 +869,39 @@ export const useFacturacionViewModel = () => {
             if (state.isEditNV && state.notaVentaId) {
                 setIsEditMode(true);
                 setEditNotaVentaId(Number(state.notaVentaId));
-                const vcId = state.notaDeVentaData?.vendedorCampoId;
+                const nvData = state.notaDeVentaData || {};
+                const vcId = nvData.vendedorCampoId;
                 if (vcId != null) setVendedorCampoId(Number(vcId));
+
+                // Precargar el PAGO que tenía la nota: método (o Pago Mixto) y el monto
+                // ya pagado, para que el modal de pago aparezca con lo mismo seleccionado.
+                const METODOS_LABEL: Record<string, string> = {
+                    EFECTIVO: 'Efectivo', YAPE: 'Yape', PLIN: 'Plin',
+                    TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta',
+                };
+                const normMetodo = (m?: string) => METODOS_LABEL[String(m || '').toUpperCase()] || 'Efectivo';
+                let pd = nvData.paymentDetails;
+                if (typeof pd === 'string') { try { pd = JSON.parse(pd); } catch { pd = null; } }
+                const pagado = Math.max(0, Number(nvData.mtoImpVenta || 0) - Number(nvData.saldo || 0));
+
+                if (pd && (pd.mode === 'MIXTO' || Array.isArray(pd.splitPayments))) {
+                    const lineas = (pd.splitPayments || [])
+                        .filter((l: any) => Number(l?.amount || 0) > 0)
+                        .map((l: any) => ({
+                            method: normMetodo(l.method),
+                            amount: Number(l.amount || 0),
+                            referencia: l.referencia || undefined,
+                            cuentaBancariaId: l.cuentaBancariaId ?? null,
+                        }));
+                    if (lineas.length > 0) {
+                        setIsMixedPayment(true);
+                        setSplitPayments(lineas);
+                    }
+                } else {
+                    setIsMixedPayment(false);
+                    setPaymentMethod(normMetodo(nvData.medioPago));
+                    if (pagado > 0) setPay(pagado);
+                }
             }
 
             if (cliente) {
