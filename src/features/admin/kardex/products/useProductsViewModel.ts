@@ -12,14 +12,13 @@ import { useRubroFeatures } from '@/utils/rubro-features';
 import { IProductsViewModelState, initialProductForm, IFormProduct, IProduct, buildEditFormValues } from './ProductsModel';
 
 const COLUMNAS_CORPORATIVAS = ['Localización', '% Venta', '% Provisión'];
-const REQUIRED_VISIBLE_COLUMNS = ['Valor Inventario', 'Costo Total Fijo'];
+const REQUIRED_VISIBLE_COLUMNS = ['Valor Inventario'];
 const FALLBACK_VISIBLE_COLUMNS = [
     'Producto',
     'Precio Venta',
     'Stock',
     'Costo',
     'Valor Inventario',
-    'Costo Total Fijo',
     'Sede',
     'Estado',
     'Acciones',
@@ -110,13 +109,13 @@ export const useProductsViewModel = () => {
     const tieneGestionProvisiones = hasPlanFeature(userPermissions, 'tieneGestionProvisiones');
     const tieneTienda = hasPlanFeature(userPermissions, 'tieneTienda');
 
-    const COLUMNAS_ECOMMERCE = ['Costo Total Fijo', 'Tienda'];
+    const COLUMNAS_ECOMMERCE = ['Tienda'];
 
     const allColumns = useMemo(() => {
         // Rubros farmacéuticos: "Lotes" (próximo vencimiento) al costado de Producto, sin U.M/%Venta/%Provisión
         const base = esFarmaceuticoRubro
-            ? ['Img', 'Producto', 'Lotes', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Localización', 'Estado', 'Tienda', 'Acciones']
-            : ['Img', 'Producto', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Costo Total Fijo', 'Localización', '% Venta', '% Provisión', 'U.M', 'Estado', 'Tienda', 'Acciones'];
+            ? ['Img', 'Producto', 'Lotes', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Localización', 'Estado', 'Tienda', 'Acciones']
+            : ['Img', 'Producto', 'Categoria', 'Marca', 'Precio Venta', 'Stock', 'Costo', 'Valor Inventario', 'Localización', '% Venta', '% Provisión', 'U.M', 'Estado', 'Tienda', 'Acciones'];
         return base.filter(c => {
             if (COLUMNAS_CORPORATIVAS.includes(c) && !tieneGestionProvisiones) return false;
             if (COLUMNAS_ECOMMERCE.includes(c) && !tieneTienda) return false;

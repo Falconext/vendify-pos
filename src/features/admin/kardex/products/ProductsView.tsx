@@ -153,10 +153,7 @@ export default function ProductsView() {
             const simbolo = String(itemAny?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
             const stock = Number(item?.stock || 0);
             const esServicio = String(itemAny?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
-            const costoFijo = Number(itemAny?.costoFijo || 0);
-            const costoFijoUnitario = costo + costoFijo;
             const valorInventario = stock * costo;
-            const costoTotalFijo = stock * costoFijoUnitario;
             const margen = precio > 0 && costo > 0 ? ((precio - costo) / precio * 100) : 0;
             const gananciaUnidad = precio - costo;
             const imageSrc = (item as any)?.imagenUrlDisplay || (item as any)?.imagenUrl;
@@ -213,12 +210,6 @@ export default function ProductsView() {
                 'Precio Venta': `${simbolo} ${precio.toFixed(2)}`,
                 'Costo': costo > 0 ? `${simbolo} ${costo.toFixed(2)}` : '-',
                 'Valor Inventario': esServicio ? '-' : valorInventario > 0 ? `${simbolo} ${formatMoney(valorInventario)}` : '-',
-                'Costo Total Fijo': !esServicio && costoTotalFijo > 0 ? (
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-gray-800 dark:text-gray-100">{simbolo} {formatMoney(costoTotalFijo)}</span>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Unit. {simbolo} {formatMoney(costoFijoUnitario)}</span>
-                    </div>
-                ) : '-',
                 'Margen': margen > 0 ? `${margen.toFixed(1)}%` : '-',
                 'Ganancia/Unidad': gananciaUnidad > 0 ? `${simbolo} ${gananciaUnidad.toFixed(2)}` : '-',
                 'Stock': (
