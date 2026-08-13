@@ -13,6 +13,7 @@ interface Comision {
     id: number;
     comprobante: { tipoDoc: string; serie: string; correlativo: number; fechaEmision: string };
     descripcion: string | null;
+    motivo: string | null;
     cantidad: number;
     montoComision: number;
     estado: 'PENDIENTE' | 'PAGADO';
@@ -174,6 +175,13 @@ export default function MisComisionesPage() {
     const pendienteFiltrado = useMemo(() => comisionesFiltradas.filter(c => c.estado === 'PENDIENTE').reduce((s, c) => s + toNum(c.montoComision), 0), [comisionesFiltradas]);
 
     const hayFiltros = preset !== 'mes';
+
+    // Paginación (client-side) de la tabla de comisiones.
+    const PAGE_SIZE = 15;
+    const [page, setPage] = useState(1);
+    useEffect(() => { setPage(1); }, [desde, hasta, mes, anio]);
+    const totalPages = Math.max(1, Math.ceil(comisionesFiltradas.length / PAGE_SIZE));
+    const comisionesPagina = useMemo(() => comisionesFiltradas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [comisionesFiltradas, page]);
 
     const kpis = [
         {
@@ -357,6 +365,7 @@ export default function MisComisionesPage() {
                                 <th className="py-3 pl-5 pr-3">Comprobante</th>
                                 <th className="py-3 px-3">Fecha</th>
                                 <th className="py-3 px-3">Producto</th>
+                                <th className="py-3 px-3">Motivo</th>
                                 <th className="py-3 px-3">Cant.</th>
                                 <th className="py-3 px-3">Comisión</th>
                                 <th className="py-3 px-3 pr-5">Estado</th>
@@ -383,7 +392,7 @@ export default function MisComisionesPage() {
                                         </p>
                                     </td>
                                 </tr>
-                            ) : comisionesFiltradas.map((c) => (
+                            ) : comisionesPagina.map((c) => (
                                 <tr key={c.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="py-3 pl-5 pr-3">
                                         <span className="font-mono text-sm text-slate-600 dark:text-gray-400">
@@ -396,6 +405,9 @@ export default function MisComisionesPage() {
                                     <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-400 truncate max-w-[240px]">
                                         {c.descripcion ?? '—'}
                                     </td>
+                                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 max-w-[280px]">
+                                        {c.motivo ?? '—'}
+                                    </td>
                                     <td className="py-3 px-3">
                                         <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">{c.cantidad}</span>
                                     </td>
@@ -406,6 +418,20 @@ export default function MisComisionesPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Paginación */}
+                {!isLoading && comisionesFiltradas.length > PAGE_SIZE && (
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-700 text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, comisionesFiltradas.length)} de {comisionesFiltradas.length}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Anterior</button>
+                            <span className="px-2 text-slate-500 dark:text-slate-400">{page} / {totalPages}</span>
+                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Siguiente</button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Footer total */}
                 {!isLoading && comisionesFiltradas.length > 0 && (

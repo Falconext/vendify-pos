@@ -454,6 +454,13 @@ export default function PanelVentasView() {
         ? vm.filtrados.filter((item) => item.comprobanteId === queryComprobanteId)
         : vm.filtrados;
 
+    // Paginación (client-side) de la tabla de ventas.
+    const PAGE_SIZE = 20;
+    const [page, setPage] = useState(1);
+    useEffect(() => { setPage(1); }, [vm.tab, vm.filtroUsuarioId, vm.busqueda, vm.fecha, vm.fechaFin, filasVisibles.length]);
+    const totalPages = Math.max(1, Math.ceil(filasVisibles.length / PAGE_SIZE));
+    const filasPagina = filasVisibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
     const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, item: VentaPanelItem) => {
         e.stopPropagation();
         setMenuAnchor(e.currentTarget);
@@ -895,7 +902,7 @@ export default function PanelVentasView() {
                                     </td>
                                 </tr>
                             ) : (
-                                filasVisibles.map((item) => {
+                                filasPagina.map((item) => {
                                     const tipoConf = TIPO_CONFIG[item.tipo] ?? { label: item.tipo, cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' };
                                     const pagoConf = PAGO_CONFIG[item.estadoPago] ?? PAGO_CONFIG.PENDIENTE;
                                     const sunatConf = SUNAT_CONFIG[item.estadoSunat] ?? SUNAT_CONFIG.NO_APLICA;
@@ -1032,6 +1039,18 @@ export default function PanelVentasView() {
                         </tbody>
                     </table>
                 </div>
+                {filasVisibles.length > PAGE_SIZE && (
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filasVisibles.length)} de {filasVisibles.length}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Anterior</button>
+                            <span className="px-2 text-slate-500 dark:text-slate-400">{page} / {totalPages}</span>
+                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Siguiente</button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modales */}

@@ -303,6 +303,8 @@ export const useFacturacionViewModel = () => {
         { method: 'Yape', amount: 0 },
     ]);
     const [adelanto, setAdelanto] = useState<number>(0);
+    // Método del pago inicial cuando la venta es a crédito con adelanto.
+    const [adelantoMetodo, setAdelantoMetodo] = useState<string>('Efectivo');
     const [fechaRecojo, setFechaRecojo] = useState<string>('');
     // Nota de Pedido: si el usuario marca esto, la NP descuenta stock al emitirse.
     // Por defecto false → la NP no toca stock hasta convertirse en comprobante formal.
@@ -901,6 +903,36 @@ export const useFacturacionViewModel = () => {
                     setIsMixedPayment(false);
                     setPaymentMethod(normMetodo(nvData.medioPago));
                     if (pagado > 0) setPay(pagado);
+                }
+
+                // Descuento global (S/) que tenía la nota.
+                const descNota = Number(nvData.mtoDescuentoGlobal || 0);
+                if (descNota > 0) {
+                    setDescuentoModoNV('SOLES');
+                    setDescuentoSolesNV(descNota);
+                    setDescuentoPctNV(0);
+                }
+
+                // Condición de pago: si fue a CRÉDITO, seleccionar Crédito y precargar
+                // la fecha de vencimiento, las cuotas y el pago inicial (si hubo).
+                if (String(nvData.formaPagoTipo || '').toUpperCase() === 'CREDITO') {
+                    setFormValues(prev => ({ ...prev, medioPago: 'Crédito' }));
+                    if (nvData.fechaVencimientoCredito) {
+                        setFechaVencimientoCredito(String(nvData.fechaVencimientoCredito).slice(0, 10));
+                    }
+                    let cuotasNota = nvData.cuotas;
+                    if (typeof cuotasNota === 'string') { try { cuotasNota = JSON.parse(cuotasNota); } catch { cuotasNota = null; } }
+                    if (Array.isArray(cuotasNota) && cuotasNota.length > 0) {
+                        setCuotas(cuotasNota.map((c: any) => ({
+                            monto: Number(c.monto || 0),
+                            fechaVencimiento: String(c.fechaVencimiento || '').slice(0, 10),
+                        })));
+                    }
+                    // Pago inicial ya abonado en un crédito (parcial).
+                    if (pagado > 0) {
+                        setAdelanto(pagado);
+                        setAdelantoMetodo(normMetodo(nvData.medioPago));
+                    }
                 }
             }
 
@@ -1796,10 +1828,15 @@ export const useFacturacionViewModel = () => {
             ? Number(pay.toFixed(2))
             : Number(totalAdjusted.toFixed(2));
     const vueltoCalculado = Number(Math.max(0, montoRecibido - totalAdjusted).toFixed(2));
-    const adelantoCreditoCalculado =
-        esInformal && (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") && Number(adelanto) > 0
-            ? Math.min(Number(adelanto), totalAdjusted)
-            : 0;
+    const esCreditoNV = formValues.medioPago === 'Crédito';
+    // Pago inicial del crédito: si es mixto, la suma de las líneas; si es simple, el campo adelanto.
+    const inicialCreditoMonto = esCreditoNV
+        ? (isMixedPayment ? Number(splitPaymentTotal.toFixed(2)) : Number(adelanto))
+        : 0;
+    const adelantoBruto = esCreditoNV
+        ? inicialCreditoMonto
+        : (esInformal && (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") ? Number(adelanto) : 0);
+    const adelantoCreditoCalculado = adelantoBruto > 0 ? Math.min(adelantoBruto, totalAdjusted) : 0;
     const totalCredito = Number(Math.max(0, totalAdjusted - adelantoCreditoCalculado).toFixed(2));
     const buildPaymentDetails = () => {
         const normalizeLine = (line: PaymentLine): PaymentLine => {
@@ -2022,11 +2059,25 @@ export const useFacturacionViewModel = () => {
         const paymentDetails = buildPaymentDetails();
         const esPagoCredito = formValues.medioPago === 'Crédito';
         const esDocumentoInformal = esInformal;
+        // Crédito con pago inicial: el inicial se registra con su método real y el
+        // resto queda a crédito. Para el resto de casos, se usan los valores normales.
+        const creditoConInicial = esPagoCredito && adelantoCreditoCalculado > 0;
+        const medioPagoFinal = creditoConInicial
+            ? (isMixedPayment ? 'MIXTO' : adelantoMetodo)
+            : effectiveMedioPago;
+        const paymentDetailsFinal = creditoConInicial
+            ? (isMixedPayment
+                ? paymentDetails
+                : { mode: 'SIMPLE', method: normalizePaymentMethod(adelantoMetodo), amount: adelantoCreditoCalculado })
+            : paymentDetails;
+        // Cuota única (0 o 1 cuota): su monto SIEMPRE es el total a financiar, para que
+        // no quede obsoleto al cambiar el pago inicial. Con 2+ cuotas, se respeta el
+        // cronograma configurado por el usuario (debe sumar el total a crédito).
         const cuotasCredito = esPagoCredito
-            ? (cuotas.length > 0
+            ? (cuotas.length > 1
                 ? cuotas
-                : (fechaVencimientoCredito
-                    ? [{ monto: totalCredito, fechaVencimiento: fechaVencimientoCredito }]
+                : ((fechaVencimientoCredito || cuotas[0]?.fechaVencimiento)
+                    ? [{ monto: totalCredito, fechaVencimiento: cuotas[0]?.fechaVencimiento || fechaVencimientoCredito }]
                     : []))
             : [];
 
@@ -2054,8 +2105,8 @@ export const useFacturacionViewModel = () => {
         const baseData = {
             tipoOperacionId: formValues.tipoOperacionId || 1,
             fechaEmision,
-            medioPago: effectiveMedioPago,
-            paymentDetails,
+            medioPago: medioPagoFinal,
+            paymentDetails: paymentDetailsFinal,
             splitPayments: isMixedPayment ? paymentDetails.splitPayments : undefined,
             ...(origenComprobanteId != null ? { comprobanteOrigenId: origenComprobanteId } : {}),
             vuelto: vueltoCalculado,
@@ -2130,6 +2181,7 @@ export const useFacturacionViewModel = () => {
                 const envioAdelanto = esDocumentoInformal && envioActivo && Number(envioData.costoEnvio) > 0 && aplicacionMontoEnvio === 'ADELANTO'
                     ? Number(envioData.costoEnvio)
                     : 0;
+                if (esPagoCredito) return adelantoCreditoCalculado > 0 ? adelantoCreditoCalculado : undefined;
                 const manualAdelanto = (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") && adelanto > 0 ? adelanto : 0;
                 const adelantoFinal = envioAdelanto > 0 ? envioAdelanto : manualAdelanto;
                 return adelantoFinal > 0 ? adelantoFinal : undefined;
@@ -2389,6 +2441,7 @@ export const useFacturacionViewModel = () => {
         isMixedPayment, setIsMixedPayment,
         splitPayments, setSplitPayments,
         adelanto, setAdelanto,
+        adelantoMetodo, setAdelantoMetodo,
         fechaRecojo, setFechaRecojo,
         descontarStockNP, setDescontarStockNP,
         fechaEmisionManual, setFechaEmisionManual,

@@ -146,6 +146,10 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
 
     const guardarVendedorCampo = async (vendedorCampoId: number | null) => {
         if (!comprobante?.id) return;
+        if (comprobante?.comisionLiquidada) {
+            alert('La comisión de esta venta ya fue liquidada; no se puede cambiar el vendedor.', 'error');
+            return;
+        }
         const nombre = usuarios.find((u: any) => u.id === vendedorCampoId)?.nombre ?? null;
         setGuardandoVendedorCampo(true);
         try {
@@ -391,12 +395,17 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                     error=""
                                     label=""
                                     name="vendedorCampoDetalle"
-                                    value={comprobante.vendedorCampoNombre || ''}
+                                    value={comprobante.vendedorCampoNombre || comprobante.usuario?.nombre || ''}
                                     options={(usuarios || []).map((u: any) => ({ id: u.id, value: u.nombre || u.email || `Usuario ${u.id}` }))}
                                     onChange={(id: any) => guardarVendedorCampo(Number(id) || null)}
+                                    disabled={!!comprobante.comisionLiquidada || guardandoVendedorCampo}
                                 />
                                 <p className="mt-1 text-[10px] text-gray-400 dark:text-slate-500">
-                                    {guardandoVendedorCampo ? 'Guardando…' : 'Se muestra como vendedor en el panel, la nota de venta y el comprobante.'}
+                                    {comprobante.comisionLiquidada
+                                        ? '🔒 La comisión de esta venta ya fue liquidada (pagada al vendedor). No se puede cambiar el vendedor.'
+                                        : guardandoVendedorCampo
+                                            ? 'Guardando…'
+                                            : 'Se muestra como vendedor en el panel, la nota de venta y el comprobante. Al cambiarlo, la comisión se recalcula para el nuevo vendedor.'}
                                 </p>
                             </div>
                         </div>

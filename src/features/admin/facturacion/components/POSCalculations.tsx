@@ -185,12 +185,23 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
     const seriePreview = vm.serie || vm.formValues?.serie || '';
     const correlativoPreview = vm.correlative || vm.formValues?.correlativo || '';
     const fechaPreview = vm.formValues?.fechaEmision || '';
-    const metodoPreviewLabel = vm.isMixedPayment ? 'MIXTO' : (isCreditoPreview ? 'CRÉDITO' : String(vm.paymentMethod || 'EFECTIVO').toUpperCase());
+    // Pago inicial (adelanto) en una venta a crédito: mixto = suma de líneas; simple = campo adelanto.
+    const inicialCreditoPreview = isCreditoPreview
+        ? (vm.isMixedPayment ? splitTotal : Number(vm.adelanto || 0))
+        : 0;
+    const metodoPreviewLabel = vm.isMixedPayment ? 'MIXTO' : (isCreditoPreview ? (inicialCreditoPreview > 0 ? String(vm.adelantoMetodo || 'EFECTIVO').toUpperCase() : 'CRÉDITO') : String(vm.paymentMethod || 'EFECTIVO').toUpperCase());
     const condicionPreview = isCreditoPreview ? 'CRÉDITO' : 'CONTADO';
     const vueltoPreview = isCreditoPreview ? 0 : (vm.isMixedPayment ? splitChange : (vm.isCashPayment ? (vm.vueltoCalculado || 0) : 0));
-    const montoMedioPreview = isCreditoPreview ? 0 : total;
-    const pagadoPreview = isCreditoPreview ? 0 : total + vueltoPreview;
-    const vendedorPreview = (vm.auth?.nombre || vm.auth?.usuario?.nombre || vm.formValues?.vendedor || 'ADMIN').toString().toUpperCase();
+    const montoMedioPreview = isCreditoPreview ? inicialCreditoPreview : total;
+    const pagadoPreview = isCreditoPreview ? inicialCreditoPreview : total + vueltoPreview;
+    const creditoMensaje = inicialCreditoPreview > 0
+        ? `Venta a crédito con pago inicial de S/ ${inicialCreditoPreview.toFixed(2)} (${metodoPreviewLabel}). El resto queda a crédito.`
+        : 'Venta a crédito — no requiere método de pago (o configura un pago inicial en “Configurar venta”).';
+    // Preferir el vendedor de campo elegido; si no hay, el emisor.
+    const vendedorCampoNombrePreview = vm.vendedorCampoId
+        ? (vm.vendedoresCampo?.find((u: any) => u.id === vm.vendedorCampoId)?.nombre)
+        : null;
+    const vendedorPreview = (vendedorCampoNombrePreview || vm.auth?.nombre || vm.auth?.usuario?.nombre || vm.formValues?.vendedor || 'ADMIN').toString().toUpperCase();
     const empresaCelularPreview = (empresaPreview?.celular || empresaPreview?.telefono || '').toString().trim();
     const empresaEmailPreview = (empresaPreview?.email || empresaPreview?.correo || '').toString().trim();
     const empresaWebPreview = (empresaPreview?.paginaWeb || '').toString().trim();
@@ -409,7 +420,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Método de pago</h4>
                                 {vm.formValues?.medioPago === 'Crédito' ? (
                                     <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-700 dark:text-amber-300">
-                                        Venta a crédito — no requiere método de pago.
+                                        {creditoMensaje}
                                     </div>
                                 ) : (
                 <div className="mb-1">
@@ -570,7 +581,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 {vm.formValues?.medioPago === 'Crédito' && (
                                     <div className="mx-auto mb-3 flex max-w-[300px] items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                                         <Icon icon="solar:hand-money-bold-duotone" width={16} />
-                                        Venta a crédito — no requiere método de pago.
+                                        {creditoMensaje}
                                     </div>
                                 )}
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>
@@ -670,8 +681,8 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                             </button>
                             <button
                                 onClick={() => vm.addInvoiceReceipt()}
-                                disabled={vm.isMixedPayment && !splitValid}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${vm.isMixedPayment && !splitValid ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
+                                disabled={!isCreditoPreview && vm.isMixedPayment && !splitValid}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${(!isCreditoPreview && vm.isMixedPayment && !splitValid) ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
                             >
                                 <Icon icon={vm.isEditMode ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
                                 {vm.isEditMode ? 'ACTUALIZAR' : 'EMITIR'}

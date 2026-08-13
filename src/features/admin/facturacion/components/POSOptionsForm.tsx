@@ -430,16 +430,89 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                                 className="w-full"
                             />
                             {vm.formValues?.tipoDoc !== 'COT' && (
-                                <div className="mt-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => vm.setIsModalCuotasOpen(true)}
-                                        className="w-full p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg border border-indigo-200 dark:border-indigo-800/30 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon icon="solar:list-bold" width={16} />
-                                        Configurar Múltiples Cuotas {vm.cuotas?.length > 0 ? `(${vm.cuotas.length})` : ''}
-                                    </button>
-                                </div>
+                                <>
+                                    {/* Pago inicial (adelanto) del crédito */}
+                                    <div className="mt-3">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pago inicial (opcional)</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => vm.setIsMixedPayment(!vm.isMixedPayment)}
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border ${vm.isMixedPayment ? 'bg-violet-500 text-white border-violet-500' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:border-violet-400'}`}
+                                            >
+                                                <Icon icon="solar:card-2-bold-duotone" width={12} />
+                                                Mixto
+                                            </button>
+                                        </div>
+                                        {!vm.isMixedPayment ? (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    placeholder="S/ 0.00"
+                                                    value={vm.adelanto || ''}
+                                                    onChange={(e) => vm.setAdelanto(Number(e.target.value) || 0)}
+                                                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:border-violet-500"
+                                                />
+                                                <select
+                                                    value={vm.adelantoMetodo}
+                                                    onChange={(e) => vm.setAdelantoMetodo(e.target.value)}
+                                                    className="px-2 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:border-violet-500"
+                                                >
+                                                    {['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'].map(m => (
+                                                        <option key={m} value={m}>{m}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {(vm.splitPayments || []).map((line: any, idx: number) => (
+                                                    <div key={idx} className="flex gap-2">
+                                                        <select
+                                                            value={line.method}
+                                                            onChange={(e) => vm.setSplitPayments((curr: any[]) => curr.map((l, i) => i === idx ? { ...l, method: e.target.value } : l))}
+                                                            className="px-2 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:border-violet-500"
+                                                        >
+                                                            {['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'].map(m => (
+                                                                <option key={m} value={m}>{m}</option>
+                                                            ))}
+                                                        </select>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            placeholder="S/ 0.00"
+                                                            value={line.amount || ''}
+                                                            onChange={(e) => vm.setSplitPayments((curr: any[]) => curr.map((l, i) => i === idx ? { ...l, amount: Number(e.target.value) || 0 } : l))}
+                                                            className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:border-violet-500"
+                                                        />
+                                                        {(vm.splitPayments || []).length > 1 && (
+                                                            <button type="button" onClick={() => vm.setSplitPayments((curr: any[]) => curr.filter((_, i) => i !== idx))} className="px-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                                <Icon icon="solar:trash-bin-trash-bold" width={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <button type="button" onClick={() => vm.setSplitPayments((curr: any[]) => [...curr, { method: 'Efectivo', amount: 0 }])} className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                                                    + Agregar método
+                                                </button>
+                                                <div className="text-[10px] text-gray-500 dark:text-gray-400">Inicial total: S/ {(vm.splitPayments || []).reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0).toFixed(2)}</div>
+                                            </div>
+                                        )}
+                                        <p className="mt-1 text-[10px] text-gray-400">Si el cliente abona una parte ahora; el resto queda a crédito.</p>
+                                    </div>
+                                    <div className="mt-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => vm.setIsModalCuotasOpen(true)}
+                                            className="w-full p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg border border-indigo-200 dark:border-indigo-800/30 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-1.5"
+                                        >
+                                            <Icon icon="solar:list-bold" width={16} />
+                                            Configurar Múltiples Cuotas {vm.cuotas?.length > 0 ? `(${vm.cuotas.length})` : ''}
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
                     )}

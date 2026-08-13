@@ -58,6 +58,8 @@ export default function ComisionesView() {
     const [data, setData] = useState<ResumenMensual | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [detallePage, setDetallePage] = useState(1);
+    const DETALLE_PAGE_SIZE = 15;
     const [pagandoId, setPagandoId] = useState<number | null>(null);
     const alertFn = useAlertStore(s => s.alert);
 
@@ -511,7 +513,7 @@ export default function ComisionesView() {
                                             </span>
                                         )}
                                         <button
-                                            onClick={() => setExpandedId(isExpanded ? null : v.vendedor.id)}
+                                            onClick={() => { setExpandedId(isExpanded ? null : v.vendedor.id); setDetallePage(1); }}
                                             className="h-8 w-8 grid place-items-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                         >
                                             <Icon
@@ -539,7 +541,7 @@ export default function ComisionesView() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {v.comisiones.map((c) => (
+                                                    {v.comisiones.slice((detallePage - 1) * DETALLE_PAGE_SIZE, detallePage * DETALLE_PAGE_SIZE).map((c) => (
                                                         <tr key={c.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
                                                             <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-300 font-mono">
                                                                 {c.comprobante.serie}-{String(c.comprobante.correlativo).padStart(8, '0')}
@@ -575,6 +577,21 @@ export default function ComisionesView() {
                                                 </tbody>
                                             </table>
                                         </div>
+                                        {v.comisiones.length > DETALLE_PAGE_SIZE && (() => {
+                                            const totalPag = Math.ceil(v.comisiones.length / DETALLE_PAGE_SIZE);
+                                            const ini = (detallePage - 1) * DETALLE_PAGE_SIZE + 1;
+                                            const fin = Math.min(detallePage * DETALLE_PAGE_SIZE, v.comisiones.length);
+                                            return (
+                                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                                                    <span className="text-slate-500 dark:text-slate-400">{ini}–{fin} de {v.comisiones.length}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button onClick={() => setDetallePage(p => Math.max(1, p - 1))} disabled={detallePage === 1} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Anterior</button>
+                                                        <span className="px-2 text-slate-500 dark:text-slate-400">{detallePage} / {totalPag}</span>
+                                                        <button onClick={() => setDetallePage(p => Math.min(totalPag, p + 1))} disabled={detallePage === totalPag} className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Siguiente</button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>

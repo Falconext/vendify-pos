@@ -16,9 +16,16 @@ const ModalCuotas = ({ isOpen, onClose, onSave, initialCuotas, totalFactura }: P
 
     useEffect(() => {
         if (isOpen) {
-            setCuotas(initialCuotas || []);
+            const init = initialCuotas || [];
+            // Cuota única: siempre refleja el total a financiar (evita montos obsoletos
+            // cuando cambia el pago inicial). Múltiples cuotas se respetan tal cual.
+            if (init.length <= 1) {
+                setCuotas([{ monto: Number((totalFactura || 0).toFixed(2)), fechaVencimiento: init[0]?.fechaVencimiento || '' }]);
+            } else {
+                setCuotas(init);
+            }
         }
-    }, [initialCuotas, isOpen]);
+    }, [initialCuotas, isOpen, totalFactura]);
 
     const agregarCuota = () => {
         setCuotas(prev => [...prev, { monto: 0, fechaVencimiento: '' }]);
@@ -55,7 +62,7 @@ const ModalCuotas = ({ isOpen, onClose, onSave, initialCuotas, totalFactura }: P
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/60 p-4">
             <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-2xl w-full max-w-lg animate-in fade-in zoom-in duration-200 border dark:border-transparent">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-slate-800 dark:to-slate-900">
                     <div className="flex items-center gap-3">
