@@ -43,10 +43,12 @@ const TIPO_CONFIG: Record<TipoVenta, { label: string; cls: string }> = {
     PEDIDO_TIENDA:     { label: 'Tienda',    cls: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' },
 };
 
+// Etiquetas de estado de pago — alineadas con Comprobantes/Notas de venta
+// ("Pagado" / "Pago parcial" / "Pendiente de pago") para que el usuario vea lo mismo.
 const PAGO_CONFIG: Record<string, { label: string; dot: string; cls: string }> = {
-    PAGADO:   { label: 'Pagado',    dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
-    PARCIAL:  { label: 'Parcial',   dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
-    PENDIENTE:{ label: 'Pendiente', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
+    PAGADO:   { label: 'Pagado',            dot: 'bg-emerald-500', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+    PARCIAL:  { label: 'Pago parcial',      dot: 'bg-amber-500',   cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+    PENDIENTE:{ label: 'Pendiente de pago', dot: 'bg-rose-500',    cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
 };
 
 const SUNAT_CONFIG: Record<string, { label: string; dot: string; cls: string }> = {

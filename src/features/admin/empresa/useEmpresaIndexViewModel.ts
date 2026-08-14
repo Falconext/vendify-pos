@@ -140,6 +140,8 @@ export const useEmpresaIndexViewModel = (): any => {
             fechaExpiracion: formatDateOnly(empresa.fechaExpiracion),
             'Vence en': formatDaysUntil(diasRestantes),
             estado: empresa.estado,
+            // Uso del sistema: comprobantes emitidos (boleta / factura / nota de venta)
+            comprobantes: empresa.comprobantes ?? { boletas: 0, facturas: 0, notasVenta: 0, total: 0 },
         };
     }) || [];
 

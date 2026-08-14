@@ -31,14 +31,6 @@ function ambientePill(ambiente?: string) {
   return { label: ambiente || '—', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' };
 }
 
-// Pill del estado de la tienda virtual
-function tiendaPill(estado?: string) {
-  const e = String(estado ?? '');
-  if (e === 'Activa') return { label: 'Activa', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
-  if (e === 'Disponible') return { label: 'Disponible', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' };
-  return { label: 'No disponible', dot: 'bg-slate-400', text: 'text-slate-500 dark:text-gray-400', bg: 'bg-slate-100 dark:bg-slate-800' };
-}
-
 // Pill de estado de la empresa
 function estadoPill(estado?: string) {
   const e = String(estado ?? '').toUpperCase();
@@ -227,8 +219,7 @@ const EmpresasIndex = () => {
                 <th className="py-3 px-3">Ambiente</th>
                 <th className="py-3 px-3">Rubro</th>
                 <th className="py-3 px-3">Plan</th>
-                <th className="py-3 px-3">Tienda Virtual</th>
-                <th className="py-3 px-3">Expiración</th>
+                <th className="py-3 px-3">Comprobantes</th>
                 <th className="py-3 px-3">Vence en</th>
                 <th className="py-3 px-3">Estado</th>
                 <th className="py-3 px-3 pr-5 text-right">Acciones</th>
@@ -238,14 +229,14 @@ const EmpresasIndex = () => {
               {vm.loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
-                    <td colSpan={10} className="py-3.5 px-5">
+                    <td colSpan={9} className="py-3.5 px-5">
                       <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-16 text-center">
+                  <td colSpan={9} className="py-16 text-center">
                     <Icon icon="solar:buildings-3-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
                     <p className="text-slate-500 dark:text-gray-400 text-sm font-medium">No se encontraron empresas</p>
                     <p className="text-slate-400 text-xs mt-1">{vm.searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no tienes empresas registradas'}</p>
@@ -259,7 +250,6 @@ const EmpresasIndex = () => {
               ) : rows.map((row) => {
                 const razon = row['Razon Social'] || row.nombreComercial || 'Empresa';
                 const amb = ambientePill(row['Ambiente']);
-                const tie = tiendaPill(row['Tienda Virtual']);
                 const est = estadoPill(row.estado);
                 return (
                   <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
@@ -294,11 +284,20 @@ const EmpresasIndex = () => {
                       <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300">{row['Plan'] || '—'}</span>
                     </td>
                     <td className="py-3 px-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${tie.bg} ${tie.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${tie.dot}`} /> {tie.label}
-                      </span>
+                      {(() => {
+                        const c = row.comprobantes ?? { boletas: 0, facturas: 0, notasVenta: 0, total: 0 };
+                        if (!c.total) {
+                          return <span className="text-xs font-medium text-slate-400">Sin uso</span>;
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300" title="Boletas">B {c.boletas}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300" title="Facturas">F {c.facturas}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-300" title="Notas de venta">NV {c.notasVenta}</span>
+                          </div>
+                        );
+                      })()}
                     </td>
-                    <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">{row.fechaExpiracion || '—'}</td>
                     <td className={`py-3 px-3 text-sm font-semibold ${venceClass(row['Vence en'])}`}>{row['Vence en'] || '—'}</td>
                     <td className="py-3 px-3">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${est.bg} ${est.text}`}>

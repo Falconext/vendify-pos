@@ -7,6 +7,7 @@ export interface ResellerDashboardStats {
     saldo: number;
     porcentajeDescuento: number;
     clientesActivos: number;
+    clientesProduccion?: number; // clientes en producción (usaDemo:false) — base del tier de volumen
     clientesSuspendidos: number;
     totalClientes: number;
     // Inteligencia de ganancias (calculada en backend)
@@ -163,6 +164,7 @@ export const useResellerPanelStore = create<IResellerPanelState>((set, get) => (
         saldo: 0,
         porcentajeDescuento: 0,
         clientesActivos: 0,
+        clientesProduccion: 0,
         clientesSuspendidos: 0,
         totalClientes: 0
     },

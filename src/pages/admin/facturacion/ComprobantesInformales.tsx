@@ -504,8 +504,9 @@ const ComprobantesInformales = () => {
         }
     };
 
-    const handleSelectState = (_id: string, value: string) => {
-        setStateInvoice(value)
+    const handleSelectState = (id: string) => {
+        // `id` es el valor real del backend (TODOS, COMPLETADO, PAGO_PARCIAL, ...).
+        setStateInvoice(id || "TODOS")
     }
 
     const handleSelectSede = (idValue: any) => {
@@ -522,7 +523,17 @@ const ComprobantesInformales = () => {
         setSelectedUsuarioId(value ? Number(value) : null);
     }
 
-    const estadosInvoice = [{ id: 1, value: "TODOS" }, { id: 2, value: "COMPLETADO" }, { id: 3, value: "PENDIENTE_PAGO" }, { id: 4, value: "ANULADO" }]
+    // El `id` es el valor real que espera el backend (estadoPago); el `value` es la
+    // etiqueta amigable que ve el usuario (nada de códigos crudos tipo PENDIENTE_PAGO).
+    const estadosInvoice = [
+        { id: "TODOS", value: "Todos" },
+        { id: "COMPLETADO", value: "Pagado" },
+        { id: "PAGO_PARCIAL", value: "Pago parcial" },
+        { id: "PENDIENTE_PAGO", value: "Pendiente de pago" },
+        { id: "ANULADO", value: "Anulado" },
+    ]
+    // Etiqueta amigable del estado actualmente seleccionado (para mostrar en el Select).
+    const estadoLabelActual = estadosInvoice.find((o) => o.id === stateInvoice)?.value ?? "Todos"
     const sedesOptions = [
         { id: 0, value: 'Todas las sedes' },
         ...sedes.map((s: any) => ({ id: s.id, value: s.nombre }))
@@ -648,7 +659,7 @@ const ComprobantesInformales = () => {
                                 <Calendar text="Hasta" name="fechaFin" value={moment(fechaFin).format('DD/MM/YYYY')} onChange={handleDate} className="admin-date-filter" portal />
                             </div>
                             <div className="w-full sm:w-56">
-                                <Select onChange={handleSelectState} withLabel={false} label="" name="" options={estadosInvoice} defaultValue={stateInvoice} value={stateInvoice} error="" />
+                                <Select onChange={handleSelectState} withLabel={false} label="" name="" options={estadosInvoice} defaultValue={estadoLabelActual} value={estadoLabelActual} error="" />
                             </div>
                             {canFilterBySede && (
                                 <div className="w-full sm:w-44">

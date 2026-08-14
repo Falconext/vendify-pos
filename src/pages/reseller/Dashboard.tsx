@@ -104,7 +104,11 @@ export default function ResellerDashboard() {
 
     const latestClientes = useMemo(() => clientes.slice(0, 5), [clientes]);
     const activos = stats.clientesActivos || 0;
-    const currentTierIndex = getCurrentTierIndex(activos);
+    // El tramo de volumen / descuento se calcula SOLO con clientes en producción
+    // (las cuentas demo no pagan y no deben mover el tier). Fallback a activos por
+    // compatibilidad si el backend aún no envía clientesProduccion.
+    const clientesTier = stats.clientesProduccion ?? activos;
+    const currentTierIndex = getCurrentTierIndex(clientesTier);
     const currentTier = VENDIFY_VOLUME_TIERS[currentTierIndex];
     const nextTier = currentTierIndex < 3 ? VENDIFY_VOLUME_TIERS[currentTierIndex + 1] : null;
 
@@ -125,12 +129,12 @@ export default function ResellerDashboard() {
 
     // Progreso al siguiente nivel de volumen (gamificación, solo flagship)
     const bandStart = currentTier.start;
-    const nextStart = nextTier?.start ?? activos;
-    const faltanParaSiguiente = nextTier ? Math.max(0, nextStart - activos) : 0;
-    const tierProgress = nextTier ? Math.min(100, Math.max(0, ((activos - bandStart) / (nextStart - bandStart)) * 100)) : 100;
+    const nextStart = nextTier?.start ?? clientesTier;
+    const faltanParaSiguiente = nextTier ? Math.max(0, nextStart - clientesTier) : 0;
+    const tierProgress = nextTier ? Math.min(100, Math.max(0, ((clientesTier - bandStart) / (nextStart - bandStart)) * 100)) : 100;
 
     // Ganancia promedio por cliente → cuánto suma cada cliente nuevo
-    const gananciaPorCliente = activos > 0 ? ganancia / activos : 15;
+    const gananciaPorCliente = clientesTier > 0 ? ganancia / clientesTier : 15;
 
     // ── Simulador de ganancias estilo partners (una tarjeta por plan) ──
     const { updatePreciosPlan } = useResellerPanelStore();
