@@ -91,7 +91,7 @@ export default function ModalProveedor({
         } else if (activeTipoDoc === 'DNI') {
             nroDocError = /^\d{8}$/.test(doc) ? '' : 'El DNI debe contener exactamente 8 dígitos numéricos';
         } else if (activeTipoDoc === 'RUC') {
-            nroDocError = /^(10|20)\d{9}$/.test(doc) ? '' : 'El RUC debe contener 11 dígitos y comenzar con 10 o 20';
+            nroDocError = /^(10|15|16|17|20)\d{9}$/.test(doc) ? '' : 'El RUC debe contener 11 dígitos y comenzar con 10, 15, 16, 17 o 20';
         }
 
         const newErrors: any = {

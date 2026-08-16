@@ -33,7 +33,7 @@ const DOC_TYPES = [
     { key: 'RUC', label: 'RUC', digits: 11, hint: 'Ingresa 11 dígitos para consultar RUC automáticamente' },
     { key: 'CE', label: 'C.E.', digits: null, hint: 'Carnet de Extranjería: se registra manualmente, sin consulta automática' },
     { key: 'PASAPORTE', label: 'Pasaporte', digits: null, hint: null },
-    { key: 'OTRO', label: 'Otro', digits: null, hint: null },
+    { key: 'OTRO', label: 'Otro', digits: null, hint: 'Sin documento: puedes dejarlo vacío. Para boletas a consumidor final sin RUC/DNI (p. ej. un colegio), hasta S/ 700.' },
 ];
 
 const normalizeDoc = (tipoDoc: string, value: string) => {
@@ -120,12 +120,17 @@ export default function ModalClient({
         const doc = normalizeDoc(activeTipoDoc, formValues?.nroDoc || '');
         let nroDocError = '';
 
-        if (!doc) {
+        // "Otro" = consumidor final sin documento (p. ej. un colegio sin RUC).
+        // No se exige número: la boleta saldrá con tipo doc "0" y número "0",
+        // conservando el nombre. SUNAT lo admite en boletas hasta S/ 700.
+        if (activeTipoDoc === 'OTRO') {
+            nroDocError = '';
+        } else if (!doc) {
             nroDocError = 'El número de documento es obligatorio';
         } else if (activeTipoDoc === 'DNI') {
             nroDocError = /^\d{8}$/.test(doc) ? '' : 'El DNI debe contener exactamente 8 dígitos numéricos';
         } else if (activeTipoDoc === 'RUC') {
-            nroDocError = /^(10|20)\d{9}$/.test(doc) ? '' : 'El RUC debe contener 11 dígitos y comenzar con 10 o 20';
+            nroDocError = /^(10|15|16|17|20)\d{9}$/.test(doc) ? '' : 'El RUC debe contener 11 dígitos y comenzar con 10, 15, 16, 17 o 20';
         } else if (activeTipoDoc === 'CE') {
             nroDocError = /^[A-Za-z0-9]{6,12}$/.test(doc) ? '' : 'El Carnet de Extranjería debe contener entre 6 y 12 caracteres alfanuméricos';
         } else if (activeTipoDoc === 'PASAPORTE') {
@@ -142,7 +147,10 @@ export default function ModalClient({
 
     const handleSubmit = async () => {
         if (!validateForm()) return;
-        const payload = { ...formValues, nroDoc: normalizeDoc(activeTipoDoc, formValues?.nroDoc || ''), tipoDoc: activeTipoDoc };
+        const normalizedDoc = normalizeDoc(activeTipoDoc, formValues?.nroDoc || '');
+        // "Otro" sin número → placeholder "0" (el backend lo trata como sin documento).
+        const finalDoc = activeTipoDoc === 'OTRO' && !normalizedDoc ? '0' : normalizedDoc;
+        const payload = { ...formValues, nroDoc: finalDoc, tipoDoc: activeTipoDoc };
 
         if (Number(formValues?.id) !== 0 && isEdit) {
             editClients(payload);
@@ -162,7 +170,7 @@ export default function ModalClient({
         : activeDocType.key === 'RUC' ? 'Nro. de RUC'
             : activeDocType.key === 'CE' ? 'Nro. de Carnet de Extranjería'
                 : activeDocType.key === 'PASAPORTE' ? 'Nro. de Pasaporte'
-                    : 'Nro. de documento';
+                    : 'Nro. de documento (opcional)';
 
     // Filtrar tipos de documento según el grupo
     const visibleDocTypes = grupoFarmacia === 'empresas'

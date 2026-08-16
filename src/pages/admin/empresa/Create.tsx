@@ -93,8 +93,8 @@ const CreateEmpresa = () => {
       e.ruc = 'El RUC es obligatorio';
     } else if (!/^\d{11}$/.test(formData.ruc)) {
       e.ruc = 'El RUC debe tener exactamente 11 dígitos numéricos';
-    } else if (!formData.ruc.startsWith('10') && !formData.ruc.startsWith('20')) {
-      e.ruc = 'El RUC debe comenzar con 10 (persona natural) o 20 (empresa)';
+    } else if (!/^(10|15|16|17|20)/.test(formData.ruc)) {
+      e.ruc = 'El RUC debe comenzar con 10, 15, 16, 17 o 20';
     }
 
     // Datos empresa
