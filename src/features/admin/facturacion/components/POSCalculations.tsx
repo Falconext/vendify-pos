@@ -589,8 +589,8 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                     {/* Encabezado empresa */}
                                     <div className="text-center">
                                         {previewLogo && <img src={previewLogo} alt="logo" className="mx-auto mb-2 h-14 w-14 object-contain" />}
-                                        <p className="font-bold text-sm uppercase">{empresaPreview?.nombreComercial || empresaPreview?.razonSocial || 'MI EMPRESA'}</p>
-                                        {empresaPreview?.razonSocial && <p className="text-[9px] text-gray-600 uppercase">RAZON SOCIAL: {empresaPreview.razonSocial}</p>}
+                                        <p className="font-bold text-sm uppercase">{empresaPreview?.razonSocial || empresaPreview?.nombreComercial || 'MI EMPRESA'}</p>
+                                        {empresaPreview?.nombreComercial && <p className="text-[9px] text-gray-600 uppercase">NOMBRE COMERCIAL: {empresaPreview.nombreComercial}</p>}
                                         {empresaPreview?.direccion && <p className="text-[9px] text-gray-600 uppercase">DIRECCION: {empresaPreview.direccion}</p>}
                                         {empresaCelularPreview && <p className="text-[9px] text-gray-600">CELULAR: {empresaCelularPreview}</p>}
                                         {empresaEmailPreview && <p className="text-[9px] text-gray-600 lowercase">CORREO: {empresaEmailPreview}</p>}

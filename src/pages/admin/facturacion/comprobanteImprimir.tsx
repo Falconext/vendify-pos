@@ -216,9 +216,9 @@ console.log(formValues)
                 {size === 'TICKET' ? (
                     <div className="">
                         {fc('logo').visible && logoDataUrl && <img src={logoDataUrl} alt="logo" className="mx-auto mb-1 object-contain" style={{ maxWidth: company?.empresa?.ticketLogoSize ?? 96, maxHeight: company?.empresa?.ticketLogoSize ?? 96, width: '100%', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />}
-                        {fc('nombreComercial').visible && <p className="text-center text-[16px] font-bold">{company?.empresa?.nombreComercial?.toUpperCase()}</p>}
+                        {fc('razonSocial').visible && <p className="text-center text-[16px] font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</p>}
                         <p className={`text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>
-                            {fc('razonSocial').visible && <>RAZON SOCIAL: {company?.empresa?.razonSocial?.toUpperCase()}<br /></>}
+                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></>}
                             {fc('direccion').visible && <>DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br /></>}
                             {fc('rubro').visible && company?.empresa?.rubro?.nombre && <>RUBRO: {company?.empresa?.rubro?.nombre?.toUpperCase()}<br /></>}
                             {fc('celular').visible && empresaNumero && <>CELULAR: {empresaNumero}<br /></>}
@@ -440,11 +440,11 @@ console.log(formValues)
                                 <div className="flex justify-between items-start mb-4">
                                     {fc('logo').visible && logoDataUrl && <img src={logoDataUrl} alt="logo" className="object-contain object-left" style={{ width: fc('logo').size, height: fc('logo').size, objectFit: 'contain', objectPosition: 'left' }} />}
                                     <div className="flex-1 ml-4">
-                                        {fc('nombreComercial').visible && <h6 className="font-bold leading-tight" style={{ fontSize: px('nombreComercial') }}>{company?.empresa?.nombreComercial?.toUpperCase()}</h6>}
+                                        {fc('razonSocial').visible && <h6 className="font-bold leading-tight" style={{ fontSize: px('razonSocial') }}>{company?.empresa?.razonSocial?.toUpperCase()}</h6>}
                                         <div className="leading-snug">
                                             {fc('direccion').visible && <div style={{ fontSize: px('direccion') }}>{company?.empresa?.direccion}</div>}
                                             {fc('rubro').visible && <div style={{ fontSize: px('rubro') }}>{company?.empresa?.rubro?.nombre?.toUpperCase()}</div>}
-                                            {fc('razonSocial').visible && <div style={{ fontSize: px('razonSocial') }}>RAZON SOCIAL: {company?.empresa?.razonSocial}</div>}
+                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}</div>}
                                             {fc('celular').visible && empresaNumero && <div style={{ fontSize: px('celular') }}>CELULAR: {empresaNumero}</div>}
                                             {fc('email').visible && company?.email && <div style={{ fontSize: px('email') }}>EMAIL: {company?.email}</div>}
                                             {fc('web').visible && (company?.empresa as any)?.paginaWeb && <div style={{ fontSize: px('web') }}>WEB: {(company?.empresa as any).paginaWeb}</div>}
@@ -722,8 +722,8 @@ console.log(formValues)
                                 <div className="flex justify-between items-start">
                                     {logoDataUrl && <img src={logoDataUrl} alt="logo" className="object-contain object-left" style={{ width: company?.empresa?.ticketLogoSize ?? 150, height: company?.empresa?.ticketLogoSize ?? 150, objectFit: 'contain', objectPosition: 'left' }} />}
                                     <div className="flex-1 ml-4">
-                                        <h6 className="text-xl font-bold">{company?.empresa?.nombreComercial.toUpperCase()}</h6>
-                                        <p className="text-xs">{company?.empresa?.direccion}<br />{company?.empresa?.rubro?.nombre?.toUpperCase()}<br />RAZON SOCIAL: {company?.empresa?.razonSocial}<br />{empresaNumero && <>CELULAR: {empresaNumero}<br /></>}EMAIL: {company?.email}{(company?.empresa as any)?.paginaWeb && <><br />WEB: {(company?.empresa as any).paginaWeb}</>}</p>
+                                        <h6 className="text-xl font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</h6>
+                                        <p className="text-xs">{company?.empresa?.direccion}<br />{company?.empresa?.rubro?.nombre?.toUpperCase()}<br />{company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}<br /></>}{empresaNumero && <>CELULAR: {empresaNumero}<br /></>}EMAIL: {company?.email}{(company?.empresa as any)?.paginaWeb && <><br />WEB: {(company?.empresa as any).paginaWeb}</>}</p>
                                     </div>
                                     <div className="border border-black px-4 pt-4 pb-2 text-center ml-4">
                                         <div className="text-xs">RUC: {company?.empresa?.ruc}</div>

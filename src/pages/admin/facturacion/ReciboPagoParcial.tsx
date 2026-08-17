@@ -35,9 +35,9 @@ const ReciboPagoParcial = ({
                 <div ref={componentRef} className="print-area p-5 text-sm">
                     <div className="">
                         {logoDataUrl && <img src={logoDataUrl} alt="logo" className="mx-auto w-24 h-24 object-contain" />}
-                        <h2 className="text-center text-xs font-bold">{company?.empresa?.nombreComercial.toUpperCase()}</h2>
+                        <h2 className="text-center text-xs font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</h2>
                         <p className="text-center text-xs">
-                            RAZON SOCIAL: {company?.empresa?.razonSocial?.toUpperCase()}<br />
+                            {company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></>}
                             DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br />
                             RUC: {company?.empresa?.ruc?.toUpperCase()}
                         </p>

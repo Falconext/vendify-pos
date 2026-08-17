@@ -343,10 +343,9 @@ const PrintPDF = ({
                                         <Image src={logoDataUrl} style={{ width: ticketLogoDim, height: ticketLogoDim, objectFit: 'contain' }} />
                                     </View>
                                 )}
-                                <Text style={styles.title}>{company?.empresa?.nombreComercial}</Text>
+                                <Text style={styles.title}>{company?.empresa?.razonSocial}</Text>
                                 <Text style={styles.subtitle}>
-                                    RAZON SOCIAL: {company?.empresa?.razonSocial.toUpperCase()}
-                                    {'\n'}
+                                    {company?.empresa?.nombreComercial ? `NOMBRE COMERCIAL: ${company?.empresa?.nombreComercial.toUpperCase()}\n` : ''}
                                     DIRECCION: {company?.empresa?.direccion.toUpperCase()}
                                     {'\n'}
                                     {empresaNumero ? `CELULAR: ${empresaNumero}\n` : ''}
@@ -599,7 +598,7 @@ const PrintPDF = ({
 
                                 <View style={styles.header}>
                                     <Text style={styles.subtitle}>
-                                        <Text style={{ fontSize: "15px", fontWeight: "bold" }}>{company?.empresa?.nombreComercial || ''}</Text>
+                                        <Text style={{ fontSize: "15px", fontWeight: "bold" }}>{company?.empresa?.razonSocial || ''}</Text>
                                         {'\n'}
                                         {'\n'}
                                         {company?.empresa?.direccion || ''}
@@ -607,7 +606,7 @@ const PrintPDF = ({
                                         {'\n'}
                                         {company?.empresa?.rubro?.nombre?.toUpperCase() || ''}
                                         {'\n'}
-                                        RAZON SOCIAL: {company?.empresa?.razonSocial || ''}
+                                        {company?.empresa?.nombreComercial ? `NOMBRE COMERCIAL: ${company?.empresa?.nombreComercial}` : ''}
                                         {'\n'}
                                         {empresaNumero ? `CELULAR: ${empresaNumero}\n` : ''}
                                         EMAIL: {company?.email || ''}
