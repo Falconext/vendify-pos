@@ -87,6 +87,9 @@ const crearEstadoItemLibre = () => ({
     // Afectación IGV (Catálogo 07): '10' gravado, '20' exonerado, '30' inafecto,
     // '40' exportación, y gratuitas (11-16 gravado, 21 exonerado, 31-37 inafecto).
     afectacion: '10' as string,
+    // Producto externo con número de serie (p. ej. accesorios/repuestos de cómputo
+    // que no están en catálogo pero requieren registrar su serie para garantía).
+    requiereSerie: false,
 });
 
 // Nombre legible por código de afectación (Catálogo 07) para mostrar en el ticket.
@@ -1461,7 +1464,12 @@ export const useFacturacionViewModel = () => {
             afectacionNombre: NOMBRE_AFECTACION[freeQuoteItem.afectacion] || 'Gravado – Operación Onerosa',
             estado: 'ACTIVO',
             esItemLibre: true,
-            atributosTecnicos: { tipoProducto: freeQuoteItem.tipo },
+            // requiereSerie habilita el campo de series del carrito también para ítem
+            // libre (producto externo). Solo aplica a productos, no a servicios.
+            atributosTecnicos: {
+                tipoProducto: freeQuoteItem.tipo,
+                requiereSerie: freeQuoteItem.tipo === 'PRODUCTO' && freeQuoteItem.requiereSerie === true,
+            },
         } as any);
 
         setFreeQuoteItem(crearEstadoItemLibre());

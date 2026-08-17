@@ -249,6 +249,22 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                             >
                                 Anticipo
                             </button>
+                            {/* Producto externo con número de serie (garantía/trazabilidad).
+                                Solo para tipo Producto; al marcarlo aparece el campo de series en el carrito. */}
+                            {vm.freeQuoteItem.tipo === 'PRODUCTO' && (
+                                <label
+                                    title="Pedir el número de serie de este producto externo"
+                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-slate-100 cursor-pointer whitespace-nowrap"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={vm.freeQuoteItem.requiereSerie === true}
+                                        onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, requiereSerie: e.target.checked }))}
+                                        className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    N° de serie
+                                </label>
+                            )}
                             <div className="flex-1" />
                             <input
                                 type="number"
