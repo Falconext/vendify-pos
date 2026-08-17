@@ -21,6 +21,10 @@ export interface QuotationConfig {
     quotationAdvance: number;
     quotationCurrency: string;
     observaciones: string;
+    // Si el usuario marca el check, el texto se guarda como predeterminado de la
+    // empresa para autocompletarse en próximas cotizaciones.
+    saveTermsAsDefault?: boolean;
+    saveObsAsDefault?: boolean;
 }
 
 const ModalConfiguracionCotizacion = ({
@@ -195,6 +199,15 @@ const ModalConfiguracionCotizacion = ({
                             rows={3}
                             placeholder="Ej: El precio incluye instalación. Garantía de 1 año."
                         />
+                        <label className="mt-1.5 flex items-center gap-2 cursor-pointer select-none w-fit">
+                            <input
+                                type="checkbox"
+                                checked={!!config.saveTermsAsDefault}
+                                onChange={(e) => handleChange('saveTermsAsDefault', e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-[12px] text-gray-500 dark:text-gray-400">Guardar como predeterminado para próximas cotizaciones</span>
+                        </label>
                     </div>
 
                     {/* Observaciones */}
@@ -209,6 +222,15 @@ const ModalConfiguracionCotizacion = ({
                             rows={3}
                             placeholder="Tiempo de entrega, condiciones especiales, etc."
                         />
+                        <label className="mt-1.5 flex items-center gap-2 cursor-pointer select-none w-fit">
+                            <input
+                                type="checkbox"
+                                checked={!!config.saveObsAsDefault}
+                                onChange={(e) => handleChange('saveObsAsDefault', e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-[12px] text-gray-500 dark:text-gray-400">Guardar como predeterminado para próximas cotizaciones</span>
+                        </label>
                     </div>
                 </div>
 
