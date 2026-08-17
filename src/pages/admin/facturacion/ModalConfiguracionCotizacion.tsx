@@ -47,6 +47,11 @@ const ModalConfiguracionCotizacion = ({
         }
     );
 
+    // Los checks "guardar como predeterminado" viven en estado propio: el reset de
+    // config desde initialConfig (que no los incluye) NO debe desmarcarlos.
+    const [saveTermsAsDefault, setSaveTermsAsDefault] = React.useState(false);
+    const [saveObsAsDefault, setSaveObsAsDefault] = React.useState(false);
+
     React.useEffect(() => {
         if (initialConfig) {
             setConfig(initialConfig);
@@ -58,7 +63,7 @@ const ModalConfiguracionCotizacion = ({
     };
 
     const handleSave = () => {
-        onSave(config);
+        onSave({ ...config, saveTermsAsDefault, saveObsAsDefault });
         onClose();
     };
 
@@ -202,8 +207,8 @@ const ModalConfiguracionCotizacion = ({
                         <label className="mt-1.5 flex items-center gap-2 cursor-pointer select-none w-fit">
                             <input
                                 type="checkbox"
-                                checked={!!config.saveTermsAsDefault}
-                                onChange={(e) => handleChange('saveTermsAsDefault', e.target.checked)}
+                                checked={saveTermsAsDefault}
+                                onChange={(e) => setSaveTermsAsDefault(e.target.checked)}
                                 className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
                             />
                             <span className="text-[12px] text-gray-500 dark:text-gray-400">Guardar como predeterminado para próximas cotizaciones</span>
@@ -225,8 +230,8 @@ const ModalConfiguracionCotizacion = ({
                         <label className="mt-1.5 flex items-center gap-2 cursor-pointer select-none w-fit">
                             <input
                                 type="checkbox"
-                                checked={!!config.saveObsAsDefault}
-                                onChange={(e) => handleChange('saveObsAsDefault', e.target.checked)}
+                                checked={saveObsAsDefault}
+                                onChange={(e) => setSaveObsAsDefault(e.target.checked)}
                                 className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
                             />
                             <span className="text-[12px] text-gray-500 dark:text-gray-400">Guardar como predeterminado para próximas cotizaciones</span>

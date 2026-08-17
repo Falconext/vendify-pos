@@ -1591,22 +1591,26 @@ export const useFacturacionViewModel = () => {
 
     // Autocompleta Términos/Observaciones con los predeterminados de la empresa al
     // iniciar una cotización NUEVA (no en edición y solo si el campo está vacío).
-    const quotationDefaultsPrefilledRef = useRef(false);
+    // Depende de los VALORES del default (no de un latch de una-sola-vez) para que,
+    // si auth.empresa llega primero cacheada sin el default y luego el refresh en
+    // background (me()) lo trae, el prefill se aplique igual. Un ref por campo evita
+    // volver a escribir si el usuario ya lo dejó vacío a propósito en este montaje.
+    const termsPrefilledRef = useRef(false);
+    const obsPrefilledRef = useRef(false);
     useEffect(() => {
-        if (quotationDefaultsPrefilledRef.current) return;
-        if (!isQuotationRoute) return;
+        if (!isQuotationRoute || isEditMode) return;
         const emp: any = auth?.empresa;
         if (!emp) return;
-        if (isEditMode) { quotationDefaultsPrefilledRef.current = true; return; }
-        if (emp.cotizTerminosDefault && !quotationTerms) {
+        if (emp.cotizTerminosDefault && !quotationTerms && !termsPrefilledRef.current) {
             setQuotationTerms(emp.cotizTerminosDefault);
+            termsPrefilledRef.current = true;
         }
-        if (emp.cotizObservacionesDefault && !formValues.observaciones) {
+        if (emp.cotizObservacionesDefault && !formValues.observaciones && !obsPrefilledRef.current) {
             setFormValues(prev => ({ ...prev, observaciones: emp.cotizObservacionesDefault }));
+            obsPrefilledRef.current = true;
         }
-        quotationDefaultsPrefilledRef.current = true;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auth?.empresa, isQuotationRoute, isEditMode]);
+    }, [auth?.empresa?.cotizTerminosDefault, auth?.empresa?.cotizObservacionesDefault, isQuotationRoute, isEditMode]);
 
     const handleSaveQuotationConfig = (config: QuotationConfig) => {
         setIncludeProductImages(config.includeProductImages);
