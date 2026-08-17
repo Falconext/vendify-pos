@@ -87,6 +87,7 @@ const ModalConfiguracionCotizacion = ({
         { id: 'CREDITO_30', value: 'CREDITO 30 DÍAS' },
         { id: 'CREDITO_45', value: 'CREDITO 45 DÍAS' },
         { id: 'CREDITO_60', value: 'CREDITO 60 DÍAS' },
+        { id: 'CREDITO_90', value: 'CREDITO 90 DÍAS' },
     ];
 
     if (!isOpen) return null;
@@ -131,8 +132,11 @@ const ModalConfiguracionCotizacion = ({
                             <Select
                                 name="quotationPaymentType"
                                 label="Forma de Pago"
-                                value={config.quotationPaymentType}
-                                onChange={(_id, value) => handleChange('quotationPaymentType', value)}
+                                // Muestra el label legible del código guardado. Se guarda el CÓDIGO
+                                // (id, p. ej. CREDITO_30), no el texto: el PDF/impresión mapea por
+                                // código, así que guardar el texto hacía que siempre saliera CONTADO.
+                                value={paymentTypeOptions.find(o => o.id === config.quotationPaymentType)?.value ?? config.quotationPaymentType}
+                                onChange={(id) => handleChange('quotationPaymentType', String(id))}
                                 options={paymentTypeOptions}
                                 error=""
                             />

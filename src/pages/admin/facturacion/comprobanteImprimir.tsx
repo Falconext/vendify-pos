@@ -490,11 +490,17 @@ console.log(formValues)
                                             {receipt === "COTIZACIÓN" && (<>
                                             <span className="font-bold">CONDICIÓN:</span>
                                             <span>
-                                                {quotationPaymentType === 'CONTADO' ? 'CONTADO' :
-                                                    quotationPaymentType === 'CREDITO_30' ? 'CREDITO 30 DIAS' :
-                                                        quotationPaymentType === 'CREDITO_60' ? 'CREDITO 60 DIAS' :
-                                                            quotationPaymentType === 'CREDITO_90' ? 'CREDITO 90 DIAS' :
-                                                                quotationPaymentType === 'ADELANTO' ? `ADELANTO ${quotationAdvance}%` : 'CONTADO'}
+                                                {(() => {
+                                                    // Robusto: acepta el código (CREDITO_30) y también datos
+                                                    // legacy guardados como texto ("CREDITO 30 DÍAS").
+                                                    const raw = String(quotationPaymentType || 'CONTADO').toUpperCase();
+                                                    if (raw.startsWith('ADELANTO')) return `ADELANTO ${quotationAdvance}%`;
+                                                    if (raw.includes('CREDITO') || raw.includes('CRÉDITO')) {
+                                                        const dias = raw.match(/\d+/)?.[0];
+                                                        return dias ? `CREDITO ${dias} DIAS` : 'CREDITO';
+                                                    }
+                                                    return 'CONTADO';
+                                                })()}
                                             </span>
 
                                             <span className="font-bold">VALIDEZ:</span>
