@@ -24,7 +24,7 @@ const DIRIGIDO_LABEL: Record<string, string> = {
 };
 
 const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps) => {
-    const { getHistorialPagos, editarReferenciaPago } = usePagosStore();
+    const { getHistorialPagos, editarReferenciaPago, subirComprobantePago } = usePagosStore();
     const [pagos, setPagos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalPagado, setTotalPagado] = useState(0);
@@ -33,6 +33,22 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [refEdit, setRefEdit] = useState('');
     const [guardandoRef, setGuardandoRef] = useState(false);
+    // Subida del comprobante/voucher de un pago (desde el historial)
+    const [subiendoId, setSubiendoId] = useState<number | null>(null);
+
+    // Adjunta la imagen del voucher a un pago que aún no lo tiene (o lo reemplaza).
+    const subirVoucher = async (pagoId: number, file: File | null | undefined) => {
+        if (!file) return;
+        setSubiendoId(pagoId);
+        try {
+            const res = await subirComprobantePago(pagoId, file);
+            if (res.success && res.comprobanteUrl) {
+                setPagos((prev) => prev.map((p) => (p.id === pagoId ? { ...p, comprobanteUrl: res.comprobanteUrl } : p)));
+            }
+        } finally {
+            setSubiendoId(null);
+        }
+    };
 
     useEffect(() => {
         const fetchPagos = async () => {
@@ -208,15 +224,39 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                                                     )}
                                                 </div>
                                             )}
-                                            {pago.comprobanteUrl && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setImgPreview(pago.comprobanteUrl)}
-                                                    className="mt-1.5 flex items-center gap-1.5 group"
-                                                >
-                                                    <img src={pago.comprobanteUrl} alt="Comprobante" className="h-11 w-11 object-cover rounded-md border border-gray-200 dark:border-slate-700 group-hover:ring-2 group-hover:ring-blue-400 transition" />
-                                                    <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">Ver comprobante</span>
-                                                </button>
+                                            {pago.comprobanteUrl ? (
+                                                <div className="mt-1.5 flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setImgPreview(pago.comprobanteUrl)}
+                                                        className="flex items-center gap-1.5 group"
+                                                    >
+                                                        <img src={pago.comprobanteUrl} alt="Comprobante" className="h-11 w-11 object-cover rounded-md border border-gray-200 dark:border-slate-700 group-hover:ring-2 group-hover:ring-blue-400 transition" />
+                                                        <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">Ver comprobante</span>
+                                                    </button>
+                                                    <a
+                                                        href={pago.comprobanteUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        download
+                                                        title="Descargar comprobante"
+                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition"
+                                                    >
+                                                        <Icon icon="solar:download-minimalistic-bold-duotone" className="text-[13px]" />
+                                                        Descargar
+                                                    </a>
+                                                    <label className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 text-[11px] font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition cursor-pointer" title="Reemplazar comprobante">
+                                                        <Icon icon={subiendoId === pago.id ? 'svg-spinners:180-ring' : 'solar:refresh-bold-duotone'} className="text-[13px]" />
+                                                        Cambiar
+                                                        <input type="file" accept="image/*" className="hidden" disabled={subiendoId === pago.id} onChange={(e) => subirVoucher(pago.id, e.target.files?.[0])} />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <label className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-dashed border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 text-[11px] font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer w-fit" title="Adjuntar el voucher / comprobante de este pago">
+                                                    <Icon icon={subiendoId === pago.id ? 'svg-spinners:180-ring' : 'solar:gallery-add-bold-duotone'} className="text-[14px]" />
+                                                    {subiendoId === pago.id ? 'Subiendo…' : 'Adjuntar comprobante'}
+                                                    <input type="file" accept="image/*" className="hidden" disabled={subiendoId === pago.id} onChange={(e) => subirVoucher(pago.id, e.target.files?.[0])} />
+                                                </label>
                                             )}
                                         </div>
                                     </div>
@@ -245,12 +285,22 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                     onClick={() => setImgPreview('')}
                 >
                     <img src={imgPreview} alt="Comprobante" className="max-h-[90vh] max-w-full rounded-lg shadow-2xl" />
-                    <button
-                        onClick={() => setImgPreview('')}
-                        className="absolute top-4 right-4 text-white/80 hover:text-white"
-                    >
-                        <Icon icon="mdi:close" className="text-3xl" />
-                    </button>
+                    <div className="absolute top-4 right-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <a
+                            href={imgPreview}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            title="Descargar comprobante"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm font-medium transition"
+                        >
+                            <Icon icon="solar:download-minimalistic-bold-duotone" className="text-lg" />
+                            Descargar
+                        </a>
+                        <button onClick={() => setImgPreview('')} className="text-white/80 hover:text-white p-1.5">
+                            <Icon icon="mdi:close" className="text-3xl" />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
