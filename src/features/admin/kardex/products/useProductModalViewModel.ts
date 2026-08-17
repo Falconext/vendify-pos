@@ -3,6 +3,7 @@ import { useCategoriesStore } from "@/zustand/categories";
 import { IExtentionsState, useExtentionsStore } from "@/zustand/extentions";
 import { IProductsState, useProductsStore } from "@/zustand/products";
 import { useAuthStore } from "@/zustand/auth";
+import { useSedesStore } from "@/zustand/sedes";
 import useAlertStore from "@/zustand/alert";
 import { useBrandsStore } from "@/zustand/brands";
 import { useModificadoresStore } from "@/zustand/modificadores";
@@ -114,7 +115,14 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const tieneGestionLotes = hasPlanFeature(userPermissions, "tieneGestionLotes");
   const tieneDescripcionRica = hasPlanFeature(userPermissions, "tieneDescripcionRica");
   const tieneAnalisisFinancieroAvanzado = hasPlanFeature(userPermissions, "tieneAnalisisFinancieroAvanzado");
-  const tieneMultiplesSedes = hasPlanFeature(userPermissions, "tieneMultiplesSedes");
+  // La casuística por sede solo es útil si la empresa REALMENTE tiene 2+ sedes,
+  // no solo por tener la función en el plan. Con una sola sede la sección
+  // "Disponibilidad por sede" es inerte (todo por defecto) y solo confunde, así
+  // que se oculta. El backend igual crea el ProductoStock con valores por defecto.
+  const { sedes: sedesEmpresa, listarSedes } = useSedesStore();
+  const tienePlanMultiplesSedes = hasPlanFeature(userPermissions, "tieneMultiplesSedes");
+  const tieneMultiplesSedes =
+    tienePlanMultiplesSedes && (sedesEmpresa?.length ?? 0) > 1;
   const tieneAutoGenerarImagen = hasPlanFeature(userPermissions, "tieneAutoGenerarImagen");
   const tieneLocalizacion = hasPlanFeature(userPermissions, "tieneLocalizacion");
 
@@ -487,6 +495,15 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
       localStorage.setItem(autoImagePrefKey, autoImageOnSave ? "1" : "0");
     } catch {}
   }, [autoImageOnSave, autoImagePrefKey]);
+
+  // Asegura tener la lista real de sedes para decidir si mostrar la sección
+  // "Disponibilidad por sede" (solo si la empresa tiene 2+ sedes).
+  useEffect(() => {
+    if (isOpenModal && tienePlanMultiplesSedes && (sedesEmpresa?.length ?? 0) === 0) {
+      listarSedes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpenModal]);
 
   useEffect(() => {
     if (!isEdit) {

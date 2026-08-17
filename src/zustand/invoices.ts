@@ -78,6 +78,7 @@ export interface IInvoicesState {
     cancelInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
+    verificarSunat: (id: number) => Promise<{ success: boolean, error?: string, estado?: string, conciliado?: boolean }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
@@ -548,6 +549,42 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             return { success: false, error: error.message };
         }
     },
+    verificarSunat: async (id: number) => {
+        try {
+            const resp: any = await patch(`/comprobante/${id}/verificar-sunat`, {});
+            if (resp.code === 1) {
+                const data = resp.data || {};
+                if (data.estado === 'ACEPTADO') {
+                    if (data.conciliado) {
+                        set(
+                            (state) => ({
+                                invoices: state.invoices.map((inv: any) =>
+                                    inv.id === id
+                                        ? { ...inv, estadoEnvioSunat: 'EMITIDO', estadoSunatRaw: 'EMITIDO' }
+                                        : inv,
+                                ),
+                            }),
+                            false,
+                            'VERIFICAR_SUNAT'
+                        );
+                    }
+                    useAlertStore.getState().alert('SUNAT confirma: comprobante ACEPTADO.', 'success');
+                } else if (data.estado === 'NO_EXISTE') {
+                    useAlertStore.getState().alert('SUNAT: el comprobante NO figura como registrado.', 'warning');
+                } else if (data.estado === 'ANULADO') {
+                    useAlertStore.getState().alert('SUNAT: el comprobante figura como ANULADO / dado de baja.', 'warning');
+                } else {
+                    useAlertStore.getState().alert('SUNAT devolvió un estado no concluyente. Intenta de nuevo.', 'info');
+                }
+                return { success: true, estado: data.estado, conciliado: !!data.conciliado };
+            }
+            useAlertStore.getState().alert(resp.error || 'No se pudo verificar en SUNAT', 'error');
+            return { success: false, error: resp.error };
+        } catch (error: any) {
+            useAlertStore.getState().alert(error.message || 'No se pudo verificar en SUNAT', 'error');
+            return { success: false, error: error.message };
+        }
+    },
     updateQuotation: async (id: number, data: any) => {
         try {
             const resp: any = await patch(`/comprobante/${id}`, data);
@@ -575,7 +612,7 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
         try {
             const resp: any = await patch(`/comprobante/${id}/nota-venta`, data);
             if (resp.code === 1) {
-                useAlertStore.getState().alert('Nota de venta actualizada exitosamente', 'success');
+                useAlertStore.getState().alert('Comprobante actualizado exitosamente', 'success');
                 return {
                     success: true,
                     serie: resp.data?.serie,

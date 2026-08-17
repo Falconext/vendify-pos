@@ -28,6 +28,8 @@ interface FormData {
   fechaExpiracion: string;
   usuarioPse?: string;
   contrasenaPse?: string;
+  sunatClientId?: string;
+  sunatClientSecret?: string;
   bancoNombre?: string;
   numeroCuenta?: string;
   cci?: string;
@@ -82,6 +84,8 @@ const EditEmpresa = () => {
     fechaExpiracion: '',
     usuarioPse: '',
     contrasenaPse: '',
+    sunatClientId: '',
+    sunatClientSecret: '',
     usaCodigoBarrasManual: false,
   });
 
@@ -135,6 +139,8 @@ const EditEmpresa = () => {
         fechaExpiracion: empresa.fechaExpiracion.split('T')[0],
         usuarioPse: (empresa as any).usuarioPse || '',
         contrasenaPse: (empresa as any).contrasenaPse || '',
+        sunatClientId: (empresa as any).sunatClientId || '',
+        sunatClientSecret: (empresa as any).sunatClientSecret || '',
         bancoNombre: (empresa as any).bancoNombre || '',
         numeroCuenta: (empresa as any).numeroCuenta || '',
         cci: (empresa as any).cci || '',
@@ -669,6 +675,41 @@ const EditEmpresa = () => {
                     isLabel
                     placeholder="Ej. R8101ZBD"
                   />
+                </div>
+              </div>
+
+              {/* Consulta de Validez de CPE (verificar si SUNAT aceptó un comprobante) */}
+              <div className="mt-6 border-t border-gray-100 dark:border-slate-700 pt-4">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Consulta de Validez SUNAT (opcional)</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  Credenciales de API que generas <strong>una vez</strong> en tu Clave SOL:
+                  Menú SOL → Empresas → Comprobantes de pago → Consulta de validez del CPE → Credenciales de API.
+                  Sirven para verificar en SUNAT si una boleta/factura fue aceptada cuando el CDR no llegó.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <InputPro
+                      name="sunatClientId"
+                      label="Client ID (SUNAT)"
+                      value={formData.sunatClientId || ''}
+                      onChange={handleInputChange}
+                      error={errors.sunatClientId}
+                      isLabel
+                      placeholder="client_id de la API SUNAT"
+                    />
+                  </div>
+                  <div>
+                    <InputPro
+                      name="sunatClientSecret"
+                      label="Client Secret (SUNAT)"
+                      type="password"
+                      value={formData.sunatClientSecret || ''}
+                      onChange={handleInputChange}
+                      error={errors.sunatClientSecret}
+                      isLabel
+                      placeholder="client_secret de la API SUNAT"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

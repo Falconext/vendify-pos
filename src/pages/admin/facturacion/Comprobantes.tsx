@@ -83,7 +83,7 @@ const Comprobantes = () => {
     const { auth, sedeActiva } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
     const { usuarios, getAllUsers } = useUsersStore();
-    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice, conciliarInvoice }: IInvoicesState = useInvoiceStore();
+    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice, conciliarInvoice, verificarSunat }: IInvoicesState = useInvoiceStore();
     const { success } = useAlertStore();
     const [invoicesList, setInvoicesList] = useState<IInvoices[]>([]);
     const [totalInvoicesList, setTotalInvoicesList] = useState(0);
@@ -1129,6 +1129,26 @@ const Comprobantes = () => {
                             {rowBase.estadoSunatRaw === 'PENDIENTE_CONCILIACION' && (
                                 <>
                                     <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                                    {/* Verificar contra SUNAT (Consulta de Validez): confirma si está
+                                        ACEPTADO y, de estarlo, lo marca EMITIDO automáticamente. */}
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            handleCloseMenu();
+                                            const res = await verificarSunat(rowBase.id);
+                                            if (res?.success && res.estado === 'ACEPTADO') {
+                                                setInvoicesList((prev) => prev.map((inv: any) =>
+                                                    inv.id === rowBase.id
+                                                        ? { ...inv, estadoEnvioSunat: 'ACEPTADO', estadoSunatRaw: 'EMITIDO' }
+                                                        : inv
+                                                ));
+                                            }
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap text-sky-700 hover:bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-950/30"
+                                    >
+                                        <Icon icon="solar:shield-check-bold-duotone" width={16} height={16} />
+                                        <span>Verificar en SUNAT</span>
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={async () => {

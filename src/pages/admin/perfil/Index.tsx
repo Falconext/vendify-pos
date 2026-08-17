@@ -16,6 +16,8 @@ export default function PerfilIndex() {
     const [showActual, setShowActual] = useState(false);
     const [showNueva, setShowNueva] = useState(false);
     const [directorInput, setDirectorInput] = useState<string | null>(null);
+    const [sunatClientIdInput, setSunatClientIdInput] = useState<string | null>(null);
+    const [sunatClientSecretInput, setSunatClientSecretInput] = useState<string | null>(null);
     // Pestañas Perfil / Configuración (sincronizadas con la URL para deep-link desde el menú)
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab: 'perfil' | 'configuracion' = searchParams.get('tab') === 'configuracion' ? 'configuracion' : 'perfil';
@@ -628,6 +630,44 @@ export default function PerfilIndex() {
                                             </button>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-1">Aparece en el Libro de Control de Psicotrópicos — DS 023-2001-SA</p>
+                                    </div>
+                                )}
+                                {perfil.empresa.tipoEmpresa === 'FORMAL' && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-800">
+                                        <p className="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                            <Icon icon="solar:shield-check-bold-duotone" width={14} />
+                                            Consulta de Validez SUNAT
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                            Credenciales de API que generas <strong>una vez</strong> en tu Clave SOL (Menú SOL → Empresas → Comprobantes de pago → Consulta de validez del CPE → Credenciales de API). Sirven para el botón <strong>“Verificar en SUNAT”</strong> cuando un comprobante queda en conciliación.
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input
+                                                type="text"
+                                                className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                placeholder="Client ID"
+                                                value={sunatClientIdInput ?? (perfil.empresa.sunatClientId ?? '')}
+                                                onChange={e => setSunatClientIdInput(e.target.value)}
+                                            />
+                                            <input
+                                                type="password"
+                                                className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                placeholder="Client Secret"
+                                                value={sunatClientSecretInput ?? (perfil.empresa.sunatClientSecret ?? '')}
+                                                onChange={e => setSunatClientSecretInput(e.target.value)}
+                                            />
+                                        </div>
+                                        <button
+                                            disabled={vm.savingSunatValidez || (sunatClientIdInput === null && sunatClientSecretInput === null)}
+                                            onClick={() => vm.handleSunatValidezSave(
+                                                sunatClientIdInput ?? (perfil.empresa.sunatClientId ?? ''),
+                                                sunatClientSecretInput ?? (perfil.empresa.sunatClientSecret ?? ''),
+                                                () => { setSunatClientIdInput(null); setSunatClientSecretInput(null); },
+                                            )}
+                                            className="mt-2 px-3 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-colors"
+                                        >
+                                            {vm.savingSunatValidez ? '...' : 'Guardar credenciales'}
+                                        </button>
                                     </div>
                                 )}
                             </div>
