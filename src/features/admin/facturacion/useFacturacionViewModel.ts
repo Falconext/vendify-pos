@@ -667,6 +667,16 @@ export const useFacturacionViewModel = () => {
             const { cliente, productos, observaciones, ...cotizConfig } = state.quotationData;
 
             if (cliente) {
+                // Preservar el cliente de la cotización (con su RUC/DNI). Sin esto, el
+                // reset automático a CLIENTES VARIOS (para NV/Boleta/Ticket...) lo pisaba
+                // y tomaba CLIENTES VARIOS al convertir la cotización a comprobante.
+                const _labelDestino: Record<string, string> = {
+                    NV: 'NOTA DE VENTA', TICKET: 'TICKET', NP: 'NOTA DE PEDIDO',
+                    OT: 'ORDEN DE TRABAJO', RH: 'RECIBO POR HONORARIO', CP: 'COMPROBANTE DE PAGO',
+                    BOLETA: 'BOLETA', FACTURA: 'FACTURA',
+                };
+                const _dt = state?.defaultType as string | undefined;
+                fromNVComprobanteRef.current = (_dt && _labelDestino[_dt]) ? _labelDestino[_dt] : formValues.comprobante;
                 setSelectedClient(cliente);
                 setFormValues(prev => ({
                     ...prev,
