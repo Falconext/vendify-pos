@@ -80,7 +80,9 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
                 const proveedorNombre =
                     created?.proveedor?.nombre ||
                     data?.proveedorNombre ||
-                    'Proveedor';
+                    created?.proveedor?.nroDoc ||
+                    data?.proveedorRuc ||
+                    'Sin nombre';
                 const proveedorDoc =
                     created?.proveedor?.nroDoc ||
                     data?.proveedorRuc ||

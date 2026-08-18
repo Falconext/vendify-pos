@@ -111,6 +111,21 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                                             {medioPagoLabel(gasto.medioPago)}
                                         </span>
                                     )}
+                                    {gasto.proveedor && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 truncate max-w-[140px]">
+                                            {gasto.proveedor}
+                                        </span>
+                                    )}
+                                    {gasto.numeroDocumento && (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[110px]">
+                                            Doc: {gasto.numeroDocumento}
+                                        </span>
+                                    )}
+                                    {gasto.numeroOperacion && (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[110px]">
+                                            Op: {gasto.numeroOperacion}
+                                        </span>
+                                    )}
                                     {gasto.descripcion && (
                                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
                                             {gasto.descripcion}

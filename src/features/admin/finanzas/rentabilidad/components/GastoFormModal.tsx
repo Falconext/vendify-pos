@@ -28,6 +28,9 @@ const INITIAL_FORM = {
     tipoCambio: '',
     cuentaBancariaId: '',
     medioPago: '',
+    proveedor: '',
+    numeroDocumento: '',
+    numeroOperacion: '',
     fecha: '',
     recurrenteDiario: false,
     fechaFin: '',
@@ -85,6 +88,9 @@ export default function GastoFormModal({
                 tipoCambio: gastoEditando.tipoCambio != null ? String(gastoEditando.tipoCambio) : '',
                 cuentaBancariaId: gastoEditando.cuentaBancariaId != null ? String(gastoEditando.cuentaBancariaId) : '',
                 medioPago: gastoEditando.medioPago ?? '',
+                proveedor: gastoEditando.proveedor ?? '',
+                numeroDocumento: gastoEditando.numeroDocumento ?? '',
+                numeroOperacion: gastoEditando.numeroOperacion ?? '',
                 fecha: gastoEditando.fechaInicio?.slice(0, 10) ?? gastoEditando.fecha?.slice(0, 10) ?? getDefaultDate(mesActual, anioActual),
                 recurrenteDiario: gastoEditando.recurrenteDiario,
                 fechaFin: gastoEditando.fechaFin?.slice(0, 10) ?? '',
@@ -144,6 +150,10 @@ export default function GastoFormModal({
             ...(form.moneda === 'USD' && form.tipoCambio ? { tipoCambio: parseFloat(form.tipoCambio) } : {}),
             ...(form.cuentaBancariaId ? { cuentaBancariaId: parseInt(form.cuentaBancariaId, 10) } : {}),
             ...(form.medioPago ? { medioPago: form.medioPago } : {}),
+            ...(form.proveedor.trim() ? { proveedor: form.proveedor.trim() } : {}),
+            ...(form.numeroDocumento.trim() ? { numeroDocumento: form.numeroDocumento.trim() } : {}),
+            // El N° de operación solo tiene sentido si el pago fue con cuenta de banco.
+            ...(form.cuentaBancariaId && form.numeroOperacion.trim() ? { numeroOperacion: form.numeroOperacion.trim() } : {}),
             ...(form.etiqueta.trim() ? { etiqueta: form.etiqueta.trim() } : {}),
             ...(form.descripcion.trim() ? { descripcion: form.descripcion.trim() } : {}),
         };
@@ -397,6 +407,69 @@ export default function GastoFormModal({
                                     <option key={m.key} value={m.key}>{m.label}</option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+
+                    {/* N° de operación bancaria (solo si se eligió una cuenta de banco) */}
+                    {form.cuentaBancariaId && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                N° de operación
+                                <span className="ml-1 text-xs font-normal text-gray-400">(opcional)</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <Icon icon="solar:card-transfer-bold" className="text-gray-400 text-base" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={form.numeroOperacion}
+                                    onChange={e => handleChange('numeroOperacion', e.target.value)}
+                                    placeholder="N° de operación / transferencia"
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Proveedor + N° de documento (opcionales) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Proveedor
+                                <span className="ml-1 text-xs font-normal text-gray-400">(opcional)</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <Icon icon="solar:shop-bold" className="text-gray-400 text-base" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={form.proveedor}
+                                    onChange={e => handleChange('proveedor', e.target.value)}
+                                    placeholder="Nombre del proveedor"
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                N° de documento
+                                <span className="ml-1 text-xs font-normal text-gray-400">(opcional)</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <Icon icon="solar:document-text-bold" className="text-gray-400 text-base" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={form.numeroDocumento}
+                                    onChange={e => handleChange('numeroDocumento', e.target.value)}
+                                    placeholder="Ej: F001-123, B001-45..."
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                />
+                            </div>
                         </div>
                     </div>
 

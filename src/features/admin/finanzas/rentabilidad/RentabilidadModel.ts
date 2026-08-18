@@ -72,6 +72,9 @@ export interface GastoOperativo {
     tipoCambio?: number | string | null;
     cuentaBancariaId?: number | null;
     medioPago?: string | null;
+    proveedor?: string | null;
+    numeroDocumento?: string | null;
+    numeroOperacion?: string | null;
     descripcion: string | null;
     creadoEn: string;
 }
@@ -123,6 +126,9 @@ export interface GastoFormData {
     tipoCambio?: number;
     cuentaBancariaId?: number;
     medioPago?: string;
+    proveedor?: string;
+    numeroDocumento?: string;
+    numeroOperacion?: string;
     descripcion?: string;
 }
 
