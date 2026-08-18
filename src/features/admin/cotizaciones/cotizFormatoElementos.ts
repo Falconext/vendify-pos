@@ -16,7 +16,7 @@ export interface ElemDef {
 
 export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'logo', label: 'Logo', hasVisible: true, defaultSize: 150, min: 40, max: 220, unit: 'px', grupo: 'Encabezado' },
-  { key: 'nombreComercial', label: 'Nombre comercial', hasVisible: true, defaultSize: 20, min: 10, max: 32, grupo: 'Encabezado' },
+  { key: 'nombreComercial', label: 'Nombre comercial', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'direccion', label: 'Dirección', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'rubro', label: 'Rubro / actividad', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'razonSocial', label: 'Razón social', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
