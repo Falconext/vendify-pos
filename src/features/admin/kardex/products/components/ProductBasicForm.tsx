@@ -117,7 +117,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     // Costo de venta ingresado CON IGV (texto crudo del input). costoUnitario SIEMPRE se guarda NETO.
     const [costoConIgvInput, setCostoConIgvInput] = useState('');
     const _costoNet = Number((formValues as any)?.costoUnitario) || 0;
-    const _esGravadoCosto = !['20', '30'].includes((formValues as any).tipoAfectacionIGV ?? '10');
+    const _esGravadoCosto = !['20', '30', '40'].includes((formValues as any).tipoAfectacionIGV ?? '10');
     const _costoBrutoDerivado = _costoNet > 0
         ? (_esGravadoCosto ? parseFloat((_costoNet * 1.18).toFixed(2)) : _costoNet)
         : 0;
@@ -836,7 +836,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             <div className="col-span-1 md:col-span-2 mt-2 grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
                 <div className="w-full h-full flex">
                     {(() => {
-                        const esGravado = !['20', '30'].includes((formValues as any).tipoAfectacionIGV ?? '10');
+                        const esGravado = !['20', '30', '40'].includes((formValues as any).tipoAfectacionIGV ?? '10');
                         const igvPct = esGravado ? 0.18 : 0;
                         const precio = Number(formValues?.precioUnitario) || 0;
 
@@ -902,7 +902,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                         name="precioUnitario"
                                         placeholder="0.00"
                                         isLabel
-                                        label={modoConIgv ? `Precio de venta con IGV (${simbolo})${esGravado ? '' : ' — ' + ((formValues as any).tipoAfectacionIGV === '20' ? 'Exonerado' : 'Inafecto')}` : `Precio neto sin IGV (${simbolo})`}
+                                        label={modoConIgv ? `Precio de venta con IGV (${simbolo})${esGravado ? '' : ' — ' + ((formValues as any).tipoAfectacionIGV === '20' ? 'Exonerado' : (formValues as any).tipoAfectacionIGV === '40' ? 'Exportación' : 'Inafecto')}` : `Precio neto sin IGV (${simbolo})`}
                                         value={modoConIgv ? (precio || '') : (precioSinIgv || '')}
                                         onChange={handlePrecioChange}
                                         handleOnBlur={handlePrecioUnitarioBlur}
@@ -951,7 +951,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                 name="costoUnitario"
                                                 placeholder="0.00"
                                                 isLabel
-                                                label={`Costo de venta con IGV (${simbolo})${esGravado ? '' : ' — ' + ((formValues as any).tipoAfectacionIGV === '20' ? 'Exonerado' : 'Inafecto')}`}
+                                                label={`Costo de venta con IGV (${simbolo})${esGravado ? '' : ' — ' + ((formValues as any).tipoAfectacionIGV === '20' ? 'Exonerado' : (formValues as any).tipoAfectacionIGV === '40' ? 'Exportación' : 'Inafecto')}`}
                                                 value={costoConIgvInput}
                                                 onChange={(e) => {
                                                     const raw = e.target.value;
@@ -1023,7 +1023,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
                                 {/* ── Simulador de Rentabilidad Diaria ── */}
                                 {(() => {
-                                    const esGravado = !['20', '30'].includes((formValues as any).tipoAfectacionIGV ?? '10');
+                                    const esGravado = !['20', '30', '40'].includes((formValues as any).tipoAfectacionIGV ?? '10');
                                     const precio = Number(formValues?.precioUnitario) || 0;
                                     const precioNeto = esGravado ? precio / 1.18 : precio;
                                     const costo = Number((formValues as any)?.costoUnitario) || 0;

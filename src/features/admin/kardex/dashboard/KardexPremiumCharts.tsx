@@ -27,6 +27,41 @@ const fShort = (n: number) => {
 };
 const truncate = (s: string, n = 16) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
+// Divide el texto en hasta `maxLines` líneas de ~`perLine` caracteres, sin cortar palabras.
+const wrapText = (s: string, perLine = 30, maxLines = 2): string[] => {
+    const words = String(s ?? '').trim().split(/\s+/);
+    const lines: string[] = [];
+    let cur = '';
+    for (const w of words) {
+        const next = cur ? `${cur} ${w}` : w;
+        if (next.length > perLine && cur) {
+            lines.push(cur);
+            cur = w;
+            if (lines.length === maxLines - 1) break;
+        } else {
+            cur = next;
+        }
+    }
+    // Junta lo que quede (palabras restantes) en la última línea disponible
+    const usedWords = lines.join(' ').split(/\s+/).filter(Boolean).length;
+    const rest = words.slice(usedWords).join(' ');
+    if (rest) lines.push(rest.length > perLine ? `${rest.slice(0, perLine - 1)}…` : rest);
+    return lines.slice(0, maxLines);
+};
+
+// Tick de eje Y que envuelve el nombre del producto en 2 líneas (evita el corte "Body blco, cuel...")
+const WrappedYTick = ({ x, y, payload }: any) => {
+    const lines = wrapText(payload?.value, 30, 2);
+    const startY = y - ((lines.length - 1) * 6);
+    return (
+        <text x={x} y={startY} textAnchor="end" fill="#64748b" fontSize={11} fontWeight={600}>
+            {lines.map((ln, i) => (
+                <tspan key={i} x={x} dy={i === 0 ? 0 : 13}>{ln}</tspan>
+            ))}
+        </text>
+    );
+};
+
 // Tooltip oscuro/premium reutilizable
 const ChartTooltip = ({ active, payload, unit }: any) => {
     if (!active || !payload?.length) return null;
@@ -156,11 +191,11 @@ export default function KardexPremiumCharts({ pieData, topVendidos, topRentables
                                     <YAxis
                                         type="category"
                                         dataKey="name"
-                                        width={120}
-                                        tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                                        width={210}
+                                        tick={<WrappedYTick />}
                                         axisLine={false}
                                         tickLine={false}
-                                        tickFormatter={(v: string) => truncate(v, 16)}
+                                        interval={0}
                                     />
                                     <Tooltip content={<ChartTooltip unit="u" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
                                     <Bar dataKey="cantidad" name="Unidades" fill="url(#kdxBarGrad)" radius={[0, 8, 8, 0]} barSize={16} />
