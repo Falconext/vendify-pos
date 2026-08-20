@@ -643,6 +643,28 @@ console.log(formValues)
                                             </div>)}
                                         </div>
                                     </div>
+
+                                    {/* QR de pago (Yape / Plin) — dentro del cuadro, debajo del monto total. Opcional según el formato. */}
+                                    {fc('qrPagos').visible && (() => {
+                                        const emp = company?.empresa as any;
+                                        const qrs = [
+                                            { label: 'Yape', url: emp?.yapeQrUrl, numero: emp?.yapeNumero },
+                                            { label: 'Plin', url: emp?.plinQrUrl, numero: emp?.plinNumero },
+                                        ].filter((q) => q.url);
+                                        if (qrs.length === 0) return null;
+                                        const qrSize = fc('qrPagos').size;
+                                        return (
+                                            <div className="flex justify-end gap-6 mt-3">
+                                                {qrs.map((q, i) => (
+                                                    <div key={i} className="flex flex-col items-center">
+                                                        <div className="font-bold text-[11px] mb-1">{q.label}</div>
+                                                        <img src={q.url} alt={`QR ${q.label}`} style={{ width: qrSize, height: qrSize, objectFit: 'contain' }} className="border border-gray-300" />
+                                                        {q.numero && <div className="text-[10px] mt-1">{q.numero}</div>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Cuentas bancarias — tabla compacta al pie del documento */}

@@ -6,6 +6,8 @@ export interface ElemDef {
   label: string;
   /** Si el elemento se puede mostrar/ocultar. */
   hasVisible: boolean;
+  /** Visibilidad por defecto cuando no hay configuración guardada (default: true). */
+  defaultVisible?: boolean;
   /** Tamaño por defecto (px de fuente, o px de ancho para el logo). */
   defaultSize: number;
   min: number;
@@ -37,6 +39,7 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'descuentos', label: 'Descuentos', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'igv', label: 'IGV', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'montoTotal', label: 'Monto total', hasVisible: true, defaultSize: 18, min: 10, max: 24, grupo: 'Cuerpo' },
+  { key: 'qrPagos', label: 'QR de pago (Yape / Plin)', hasVisible: true, defaultVisible: false, defaultSize: 90, min: 60, max: 180, unit: 'px', grupo: 'Cuerpo' },
   { key: 'cuentas', label: 'Cuentas bancarias', hasVisible: true, defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
   { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
 ];
@@ -48,7 +51,8 @@ export function elemCfg(config: CotizConfig | undefined | null, key: string) {
   const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
   const c = (config || {})[key] || {};
   return {
-    visible: c.visible !== false,
+    // Si no hay valor guardado, se usa defaultVisible del elemento (default: true).
+    visible: c.visible !== undefined ? c.visible : (def?.defaultVisible ?? true),
     size: c.size ?? def?.defaultSize ?? 12,
   };
 }

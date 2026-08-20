@@ -7,6 +7,7 @@ import { hasPlanFeature } from '@/utils/permissions';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CuentasBancariasConfig from '@/pages/admin/empresa/CuentasBancariasConfig';
+import MediosDePagoConfig from '@/pages/admin/empresa/MediosDePagoConfig';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -297,7 +298,10 @@ export default function PerfilIndex() {
                                 </button>
                             </div>
                         </div>
+                        {/* ── Medios de Pago (Yape / Plin) — dentro de Información Personal ── */}
+                        <MediosDePagoConfig />
                     </div>
+
                     {/* ── Envío automático por WhatsApp — DESACTIVADO temporalmente (a pedido) ── */}
                     {SHOW_WHATSAPP && (
                     <div className={`lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-[0_2px_20px_rgba(15,23,42,0.05)] ${configTab}`}>

@@ -155,6 +155,10 @@ export const useConfiguracionTiendaViewModel = (): any => {
                 if (payload[k] === '') delete payload[k];
                 else if (typeof payload[k] === 'string' && !/^https?:\/\//i.test(payload[k])) payload[k] = `https://${payload[k]}`;
             });
+            // Yape/Plin ahora se editan desde el Perfil. No los enviamos aquí para no
+            // pisar con valores obsoletos lo guardado allí. (aceptaEfectivo sí se
+            // mantiene: se edita en la sección Envío y Recojo de esta página.)
+            ['yapeNumero', 'plinNumero', 'yapeQrUrl', 'plinQrUrl'].forEach(k => delete payload[k]);
             if (payload.slugTienda) payload.slugTienda = slugify(payload.slugTienda);
             if (payload.costoEnvioFijo != null && payload.costoEnvioFijo !== '') payload.costoEnvioFijo = Number(payload.costoEnvioFijo);
             if (payload.tiempoPreparacionMin != null && payload.tiempoPreparacionMin !== '') payload.tiempoPreparacionMin = Number(payload.tiempoPreparacionMin);

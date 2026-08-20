@@ -3,7 +3,6 @@ import { Icon } from '@iconify/react';
 import Button from '@/components/Button';
 import InputPro from '@/components/InputPro';
 import ModalConfirm from '@/components/ModalConfirm';
-import Select from '@/components/Select';
 export default function ConfiguracionTienda() {
   const vm = useConfiguracionTiendaViewModel();
   if (vm.loading) {
@@ -43,7 +42,7 @@ export default function ConfiguracionTienda() {
             <Icon icon="solar:settings-bold-duotone" className="text-blue-600 dark:text-blue-400" />
             Configuración de Tienda Virtual
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Datos generales, logo, medios de pago, cuenta bancaria, envío y recojo</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Datos generales, logo, envío y recojo</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -173,122 +172,6 @@ export default function ConfiguracionTienda() {
           </div>
         </div>
 
-        {/* ── Medios de Pago ── */}
-        <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
-            <Icon icon="solar:wallet-money-bold-duotone" className="text-xl text-emerald-500" />
-            Medios de Pago
-          </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Yape */}
-            <div className="border border-gray-100 dark:border-transparent rounded-xl p-5 bg-gray-50/50 dark:bg-slate-900/30">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center"><span className="text-lg">💜</span></div>
-                <span className="font-semibold text-gray-800 dark:text-white">Yape</span>
-              </div>
-              <div className="space-y-4">
-                <InputPro label="Número Yape" name="yapeNumero" value={formData.yapeNumero} onChange={handleChange} placeholder="999 999 999" />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Código QR</label>
-                  <div className="flex items-stretch gap-4">
-                    <div className="flex-1 flex flex-col">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-slate-800 rounded-xl cursor-pointer bg-white dark:bg-slate-900/50 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <input type="file" accept="image/*" onChange={(e) => vm.setYapeFile(e.target.files?.[0] || null)} className="hidden" />
-                        <Icon icon="solar:upload-minimalistic-bold-duotone" className="text-3xl text-gray-400 dark:text-gray-600 mb-2" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{vm.yapeFile ? vm.yapeFile.name : 'Seleccionar imagen'}</span>
-                      </label>
-                      <Button type="button" onClick={() => vm.subirQr('yape')} disabled={vm.yapeUploading || !vm.yapeFile} color="lila" fill className="w-full mt-3">
-                        {vm.yapeUploading ? 'Subiendo...' : 'Subir QR'}
-                      </Button>
-                    </div>
-                    {(vm.previewYapeUrl || formData.yapeQrUrl) ? (
-                      <div className="relative">
-                        <img src={vm.previewYapeUrl || formData.yapeQrUrl} alt="QR Yape" className="w-28 h-auto max-h-40 object-contain rounded-xl border border-gray-200 dark:border-slate-700" />
-                        <button type="button" onClick={() => vm.eliminarQr('yape')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md">
-                          <Icon icon="solar:trash-bin-trash-bold" className="text-xs" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100 dark:bg-slate-900/50 flex items-center justify-center">
-                        <Icon icon="solar:qr-code-linear" className="text-4xl text-gray-300 dark:text-gray-700" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Plin */}
-            <div className="border border-gray-100 dark:border-transparent rounded-xl p-5 bg-gray-50/50 dark:bg-slate-900/30">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center"><span className="text-lg">💚</span></div>
-                <span className="font-semibold text-gray-800 dark:text-white">Plin</span>
-              </div>
-              <div className="space-y-4">
-                <InputPro label="Número Plin" name="plinNumero" value={formData.plinNumero} onChange={handleChange} placeholder="999 999 999" />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Código QR</label>
-                  <div className="flex items-stretch gap-4">
-                    <div className="flex-1 flex flex-col">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-slate-800 rounded-xl cursor-pointer bg-white dark:bg-slate-900/50 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <input type="file" accept="image/*" onChange={(e) => vm.setPlinFile(e.target.files?.[0] || null)} className="hidden" />
-                        <Icon icon="solar:upload-minimalistic-bold-duotone" className="text-3xl text-gray-400 dark:text-gray-600 mb-2" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{vm.plinFile ? vm.plinFile.name : 'Seleccionar imagen'}</span>
-                      </label>
-                      <Button type="button" onClick={() => vm.subirQr('plin')} disabled={vm.plinUploading || !vm.plinFile} color="lila" fill className="w-full mt-3">
-                        {vm.plinUploading ? 'Subiendo...' : 'Subir QR'}
-                      </Button>
-                    </div>
-                    {(vm.previewPlinUrl || formData.plinQrUrl) ? (
-                      <div className="relative">
-                        <img src={vm.previewPlinUrl || formData.plinQrUrl} alt="QR Plin" className="w-28 h-auto max-h-40 object-contain rounded-xl border border-gray-200 dark:border-slate-700" />
-                        <button type="button" onClick={() => vm.eliminarQr('plin')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md">
-                          <Icon icon="solar:trash-bin-trash-bold" className="text-xs" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100 dark:bg-slate-900/50 flex items-center justify-center">
-                        <Icon icon="solar:qr-code-linear" className="text-4xl text-gray-300 dark:text-gray-700" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mt-5 pt-5 border-t border-gray-100 dark:border-slate-800">
-            <input type="checkbox" name="aceptaEfectivo" checked={formData.aceptaEfectivo} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 dark:bg-slate-800 text-blue-600 focus:ring-blue-500" />
-            <label className="text-sm text-gray-700 dark:text-gray-300">Acepto pago en efectivo contra entrega</label>
-          </div>
-
-          {/* Cuenta Bancaria */}
-          <div className="mt-8 pt-5 border-t border-gray-100 dark:border-slate-800">
-            <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-              <Icon icon="solar:card-transfer-bold-duotone" className="text-xl text-blue-500" />
-              Cuenta Bancaria (Para Cotizaciones)
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputPro name="bancoNombre" label="Nombre del Banco" value={formData.bancoNombre} onChange={handleChange} isLabel placeholder="Ej: INTERBANK" />
-              <div>
-                <Select
-                  label="Moneda"
-                  name="monedaCuenta"
-                  error=""
-                  options={[
-                    { id: 'SOLES', value: 'SOLES' },
-                    { id: 'DOLARES', value: 'DOLARES' },
-                  ]}
-                  value={formData.monedaCuenta}
-                  onChange={(id) => handleChange({ target: { name: 'monedaCuenta', value: String(id) } })}
-                />
-              </div>
-              <InputPro name="numeroCuenta" label="N° Cuenta" value={formData.numeroCuenta} onChange={handleChange} isLabel placeholder="Ej: 200-3006350516" />
-              <InputPro name="cci" label="CCI" value={formData.cci} onChange={handleChange} isLabel placeholder="Ej: 003-200-003006350516-35" />
-            </div>
-          </div>
-        </div>
-
         {/* ── Envío y Recojo ── */}
         <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent p-6">
           <h3 className="text-lg font-semibold dark:text-white mb-4 flex items-center gap-2">
@@ -304,6 +187,10 @@ export default function ConfiguracionTienda() {
               <div className="flex items-center gap-2">
                 <input type="checkbox" name="aceptaEnvio" checked={formData.aceptaEnvio} onChange={handleChange} className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700" />
                 <label className="text-sm dark:text-gray-300">Acepto envío a domicilio</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" name="aceptaEfectivo" checked={formData.aceptaEfectivo} onChange={handleChange} className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700" />
+                <label className="text-sm dark:text-gray-300">Acepto pago en efectivo contra entrega</label>
               </div>
             </div>
             {formData.aceptaEnvio && <InputPro label="Costo de envío fijo (S/)" name="costoEnvioFijo" type="number" value={formData.costoEnvioFijo} onChange={handleChange} placeholder="0.00" isLabel />}
