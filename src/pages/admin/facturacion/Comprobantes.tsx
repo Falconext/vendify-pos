@@ -83,7 +83,7 @@ const Comprobantes = () => {
     const { auth, sedeActiva } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
     const { usuarios, getAllUsers } = useUsersStore();
-    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice, conciliarInvoice, verificarSunat }: IInvoicesState = useInvoiceStore();
+    const { getInvoice, invoice, resetInvoice, cancelInvoice, completePay, discardInvoice, conciliarInvoice, verificarSunat, reemitirInvoice }: IInvoicesState = useInvoiceStore();
     const { success } = useAlertStore();
     const [invoicesList, setInvoicesList] = useState<IInvoices[]>([]);
     const [totalInvoicesList, setTotalInvoicesList] = useState(0);
@@ -1167,6 +1167,33 @@ const Comprobantes = () => {
                                     >
                                         <Icon icon="solar:check-circle-bold-duotone" width={16} height={16} />
                                         <span>Marcar como conciliado</span>
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Reemitir: el comprobante fue RECHAZADO por SUNAT o su envío falló.
+                                Reenvía la misma serie-correlativo con el XML reconstruido (ya con los
+                                cálculos corregidos). No aplica a comprobantes aceptados. */}
+                            {(rowBase.estadoSunatRaw === 'RECHAZADO' || rowBase.estadoSunatRaw === 'FALLIDO_ENVIO') && (
+                                <>
+                                    <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            handleCloseMenu();
+                                            const res = await reemitirInvoice(rowBase.id);
+                                            if (res?.success) {
+                                                setInvoicesList((prev) => prev.map((inv: any) =>
+                                                    inv.id === rowBase.id
+                                                        ? { ...inv, estadoEnvioSunat: 'ACEPTADO', estadoSunatRaw: 'EMITIDO' }
+                                                        : inv
+                                                ));
+                                            }
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                    >
+                                        <Icon icon="solar:refresh-circle-bold-duotone" width={16} height={16} />
+                                        <span>Reemitir a SUNAT</span>
                                     </button>
                                 </>
                             )}

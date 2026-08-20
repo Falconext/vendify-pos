@@ -79,6 +79,7 @@ export interface IInvoicesState {
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     verificarSunat: (id: number) => Promise<{ success: boolean, error?: string, estado?: string, conciliado?: boolean }>;
+    reemitirInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
@@ -582,6 +583,32 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             return { success: false, error: resp.error };
         } catch (error: any) {
             useAlertStore.getState().alert(error.message || 'No se pudo verificar en SUNAT', 'error');
+            return { success: false, error: error.message };
+        }
+    },
+    reemitirInvoice: async (id: number) => {
+        try {
+            const resp: any = await patch(`/comprobante/${id}/reemitir`, {});
+            if (resp.code === 1) {
+                set(
+                    (state) => ({
+                        invoices: state.invoices.map((inv: any) =>
+                            inv.id === id
+                                ? { ...inv, estadoEnvioSunat: 'EMITIDO', estadoSunatRaw: 'EMITIDO' }
+                                : inv,
+                        ),
+                    }),
+                    false,
+                    'REEMITIR_COMPROBANTE'
+                );
+                useAlertStore.getState().alert('Comprobante reemitido y aceptado por SUNAT.', 'success');
+                return { success: true };
+            } else {
+                useAlertStore.getState().alert(resp.error || 'Error al reemitir el comprobante', 'error');
+                return { success: false, error: resp.error };
+            }
+        } catch (error: any) {
+            useAlertStore.getState().alert(error.message || 'Error al reemitir el comprobante', 'error');
             return { success: false, error: error.message };
         }
     },
