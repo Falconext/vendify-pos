@@ -1,4 +1,8 @@
-export type OrigenPago = 'VENTA' | 'COMPRA';
+export type OrigenPago = 'VENTA' | 'COMPRA' | 'GASTO';
+
+/** Etiqueta legible para el origen de un pago del sistema. */
+export const origenLabel = (o: OrigenPago): string =>
+  o === 'VENTA' ? 'Venta' : o === 'GASTO' ? 'Gasto' : 'Compra';
 export type EstadoConciliacion = 'CONCILIADO' | 'PENDIENTE';
 
 export interface IPlantillaExcel {

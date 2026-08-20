@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import type { IResultadoConciliacion } from './ConciliacionModel';
+import { origenLabel } from './ConciliacionModel';
 
 Font.register({
     family: 'Roboto',
@@ -161,7 +162,7 @@ export function ConciliacionReportPDF({
                         </View>
                         {data.sistemaPendientes.map((p, idx) => (
                             <View key={idx} style={[styles.row, idx % 2 ? styles.alt : {}]} wrap={false}>
-                                <Text style={[styles.cell, styles.pOrigen]}>{p.origen === 'VENTA' ? 'Venta' : 'Compra'}</Text>
+                                <Text style={[styles.cell, styles.pOrigen]}>{origenLabel(p.origen)}</Text>
                                 <Text style={[styles.cell, styles.pDoc]}>{p.documento}</Text>
                                 <Text style={[styles.cell, styles.pContra]}>{p.contraparte}</Text>
                                 <Text style={[styles.cell, styles.pOp]}>{p.operacion}</Text>
