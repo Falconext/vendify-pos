@@ -104,8 +104,8 @@ const GuiaRemision = () => {
     ];
 
     // Filtros
-    const [fechaInicio, setFechaInicio] = useState(moment().format('YYYY-MM-DD'));
-    const [fechaFin, setFechaFin] = useState(moment().format('YYYY-MM-DD'));
+    const [fechaInicio, setFechaInicio] = useState(moment().startOf('month').format('YYYY-MM-DD'));
+    const [fechaFin, setFechaFin] = useState(moment().endOf('month').format('YYYY-MM-DD'));
 
     useEffect(() => {
         const state = location.state as any;
