@@ -17,7 +17,7 @@ const QtyInput = ({ item, index, vm }: { item: any; index: number; vm: any }) =>
             useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
             return;
         }
-        const rounded = Math.round(parsed * 1000) / 1000;
+        const rounded = Math.round(parsed * 10000) / 10000;
         setLocalValue(String(rounded));
         vm.updateProductInvoice(index, vm.calculateLineItem(item, rounded));
     };
@@ -73,12 +73,17 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
         if (u.includes('LTR') || u.includes('LITRO') || u === 'L') {
             return { sufijo: 'L', opciones: [{ v: 0.25, l: '¼' }, { v: 0.5, l: '½' }, { v: 1, l: '1' }, { v: 2, l: '2' }] };
         }
+        // Galón (GLL / GALON / GALÓN / GALONES): venta por fracción de galón.
+        if (u.includes('GLL') || u.includes('GAL')) {
+            return { sufijo: 'gal', opciones: [{ v: 0.0625, l: '1/16' }, { v: 0.125, l: '⅛' }, { v: 0.25, l: '¼' }, { v: 0.5, l: '½' }, { v: 1, l: '1' }] };
+        }
         return null;
     };
 
     // Fija la cantidad exacta (venta fraccionada), validando stock.
+    // 4 decimales para soportar fracciones de galón (1/16 = 0.0625).
     const setQty = (item: any, index: number, value: number) => {
-        const v = Math.round(value * 1000) / 1000;
+        const v = Math.round(value * 10000) / 10000;
         if (v <= 0) return;
         if (!esServicio(item) && item.stock !== undefined && Number(item.stock) < v) {
             useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
@@ -197,7 +202,7 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                                     <button
                                         onClick={() => {
                                             const cur = Number(item.cantidad);
-                                            const next = Math.round((cur - 1) * 1000) / 1000;
+                                            const next = Math.round((cur - 1) * 10000) / 10000;
                                             if (next <= 0) {
                                                 vm.handleDeleteProductByIndex(index);
                                             } else {
@@ -211,7 +216,7 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                                     <QtyInput item={item} index={index} vm={vm} />
                                     <button
                                         onClick={() => {
-                                            const newQty = Math.round((Number(item.cantidad) + 1) * 1000) / 1000;
+                                            const newQty = Math.round((Number(item.cantidad) + 1) * 10000) / 10000;
                                             if (!esServicio(item) && item.stock !== undefined && item.stock < newQty) {
                                                 useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
                                                 return;
