@@ -276,6 +276,7 @@ export function useCotizacionesViewModel() {
                     observaciones: cotizacion.observaciones,
                     cotizIncluirImagenes: c.cotizIncluirImagenes,
                     cotizDescuento: c.cotizDescuento,
+                    mtoDescuentoGlobal: c.mtoDescuentoGlobal,
                     cotizVigencia: c.cotizVigencia,
                     cotizFirmante: c.cotizFirmante,
                     cotizTerminos: c.cotizTerminos,

@@ -721,6 +721,13 @@ export const useFacturacionViewModel = () => {
                 setHasOpenedConfigModal(true); // evita que el modal de config se abra automáticamente
                 if (cotizConfig.cotizIncluirImagenes !== undefined) setIncludeProductImages(cotizConfig.cotizIncluirImagenes);
                 if (cotizConfig.cotizDescuento !== undefined) setQuotationDiscount(cotizConfig.cotizDescuento);
+                // Descuento global persistido: cargarlo al campo (en soles) para que al
+                // re-editar/guardar no se pierda, y se muestre en "Configurar venta".
+                if (Number(cotizConfig.mtoDescuentoGlobal) > 0) {
+                    setDescuentoModoNV('SOLES');
+                    setDescuentoSolesNV(Number(cotizConfig.mtoDescuentoGlobal));
+                    setDescuentoPctNV(0);
+                }
                 if (cotizConfig.cotizVigencia !== undefined) setQuotationValidity(cotizConfig.cotizVigencia);
                 if (cotizConfig.cotizFirmante !== undefined) setQuotationSignature(cotizConfig.cotizFirmante);
                 if (cotizConfig.cotizTerminos !== undefined) setQuotationTerms(cotizConfig.cotizTerminos);
