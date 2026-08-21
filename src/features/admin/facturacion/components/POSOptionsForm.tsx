@@ -334,8 +334,8 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                 </div>
             )}
 
-            {/* Descuento global — % / S/ / $ para todos los comprobantes (boleta, factura e informales) */}
-            {!vm.isQuotationRoute && !['NP', '07', '08'].includes(vm.formValues?.tipoDoc) && (
+            {/* Descuento global — % / S/ / $ para todos los comprobantes (boleta, factura, informales y cotización) */}
+            {!['NP', '07', '08'].includes(vm.formValues?.tipoDoc) && (
                 <div className="mt-2 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                         <div>
