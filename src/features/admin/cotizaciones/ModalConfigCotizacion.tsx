@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void;
   auth: any;
   /** Campo de la empresa donde se guarda el formato. Por defecto cotización. */
-  configKey?: 'cotizFormatoConfig' | 'notaVentaFormatoConfig';
+  configKey?: 'cotizFormatoConfig' | 'notaVentaFormatoConfig' | 'facturaFormatoConfig' | 'boletaFormatoConfig';
   /** Tipo de comprobante para la vista previa. */
   previewReceipt?: string;
   /** Título del modal. */
@@ -66,6 +66,26 @@ export default function ModalConfigCotizacion({
     () => ({ ...auth, empresa: { ...auth?.empresa, [configKey]: config } }),
     [auth, config, configKey],
   );
+
+  // La vista previa de comprobantes fiscales (factura/boleta) necesita `tipoDoc`
+  // para que el componente de impresión renderice el bloque de totales fiscal.
+  // Para factura/boleta se muestra un ejemplo con operación exonerada, que es el
+  // caso típico que se quiere ajustar (p. ej. negocios de selva/Amazonía).
+  const previewInvoice = useMemo(() => {
+    const rc = String(previewReceipt || '').toUpperCase();
+    if (rc === 'FACTURA' || rc === 'BOLETA') {
+      return {
+        ...SAMPLE_INVOICE,
+        tipoDoc: rc === 'FACTURA' ? '01' : '03',
+        mtoOperGravadas: 0,
+        subTotal: 753.9,
+        mtoIGV: 0,
+        mtoOperExoneradas: 753.9,
+        mtoImpVenta: 753.9,
+      };
+    }
+    return SAMPLE_INVOICE;
+  }, [previewReceipt]);
 
   const guardar = async () => {
     setSaving(true);
@@ -149,7 +169,7 @@ export default function ModalConfigCotizacion({
               <div className="bg-white shadow-xl">
                 <ComprobantePrintPage
                   company={previewCompany}
-                  formValues={SAMPLE_INVOICE}
+                  formValues={previewInvoice}
                   size="A4"
                   serie="COT1"
                   correlative="1"

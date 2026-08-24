@@ -30,6 +30,7 @@ import Modal from "@/components/Modal";
 import TableActionMenu from "@/components/TableActionMenu";
 import { useSedesStore } from "@/zustand/sedes";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
+import ModalConfigCotizacion from "@/features/admin/cotizaciones/ModalConfigCotizacion";
 import { useUsersStore } from "@/zustand/users";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 
@@ -88,6 +89,7 @@ const Comprobantes = () => {
     const [invoicesList, setInvoicesList] = useState<IInvoices[]>([]);
     const [totalInvoicesList, setTotalInvoicesList] = useState(0);
     const [invoicesLoading, setInvoicesLoading] = useState(false);
+    const [configFormato, setConfigFormato] = useState<null | 'FACTURA' | 'BOLETA'>(null);
     const requestIdRef = useRef(0);
 
     const [currentPage, setcurrentPage] = useState(1);
@@ -694,14 +696,34 @@ const Comprobantes = () => {
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Historial de boletas, facturas y notas de crédito</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
-                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl btn-accent text-sm font-bold transition-all shadow-lg shadow-black/20 active:scale-95"
-                >
-                    <Icon icon="solar:add-circle-bold" className="text-lg" />
-                    Nuevo comprobante
-                </button>
+                <div className="flex w-full sm:w-auto flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setConfigFormato('FACTURA')}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                        title="Configurar el formato de impresión de las facturas"
+                    >
+                        <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
+                        Formato factura
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setConfigFormato('BOLETA')}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                        title="Configurar el formato de impresión de las boletas"
+                    >
+                        <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
+                        Formato boleta
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl btn-accent text-sm font-bold transition-all shadow-lg shadow-black/20 active:scale-95"
+                    >
+                        <Icon icon="solar:add-circle-bold" className="text-lg" />
+                        Nuevo comprobante
+                    </button>
+                </div>
             </div>
 
             {soloPendientesSunat && (
@@ -1280,6 +1302,16 @@ const Comprobantes = () => {
                 })()}
             </TableActionMenu>
             </div>
+
+            <ModalConfigCotizacion
+                isOpen={configFormato !== null}
+                onClose={() => setConfigFormato(null)}
+                auth={auth}
+                configKey={configFormato === 'BOLETA' ? 'boletaFormatoConfig' : 'facturaFormatoConfig'}
+                previewReceipt={configFormato === 'BOLETA' ? 'BOLETA' : 'FACTURA'}
+                title={configFormato === 'BOLETA' ? 'Configurar formato de boleta' : 'Configurar formato de factura'}
+                savedMsg={configFormato === 'BOLETA' ? 'Formato de boleta guardado' : 'Formato de factura guardado'}
+            />
         </>
     );
 

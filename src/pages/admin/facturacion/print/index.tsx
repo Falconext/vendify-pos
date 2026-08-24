@@ -1,6 +1,7 @@
 
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import moment from 'moment';
+import { elemCfg } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 
 Font.register({
     family: 'Roboto',
@@ -259,6 +260,17 @@ const PrintPDF = ({
     const mtoIcbper = Number(formValues?.icbper ?? formValues?.mtoIcbper ?? 0);
     const mtoIgv = Number(formValues?.mtoIGV ?? (netTotalFallback - (netTotalFallback / 1.18)));
     const mtoImpVenta = Number(formValues?.mtoImpVenta ?? netTotalFallback);
+    // Formato configurable por tipo de comprobante (visibilidad por elemento).
+    // Debe coincidir con comprobanteImprimir.tsx y el PDF del backend.
+    const _rcPdf = String(receipt || '').toUpperCase();
+    const formatoConfig = _rcPdf === 'FACTURA'
+        ? (company?.empresa as any)?.facturaFormatoConfig
+        : _rcPdf === 'BOLETA'
+        ? (company?.empresa as any)?.boletaFormatoConfig
+        : _rcPdf === 'NOTA DE VENTA'
+        ? (company?.empresa as any)?.notaVentaFormatoConfig
+        : (company?.empresa as any)?.cotizFormatoConfig;
+    const fc = (key: string) => elemCfg(formatoConfig, key);
     const formatCantidad = (value: any): string => {
         const cantidad = Number(value || 0);
         if (!Number.isFinite(cantidad)) return '0';
@@ -523,34 +535,46 @@ const PrintPDF = ({
                                 )}
                                 {isDocumentoFiscal && (
                                     <>
+                                        {fc('opGravadas').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>OP. GRAVADA:</Text>
                                             <Text style={styles.value}>S/ {round2(mtoOperGravadas).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('opGratuitas').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>OP. GRATUITA:</Text>
                                             <Text style={styles.value}>S/ {round2(mtoOperGratuitas).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('opInafectas').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>OP. INAFECTA:</Text>
                                             <Text style={styles.value}>S/ {round2(mtoOperInafectas).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('opExoneradas').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>OP. EXONERADA:</Text>
                                             <Text style={styles.value}>S/ {round2(mtoOperExoneradas).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('subTotal').visible && (
+                                        <View style={styles.infoRow}>
+                                            <Text style={styles.label}>SUB TOTAL:</Text>
+                                            <Text style={styles.value}>S/ {round2(mtoOperGravadas + mtoOperExoneradas + mtoOperInafectas).toFixed(2)}</Text>
+                                        </View>)}
+                                        {fc('icbper').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>ICBPER:</Text>
                                             <Text style={styles.value}>S/ {round2(mtoIcbper).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('igv').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>IGV (18%):</Text>
                                             <Text style={styles.value}>S/ {round2(mtoIgv).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
+                                        {fc('descuentos').visible && (
                                         <View style={styles.infoRow}>
                                             <Text style={styles.label}>DESCUENTOS:</Text>
                                             <Text style={styles.value}>S/ {round2(totalDescuentos).toFixed(2)}</Text>
-                                        </View>
+                                        </View>)}
                                     </>
                                 )}
                                 <View style={styles.infoRow}>
@@ -830,14 +854,26 @@ const PrintPDF = ({
                                     )}
                                     {!['ORDEN DE TRABAJO', 'NOTA DE VENTA', 'NOTA DE PEDIDO', 'TICKET', 'COMPROBANTE DE PAGO', 'RECIBO POR HONORARIOS', 'BOLETA'].includes(formValues?.comprobante) && (
                                         <>
+                                            {fc('opGravadas').visible && (
                                             <View style={{ flexDirection: "row", fontWeight: "900" }}>
                                                 <Text style={styles.label}>OP. GRAVADA:</Text>
                                                 <Text style={styles.value}>S/ {round2(mtoOperGravadas).toFixed(2)}</Text>
-                                            </View>
+                                            </View>)}
+                                            {fc('opExoneradas').visible && round2(mtoOperExoneradas) > 0 && (
+                                            <View style={{ flexDirection: "row", fontWeight: "900" }}>
+                                                <Text style={styles.label}>OP. EXONERADA:</Text>
+                                                <Text style={styles.value}>S/ {round2(mtoOperExoneradas).toFixed(2)}</Text>
+                                            </View>)}
+                                            {fc('opInafectas').visible && round2(mtoOperInafectas) > 0 && (
+                                            <View style={{ flexDirection: "row", fontWeight: "900" }}>
+                                                <Text style={styles.label}>OP. INAFECTA:</Text>
+                                                <Text style={styles.value}>S/ {round2(mtoOperInafectas).toFixed(2)}</Text>
+                                            </View>)}
+                                            {fc('igv').visible && (
                                             <View style={{ flexDirection: "row", fontWeight: "900" }}>
                                                 <Text style={styles.label}>IGV:</Text>
                                                 <Text style={styles.value}>S/ {round2(mtoIgv).toFixed(2)}</Text>
-                                            </View>
+                                            </View>)}
                                         </>
                                     )}
                                     <View style={{ flexDirection: "row", fontWeight: "900" }}>

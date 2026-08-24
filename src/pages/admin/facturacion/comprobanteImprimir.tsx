@@ -58,8 +58,14 @@ const ComprobantePrintPage = ({
     }, 0);
 
     // Configuración del formato (visibilidad + tamaño por elemento).
-    // Las notas de venta tienen su propio formato independiente del de cotización.
-    const formatoConfig = receipt === 'NOTA DE VENTA'
+    // Cada tipo de comprobante tiene su propio formato independiente:
+    // cotización, nota de venta, factura y boleta.
+    const _rc = String(receipt || '').toUpperCase();
+    const formatoConfig = _rc === 'FACTURA'
+        ? (company?.empresa as any)?.facturaFormatoConfig
+        : _rc === 'BOLETA'
+        ? (company?.empresa as any)?.boletaFormatoConfig
+        : _rc === 'NOTA DE VENTA'
         ? (company?.empresa as any)?.notaVentaFormatoConfig
         : (company?.empresa as any)?.cotizFormatoConfig;
     const fc = (key: string) => elemCfg(formatoConfig, key);
@@ -331,6 +337,8 @@ console.log(formValues)
                             </label>
                         )}
                         {fc('opGravadas').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">TOTAL GRAVADAS:</div> <div>{round2(mtoOperGravadas).toFixed(2)}</div></label>}
+                        {fc('opExoneradas').visible && round2(mtoOperExoneradas) > 0 && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">OP. EXONERADAS:</div> <div>{round2(mtoOperExoneradas).toFixed(2)}</div></label>}
+                        {fc('opInafectas').visible && round2(mtoOperInafectas) > 0 && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">OP. INAFECTAS:</div> <div>{round2(mtoOperInafectas).toFixed(2)}</div></label>}
                         {fc('igv').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">I.G.V 18.00 %:</div> <div>{round2(mtoIgv).toFixed(2)}</div></label>}
                         {fc('montoTotal').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">IMPORTE TOTAL:</div> <div>{round2(mtoImpVenta).toFixed(2)}</div></label>}
                         {
@@ -961,14 +969,14 @@ console.log(formValues)
                                         <div className="w-1/3 text-right space-y-0.5">
                                             {isDocumentoFiscal && (
                                                 <>
-                                                    <div className="flex justify-between"><span className="font-bold">OP. GRAVADAS:</span><span>S/ {round2(mtoOperGravadas).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">OP. EXONERADAS:</span><span>S/ {round2(mtoOperExoneradas).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">OP. INAFECTAS:</span><span>S/ {round2(mtoOperInafectas).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">OP. GRATUITAS:</span><span>S/ {round2(mtoOperGratuitas).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">ICBPER:</span><span>S/ {round2(mtoIcbper).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">SUB TOTAL:</span><span>S/ {round2(mtoOperGravadas).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span>DESCUENTOS TOTAL:</span><span>S/ {round2(totalDescuentos).toFixed(2)}</span></div>
-                                                    <div className="flex justify-between"><span className="font-bold">IGV 18%:</span><span>S/ {round2(mtoIgv).toFixed(2)}</span></div>
+                                                    {fc('opGravadas').visible && <div className="flex justify-between"><span className="font-bold">OP. GRAVADAS:</span><span>S/ {round2(mtoOperGravadas).toFixed(2)}</span></div>}
+                                                    {fc('opExoneradas').visible && <div className="flex justify-between"><span className="font-bold">OP. EXONERADAS:</span><span>S/ {round2(mtoOperExoneradas).toFixed(2)}</span></div>}
+                                                    {fc('opInafectas').visible && <div className="flex justify-between"><span className="font-bold">OP. INAFECTAS:</span><span>S/ {round2(mtoOperInafectas).toFixed(2)}</span></div>}
+                                                    {fc('opGratuitas').visible && <div className="flex justify-between"><span className="font-bold">OP. GRATUITAS:</span><span>S/ {round2(mtoOperGratuitas).toFixed(2)}</span></div>}
+                                                    {fc('icbper').visible && <div className="flex justify-between"><span className="font-bold">ICBPER:</span><span>S/ {round2(mtoIcbper).toFixed(2)}</span></div>}
+                                                    {fc('subTotal').visible && <div className="flex justify-between"><span className="font-bold">SUB TOTAL:</span><span>S/ {round2(mtoOperGravadas + mtoOperExoneradas + mtoOperInafectas).toFixed(2)}</span></div>}
+                                                    {fc('descuentos').visible && <div className="flex justify-between"><span>DESCUENTOS TOTAL:</span><span>S/ {round2(totalDescuentos).toFixed(2)}</span></div>}
+                                                    {fc('igv').visible && <div className="flex justify-between"><span className="font-bold">IGV 18%:</span><span>S/ {round2(mtoIgv).toFixed(2)}</span></div>}
                                                 </>
                                             )}
                                             {!isDocumentoFiscal && totalDescuentos > 0 && (
