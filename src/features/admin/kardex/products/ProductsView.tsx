@@ -25,6 +25,23 @@ const ACCENT = 'var(--accent, #7551FF)';
 // se sientan como un mismo grupo y sigan el color de la UI.
 const TOOLBAR_BTN = 'h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 hover:text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] hover:border-[color-mix(in_srgb,var(--accent)_45%,transparent)]';
 
+function InventarioKpiCard({ icon, label, value, sub }: {
+    icon: string; label: string; value: string; sub?: string;
+}) {
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
+            <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wide truncate">{label}</span>
+                <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--accent) 15%, transparent)' }}>
+                    <Icon icon={icon} width={20} style={{ color: ACCENT }} />
+                </div>
+            </div>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none mb-1 truncate">{value}</p>
+            {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+        </div>
+    );
+}
+
 export default function ProductsView() {
     const navigate = useNavigate();
     const vm = useProductsViewModel();
@@ -515,6 +532,26 @@ export default function ProductsView() {
                         {vm.labels.nuevoBtn}
                     </button>
                 </div>
+            </div>
+
+            {/* Resumen de Inventario */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
+                <InventarioKpiCard
+                    icon="solar:box-bold-duotone"
+                    label={`Total de ${vm.labels.titulo.toLowerCase()}`}
+                    value={vm.resumenLoading ? '...' : vm.resumenInventario.totalProductos.toLocaleString('es-PE')}
+                />
+                <InventarioKpiCard
+                    icon="solar:layers-minimalistic-bold-duotone"
+                    label="Cantidad total en stock"
+                    value={vm.resumenLoading ? '...' : vm.resumenInventario.totalCantidad.toLocaleString('es-PE')}
+                    sub="Unidades"
+                />
+                <InventarioKpiCard
+                    icon="solar:wallet-money-bold-duotone"
+                    label="Valor total del inventario"
+                    value={vm.resumenLoading ? '...' : `S/ ${vm.resumenInventario.totalValorInventario.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                />
             </div>
 
             {/* Main Content */}
