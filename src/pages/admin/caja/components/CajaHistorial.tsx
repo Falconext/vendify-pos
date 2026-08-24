@@ -12,7 +12,12 @@ import { useSedesStore } from '@/zustand/sedes';
 const ACCENT = 'var(--accent, #7551FF)';
 
 // Config visual de cada tipo de movimiento (pill con punto de color + icono).
-const tipoConfig = (tipo?: string) => {
+const tipoConfig = (tipo?: string, esTransferencia?: boolean) => {
+    if (esTransferencia) {
+        return tipo === 'EGRESO'
+            ? { label: 'Transferencia enviada', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20', icon: 'solar:round-arrow-right-bold' }
+            : { label: 'Transferencia recibida', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20', icon: 'solar:round-arrow-left-bold' };
+    }
     switch (tipo) {
         case 'APERTURA':
             return { label: 'Apertura', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: 'solar:play-circle-bold' };
@@ -232,7 +237,7 @@ const CajaHistorial: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : movimientos.map((mov: any) => {
-                                const cfg = tipoConfig(mov.tipoMovimiento);
+                                const cfg = tipoConfig(mov.tipoMovimiento, mov.esTransferencia);
                                 const usuario = mov.usuario?.nombre || mov.usuario?.email || 'Sistema';
                                 const detalle = mov.descripcionGasto || mov.observaciones || '';
                                 return (
@@ -272,7 +277,7 @@ const CajaHistorial: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="py-3 px-3 pr-5">
-                                            {mov.tipoMovimiento === 'EGRESO' ? (
+                                            {(mov.tipoMovimiento === 'EGRESO' && !mov.esTransferencia) ? (
                                                 <div className="flex items-center justify-end gap-1.5">
                                                     <button
                                                         onClick={() => setEgresoEditar(mov)}

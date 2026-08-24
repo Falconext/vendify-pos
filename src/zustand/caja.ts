@@ -23,6 +23,12 @@ export interface RegistrarEgresoData {
   metodoPago?: string;
 }
 
+export interface TransferenciaCajaData {
+  sedeDestinoId: number;
+  monto: number;
+  observaciones?: string;
+}
+
 export interface AperturaCaja {
   montoInicial: number;
   observaciones?: string;
@@ -62,6 +68,9 @@ export interface MovimientoCaja {
   totalIngresos?: number;
   diferencia?: number;
   turno?: string;
+  esTransferencia?: boolean;
+  sedeContraparteId?: number;
+  sedeContraparte?: { nombre: string };
   usuario?: {
     nombre: string;
     email: string;
@@ -71,6 +80,8 @@ export interface MovimientoCaja {
 export interface EstadoCaja {
   estado: 'CERRADA' | 'ABIERTA' | 'PENDIENTE_CIERRE';
   totalEgresos?: number;
+  totalTransferenciasEnviadas?: number;
+  totalTransferenciasRecibidas?: number;
   movimiento?: MovimientoCaja;
   ventasDelDia: {
     totalIngresos: number;
@@ -149,6 +160,7 @@ interface CajaState {
   abrirCaja: (data: AperturaCaja) => Promise<{ success: boolean; message: string }>;
   cerrarCaja: (data: CierreCaja) => Promise<{ success: boolean; message: string }>;
   registrarEgreso: (data: RegistrarEgresoData) => Promise<{ success: boolean; message: string }>;
+  transferirCaja: (data: TransferenciaCajaData) => Promise<{ success: boolean; message: string }>;
   editarEgreso: (id: number, data: Partial<RegistrarEgresoData>) => Promise<{ success: boolean; message: string }>;
   eliminarEgreso: (id: number) => Promise<{ success: boolean; message: string }>;
   obtenerEstadoCaja: () => Promise<void>;
@@ -249,6 +261,26 @@ export const useCajaStore = create<CajaState>()(
         } catch (error) {
           const axiosError = error as AxiosError<any>;
           const errorMessage = axiosError.response?.data?.message || 'Error al registrar gasto';
+          set({ loading: false, error: errorMessage });
+          return { success: false, message: errorMessage };
+        }
+      },
+
+      transferirCaja: async (data: TransferenciaCajaData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await apiClient.post('caja/transferir', data);
+          const resp: any = response.data;
+          if (resp?.code === 1) {
+            await get().obtenerEstadoCaja();
+            set({ loading: false });
+            return { success: true, message: resp.message || 'Transferencia registrada' };
+          }
+          set({ loading: false, error: 'Error al transferir' });
+          return { success: false, message: resp?.message || 'Error al transferir' };
+        } catch (error) {
+          const axiosError = error as AxiosError<any>;
+          const errorMessage = axiosError.response?.data?.message || 'Error al transferir';
           set({ loading: false, error: errorMessage });
           return { success: false, message: errorMessage };
         }
