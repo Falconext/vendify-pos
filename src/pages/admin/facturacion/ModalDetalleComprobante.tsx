@@ -265,7 +265,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
         }
         const finalNum = num.startsWith('51') ? num : `51${num}`;
         const serie = `${comprobante.serie}-${String(comprobante.correlativo).padStart(8, '0')}`;
-        const monto = `S/ ${getComprobanteTotal(comprobante).toFixed(2)}`;
+        const monto = `${monedaSimbolo} ${getComprobanteTotal(comprobante).toFixed(2)}`;
         const link = pdfUrl || comprobante.s3PdfUrl || '';
         const mensaje = encodeURIComponent(
             `Hola ${comprobante?.cliente?.nombre || ''}, te enviamos tu ${getComprobanteLabel(comprobante)} ${serie} por ${monto}.\n\nPuedes descargarlo aquí: ${link}`
@@ -289,6 +289,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
     };
 
     const total = getComprobanteTotal(comprobante);
+    const monedaSimbolo = String(comprobante?.tipoMoneda || '').toUpperCase() === 'USD' ? 'US$' : 'S/';
     const comprobanteLabel = getComprobanteLabel(comprobante);
     const showDespacho = puedeDespacho && hasRealDespacho(envio);
     // Condición de pago (crédito) — no depende del medio de pago: una venta al
@@ -364,7 +365,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                         <div className="text-right">
                             <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Total</p>
                             <p className="text-3xl font-black text-gray-900 dark:text-white">
-                                S/ {total.toFixed(2)}
+                                {monedaSimbolo} {total.toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                                 {esVentaCredito
@@ -427,11 +428,11 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                             {getDetalleDescripcion(det)}
                                         </p>
                                         <p className="text-xs text-gray-400 mt-0.5">
-                                            {det.unidad || 'NIU'} &middot; {Number(det.cantidad ?? 0)} und &times; S/ {getDetallePrecio(det).toFixed(2)}
+                                            {det.unidad || 'NIU'} &middot; {Number(det.cantidad ?? 0)} und &times; {monedaSimbolo} {getDetallePrecio(det).toFixed(2)}
                                         </p>
                                     </div>
                                     <p className="text-sm font-bold text-gray-800 dark:text-white shrink-0">
-                                        S/ {getDetalleSubtotal(det).toFixed(2)}
+                                        {monedaSimbolo} {getDetalleSubtotal(det).toFixed(2)}
                                     </p>
                                 </div>
                             ))}
@@ -439,11 +440,11 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                         <div className="mt-3 space-y-1 text-sm">
                             <div className="flex justify-between text-gray-500">
                                 <span>IGV (18%)</span>
-                                <span>S/ {Number(comprobante.mtoIGV ?? 0).toFixed(2)}</span>
+                                <span>{monedaSimbolo} {Number(comprobante.mtoIGV ?? 0).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between font-bold text-gray-900 dark:text-white pt-1 border-t border-gray-100 dark:border-slate-800">
                                 <span>Total</span>
-                                <span>S/ {total.toFixed(2)}</span>
+                                <span>{monedaSimbolo} {total.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>

@@ -9,6 +9,7 @@ interface IProps {
     onClose: () => void;
     item: any;
     onSave: (newData: any) => void;
+    monedaSimbolo?: string;
 }
 
 const normalizeWholesaleUnitPrice = (
@@ -57,7 +58,7 @@ const getApplicablePrice = (
     return applicable ? applicable.precioUnitario : base;
 };
 
-const ModalEditLineItem = ({ isOpen, onClose, item, onSave }: IProps) => {
+const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/" }: IProps) => {
     const [formValues, setFormValues] = useState<any>({
         precioUnitario: 0,
         cantidad: 0,
@@ -114,7 +115,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave }: IProps) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-1">Precio Unitario (S/)</label>
+                        <label className="block text-sm font-bold text-gray-600 mb-1">Precio Unitario ({monedaSimbolo})</label>
                         <InputPro
                             name="precioUnitario"
                             type="number"
@@ -171,7 +172,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave }: IProps) => {
                                                 : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-slate-600 hover:border-gray-500'
                                         }`}
                                     >
-                                        Base S/{base.toFixed(2)}
+                                        Base {monedaSimbolo}{base.toFixed(2)}
                                     </button>
                                 );
                             })()}
@@ -202,7 +203,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave }: IProps) => {
                                             }`}
                                         >
                                             {isReached && !isActive && <Icon icon="mdi:check-circle" width={9} className="text-green-500" />}
-                                            {tier.cantidadMinima}u → S/{Number(tierUnitPrice).toFixed(2)}
+                                            {tier.cantidadMinima}u → {monedaSimbolo}{Number(tierUnitPrice).toFixed(2)}
                                         </button>
                                     );
                                 })}

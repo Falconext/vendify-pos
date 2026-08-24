@@ -899,6 +899,10 @@ export const useFacturacionViewModel = () => {
                 const vcId = nvData.vendedorCampoId;
                 if (vcId != null) setVendedorCampoId(Number(vcId));
 
+                // Restaurar la moneda con la que se emitió la nota (si fue en USD,
+                // el editor debe mostrar "$" y no volver a "S/" por defecto).
+                if (nvData.tipoMoneda) setQuotationCurrency(nvData.tipoMoneda);
+
                 // Precargar el PAGO que tenía la nota: método (o Pago Mixto) y el monto
                 // ya pagado, para que el modal de pago aparezca con lo mismo seleccionado.
                 const METODOS_LABEL: Record<string, string> = {
