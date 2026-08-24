@@ -504,7 +504,7 @@ export default function ResellerClientes() {
                 marca: cliente.esWhiteLabel ? '⬥ Marca blanca' : 'Estándar',
                 costo: formatCurrency(
                     cliente?.plan?.nombre
-                        ? costoResellerDePlan(planesFacturacion, cliente.plan, stats.clientesActivos || 0)
+                        ? costoResellerDePlan(planesFacturacion, cliente.plan, stats.clientesProduccion || 0)
                         : Number(cliente.costoActivacionReseller ?? cliente.plan?.costo ?? 0)
                 ),
                 vence,
@@ -517,7 +517,7 @@ export default function ResellerClientes() {
                 email: cliente.usuarios?.[0]?.email || cliente.email || '',
             };
         });
-    }, [clientes, search, marcaFilter, estadoFilter, planesFacturacion, stats.clientesActivos]);
+    }, [clientes, search, marcaFilter, estadoFilter, planesFacturacion, stats.clientesProduccion]);
 
     const exportCSV = () => {
         const head = ['Empresa', 'RUC', 'Plan', 'Marca', 'Costo reseller', 'Vence', 'Renueva', 'Estado'];
@@ -835,11 +835,11 @@ export default function ResellerClientes() {
                                 value={(() => {
                                     const p = planesFacturacion.find((x: any) => String(x.id) === String(editData.planId));
                                     if (!p) return '';
-                                    const finalCost = costoResellerDePlan(planesFacturacion, p, stats.clientesActivos || 0);
+                                    const finalCost = costoResellerDePlan(planesFacturacion, p, stats.clientesProduccion || 0);
                                     return `${p.nombre} (S/${finalCost.toFixed(2)})`;
                                 })()}
                                 options={planesFacturacion.map((plan: any) => {
-                                    const finalCost = costoResellerDePlan(planesFacturacion, plan, stats.clientesActivos || 0);
+                                    const finalCost = costoResellerDePlan(planesFacturacion, plan, stats.clientesProduccion || 0);
                                     return { id: plan.id, value: `${plan.nombre} (S/${finalCost.toFixed(2)})` };
                                 })}
                                 onChange={(id: any) => setEditData(prev => ({ ...prev, planId: String(id) }))}
@@ -850,7 +850,7 @@ export default function ResellerClientes() {
                         {/* Precio que el reseller cobra al cliente + ganancia en vivo */}
                         {(() => {
                             const p = planesFacturacion.find((x: any) => String(x.id) === String(editData.planId));
-                            const costoMensual = p ? costoResellerDePlan(planesFacturacion, p, stats.clientesActivos || 0) : 0;
+                            const costoMensual = p ? costoResellerDePlan(planesFacturacion, p, stats.clientesProduccion || 0) : 0;
                             const precioNum = editData.precioClienteFinal === '' ? null : Number(editData.precioClienteFinal);
                             const ganancia = precioNum != null ? precioNum - costoMensual : null;
                             return (
@@ -1130,7 +1130,7 @@ export default function ResellerClientes() {
                                     <div className="flex items-center justify-between mb-1.5">
                                         <label className="text-xs font-semibold text-slate-600">Tipo de Plan</label>
                                         <span className="text-[10px] font-medium text-[#7551FF] bg-[#7551FF]/10 px-2 py-0.5 rounded-md">
-                                            Nivel: {volumeTierLabel((stats.clientesActivos || 0) + 1)} con este cliente
+                                            Nivel: {volumeTierLabel((stats.clientesProduccion || 0) + 1)} con este cliente
                                         </span>
                                     </div>
                                     <Select
@@ -1187,7 +1187,7 @@ export default function ResellerClientes() {
                                         const p = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
                                         if (!p || formData.usaDemo) return null;
                                         const esAnual = formData.cicloFacturacion === 'ANUAL';
-                                        const clientesConNuevo = (stats.clientesActivos || 0) + 1;
+                                        const clientesConNuevo = (stats.clientesProduccion || 0) + 1;
                                         const costoMensual = costoMensualReseller(precioBaseMensual(planesFacturacion, p), clientesConNuevo);
                                         const costoAnual = precioAnual(planesFacturacion, p);
                                         const precioNum = formData.precioClienteFinal === '' ? null : Number(formData.precioClienteFinal);
@@ -1318,7 +1318,7 @@ export default function ResellerClientes() {
                     <div className="sticky bottom-0 z-20 mt-auto flex flex-col gap-2 border-t border-slate-100 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-[#111827] md:px-5">
                         {(() => {
                             const planSel = planesFacturacion.find((x: any) => String(x.id) === String(formData.planId));
-                            const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesActivos || 0) + 1) : 0;
+                            const costoActivacion = planSel ? costoResellerDePlan(planesFacturacion, planSel, (stats.clientesProduccion || 0) + 1) : 0;
                             // Los clientes DEMO no cobran saldo; solo se bloquea al crear en producción.
                             const esProduccion = !formData.usaDemo;
                             const saldoInsuf = esProduccion && Boolean(planSel) && Number(stats.saldo || 0) < costoActivacion;
