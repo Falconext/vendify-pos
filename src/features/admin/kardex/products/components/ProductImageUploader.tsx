@@ -237,8 +237,10 @@ export const ProductImageUploader: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           </div>
         )}
 
-        {/* ── Galería del producto (imágenes adicionales) ── */}
-        {maxImagenesExtra > 0 && (
+        {/* ── Galería del producto — retirada del formulario a pedido del
+            negocio (la imagen principal + la del paquete cubren el uso real).
+            La infraestructura de imagenesExtra sigue viva en el backend. ── */}
+        {false && maxImagenesExtra > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-800">
             <div className="flex items-center justify-between mb-2">
               <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">

@@ -129,6 +129,33 @@ export const usePerfilViewModel = () => {
         }
     };
 
+    // Flags de control interno (aprobación de gastos/compras, caja obligatoria):
+    // un solo handler genérico, mismo patrón optimista que los toggles de arriba.
+    const [savingControlFlag, setSavingControlFlag] = useState<string | null>(null);
+    const controlFlagInFlight = useRef(false);
+    const handleControlFlagToggle = async (
+        flag: 'requiereAprobacionGastos' | 'requiereAprobacionCompras' | 'requiereCajaParaEmitir',
+        enabled: boolean,
+    ) => {
+        if (savingControlFlag || controlFlagInFlight.current) return;
+        if (Boolean((perfil?.empresa as any)?.[flag]) === enabled) return;
+        try {
+            controlFlagInFlight.current = true;
+            setSavingControlFlag(flag);
+            await useEmpresasStore.getState().actualizarMiEmpresa({ [flag]: enabled } as any);
+            setPerfil(prev => (prev ? { ...prev, empresa: { ...prev.empresa, [flag]: enabled } } : prev));
+            useAuthStore.setState(state => ({
+                auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, [flag]: enabled } } : state.auth,
+            }));
+            useAlertStore.getState().alert('Configuración actualizada', 'success');
+        } catch (error: any) {
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'No se pudo actualizar la configuración', 'error');
+        } finally {
+            controlFlagInFlight.current = false;
+            setSavingControlFlag(null);
+        }
+    };
+
     const handleFefoPriceToggle = async (enabled: boolean) => {
         if (savingFefoPriceConfig || fefoToggleInFlight.current) return;
         if (Boolean(perfil?.empresa?.usarPrecioLoteFefo) === enabled) return;
@@ -514,5 +541,5 @@ export const usePerfilViewModel = () => {
         }
     };
 
-    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
+    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
 };

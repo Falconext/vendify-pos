@@ -2,17 +2,22 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import CajaControl from './components/CajaControl';
 import CajaHistorial from './components/CajaHistorial';
+import CajaDepositos from './components/CajaDepositos';
+import { useAuthStore } from '@/zustand/auth';
 
 // ── Gestión de Caja — estilo CRM claro (Brix UI) ──────────────────────────────
 const ACCENT = 'var(--accent, #7551FF)';
 
 const TABS = [
-    { key: 'CONTROL', label: 'Control de Caja', icon: 'solar:shop-2-bold-duotone' },
-    { key: 'HISTORIAL', label: 'Historial de Turnos', icon: 'solar:history-bold-duotone' },
+    { key: 'CONTROL', label: 'Control de Caja', icon: 'solar:shop-2-bold-duotone', adminOnly: false },
+    { key: 'HISTORIAL', label: 'Historial de Turnos', icon: 'solar:history-bold-duotone', adminOnly: false },
+    { key: 'DEPOSITOS', label: 'Depósitos', icon: 'solar:card-transfer-bold-duotone', adminOnly: true },
 ] as const;
 
 const CajaIndex: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'CONTROL' | 'HISTORIAL'>('CONTROL');
+    const [activeTab, setActiveTab] = useState<'CONTROL' | 'HISTORIAL' | 'DEPOSITOS'>('CONTROL');
+    const { auth } = useAuthStore();
+    const isAdmin = auth?.rol === 'ADMIN_EMPRESA';
 
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
@@ -41,7 +46,7 @@ const CajaIndex: React.FC = () => {
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2 mb-5">
-                {TABS.map((t) => {
+                {TABS.filter((t) => !t.adminOnly || isAdmin).map((t) => {
                     const active = activeTab === t.key;
                     return (
                         <button
@@ -64,6 +69,7 @@ const CajaIndex: React.FC = () => {
             <div>
                 {activeTab === 'CONTROL' && <CajaControl />}
                 {activeTab === 'HISTORIAL' && <CajaHistorial />}
+                {activeTab === 'DEPOSITOS' && isAdmin && <CajaDepositos />}
             </div>
         </div>
     );

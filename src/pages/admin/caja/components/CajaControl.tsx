@@ -5,6 +5,7 @@ import { useAuthStore } from '@/zustand/auth';
 import { Icon } from '@iconify/react';
 import Button from '@/components/Button';
 import InputPro from '@/components/InputPro';
+import ModalConfirm from '@/components/ModalConfirm';
 import useEscapeKey from '@/hooks/useEscapeKey';
 import ModalRegistrarGasto from './ModalRegistrarGasto';
 import ModalTransferirCaja from './ModalTransferirCaja';
@@ -48,10 +49,13 @@ const CajaControl: React.FC = () => {
         listarSedes();
     }, [obtenerEstadoCaja, listarSedes]);
 
-    const hayOtrasSedes = useMemo(
-        () => sedes.some((s) => s.activo && s.id !== sedeActiva?.id),
-        [sedes, sedeActiva?.id]
-    );
+    // Transferir solo tiene sentido con OTRA sede activa a la cual enviar.
+    // Sin sede activa en sesión (caso raro), se exige que existan ≥2 activas.
+    const hayOtrasSedes = useMemo(() => {
+        const activas = sedes.filter((s) => s.activo);
+        if (sedeActiva?.id) return activas.some((s) => s.id !== sedeActiva.id);
+        return activas.length > 1;
+    }, [sedes, sedeActiva?.id]);
 
     const totalDeclarado = useMemo(() => {
         return (
@@ -455,33 +459,27 @@ const CajaControl: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Confirmación antes de cerrar */}
-                        {!confirmCierre ? (
-                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                                <button onClick={() => setShowCierre(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
-                                <Button onClick={() => setConfirmCierre(true)} className="bg-amber-500 text-white hover:bg-amber-600 border-none">
-                                    <Icon icon="solar:shield-warning-bold" className="mr-1" />
-                                    Revisar y Cerrar
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-rose-50 border-t border-rose-100 space-y-3">
-                                <p className="text-sm text-rose-600 font-semibold text-center flex items-center justify-center gap-2">
-                                    <Icon icon="solar:danger-triangle-bold" className="text-lg" />
-                                    ¿Confirmas el cierre de caja? Esta acción no se puede deshacer.
-                                </p>
-                                <div className="flex justify-center gap-3">
-                                    <button onClick={() => setConfirmCierre(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors">Volver</button>
-                                    <Button onClick={handleCerrarCaja} disabled={loading} className="bg-rose-500 text-white hover:bg-rose-600 border-none">
-                                        {loading ? <Icon icon="eos-icons:loading" className="mr-2" /> : <Icon icon="solar:stop-circle-bold" className="mr-1" />}
-                                        Confirmar Cierre
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button onClick={() => setShowCierre(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
+                            <Button onClick={() => setConfirmCierre(true)} className="bg-amber-500 text-white hover:bg-amber-600 border-none">
+                                <Icon icon="solar:shield-warning-bold" className="mr-1" />
+                                Revisar y Cerrar
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
+
+            {/* Confirmación de cierre — modal aparte, no reemplaza el pie del modal anterior */}
+            <ModalConfirm
+                isOpenModal={confirmCierre}
+                setIsOpenModal={setConfirmCierre}
+                title="Confirmar Cierre de Turno"
+                information="¿Confirmas el cierre de caja? Esta acción no se puede deshacer."
+                confirmText="Confirmar Cierre"
+                confirmLoading={loading}
+                confirmSubmit={handleCerrarCaja}
+            />
 
             <ModalRegistrarGasto
                 isOpen={showGasto}

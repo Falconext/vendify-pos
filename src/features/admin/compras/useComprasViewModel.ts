@@ -12,7 +12,7 @@ import {
 } from './ComprasModel';
 
 export const useComprasViewModel = () => {
-    const { listarCompras, compras, totalCompras, anularCompra } = useComprasStore();
+    const { listarCompras, compras, totalCompras, anularCompra, aprobarCompra, rechazarCompra } = useComprasStore();
     const [state, setState] = useState<IComprasViewModelState>(INITIAL_COMPRAS_STATE);
 
     const debounce = useDebounce(state.filters.search, 600);
@@ -84,6 +84,28 @@ export const useComprasViewModel = () => {
         );
     };
 
+    // Maker-checker: la compra pendiente/rechazada muestra su estado de
+    // aprobación en lugar del estado de pago (no acepta pagos todavía).
+    const renderEstadoBadge = (item: ICompra, estadoPagoNormalizado: string) => {
+        if (item.estado === 'PENDIENTE_APROBACION') {
+            return React.createElement(
+                'span',
+                { className: 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 ring-1 ring-amber-200/70 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20' },
+                React.createElement(Icon, { icon: 'solar:shield-warning-bold-duotone', className: 'text-sm' }),
+                'Por aprobar',
+            );
+        }
+        if (item.estado === 'RECHAZADA') {
+            return React.createElement(
+                'span',
+                { className: 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wide bg-red-50 text-red-700 ring-1 ring-red-200/70 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20' },
+                React.createElement(Icon, { icon: 'solar:close-circle-bold-duotone', className: 'text-sm' }),
+                'Rechazada',
+            );
+        }
+        return renderPagoBadge(estadoPagoNormalizado);
+    };
+
     // Table data
     const tableData = compras?.map((item: ICompra) => {
         const diasVencidos = calcularDiasVencidos(item.fechaVencimiento, item.fechaEmision);
@@ -98,7 +120,7 @@ export const useComprasViewModel = () => {
             'Saldo': `S/ ${saldoNormalizado.toFixed(2)}`,
             'Días Venc.': diasVencidos > 0 ? diasVencidos : 0,
             'Estado': item.estado,
-            'Pago': renderPagoBadge(estadoPagoNormalizado),
+            'Pago': renderEstadoBadge(item, estadoPagoNormalizado),
             _raw: { ...item, saldo: saldoNormalizado, estadoPago: estadoPagoNormalizado },
         };
     });
@@ -162,6 +184,15 @@ export const useComprasViewModel = () => {
             if (!compra) return;
             const ok = await anularCompra(compra.id);
             setState(prev => ({ ...prev, showAnularConfirm: false, compraAnular: null }));
+            if (ok) refresh();
+        },
+        // Maker-checker (solo ADMIN_EMPRESA; guard en backend)
+        aprobarCompra: async (compra: ICompra) => {
+            const ok = await aprobarCompra(compra.id);
+            if (ok) refresh();
+        },
+        rechazarCompra: async (compra: ICompra) => {
+            const ok = await rechazarCompra(compra.id);
             if (ok) refresh();
         },
         // Refresh

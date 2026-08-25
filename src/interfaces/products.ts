@@ -1,3 +1,20 @@
+// Código de barra ADICIONAL de un producto. unidadesPorPaquete > 1 = código de
+// PAQUETE (ej. six-pack): comparte el mismo stock, pero al escanearlo se
+// vende/descuenta esa cantidad de unidades en vez de 1.
+export type ICodigoBarraExtra = {
+  codigo: string
+  unidadesPorPaquete?: number
+  // Precio TOTAL del paquete (opcional): si se define, escanear este código
+  // cobra ese total en vez de precioUnitario × unidades (packs más baratos).
+  precioPaquete?: number | null
+  // Nombre propio del paquete (ej. "SIX PACK CERVEZA PILSEN"): descripción de
+  // la línea al vender por este código.
+  alias?: string | null
+  // Imagen propia del paquete: URL S3, o data-URI base64 al subir una nueva.
+  imagenUrl?: string | null
+  imagenUrlDisplay?: string | null
+}
+
 export type IProduct = {
   id: number
   codigo: string
@@ -67,7 +84,7 @@ export type IProduct = {
   refrigerado?: boolean
   // Campos Bodega/Supermercado
   codigoBarras?: string
-  codigosBarrasExtra?: string[]
+  codigosBarrasExtra?: ICodigoBarraExtra[]
   codProdSunat?: string
   unidadCompra?: string
   unidadVenta?: string
@@ -131,7 +148,7 @@ export type IFormProduct = {
   refrigerado?: boolean
   // Campos Bodega/Supermercado
   codigoBarras?: string
-  codigosBarrasExtra?: string[]
+  codigosBarrasExtra?: ICodigoBarraExtra[]
   codProdSunat?: string
   unidadCompra?: string
   unidadVenta?: string

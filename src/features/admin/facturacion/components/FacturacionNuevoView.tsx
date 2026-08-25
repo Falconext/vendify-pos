@@ -17,6 +17,8 @@ import ModalEditLineItem from "@/pages/admin/facturacion/ModalEditLineItem";
 import ModalDetraccion from "@/pages/admin/facturacion/ModalDetraccion";
 import ModalConfiguracionCotizacion from "@/pages/admin/facturacion/ModalConfiguracionCotizacion";
 import ModalSeleccionVariante from "@/features/admin/facturacion/components/ModalSeleccionVariante";
+import ModalAbrirCajaObligatoria from "@/features/admin/facturacion/components/ModalAbrirCajaObligatoria";
+import { tiposCotizacion } from "@/features/admin/facturacion/FacturacionModel";
 import { ModalRecetaMedica } from "@/pages/admin/facturacion/ModalRecetaMedica";
 import ModalCuotas from "@/pages/admin/facturacion/ModalCuotas";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
@@ -31,6 +33,15 @@ export const FacturacionNuevoView = () => {
     const routeState = location.state as any;
     const shouldAskDocumentType = !vm.isQuotationRoute && !routeState?.fromCreditNote && !routeState?.fromNotaVenta && !routeState?.defaultType;
     const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(shouldAskDocumentType);
+    // Caja obligatoria: hasta que el candado se resuelva (caja abierta, flag
+    // apagado o "solo voy a cotizar"), no se muestra el selector de comprobante.
+    // La ruta de cotización está exenta (las COT no requieren caja).
+    const [cajaResuelta, setCajaResuelta] = useState(Boolean(vm.isQuotationRoute));
+    // "Solo voy a cotizar": el usuario entró sin abrir caja, así que SOLO puede
+    // emitir cotizaciones — el selector de comprobante queda restringido a COT
+    // (el backend igual bloquearía cualquier otro tipo, esto evita armar una
+    // venta entera que fallaría recién al emitir).
+    const [soloCotizar, setSoloCotizar] = useState(false);
     const [isSaleConfigOpen, setIsSaleConfigOpen] = useState(false);
     // Diseño del POS elegido por el usuario: CATALOGO (cards) o CAJA (carrito prioritario)
     const [posLayout, setPosLayout] = useState<'CATALOGO' | 'CAJA'>(() =>
@@ -455,9 +466,22 @@ export const FacturacionNuevoView = () => {
                 </div>
             )}
 
-            {isComprobanteModalOpen && (
+            {!vm.isQuotationRoute && (
+                <ModalAbrirCajaObligatoria
+                    onResuelto={(soloCot) => {
+                        setCajaResuelta(true);
+                        if (soloCot) {
+                            setSoloCotizar(true);
+                            // Fijar directamente la cotización como tipo de documento.
+                            vm.handleChangeSelect('COT', 'COTIZACIÓN', 'comprobante', 'tipoDoc');
+                        }
+                    }}
+                />
+            )}
+
+            {isComprobanteModalOpen && cajaResuelta && (
                 <ComprobanteTypeModal
-                    options={vm.comprobantesGenerar}
+                    options={soloCotizar ? tiposCotizacion : vm.comprobantesGenerar}
                     selected={vm.formValues?.comprobante}
                     onSelect={handleSelectComprobante}
                     onClose={() => setIsComprobanteModalOpen(false)}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { get, post, put, del } from '../utils/fetch';
+import { get, post, put, del, patch } from '../utils/fetch';
 import useAlertStore from './alert';
 import { devtools } from 'zustand/middleware';
 
@@ -30,6 +30,8 @@ export interface IComprasState {
     crearCompra: (data: any) => Promise<boolean>;
     editarCompra: (id: number, data: any) => Promise<boolean>;
     anularCompra: (id: number) => Promise<boolean>;
+    aprobarCompra: (id: number) => Promise<boolean>;
+    rechazarCompra: (id: number) => Promise<boolean>;
     obtenerCompra: (id: number) => Promise<void>;
     registrarPagoCompra: (compraId: number, data: any) => Promise<any>;
     getHistorialPagos: (compraId: number) => Promise<any>;
@@ -146,6 +148,59 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error?.message || "Error al actualizar compra", "error");
+            return false;
+        }
+    },
+
+    // Maker-checker: aprueba una compra pendiente (recién ahí ingresa stock).
+    aprobarCompra: async (id: number) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await patch(`compras/${id}/aprobar`);
+            const result = resp?.data || resp;
+            useAlertStore.setState({ loading: false });
+            if (resp.code === 1 || result?.success) {
+                const warnings = result?.stockWarnings as string[] | undefined;
+                useAlertStore.getState().alert(
+                    warnings?.length ? warnings.join(' ') : result?.message || 'Compra aprobada',
+                    warnings?.length ? 'warning' : 'success',
+                );
+                set((state) => ({
+                    compras: (state.compras || []).map((c) =>
+                        c.id === id ? { ...c, estado: 'REGISTRADO' } : c,
+                    ),
+                }));
+                return true;
+            }
+            useAlertStore.getState().alert(result?.message || 'Error al aprobar compra', 'error');
+            return false;
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'Error al aprobar compra', 'error');
+            return false;
+        }
+    },
+
+    rechazarCompra: async (id: number) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await patch(`compras/${id}/rechazar`);
+            const result = resp?.data || resp;
+            useAlertStore.setState({ loading: false });
+            if (resp.code === 1 || result?.success) {
+                useAlertStore.getState().alert(result?.message || 'Compra rechazada', 'success');
+                set((state) => ({
+                    compras: (state.compras || []).map((c) =>
+                        c.id === id ? { ...c, estado: 'RECHAZADA', saldo: 0 } : c,
+                    ),
+                }));
+                return true;
+            }
+            useAlertStore.getState().alert(result?.message || 'Error al rechazar compra', 'error');
+            return false;
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'Error al rechazar compra', 'error');
             return false;
         }
     },

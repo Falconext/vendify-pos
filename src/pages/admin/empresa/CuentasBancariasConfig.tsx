@@ -65,6 +65,7 @@ const EMPTY_FORM: ICreateCuentaBancaria = {
   moneda: 'PEN',
   alias: '',
   mostrarEnCotizacion: true,
+  medioPagoVinculado: null,
 };
 
 export default function CuentasBancariasConfig() {
@@ -116,6 +117,7 @@ export default function CuentasBancariasConfig() {
       moneda: cuenta.moneda,
       alias: cuenta.alias ?? '',
       mostrarEnCotizacion: cuenta.mostrarEnCotizacion ?? true,
+      medioPagoVinculado: cuenta.medioPagoVinculado ?? null,
     });
     setShowForm(true);
   };
@@ -228,6 +230,20 @@ export default function CuentasBancariasConfig() {
                 </p>
               </div>
 
+              {cuenta.activo && cuenta.medioPagoVinculado && (
+                <span
+                  title={`Los cobros por ${cuenta.medioPagoVinculado === 'YAPE' ? 'Yape' : 'Plin'} se abonan automáticamente en esta cuenta`}
+                  className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    cuenta.medioPagoVinculado === 'YAPE'
+                      ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                      : 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+                  }`}
+                >
+                  <Icon icon="solar:smartphone-bold" width={12} />
+                  {cuenta.medioPagoVinculado === 'YAPE' ? 'Yape' : 'Plin'}
+                </span>
+              )}
+
               {!cuenta.activo && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400">
                   INACTIVA
@@ -288,7 +304,7 @@ export default function CuentasBancariasConfig() {
       {/* Modal — z-[9999] para quedar encima del sidebar y su stacking context */}
       {showForm && (
         <div className="fixed top-[-30px] inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-xl w-full max-w-md p-6">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-5">
               <BancoLogo banco={form.banco} size={36} />
               <h4 className="flex-1 font-bold text-gray-900 dark:text-white text-base">
@@ -397,6 +413,26 @@ export default function CuentasBancariasConfig() {
                     placeholder="Ej: BCP Principal, Cuenta Ventas"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                   />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    Billetera digital vinculada
+                  </label>
+                  <select
+                    value={form.medioPagoVinculado ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, medioPagoVinculado: e.target.value || null }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">Ninguna</option>
+                    <option value="YAPE">Yape</option>
+                    <option value="PLIN">Plin</option>
+                  </select>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                    Los cobros con esa billetera se consideran abonados automáticamente en esta cuenta
+                    (Yape/Plin depositan directo al banco), así que no entran al flujo de depósitos de caja.
+                    Solo una cuenta activa por billetera.
+                  </p>
                 </div>
 
                 <div className="col-span-2">

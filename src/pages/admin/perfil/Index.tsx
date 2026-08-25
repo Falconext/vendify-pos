@@ -581,6 +581,54 @@ export default function PerfilIndex() {
                                 </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                        <Icon icon="solar:shield-check-bold-duotone" width={14} />
+                                        Control interno
+                                    </p>
+                                </div>
+                                <label className="flex items-start gap-3 p-3 rounded-lg border border-rose-100 dark:border-rose-900/30 bg-rose-50/40 dark:bg-rose-900/10 cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).requiereAprobacionGastos)}
+                                        disabled={vm.savingControlFlag === 'requiereAprobacionGastos'}
+                                        onChange={(e) => vm.handleControlFlagToggle('requiereAprobacionGastos', e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-rose-600 dark:text-rose-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-rose-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Aprobar gastos de vendedores</p>
+                                        <p className="text-xs text-slate-500 mt-1">Los gastos de caja que registren tus vendedores quedarán pendientes y no afectarán el cierre hasta que tú los apruebes. Los tuyos se aprueban solos.</p>
+                                        {vm.savingControlFlag === 'requiereAprobacionGastos' && <p className="text-xs text-rose-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-rose-100 dark:border-rose-900/30 bg-rose-50/40 dark:bg-rose-900/10 cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).requiereAprobacionCompras)}
+                                        disabled={vm.savingControlFlag === 'requiereAprobacionCompras'}
+                                        onChange={(e) => vm.handleControlFlagToggle('requiereAprobacionCompras', e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-rose-600 dark:text-rose-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-rose-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Aprobar compras de vendedores</p>
+                                        <p className="text-xs text-slate-500 mt-1">Las compras que registren tus vendedores quedarán pendientes: el stock recién ingresa y se aceptan pagos cuando tú las apruebes.</p>
+                                        {vm.savingControlFlag === 'requiereAprobacionCompras' && <p className="text-xs text-rose-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-sky-100 dark:border-sky-900/30 bg-sky-50/40 dark:bg-sky-900/10 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).requiereCajaParaEmitir)}
+                                        disabled={vm.savingControlFlag === 'requiereCajaParaEmitir'}
+                                        onChange={(e) => vm.handleControlFlagToggle('requiereCajaParaEmitir', e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-sky-600 dark:text-sky-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-sky-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Exigir caja abierta para emitir comprobantes</p>
+                                        <p className="text-xs text-slate-500 mt-1">Nadie (incluido tú) podrá emitir facturas, boletas, notas de venta ni tickets sin tener su caja abierta en su sede. Las cotizaciones no lo requieren.</p>
+                                        {vm.savingControlFlag === 'requiereCajaParaEmitir' && <p className="text-xs text-sky-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:document-text-bold-duotone" width={14} />
                                         Formato de Cotización
                                     </p>

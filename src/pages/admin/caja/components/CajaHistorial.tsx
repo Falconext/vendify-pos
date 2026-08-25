@@ -39,6 +39,8 @@ const CajaHistorial: React.FC = () => {
         obtenerHistorialCaja,
         exportarArqueo,
         eliminarEgreso,
+        aprobarEgreso,
+        rechazarEgreso,
         setFilters,
         clearFilters,
     } = useCajaStore();
@@ -46,6 +48,15 @@ const CajaHistorial: React.FC = () => {
     const [egresoEditar, setEgresoEditar] = useState<MovimientoCaja | null>(null);
     const [egresoEliminarId, setEgresoEliminarId] = useState<number | null>(null);
     const [loadingEliminar, setLoadingEliminar] = useState(false);
+    const [aprobandoId, setAprobandoId] = useState<number | null>(null);
+
+    const handleAprobacion = async (id: number, accion: 'aprobar' | 'rechazar') => {
+        if (aprobandoId) return;
+        setAprobandoId(id);
+        const result = accion === 'aprobar' ? await aprobarEgreso(id) : await rechazarEgreso(id);
+        setAprobandoId(null);
+        if (result.success) obtenerHistorialCaja(page, limit);
+    };
 
     const { auth, sedeActiva } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
@@ -264,8 +275,20 @@ const CajaHistorial: React.FC = () => {
                                         </td>
                                         <td className="py-3 px-3">
                                             {mov.categoriaGasto ? (
-                                                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                                                    {mov.categoriaGasto}
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                                        {mov.categoriaGasto}
+                                                    </span>
+                                                    {mov.estadoAprobacion === 'PENDIENTE' && (
+                                                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                                                            Pendiente
+                                                        </span>
+                                                    )}
+                                                    {mov.estadoAprobacion === 'RECHAZADO' && (
+                                                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 whitespace-nowrap">
+                                                            Rechazado
+                                                        </span>
+                                                    )}
                                                 </span>
                                             ) : (
                                                 <span className="text-slate-300 dark:text-gray-600">—</span>
@@ -279,6 +302,26 @@ const CajaHistorial: React.FC = () => {
                                         <td className="py-3 px-3 pr-5">
                                             {(mov.tipoMovimiento === 'EGRESO' && !mov.esTransferencia) ? (
                                                 <div className="flex items-center justify-end gap-1.5">
+                                                    {isAdmin && mov.estadoAprobacion === 'PENDIENTE' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleAprobacion(mov.id, 'aprobar')}
+                                                                disabled={aprobandoId === mov.id}
+                                                                className="h-8 w-8 grid place-items-center rounded-lg text-emerald-500 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50"
+                                                                title="Aprobar gasto"
+                                                            >
+                                                                <Icon icon="solar:check-circle-bold" className="text-base" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleAprobacion(mov.id, 'rechazar')}
+                                                                disabled={aprobandoId === mov.id}
+                                                                className="h-8 w-8 grid place-items-center rounded-lg text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors disabled:opacity-50"
+                                                                title="Rechazar gasto"
+                                                            >
+                                                                <Icon icon="solar:close-circle-bold" className="text-base" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     <button
                                                         onClick={() => setEgresoEditar(mov)}
                                                         className="h-8 w-8 grid place-items-center rounded-lg text-slate-400 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"

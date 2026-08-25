@@ -48,11 +48,29 @@ export default function ComprasView() {
             onClick: (row: any) => actions.openHistorial(row._raw),
         },
         {
+            icon: <Icon icon="solar:check-circle-bold-duotone" width="20" height="20" color="#10b981" />,
+            tooltip: 'Aprobar compra (ingresa el stock)',
+            className: 'payment',
+            onClick: (row: any) => actions.aprobarCompra(row._raw),
+            hide: (row: any) => !isAdmin || row._raw?.estado !== 'PENDIENTE_APROBACION',
+        },
+        {
+            icon: <Icon icon="solar:close-circle-bold-duotone" width="20" height="20" color="#f97316" />,
+            tooltip: 'Rechazar compra',
+            className: 'delete',
+            onClick: (row: any) => actions.rechazarCompra(row._raw),
+            hide: (row: any) => !isAdmin || row._raw?.estado !== 'PENDIENTE_APROBACION',
+        },
+        {
             icon: <Icon icon="solar:hand-money-bold-duotone" width="20" height="20" color="#10b981" />,
             tooltip: 'Registrar Pago',
             className: 'payment',
             onClick: (row: any) => actions.openPago(row._raw),
-            hide: (row: any) => Number(row._raw?.saldo || 0) <= 0.01 || row._raw?.estadoPago === 'COMPLETADO',
+            hide: (row: any) =>
+                Number(row._raw?.saldo || 0) <= 0.01 ||
+                row._raw?.estadoPago === 'COMPLETADO' ||
+                row._raw?.estado === 'PENDIENTE_APROBACION' ||
+                row._raw?.estado === 'RECHAZADA',
         },
         {
             icon: <Icon icon="solar:eye-bold" />,

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import apiClient from '@/utils/apiClient';
+import useAlertStore from '@/zustand/alert';
 import { BarcodeScannerInput } from '@/components/BarcodeScannerInput';
 import { Icon } from '@iconify/react';
 import Select from '@/components/Select';
@@ -162,18 +164,93 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const getAtributoTecnico = (key: string) => String(((formValues as any)?.atributosTecnicos || {})[key] || '');
     const getAtributoTecnicoBool = (key: string) => Boolean(((formValues as any)?.atributosTecnicos || {})[key]);
 
-    // Códigos de barra ADICIONALES: mismo producto con distinto EAN por lote/importación.
-    // Al escanear cualquiera de estos códigos, el POS resuelve a este mismo producto.
-    const codigosExtra: string[] = Array.isArray((formValues as any)?.codigosBarrasExtra)
+    // Códigos de barra ADICIONALES: mismo producto con distinto EAN por lote/importación,
+    // o un código de PAQUETE (ej. six-pack) con unidadesPorPaquete > 1 — comparte el
+    // mismo stock, pero al escanearlo el POS vende/descuenta esa cantidad de unidades.
+    type CodigoExtra = {
+        codigo: string;
+        unidadesPorPaquete?: number;
+        precioPaquete?: number | null;
+        alias?: string | null;
+        imagenUrl?: string | null;
+        imagenUrlDisplay?: string | null;
+    };
+    const codigosExtraRaw: any[] = Array.isArray((formValues as any)?.codigosBarrasExtra)
         ? (formValues as any).codigosBarrasExtra
         : [];
-    const setCodigosExtra = (next: string[]) =>
+    const codigosExtra: CodigoExtra[] = codigosExtraRaw.map((c) =>
+        typeof c === 'string' ? { codigo: c, unidadesPorPaquete: 1, precioPaquete: null } : c,
+    );
+    const setCodigosExtra = (next: CodigoExtra[]) =>
         setFormValues({ ...formValues, codigosBarrasExtra: next } as any);
-    const addCodigoExtra = () => setCodigosExtra([...codigosExtra, '']);
-    const updateCodigoExtra = (i: number, val: string) =>
-        setCodigosExtra(codigosExtra.map((c, idx) => (idx === i ? val : c)));
+    const addCodigoExtra = () => setCodigosExtra([...codigosExtra, { codigo: '', unidadesPorPaquete: 1, precioPaquete: null }]);
+    const updateCodigoExtraField = (i: number, patch: Partial<CodigoExtra>) =>
+        setCodigosExtra(codigosExtra.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+    const updateCodigoExtra = (i: number, val: string) => updateCodigoExtraField(i, { codigo: val });
+    const updateUnidadesPorPaquete = (i: number, val: number) =>
+        updateCodigoExtraField(i, { unidadesPorPaquete: val });
+    const updatePrecioPaquete = (i: number, val: string) =>
+        updateCodigoExtraField(i, { precioPaquete: val === '' ? null : Math.max(0, Number(val) || 0) });
     const removeCodigoExtra = (i: number) =>
         setCodigosExtra(codigosExtra.filter((_, idx) => idx !== i));
+    const handleImagenPaquete = (i: number, file: File | null) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () =>
+            updateCodigoExtraField(i, { imagenUrl: String(reader.result), imagenUrlDisplay: String(reader.result) });
+        reader.readAsDataURL(file);
+    };
+    // Auto-generar imagen del paquete: misma IA/red global que la imagen
+    // principal, consultando por el nombre del pack y su propio EAN. Devuelve
+    // varias candidatas para que el usuario previsualice y elija cuál usar.
+    const [generandoImagenPaquete, setGenerandoImagenPaquete] = useState<number | null>(null);
+    const [candidatosPaquete, setCandidatosPaquete] = useState<Record<number, string[]>>({});
+    const handleAutoImagenPaquete = async (i: number) => {
+        const item = codigosExtra[i];
+        if (!item || generandoImagenPaquete !== null) return;
+        const nombre =
+            String(item.alias || '').trim() ||
+            `${String((formValues as any)?.descripcion || '').trim()} pack x${item.unidadesPorPaquete ?? 1}`.trim();
+        if (!nombre) {
+            useAlertStore.getState().alert('Ponle nombre al paquete para buscar su imagen', 'warning');
+            return;
+        }
+        setGenerandoImagenPaquete(i);
+        try {
+            const response = await apiClient.post('/productos/ia/generar-imagen', {
+                nombre,
+                marca: (formValues as any)?.marcaNombre || '',
+                categoria: (formValues as any)?.categoriaNombre || '',
+                codigoBarras: item.codigo || '',
+            });
+            const result = (response.data as any)?.data || response.data;
+            const candidates: string[] = (Array.isArray(result?.candidates) ? result.candidates : [])
+                .filter((url: unknown): url is string => typeof url === 'string' && /^https?:\/\//i.test(url));
+            // Incluir la coincidencia principal como primera candidata.
+            const todas = result?.success && result?.url
+                ? [result.url, ...candidates.filter((u: string) => u !== result.url)]
+                : candidates;
+            setCandidatosPaquete((prev) => ({ ...prev, [i]: todas }));
+            if (result?.success && result?.url) {
+                updateCodigoExtraField(i, { imagenUrl: result.url, imagenUrlDisplay: result.url });
+                useAlertStore.getState().alert(
+                    todas.length > 1 ? 'Imagen encontrada — puedes elegir otra de las sugeridas' : 'Imagen del paquete encontrada',
+                    'success',
+                );
+            } else if (todas.length > 0) {
+                useAlertStore.getState().alert('No hubo coincidencia exacta. Elige una de las opciones sugeridas.', 'info');
+            } else {
+                useAlertStore.getState().alert(
+                    result?.message || 'No encontré una imagen del paquete. Prueba con un nombre más específico o sube una foto.',
+                    'info',
+                );
+            }
+        } catch {
+            useAlertStore.getState().alert('Error al buscar la imagen del paquete', 'error');
+        } finally {
+            setGenerandoImagenPaquete(null);
+        }
+    };
 
     const technicalFields = Array.isArray((vm as any).technicalTemplate?.campos)
         ? [...((vm as any).technicalTemplate.campos as any[])].sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0))
@@ -521,34 +598,153 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                     </div>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2 leading-snug">
                         Para el mismo producto que llega con distinto código de barras según el lote o la importación
-                        (ej. perfumes sellados). Al escanear cualquiera de estos códigos aparece este mismo producto,
-                        con el mismo precio y stock.
+                        (ej. perfumes sellados), o para el código de un PAQUETE que contiene varias unidades de este
+                        mismo producto (ej. el six-pack de esta cerveza). Al escanear cualquiera de estos códigos
+                        aparece este mismo producto y se descuenta del mismo stock — indica "Unid. x paq." solo si
+                        ese código representa más de una unidad, y opcionalmente el precio TOTAL del paquete si es
+                        distinto (normalmente más barato) que unidades × precio unitario.
                     </p>
                     {codigosExtra.length === 0 ? (
                         <p className="text-[11px] italic text-gray-400 dark:text-gray-600">
-                            Sin códigos adicionales. Usa “Agregar código” si un mismo perfume tiene varios EAN.
+                            Sin códigos adicionales. Usa “Agregar código” si un mismo perfume tiene varios EAN, o si
+                            vendes un paquete (ej. six-pack) con su propio código.
                         </p>
                     ) : (
-                        <div className="flex flex-col gap-2">
-                            {codigosExtra.map((codigo, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <div className="flex-1">
-                                        <InputPro
-                                            autocomplete="off"
-                                            value={codigo}
-                                            name={`codigoBarrasExtra-${i}`}
-                                            onChange={(e: any) => updateCodigoExtra(i, e.target.value)}
-                                            placeholder="EAN-13 / UPC del otro lote"
-                                        />
+                        <div className="flex flex-col gap-3">
+                            {codigosExtra.map((item, i) => (
+                                <div key={i} className="rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-900/40 p-3 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                            <InputPro
+                                                autocomplete="off"
+                                                value={item.codigo}
+                                                name={`codigoBarrasExtra-${i}`}
+                                                onChange={(e: any) => updateCodigoExtra(i, e.target.value)}
+                                                placeholder="EAN-13 / UPC del otro lote o del paquete"
+                                            />
+                                        </div>
+                                        <div className="w-24 shrink-0" title="Unidades que trae el paquete">
+                                            <InputPro
+                                                autocomplete="off"
+                                                type="number"
+                                                value={item.unidadesPorPaquete ?? 1}
+                                                name={`unidadesPorPaquete-${i}`}
+                                                onChange={(e: any) =>
+                                                    updateUnidadesPorPaquete(i, Math.max(1, Number(e.target.value) || 1))
+                                                }
+                                                placeholder="Unid. x paq."
+                                            />
+                                        </div>
+                                        <div className="w-28 shrink-0" title="Precio TOTAL del paquete (opcional). Vacío = precio unitario × unidades">
+                                            <InputPro
+                                                autocomplete="off"
+                                                type="number"
+                                                value={item.precioPaquete ?? ''}
+                                                name={`precioPaquete-${i}`}
+                                                onChange={(e: any) => updatePrecioPaquete(i, e.target.value)}
+                                                placeholder="Precio paq. (opc.)"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeCodigoExtra(i)}
+                                            className="shrink-0 p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                            title="Quitar código"
+                                        >
+                                            <Icon icon="mdi:trash-can-outline" className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeCodigoExtra(i)}
-                                        className="shrink-0 p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                        title="Quitar código"
-                                    >
-                                        <Icon icon="mdi:trash-can-outline" className="w-4 h-4" />
-                                    </button>
+                                    {/* Nombre e imagen del paquete: solo tienen sentido cuando el
+                                        código representa un pack (más de 1 unidad). */}
+                                    {(item.unidadesPorPaquete ?? 1) > 1 && (
+                                        <>
+                                            <div className="flex items-center gap-2">
+                                                <label className="shrink-0 cursor-pointer group relative" title="Imagen del paquete — clic para subir una foto">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => handleImagenPaquete(i, e.target.files?.[0] ?? null)}
+                                                    />
+                                                    {item.imagenUrlDisplay || item.imagenUrl ? (
+                                                        <span className="block w-16 h-16 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 relative">
+                                                            <img
+                                                                src={item.imagenUrlDisplay || item.imagenUrl || ''}
+                                                                alt="Paquete"
+                                                                className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                                            />
+                                                            <span className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[9px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                Cambiar
+                                                            </span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 flex flex-col items-center justify-center text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors">
+                                                            <Icon icon="mdi:image-plus-outline" className="w-6 h-6" />
+                                                            <span className="text-[9px] mt-0.5">Subir</span>
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAutoImagenPaquete(i)}
+                                                    disabled={generandoImagenPaquete !== null}
+                                                    title="Auto-generar imagen del paquete (IA / red global)"
+                                                    className="shrink-0 w-16 h-16 rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 flex flex-col items-center justify-center hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors disabled:opacity-50"
+                                                >
+                                                    <Icon
+                                                        icon={generandoImagenPaquete === i ? 'eos-icons:loading' : 'mdi:magic-staff'}
+                                                        className="w-6 h-6"
+                                                    />
+                                                    <span className="text-[9px] mt-0.5">Auto-buscar</span>
+                                                </button>
+                                                <div className="flex-1">
+                                                    <InputPro
+                                                        autocomplete="off"
+                                                        value={item.alias ?? ''}
+                                                        name={`aliasPaquete-${i}`}
+                                                        onChange={(e: any) => updateCodigoExtraField(i, { alias: e.target.value })}
+                                                        placeholder={`Nombre del paquete (ej. SIX PACK ${String((formValues as any)?.descripcion || '').toUpperCase()})`.slice(0, 60)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {(candidatosPaquete[i]?.length ?? 0) > 0 && (
+                                                <div className="border border-indigo-100 dark:border-indigo-900/40 rounded-lg p-3 bg-indigo-50/40 dark:bg-indigo-950/20">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                                            Opciones sugeridas — elige la imagen del paquete
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            className="text-[11px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline"
+                                                            onClick={() => setCandidatosPaquete((prev) => ({ ...prev, [i]: [] }))}
+                                                        >
+                                                            Ocultar
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                                        {candidatosPaquete[i].map((url) => {
+                                                            const isSelected = (item.imagenUrl || item.imagenUrlDisplay) === url;
+                                                            return (
+                                                                <button
+                                                                    key={url}
+                                                                    type="button"
+                                                                    onClick={() => updateCodigoExtraField(i, { imagenUrl: url, imagenUrlDisplay: url })}
+                                                                    className={`relative h-24 rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900' : 'border-transparent hover:border-indigo-300'}`}
+                                                                >
+                                                                    <img src={url} alt="Candidata paquete" className="w-full h-full object-cover" />
+                                                                    {isSelected && (
+                                                                        <span className="absolute top-1 right-1 text-[10px] bg-indigo-600 text-white rounded px-1.5 py-0.5">
+                                                                            Seleccionada
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -569,21 +765,10 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             </div>
 
             <div className={`col-span-1 ${productSections.codigos ? 'md:col-span-1' : 'md:col-span-2'} relative`}>
+                {/* "Auto-Categorizar" retirado a pedido del negocio (no daba
+                    buenos resultados); el handler sigue en el VM por si vuelve. */}
                 <div className="flex justify-between items-center mb-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{labels.nombre}</label>
-                    <button
-                        type="button"
-                        onClick={handleAutoCategorize}
-                        disabled={isCategorizing || !formValues.descripcion}
-                        className={`text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ${!formValues.descripcion
-                            ? 'text-gray-300 dark:text-gray-600 bg-gray-50 dark:bg-slate-800'
-                            : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800'
-                            }`}
-                        title="Auto-detectar categoría y marca basada en el nombre"
-                    >
-                        <Icon icon={isCategorizing ? "mdi:loading" : "mdi:sparkles"} className={isCategorizing ? "animate-spin" : ""} />
-                        {isCategorizing ? 'Analizando...' : 'Auto-Categorizar'}
-                    </button>
                 </div>
                 <InputPro autocomplete="off" value={formValues?.descripcion} error={errors.descripcion} name="descripcion" onChange={handleChange} isLabel={false} />
             </div>

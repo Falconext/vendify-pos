@@ -34,6 +34,9 @@ export interface ICuentaBancaria {
   alias?: string | null;
   activo: boolean;
   mostrarEnCotizacion: boolean;
+  // 'YAPE' | 'PLIN' | null — los pagos con ese medio abonan automáticamente
+  // a esta cuenta (máx. una cuenta activa por medio).
+  medioPagoVinculado?: string | null;
   creadoEn: string;
 }
 
@@ -46,6 +49,7 @@ export interface ICreateCuentaBancaria {
   moneda?: string;
   alias?: string;
   mostrarEnCotizacion?: boolean;
+  medioPagoVinculado?: string | null;
 }
 
 export interface IUpdateCuentaBancaria extends Partial<ICreateCuentaBancaria> {

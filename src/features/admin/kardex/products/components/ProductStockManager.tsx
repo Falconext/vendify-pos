@@ -18,7 +18,10 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     if (!productSections.inventario && !esServicio) return null;
     const tieneSedeActiva = Boolean(sedeActiva?.id);
 
-    const hasSedePolicy = productSections.multiplesSedes;
+    // "Disponibilidad por sede" retirada del formulario a pedido del negocio
+    // (era inerte en la práctica y confundía al empresario). El backend sigue
+    // creando ProductoStock por sede con los valores por defecto.
+    const hasSedePolicy = false && productSections.multiplesSedes;
 
     const sedePolicy = (
         <div className={`${hasSedePolicy ? 'mt-0' : 'mt-4'} rounded-xl border border-violet-100 p-3 dark:border-violet-900/40 dark:bg-violet-950/20 h-full`}>
