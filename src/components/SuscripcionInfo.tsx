@@ -140,7 +140,8 @@ const SuscripcionInfo: React.FC<SuscripcionInfoProps> = ({
                 {new Date(miEmpresa.fechaActivacion).toLocaleDateString('es-ES', {
                   year: 'numeric',
                   month: 'long',
-                  day: 'numeric'
+                  day: 'numeric',
+                  timeZone: 'America/Lima'
                 })}
               </p>
             </div>
@@ -154,7 +155,8 @@ const SuscripcionInfo: React.FC<SuscripcionInfoProps> = ({
                 {new Date(miEmpresa.fechaExpiracion).toLocaleDateString('es-ES', {
                   year: 'numeric',
                   month: 'long',
-                  day: 'numeric'
+                  day: 'numeric',
+                  timeZone: 'America/Lima'
                 })}
               </p>
             </div>

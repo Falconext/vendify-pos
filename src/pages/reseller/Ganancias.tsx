@@ -267,7 +267,7 @@ export default function ResellerGanancias() {
                                         return (
                                             <tr key={c.empresaId} className={BODY_TR}>
                                                 <td className="py-3 pl-2 pr-3"><EntityCell name={c.razonSocial} /></td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 whitespace-nowrap">{new Date(c.fechaExpiracion).toLocaleDateString('es-PE')}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 whitespace-nowrap">{new Date(c.fechaExpiracion).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</td>
                                                 <td className="py-3 px-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${b.cls}`}>{b.text}</span></td>
                                                 <td className="py-3 px-3 text-right tabular-nums text-sm text-rose-500 dark:text-rose-400 whitespace-nowrap">{fmt(c.costo)}</td>
                                                 <td className={`py-3 px-3 pr-2 text-right tabular-nums text-sm font-bold whitespace-nowrap ${c.ganancia >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{fmt(c.ganancia)}</td>

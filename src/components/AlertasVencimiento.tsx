@@ -147,7 +147,7 @@ const AlertasVencimiento = ({ diasAntes = 7, className = '' }: AlertasVencimient
                       </span>
                     </p>
                     <p>
-                      Vence: {new Date(empresa.fechaExpiracion).toLocaleDateString('es-PE')}
+                      Vence: {new Date(empresa.fechaExpiracion).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}
                     </p>
                   </div>
                 </div>

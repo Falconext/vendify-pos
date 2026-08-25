@@ -491,7 +491,7 @@ export default function ResellerClientes() {
         return filtered.map((cliente: any) => {
             const dias = cliente.estado === 'ACTIVO' ? diasParaVencer(cliente.fechaExpiracion) : null;
             const vence = cliente.fechaExpiracion
-                ? new Date(cliente.fechaExpiracion).toLocaleDateString('es-PE')
+                ? new Date(cliente.fechaExpiracion).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })
                 : '—';
             const renueva = dias == null ? '—' : dias < 0 ? 'Vencida' : dias === 0 ? 'Hoy' : `En ${dias}d`;
             return {
