@@ -440,6 +440,19 @@ export default function CotizacionesView() {
                             <button
                                 type="button"
                                 onClick={() => {
+                                    vm.handleNuevaVersionCotizacion(rowData);
+                                    vm.setOpenAccionesId(null);
+                                    vm.setAnchorEl(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-700 dark:text-violet-400"
+                                title="Crea una cotización nueva a partir de esta; la original se conserva intacta"
+                            >
+                                <Icon icon="solar:copy-bold-duotone" width={16} height={16} />
+                                <span className="font-medium">Cotizar a partir de esta</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
                                     vm.handleConvertirAFactura(rowData);
                                     vm.setOpenAccionesId(null);
                                     vm.setAnchorEl(null);

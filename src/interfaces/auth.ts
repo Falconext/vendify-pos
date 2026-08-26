@@ -15,6 +15,8 @@ export interface ISede {
     /** Permite facturar aunque la sede sea tipo ALMACEN. */
     permiteFacturacion?: boolean
     activo: boolean
+    /** Dirección propia del local (puede diferir de la fiscal del RUC). */
+    direccion?: string | null
 }
 
 export interface IUser {

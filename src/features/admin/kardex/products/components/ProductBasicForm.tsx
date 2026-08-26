@@ -128,7 +128,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
         // o cambio de afectación), pero respeta lo que el usuario está tecleando si ya cuadra con ese neto.
         const implicitoNet = costoConIgvInput === ''
             ? 0
-            : (_esGravadoCosto ? parseFloat((parseFloat(costoConIgvInput) / 1.18).toFixed(2)) : parseFloat(costoConIgvInput)) || 0;
+            : (_esGravadoCosto ? parseFloat((parseFloat(costoConIgvInput) / 1.18).toFixed(4)) : parseFloat(costoConIgvInput)) || 0;
         if (Math.abs(implicitoNet - _costoNet) > 0.005) {
             setCostoConIgvInput(_costoBrutoDerivado > 0 ? String(_costoBrutoDerivado) : '');
         }
@@ -1142,7 +1142,9 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                     const raw = e.target.value;
                                                     setCostoConIgvInput(raw);
                                                     const num = parseFloat(raw) || 0;
-                                                    const neto = esGravado ? parseFloat((num / 1.18).toFixed(2)) : num;
+                                                    // Neto con 4 decimales: con 2 se perdían centavos y al reabrir
+                                                    // el modal "6.00" reaparecía como "5.99" (confunde al empresario).
+                                                    const neto = esGravado ? parseFloat((num / 1.18).toFixed(4)) : num;
                                                     setFormValues({ ...formValues, costoUnitario: neto } as any);
                                                 }}
                                             />

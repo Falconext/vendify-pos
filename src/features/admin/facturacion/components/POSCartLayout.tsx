@@ -2,29 +2,43 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import useAlertStore from "@/zustand/alert";
 
+// Línea de PAQUETE (ej. six-pack escaneado): el vendedor piensa en packs, no en
+// unidades — el carrito muestra/edita PACKS y por dentro la cantidad sigue en
+// unidades (packs × unidadesPorPaquete) para que el stock descuente correcto.
+const getPkgUnits = (item: any): number => {
+    const u = Number(item?.unidadesPorPaquete) || 1;
+    return item?.esPaquete && u > 1 ? u : 1;
+};
+
 const QtyInput = ({ item, index, vm }: { item: any; index: number; vm: any }) => {
-    const [localValue, setLocalValue] = useState<string>(String(item.cantidad));
+    const factor = getPkgUnits(item);
+    const displayQty = Number(item.cantidad) / factor;
+    const [localValue, setLocalValue] = useState<string>(String(displayQty));
     const esServicio = String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
 
     const commit = (raw: string) => {
         const parsed = parseFloat(raw);
         if (!Number.isFinite(parsed) || parsed <= 0) {
-            setLocalValue(String(item.cantidad));
+            setLocalValue(String(displayQty));
             return;
         }
-        if (!esServicio && item.stock !== undefined && item.stock < parsed) {
-            setLocalValue(String(item.cantidad));
-            useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
-            return;
+        const unidades = Math.round(parsed * factor * 10000) / 10000;
+        if (!esServicio && item.stock !== undefined && item.stock < unidades) {
+            if (!vm.permitirVentaSinStock) {
+                setLocalValue(String(displayQty));
+                useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
+                return;
+            }
+            // Sobreventa activa: se permite, pero con advertencia visible.
+            useAlertStore.getState().alert(`Ojo: estás vendiendo por encima del stock (${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()})`, "warning");
         }
-        const rounded = Math.round(parsed * 10000) / 10000;
-        setLocalValue(String(rounded));
-        vm.updateProductInvoice(index, vm.calculateLineItem(item, rounded));
+        setLocalValue(String(Math.round(parsed * 10000) / 10000));
+        vm.updateProductInvoice(index, vm.calculateLineItem(item, unidades));
     };
 
     // Keep local value in sync when external updates happen (e.g. +/- buttons)
-    if (String(item.cantidad) !== localValue && document.activeElement?.getAttribute('data-qty-index') !== String(index)) {
-        setLocalValue(String(item.cantidad));
+    if (String(Number(item.cantidad) / factor) !== localValue && document.activeElement?.getAttribute('data-qty-index') !== String(index)) {
+        setLocalValue(String(Number(item.cantidad) / factor));
     }
 
     return (
@@ -86,8 +100,11 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
         const v = Math.round(value * 10000) / 10000;
         if (v <= 0) return;
         if (!esServicio(item) && item.stock !== undefined && Number(item.stock) < v) {
-            useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
-            return;
+            if (!vm.permitirVentaSinStock) {
+                useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
+                return;
+            }
+            useAlertStore.getState().alert(`Ojo: estás vendiendo por encima del stock (${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()})`, "warning");
         }
         vm.updateProductInvoice(index, vm.calculateLineItem(item, v));
     };
@@ -197,36 +214,50 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                                         className="mt-2 w-full min-h-[42px] rounded-lg border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10 dark:border-emerald-900/50 px-3 py-2 text-xs font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-300"
                                     />
                                 )}
-                                {/* Cantidad — justo debajo de la descripción */}
-                                <div className="mt-2 flex w-fit items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
-                                    <button
-                                        onClick={() => {
-                                            const cur = Number(item.cantidad);
-                                            const next = Math.round((cur - 1) * 10000) / 10000;
-                                            if (next <= 0) {
-                                                vm.handleDeleteProductByIndex(index);
-                                            } else {
-                                                vm.updateProductInvoice(index, vm.calculateLineItem(item, next));
-                                            }
-                                        }}
-                                        className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:scale-95 transition-transform"
-                                    >
-                                        <Icon icon="solar:minus-circle-linear" width={18} />
-                                    </button>
-                                    <QtyInput item={item} index={index} vm={vm} />
-                                    <button
-                                        onClick={() => {
-                                            const newQty = Math.round((Number(item.cantidad) + 1) * 10000) / 10000;
-                                            if (!esServicio(item) && item.stock !== undefined && item.stock < newQty) {
-                                                useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
-                                                return;
-                                            }
-                                            vm.updateProductInvoice(index, vm.calculateLineItem(item, newQty));
-                                        }}
-                                        className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:scale-95 transition-transform"
-                                    >
-                                        <Icon icon="solar:add-circle-linear" width={18} />
-                                    </button>
+                                {/* Cantidad — justo debajo de la descripción.
+                                    En líneas de paquete el stepper opera en PACKS
+                                    (±unidadesPorPaquete por dentro). */}
+                                <div className="mt-2 flex w-fit items-center gap-2">
+                                    <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+                                        <button
+                                            onClick={() => {
+                                                const paso = getPkgUnits(item);
+                                                const cur = Number(item.cantidad);
+                                                const next = Math.round((cur - paso) * 10000) / 10000;
+                                                if (next <= 0) {
+                                                    vm.handleDeleteProductByIndex(index);
+                                                } else {
+                                                    vm.updateProductInvoice(index, vm.calculateLineItem(item, next));
+                                                }
+                                            }}
+                                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:scale-95 transition-transform"
+                                        >
+                                            <Icon icon="solar:minus-circle-linear" width={18} />
+                                        </button>
+                                        <QtyInput item={item} index={index} vm={vm} />
+                                        <button
+                                            onClick={() => {
+                                                const paso = getPkgUnits(item);
+                                                const newQty = Math.round((Number(item.cantidad) + paso) * 10000) / 10000;
+                                                if (!esServicio(item) && item.stock !== undefined && item.stock < newQty) {
+                                                    if (!vm.permitirVentaSinStock) {
+                                                        useAlertStore.getState().alert(`Solo hay ${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()}`, "warning");
+                                                        return;
+                                                    }
+                                                    useAlertStore.getState().alert(`Ojo: estás vendiendo por encima del stock (${item.stock} disponibles de ${String(item.descripcion || 'este producto').toUpperCase()})`, "warning");
+                                                }
+                                                vm.updateProductInvoice(index, vm.calculateLineItem(item, newQty));
+                                            }}
+                                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:scale-95 transition-transform"
+                                        >
+                                            <Icon icon="solar:add-circle-linear" width={18} />
+                                        </button>
+                                    </div>
+                                    {getPkgUnits(item) > 1 && (
+                                        <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                            pack{Number(item.cantidad) / getPkgUnits(item) !== 1 ? 's' : ''} · = {Number(item.cantidad)} unid.
+                                        </span>
+                                    )}
                                 </div>
                             </div>{/* /descripción */}
 

@@ -569,8 +569,39 @@ export const useFacturacionViewModel = () => {
     const catalogItems = useMemo(() => {
         const sourceProductos = usaLotesFarmacia ? farmaciaProductos : products;
         const itemsProductos = (sourceProductos || []).map((product: any) => ({ ...product, __catalogType: 'PRODUCTO' }));
+        // Tarjetas de PAQUETE (ej. six-pack): cada código alterno con
+        // unidadesPorPaquete > 1 se muestra como tarjeta propia del catálogo,
+        // para vender el pack con un click (no solo escaneando). Al hacer click
+        // pasa por el mismo flujo del escaneo: comparte stock con el producto
+        // base y agrega N unidades al precio del paquete.
+        const itemsPaquetes = (sourceProductos || []).flatMap((product: any) =>
+            (Array.isArray(product?.paquetes) ? product.paquetes : []).map((paq: any) => {
+                const u = Math.max(2, Number(paq.unidadesPorPaquete) || 2);
+                const precioPack = paq.precioPaquete != null && Number(paq.precioPaquete) > 0
+                    ? Number(paq.precioPaquete)
+                    : Number(product.precioUnitario || 0) * u;
+                const nombrePack = paq.alias || `${product.descripcion} x${u}`;
+                return {
+                    ...product,
+                    __catalogType: 'PRODUCTO',
+                    __esPaqueteCard: true,
+                    descripcion: nombrePack,
+                    precioUnitario: precioPack,
+                    imagenUrl: paq.imagenUrl || product.imagenUrl,
+                    imagenUrlDisplay: paq.imagenUrlDisplay || product.imagenUrlDisplay,
+                    // Campos que handleProductClick usa para armar la línea de paquete
+                    unidadesPorPaquete: u,
+                    precioPaquete: precioPack,
+                    aliasPaquete: nombrePack,
+                    imagenPaquete: paq.imagenUrlDisplay || paq.imagenUrl || null,
+                    codigoBarras: paq.codigo,
+                    variantes: undefined,
+                    preciosMayorista: null,
+                };
+            }),
+        );
         const itemsCombos = filteredCombos.map((combo: any) => ({ ...combo, __catalogType: 'COMBO' }));
-        return [...itemsCombos, ...itemsProductos];
+        return [...itemsCombos, ...itemsPaquetes, ...itemsProductos];
     }, [products, farmaciaProductos, filteredCombos, usaLotesFarmacia]);
 
     // Initial Data Fetching for POS
@@ -1432,19 +1463,25 @@ export const useFacturacionViewModel = () => {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!permitirVentaSinStock && !esServicio && stockDisponible < newQty) {
-                return useAlertStore.getState().alert("Stock insuficiente", "warning");
+            if (!esServicio && stockDisponible < newQty) {
+                if (!permitirVentaSinStock) {
+                    return useAlertStore.getState().alert(`Solo hay ${stockDisponible} disponibles de ${String(product.descripcion || 'este producto').toUpperCase()}`, "warning");
+                }
+                // Sobreventa activa: se permite, pero SIEMPRE con advertencia visible.
+                useAlertStore.getState().alert(`Ojo: estás vendiendo por encima del stock (${stockDisponible} disponibles de ${String(product.descripcion || 'este producto').toUpperCase()})`, "warning");
             }
-            // Sobreventa activa: se agrega sin advertencia (el empresario ya la habilitó a propósito).
             updateProductInvoice(existingIndex, calculateLineItem(currentItem, newQty));
         } else {
             const stockDisponible = usaLotesFarmacia
                 ? (product?.loteFefo?.stockDisponibleVenta ?? 0)
                 : product.stock;
-            if (!permitirVentaSinStock && !esServicio && stockDisponible < unidadesPorPaquete) {
-                return useAlertStore.getState().alert("Sin stock", "warning");
+            if (!esServicio && stockDisponible < unidadesPorPaquete) {
+                if (!permitirVentaSinStock) {
+                    return useAlertStore.getState().alert(`Solo hay ${stockDisponible} disponibles de ${String(product.descripcion || 'este producto').toUpperCase()}`, "warning");
+                }
+                // Sobreventa activa: se permite, pero SIEMPRE con advertencia visible.
+                useAlertStore.getState().alert(`Ojo: estás vendiendo por encima del stock (${stockDisponible} disponibles de ${String(product.descripcion || 'este producto').toUpperCase()})`, "warning");
             }
-            // Sobreventa activa: se agrega sin advertencia (el empresario ya la habilitó a propósito).
             // Paquete con precio propio: el precio unitario de la línea es
             // precioPaquete / unidades (cantidad × precio = precio del paquete),
             // sin pasar por precios mayoristas.
@@ -2236,7 +2273,18 @@ export const useFacturacionViewModel = () => {
             detalles: [
                 ...(productsInvoice?.map((item: any) => ({
                     productoId: Number(item?.productoId || item?.id) || null,
-                    descripcion: item.descripcion,
+                    // Línea de PAQUETE (ej. six-pack): la cantidad va en unidades
+                    // (así el kardex descuenta el stock real), pero la descripción
+                    // aclara la equivalencia en packs para el cliente:
+                    // "30 SIX PACK... (5 pack x6)".
+                    descripcion: (() => {
+                        const u = Number(item?.unidadesPorPaquete) || 1;
+                        if (item?.esPaquete && u > 1) {
+                            const packs = Number(item.cantidad) / u;
+                            if (packs >= 1 && Number.isInteger(packs)) return `${item.descripcion} (${packs} pack x${u})`;
+                        }
+                        return item.descripcion;
+                    })(),
                     cantidad: Number(item.cantidad),
                     // Afectación IGV por línea (Catálogo 07). Necesario para ítems libres
                     // como "ANTICIPO/ADELANTO DEL PEDIDO" que van sin IGV (exportación/exonerado).
@@ -2579,6 +2627,7 @@ export const useFacturacionViewModel = () => {
         filteredProducts: usaLotesFarmacia ? farmaciaProductos : products,
         filteredCombos,
         catalogItems,
+        permitirVentaSinStock,
         totalProducts: usaLotesFarmacia ? farmaciaTotal : totalProducts,
         farmaciaLoading,
 

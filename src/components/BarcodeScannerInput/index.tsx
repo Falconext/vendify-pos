@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { cn } from '@/utils/cn';
 
@@ -15,6 +15,10 @@ interface BarcodeScannerInputProps {
     name?: string;
     error?: boolean;
     hideIcon?: boolean;
+    /** Dispara onScan automáticamente tras una pausa breve (sin necesidad de Enter).
+     *  Solo para valores de ≥8 caracteres (largo mínimo de un EAN-8), así los
+     *  códigos internos cortos tecleados a mano siguen requiriendo Enter. */
+    autoScan?: boolean;
 }
 
 export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
@@ -30,7 +34,26 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
     name,
     error = false,
     hideIcon = false,
+    autoScan = true,
 }) => {
+    // Auto-scan: las pistolas lectoras tipean el código completo en <100ms; si
+    // tras 600ms sin teclear hay un valor con pinta de código de barras, se
+    // dispara solo — el usuario no necesita presionar Enter.
+    const lastAutoScanned = useRef<string>('');
+    useEffect(() => {
+        if (!autoScan || loading || disabled) return;
+        const trimmed = value.trim();
+        // Al limpiarse el input (tras un escaneo exitoso), permitir re-escanear
+        // el mismo código (ej. segunda caja idéntica).
+        if (trimmed === '') { lastAutoScanned.current = ''; return; }
+        if (trimmed.length < 8 || trimmed === lastAutoScanned.current) return;
+        const timer = setTimeout(() => {
+            lastAutoScanned.current = trimmed;
+            onScan?.(trimmed);
+        }, 600);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, autoScan, loading, disabled]);
     return (
         <div className={cn('relative group', className)}>
             {label && (

@@ -93,6 +93,73 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const [barcodeLoading, setBarcodeLoading] = useState(false);
     const barcodeRef = useRef<HTMLInputElement>(null);
 
+    // Compra por PAQUETE (código de caja escaneado, ej. caja x20): el bodeguero
+    // habla en cajas y en el precio final **CON IGV** (como lo ve en la boleta
+    // del proveedor: "el six-pack me costó 36"). El sistema convierte a
+    // unidades y, si la compra está en modo "precios sin IGV" (default), le
+    // quita el IGV internamente. El stock y el kardex siempre van en unidades.
+    //
+    // Flujo "caja de supermercado": cada escaneo AGREGA/ACUMULA la línea
+    // directo en la tabla (sin presionar Agregar). El bloque morado queda como
+    // editor en vivo de la línea escaneada (pkgLineId → items[i]._scanKey).
+    const [pkg, setPkg] = useState<{ unidades: number; nombre: string; esGravado: boolean } | null>(null);
+    const [pkgCajas, setPkgCajas] = useState('1');
+    const [pkgCosto, setPkgCosto] = useState('');
+    const [pkgLineKey, setPkgLineKey] = useState<string | null>(null);
+
+    // Costo unitario para la línea a partir del costo del paquete CON IGV,
+    // según el modo de la compra (con/sin IGV).
+    const costoUnitDesdePaquete = (costoCajaConIgv: number, unidades: number, esGravado: boolean) => {
+        const costoCajaLinea = incluyeIgv || !esGravado
+            ? costoCajaConIgv
+            : costoCajaConIgv / 1.18;
+        return unidades > 0 ? Number((costoCajaLinea / unidades).toFixed(4)) : 0;
+    };
+
+    const etiquetaPaquete = (base: string, cajas: number, unidades: number) =>
+        unidades > 1 ? `${base} (${cajas} paq. x${unidades})` : base;
+
+    // Editor en vivo: cambios en el bloque morado actualizan la línea ya agregada.
+    const aplicarPaquete = (cajasStr: string, costoStr: string, unidades: number, esGravado: boolean) => {
+        if (!pkgLineKey) return;
+        const cajas = Math.max(0, Number(cajasStr) || 0);
+        const costoCajaConIgv = Math.max(0, Number(costoStr) || 0);
+        const precioUnitario = costoUnitDesdePaquete(costoCajaConIgv, unidades, esGravado);
+        setItems(prev => prev.map((it: any) => {
+            if (it._scanKey !== pkgLineKey) return it;
+            const cantidad = cajas * unidades;
+            return {
+                ...it,
+                cantidad,
+                precioUnitario,
+                descripcion: etiquetaPaquete(it._descripcionBase ?? it.descripcion, cajas, unidades),
+                _pkgCajas: cajas,
+                subtotal: cantidad * precioUnitario,
+            };
+        }));
+    };
+
+    // Al cambiar el modo IGV de la compra, CONVERTIR las líneas ya agregadas
+    // (neto ↔ con IGV) para preservar el precio REAL pagado: el Total a Pagar
+    // no debe moverse por tocar el checkbox. Antes solo se reinterpretaban los
+    // números (y en paquetes se pisaban los ajustes manuales del usuario).
+    const prevIncluyeIgv = useRef(incluyeIgv);
+    useEffect(() => {
+        if (prevIncluyeIgv.current === incluyeIgv) return;
+        prevIncluyeIgv.current = incluyeIgv;
+        const factor = incluyeIgv ? 1.18 : 1 / 1.18;
+        setItems(prev => prev.map((it: any) => {
+            const raw = Number(it.precioUnitario || 0) * factor;
+            // Snap a 2 decimales cuando el residuo es solo ruido de precisión
+            // (ej. 5.999946 → 6.00); si la fracción es real (5.0847) se conservan
+            // los 4 decimales para que el total siga cuadrando exacto.
+            const r2 = Number(raw.toFixed(2));
+            const precioUnitario = Math.abs(raw - r2) < 0.001 ? r2 : Number(raw.toFixed(4));
+            return { ...it, precioUnitario, subtotal: (Number(it.cantidad) || 0) * precioUnitario };
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [incluyeIgv]);
+
     // Estado panel "Nuevo Proveedor" inline
     const [showNuevoProveedor, setShowNuevoProveedor] = useState(false);
     const [nuevoProvForm, setNuevoProvForm] = useState({ tipoDoc: 'RUC', nroDoc: '', nombre: '', direccion: '', email: '', telefono: '' });
@@ -199,13 +266,32 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     monto: Number(c.monto || 0),
                     fechaVencimiento: c.fechaVencimiento ? moment(c.fechaVencimiento).format('YYYY-MM-DD') : moment().add(30, 'days').format('YYYY-MM-DD'),
                 })) : []);
-                // El precioUnitario se guarda NETO (sin IGV) → interpretarlo como neto.
-                setIncluyeIgv(false);
-                setItems((d.detalles || []).map((det: any) => ({
+                // El precioUnitario se guarda NETO (sin IGV). Para mostrar los
+                // números tal como se teclearon: si TODOS los netos × 1.18 caen
+                // en montos exactos de 2 decimales (la compra se ingresó CON
+                // IGV, ej. 5.0847 → 6.00), se restaura ese modo; si no, se
+                // carga en neto con 4 decimales para no perder centavos
+                // (antes se redondeaba a 2 y el total salía 359.66 en vez de 360).
+                const dets = (d.detalles || []);
+                const conv = dets.map((det: any) => {
+                    const neto = Number(det.precioUnitario) || 0;
+                    const conIgv = neto * 1.18;
+                    const r2 = Math.round(conIgv * 100) / 100;
+                    return { neto, conIgvLimpio: Math.abs(conIgv - r2) < 0.001 ? r2 : null };
+                });
+                const netoEsLimpio = (n: number) => Math.abs(n - Math.round(n * 100) / 100) < 0.0005;
+                const restaurarConIgv = conv.length > 0
+                    && conv.every((c: any) => c.conIgvLimpio != null)
+                    && conv.some((c: any) => !netoEsLimpio(c.neto));
+                setIncluyeIgv(restaurarConIgv);
+                prevIncluyeIgv.current = restaurarConIgv;
+                setItems(dets.map((det: any, i: number) => ({
                     productoId: Number(det.productoId || 0),
                     descripcion: det.descripcion || det.producto?.descripcion || '',
                     cantidad: Number(det.cantidad || 0),
-                    precioUnitario: Math.round((Number(det.precioUnitario) || 0) * 100) / 100,
+                    precioUnitario: restaurarConIgv
+                        ? conv[i].conIgvLimpio!
+                        : Math.round(conv[i].neto * 10000) / 10000,
                     lote: det.lote || '',
                     fechaVencimiento: det.fechaVencimiento ? moment(det.fechaVencimiento).format('YYYY-MM-DD') : '',
                     numerosSerie: Array.isArray(det.seriesGarantias) ? det.seriesGarantias.map((s: any) => s.numeroSerie) : undefined,
@@ -298,6 +384,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             }
         }
         if (prod) {
+            setPkg(null); // producto elegido del buscador: se compra en unidades
+            setPkgLineKey(null);
             setCurrentItem({
                 ...currentItem,
                 productoId: prod.id,
@@ -324,16 +412,69 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     setBarcodeInput('');
                     return;
                 }
-                setCurrentItem(prev => ({
-                    ...prev,
-                    productoId: prod.id,
-                    descripcion: prod.descripcion,
-                    precioUnitario: prod.costoUnitario || 0,
-                    cantidad: 1,
-                    lote: '',
-                    fechaVencimiento: '',
-                    _controlSeries: leerControlSeries(prod.atributosTecnicos),
-                }));
+                // Código de PAQUETE escaneado (ej. caja x20): se activa el modo
+                // "compra por cajas" — el usuario ingresa cajas y costo POR CAJA,
+                // y el sistema convierte a unidades (el stock se lleva en unidades).
+                const unidadesPorPaquete = Math.max(1, Number(prod.unidadesPorPaquete ?? 1) || 1);
+                const nombrePaquete = (prod.aliasPaquete || prod.descripcion) as string;
+                // El bloque de paquete SIEMPRE habla CON IGV (como el empresario ve
+                // la boleta del proveedor); la conversión al modo de la compra
+                // (con/sin IGV) se hace al escribir la línea.
+                const esGravadoScan = String(prod.tipoAfectacionIGV ?? '10') === '10';
+                const costoNetoSug = Number(prod.costoUnitario) || 0;
+                const costoConIgvSug = esGravadoScan
+                    ? Math.round(costoNetoSug * 1.18 * 100) / 100
+                    : costoNetoSug;
+
+                // ── Flujo "caja de supermercado": el escaneo agrega/acumula la
+                // línea DIRECTO en la tabla, sin pasar por el botón Agregar.
+                // Mismo producto + mismo formato (paquete/unidad) = misma línea.
+                const scanKey = `${prod.id}|x${unidadesPorPaquete}`;
+                let cajasResultantes = 1;
+                let costoCajaConIgvActual = costoConIgvSug * unidadesPorPaquete;
+                const existente: any = items.find((it: any) => it._scanKey === scanKey);
+                if (existente) {
+                    cajasResultantes = (Number(existente._pkgCajas) || 1) + 1;
+                    // Respetar el costo que el usuario ya haya ajustado en la línea
+                    const costoUnitActual = Number(existente.precioUnitario) || 0;
+                    costoCajaConIgvActual = (incluyeIgv || !esGravadoScan
+                        ? costoUnitActual
+                        : costoUnitActual * 1.18) * unidadesPorPaquete;
+                    const cantidad = cajasResultantes * unidadesPorPaquete;
+                    setItems(prev => prev.map((it: any) => it._scanKey !== scanKey ? it : {
+                        ...it,
+                        cantidad,
+                        descripcion: etiquetaPaquete(it._descripcionBase ?? prod.descripcion, cajasResultantes, unidadesPorPaquete),
+                        _pkgCajas: cajasResultantes,
+                        subtotal: cantidad * (Number(it.precioUnitario) || 0),
+                    }));
+                } else {
+                    const precioUnitario = costoUnitDesdePaquete(costoCajaConIgvActual, unidadesPorPaquete, esGravadoScan);
+                    setItems(prev => [...prev, {
+                        productoId: prod.id,
+                        descripcion: etiquetaPaquete(prod.descripcion, 1, unidadesPorPaquete),
+                        cantidad: unidadesPorPaquete,
+                        precioUnitario,
+                        lote: '',
+                        fechaVencimiento: '',
+                        subtotal: unidadesPorPaquete * precioUnitario,
+                        _controlSeries: leerControlSeries(prod.atributosTecnicos),
+                        _scanKey: scanKey,
+                        _descripcionBase: prod.descripcion,
+                        _pkgCajas: 1,
+                    } as any]);
+                }
+
+                // Bloque morado = editor en vivo de la línea escaneada (solo paquetes)
+                if (unidadesPorPaquete > 1) {
+                    setPkg({ unidades: unidadesPorPaquete, nombre: nombrePaquete, esGravado: esGravadoScan });
+                    setPkgCajas(String(cajasResultantes));
+                    setPkgCosto(costoCajaConIgvActual ? String(Number((costoCajaConIgvActual / 1).toFixed(2))) : '');
+                    setPkgLineKey(scanKey);
+                } else {
+                    setPkg(null);
+                    setPkgLineKey(null);
+                }
                 setBarcodeInput('');
             } else {
                 alert(`Producto no encontrado: ${trimmed}`, 'error');
@@ -350,6 +491,37 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
 
     const updateItem = (idx: number, field: string, value: any) => {
         setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+        // Si editan inline la línea vinculada al bloque de paquete, sincronizar
+        // el bloque para que no queden dos verdades (y el bloque no pise luego
+        // el ajuste manual del usuario).
+        const it: any = items[idx];
+        if (!it || !pkg || !pkgLineKey || it._scanKey !== pkgLineKey) return;
+        if (field === 'precioUnitario') {
+            const unit = Number(value) || 0;
+            const unitConIgv = incluyeIgv || !pkg.esGravado ? unit : unit * 1.18;
+            setPkgCosto(String(Number((unitConIgv * pkg.unidades).toFixed(2))));
+        } else if (field === 'cantidad') {
+            const cant = Number(value) || 0;
+            if (cant > 0 && cant % pkg.unidades === 0) {
+                const cajas = cant / pkg.unidades;
+                setPkgCajas(String(cajas));
+                setItems(prev => prev.map((x: any, i) => i !== idx ? x : {
+                    ...x,
+                    descripcion: etiquetaPaquete(x._descripcionBase ?? x.descripcion, cajas, pkg.unidades),
+                    _pkgCajas: cajas,
+                }));
+            } else {
+                // Cantidad suelta (no múltiplo del paquete): la línea deja de ser
+                // "paquetes exactos" — se desvincula el bloque y se limpia el sufijo.
+                setItems(prev => prev.map((x: any, i) => i !== idx ? x : {
+                    ...x,
+                    descripcion: x._descripcionBase ?? x.descripcion,
+                    _scanKey: undefined,
+                }));
+                setPkg(null);
+                setPkgLineKey(null);
+            }
+        }
     };
 
     // Lee el flag "controlar series/garantía" desde los atributos técnicos del producto.
@@ -494,6 +666,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
 
         setItems([...items, { ...currentItem, subtotal: currentItem.cantidad * currentItem.precioUnitario }]);
         setCurrentItem({ productoId: 0, descripcion: '', cantidad: 1, precioUnitario: 0, lote: '', fechaVencimiento: '' });
+        setPkg(null);
+        setPkgLineKey(null);
         // Incrementar key fuerza remount del Select y limpia la selección visual
         setProductSelectKey(k => k + 1);
     };
@@ -550,6 +724,11 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     };
 
     const removeItem = (index: number) => {
+        // Si se elimina la línea vinculada al bloque de paquete, cerrarlo.
+        if (pkgLineKey && (items[index] as any)?._scanKey === pkgLineKey) {
+            setPkg(null);
+            setPkgLineKey(null);
+        }
         const newItems = [...items];
         newItems.splice(index, 1);
         setItems(newItems);
@@ -895,8 +1074,73 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             onChange={(e) => setBarcodeInput(e.target.value)}
                             onScan={handleBarcodeScan}
                             loading={barcodeLoading}
-                            placeholder="Escanea o escribe el código y presiona Enter..."
+                            placeholder="Escanea el código (entra solo) o escríbelo y presiona Enter..."
                         />
+
+                        {/* Compra por paquete (código de caja escaneado) */}
+                        {pkg && (
+                            <div className="mb-3 p-3 rounded-xl border border-violet-200 dark:border-violet-800/40 bg-violet-50/60 dark:bg-violet-900/10">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
+                                        <Icon icon="solar:check-circle-bold" width={16} className="text-emerald-500" />
+                                        Agregado a la compra · {pkg.nombre} (x{pkg.unidades} unidades) — escanea otra vez para sumar 1 paquete, o ajusta aquí:
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setPkg(null); setPkgLineKey(null); }}
+                                        className="text-[11px] text-violet-500 hover:underline font-medium"
+                                        title="Cerrar el editor — la línea ya quedó en la compra"
+                                    >
+                                        Listo ✓
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-12 gap-3 items-end">
+                                    <div className="col-span-3">
+                                        <InputPro
+                                            autocomplete="off"
+                                            type="number"
+                                            label="N° de paquetes"
+                                            name="pkgCajas"
+                                            value={pkgCajas}
+                                            onChange={(e: any) => {
+                                                setPkgCajas(e.target.value);
+                                                aplicarPaquete(e.target.value, pkgCosto, pkg.unidades, pkg.esGravado);
+                                            }}
+                                            isLabel
+                                        />
+                                    </div>
+                                    <div className="col-span-3">
+                                        <InputPro
+                                            autocomplete="off"
+                                            type="number"
+                                            label="Costo por paquete (S/) — precio final"
+                                            name="pkgCosto"
+                                            value={pkgCosto}
+                                            onChange={(e: any) => {
+                                                setPkgCosto(e.target.value);
+                                                aplicarPaquete(pkgCajas, e.target.value, pkg.unidades, pkg.esGravado);
+                                            }}
+                                            isLabel
+                                        />
+                                    </div>
+                                    <div className="col-span-6 pb-2">
+                                        <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
+                                            = {(Math.max(0, Number(pkgCajas) || 0) * pkg.unidades).toLocaleString('es-PE')} unidades
+                                            {Number(pkgCosto) > 0 && (
+                                                <> a S/ {(Number(pkgCosto) / pkg.unidades).toFixed(2)} c/u
+                                                    <span className="ml-2 px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200">
+                                                        Total: S/ {(Math.max(0, Number(pkgCajas) || 0) * Number(pkgCosto)).toFixed(2)}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </p>
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                            Pon el precio final que pagaste por el paquete (tal como sale en la boleta del proveedor, IGV incluido). El sistema hace el desglose solo y el stock ingresa en unidades sueltas.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Add Item Form */}
                         <div className="grid grid-cols-12 gap-3 mb-4 items-end p-3 rounded-xl border border-gray-100 dark:border-slate-800">
@@ -912,6 +1156,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                     withLabel
                                     error={null}
                                     placeholder="Buscar producto..."
+                                    defaultValue={currentItem.descripcion || undefined}
                                 />
                             </div>
                             <div className="col-span-2">
@@ -928,6 +1173,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             <div className="col-span-2">
                                 <Calendar
                                     text="Venc. (Opc.)"
+                                    placeholder="F. vencimiento"
+                                    portal
                                     name="fechaVencimientoItem"
                                     onChange={(date: string) => {
                                         if (moment(date, 'DD/MM/YYYY', true).isValid()) {
@@ -1051,6 +1298,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                     <div className="flex-1 min-w-[140px]">
                                                         <Calendar
                                                             text=""
+                                                            placeholder="F. vencimiento (opcional)"
+                                                            portal
                                                             name={`venc_${idx}`}
                                                             value={item.fechaVencimiento ? moment(item.fechaVencimiento).format('DD/MM/YYYY') : ''}
                                                             onChange={(date: string) => {
@@ -1266,6 +1515,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                 <div className="col-span-5">
                                                     <Calendar
                                                         text={`Vencimiento ${idx + 1}`}
+                                                        portal
                                                         name={`fechaVencimiento_${idx}`}
                                                         onChange={(date: string) => {
                                                             if (moment(date, 'DD/MM/YYYY', true).isValid()) {

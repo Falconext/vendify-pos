@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { BRAND } from '@/lib/branding';
 import { elemCfg } from '@/features/admin/cotizaciones/cotizFormatoElementos';
+import { useAuthStore } from '@/zustand/auth';
 
 const ComprobantePrintPage = ({
     productsInvoice,
@@ -38,6 +39,13 @@ const ComprobantePrintPage = ({
         ? String(totalInWords || '').replace(/SOLES/gi, 'DÓLARES AMERICANOS').replace(/SOL\b/gi, 'DÓLAR AMERICANO')
         : totalInWords;
 
+    // Dirección de la sede emisora: en reimpresión viene en formValues.sede
+    // (backend listar); en emisión se toma la sede activa de la sesión.
+    // Solo se muestra si difiere de la dirección fiscal del RUC.
+    const sedeActiva = useAuthStore((s) => s.sedeActiva);
+    const fiscalDireccion = String(company?.empresa?.direccion || '').trim().toUpperCase();
+    const sedeDireccionRaw = String(formValues?.sede?.direccion || sedeActiva?.direccion || '').trim().toUpperCase();
+    const sedeDireccion = sedeDireccionRaw && sedeDireccionRaw !== fiscalDireccion ? sedeDireccionRaw : '';
 
     const localComponentRef = useRef(null);
 
@@ -158,8 +166,37 @@ console.log(formValues)
     const splitPaidTotal = isMixedPayment && Array.isArray(formValues?.splitPayments)
         ? formValues.splitPayments.reduce((sum: number, sp: { amount: number }) => sum + parseAmount(sp.amount, 0), 0)
         : 0;
-    const displayPagado = isCreditPayment ? 0 : (splitPaidTotal > 0 ? splitPaidTotal : mtoImpVenta + displayVuelto);
-    const paymentDetails = formValues?.paymentDetails || {};
+    const paymentDetails = (() => {
+        let pd = formValues?.paymentDetails;
+        if (typeof pd === 'string') { try { pd = JSON.parse(pd); } catch { pd = null; } }
+        return pd || {};
+    })();
+    // Pago inicial (adelanto) de una venta a crédito. En emisión llega explícito en
+    // formValues.pagoInicialMonto/pagoInicialMetodo; en reimpresión se deduce del saldo
+    // pendiente del comprobante y, en su defecto, del detalle de pago guardado (que en
+    // créditos con inicial registra solo el adelanto con su método real).
+    const pdMetodo = normalizePaymentLabel(paymentDetails?.method);
+    const pdInicial = paymentDetails?.mode === 'MIXTO' && Array.isArray(paymentDetails?.splitPayments)
+        ? paymentDetails.splitPayments.reduce((s: number, l: any) => s + parseAmount(l?.amount, 0), 0)
+        : (pdMetodo && pdMetodo !== 'CREDITO' ? parseAmount(paymentDetails?.amount, 0) : 0);
+    const saldoRaw = formValues?.saldo;
+    const hasSaldo = saldoRaw !== null && saldoRaw !== undefined && saldoRaw !== '';
+    const pagoInicialCredito = !isCreditPayment
+        ? 0
+        : formValues?.pagoInicialMonto != null
+            ? Math.min(parseAmount(formValues.pagoInicialMonto, 0), mtoImpVenta)
+            : hasSaldo
+                ? Math.max(0, round2(mtoImpVenta - parseAmount(saldoRaw, 0)))
+                : (pdInicial < mtoImpVenta ? pdInicial : 0);
+    const pagoInicialMetodo = String(
+        formValues?.pagoInicialMetodo
+        || (paymentDetails?.mode === 'MIXTO' ? 'MIXTO' : '')
+        || (pdMetodo && pdMetodo !== 'CREDITO' ? paymentDetails.method : '')
+        || (medioPagoCode && medioPagoCode !== 'CREDITO' ? formValues?.medioPago : '')
+        || 'EFECTIVO'
+    ).toUpperCase();
+    const saldoCredito = Math.max(0, round2(mtoImpVenta - pagoInicialCredito));
+    const displayPagado = isCreditPayment ? pagoInicialCredito : (splitPaidTotal > 0 ? splitPaidTotal : mtoImpVenta + displayVuelto);
     const splitPaymentDetails = Array.isArray(paymentDetails?.splitPayments)
         ? paymentDetails.splitPayments
         : (Array.isArray(formValues?.splitPayments) ? formValues.splitPayments : []);
@@ -226,6 +263,7 @@ console.log(formValues)
                         <p className={`text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>
                             {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></>}
                             {fc('direccion').visible && <>DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br /></>}
+                            {fc('direccion').visible && sedeDireccion && <>SEDE: {sedeDireccion}<br /></>}
                             {fc('rubro').visible && company?.empresa?.rubro?.nombre && <>RUBRO: {company?.empresa?.rubro?.nombre?.toUpperCase()}<br /></>}
                             {fc('celular').visible && empresaNumero && <>CELULAR: {empresaNumero}<br /></>}
                             {fc('email').visible && company?.email && <>EMAIL: {company?.email}<br /></>}
@@ -360,6 +398,18 @@ console.log(formValues)
                             <span>CONDICIÓN DE PAGO:</span>
                             <span className="text-right">{paymentConditionLabel}</span>
                         </p>
+                        {isCreditPayment && pagoInicialCredito > 0 && (
+                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                                <span>PAGO INICIAL:</span>
+                                <span className="text-right">{pagoInicialMetodo} S/ {pagoInicialCredito.toFixed(2)}</span>
+                            </p>
+                        )}
+                        {isCreditPayment && (
+                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                                <span>SALDO CRÉDITO:</span>
+                                <span className="text-right">S/ {saldoCredito.toFixed(2)}</span>
+                            </p>
+                        )}
                         {hasCreditInstallments && (
                             <div className="mt-1 mb-1">
                                 <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'}`}>CUOTAS:</p>
@@ -398,7 +448,11 @@ console.log(formValues)
                             <>
                                 <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
                                     <span>MEDIO DE PAGO:</span>
-                                    <span className="text-right">{paymentMethodLabel}</span>
+                                    <span className="text-right">
+                                        {isCreditPayment && pagoInicialCredito > 0
+                                            ? `${pagoInicialMetodo} S/ ${pagoInicialCredito.toFixed(2)}`
+                                            : paymentMethodLabel}
+                                    </span>
                                 </p>
                                 {formatPaymentExtra(singlePaymentDetail).map((line) => (
                                     <p key={line} className={`${size === 'TICKET' ? 'text-[14px]' : 'text-[10px]'}`}>{line}</p>
@@ -451,6 +505,7 @@ console.log(formValues)
                                         {fc('razonSocial').visible && <h6 className="font-bold leading-tight" style={{ fontSize: px('razonSocial') }}>{company?.empresa?.razonSocial?.toUpperCase()}</h6>}
                                         <div className="leading-snug">
                                             {fc('direccion').visible && <div style={{ fontSize: px('direccion') }}>{company?.empresa?.direccion}</div>}
+                                            {fc('direccion').visible && sedeDireccion && <div style={{ fontSize: px('direccion') }}>SEDE: {sedeDireccion}</div>}
                                             {fc('rubro').visible && <div style={{ fontSize: px('rubro') }}>{company?.empresa?.rubro?.nombre?.toUpperCase()}</div>}
                                             {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}</div>}
                                             {fc('celular').visible && empresaNumero && <div style={{ fontSize: px('celular') }}>CELULAR: {empresaNumero}</div>}
@@ -517,10 +572,47 @@ console.log(formValues)
 
                                             <span className="font-bold">MONEDA:</span>
                                             <span>{monedaNombre}</span>
+
+                                            {receipt === "NOTA DE VENTA" && (<>
+                                                <span className="font-bold">FORMA PAGO:</span>
+                                                <span>{paymentConditionLabel}</span>
+
+                                                {isCreditPayment ? (<>
+                                                    {pagoInicialCredito > 0 && (<>
+                                                        <span className="font-bold">PAGO INICIAL:</span>
+                                                        <span>{pagoInicialMetodo} S/ {pagoInicialCredito.toFixed(2)}</span>
+                                                    </>)}
+                                                    <span className="font-bold">SALDO CRÉDITO:</span>
+                                                    <span>S/ {saldoCredito.toFixed(2)}</span>
+                                                    {formValues?.fechaVencimientoCredito && (<>
+                                                        <span className="font-bold">VENCIMIENTO:</span>
+                                                        <span>{moment(formValues.fechaVencimientoCredito).format('DD/MM/YYYY')}</span>
+                                                    </>)}
+                                                </>) : (<>
+                                                    <span className="font-bold">MEDIO PAGO:</span>
+                                                    <span>{isMixedPayment ? 'MIXTO' : paymentMethodLabel}</span>
+                                                </>)}
+                                            </>)}
                                         </div>
                                     </div>
                                     )}
                                 </div>
+                                )}
+                                {receipt === "NOTA DE VENTA" && hasCreditInstallments && cuotasCredito.length > 1 && (
+                                    <div className="mb-4 border border-gray-300 rounded-md p-2">
+                                        <div className="text-xs font-bold mb-1">CUOTAS:</div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {cuotasCredito.map((cuota: any, idx: number) => (
+                                                <div key={idx} className="text-[10px] px-1">
+                                                    <div className="uppercase">CUOTA {idx + 1}</div>
+                                                    <div className="flex justify-between gap-3">
+                                                        <span>{moment(cuota.fechaVencimiento).format('DD/MM/YYYY')}</span>
+                                                        <span>S/ {Number(cuota.monto).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
 
                                 {/* Product Table */}
@@ -753,7 +845,7 @@ console.log(formValues)
                                     {logoDataUrl && <img src={logoDataUrl} alt="logo" className="object-contain object-left" style={{ width: company?.empresa?.ticketLogoSize ?? 150, height: company?.empresa?.ticketLogoSize ?? 150, objectFit: 'contain', objectPosition: 'left' }} />}
                                     <div className="flex-1 ml-4">
                                         <h6 className="text-xl font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</h6>
-                                        <p className="text-xs">{company?.empresa?.direccion}<br />{company?.empresa?.rubro?.nombre?.toUpperCase()}<br />{company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}<br /></>}{empresaNumero && <>CELULAR: {empresaNumero}<br /></>}EMAIL: {company?.email}{(company?.empresa as any)?.paginaWeb && <><br />WEB: {(company?.empresa as any).paginaWeb}</>}</p>
+                                        <p className="text-xs">{company?.empresa?.direccion}<br />{sedeDireccion && <>SEDE: {sedeDireccion}<br /></>}{company?.empresa?.rubro?.nombre?.toUpperCase()}<br />{company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}<br /></>}{empresaNumero && <>CELULAR: {empresaNumero}<br /></>}EMAIL: {company?.email}{(company?.empresa as any)?.paginaWeb && <><br />WEB: {(company?.empresa as any).paginaWeb}</>}</p>
                                     </div>
                                     <div className="border border-black px-4 pt-4 pb-2 text-center ml-4">
                                         <div className="text-xs">RUC: {company?.empresa?.ruc}</div>
@@ -821,7 +913,9 @@ console.log(formValues)
                                                     <>
                                                         <span className="font-bold">MEDIO PAGO:</span>
                                                         <span>
-                                                            {paymentMethodLabel} S/ {isCreditPayment ? '0.00' : round2(mtoImpVenta).toFixed(2)}
+                                                            {isCreditPayment
+                                                                ? (pagoInicialCredito > 0 ? `${pagoInicialMetodo} S/ ${pagoInicialCredito.toFixed(2)}` : 'CRÉDITO S/ 0.00')
+                                                                : `${paymentMethodLabel} S/ ${round2(mtoImpVenta).toFixed(2)}`}
                                                             {formatPaymentExtra(singlePaymentDetail).map((line) => (
                                                                 <span key={line} className="block text-[10px] text-gray-700">{line}</span>
                                                             ))}
@@ -834,6 +928,11 @@ console.log(formValues)
 
                                                 <span className="font-bold">PAGADO:</span>
                                                 <span>S/ {displayPagado.toFixed(2)}</span>
+
+                                                {isCreditPayment && pagoInicialCredito > 0 && (<>
+                                                    <span className="font-bold">SALDO CRÉDITO:</span>
+                                                    <span>S/ {saldoCredito.toFixed(2)}</span>
+                                                </>)}
 
                                                 <span className="font-bold">VENDEDOR:</span>
                                                 <span>{vendedorNombre}</span>

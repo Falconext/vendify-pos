@@ -554,6 +554,16 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                                     </p>
                                                 );
                                             }
+                                            // Tarjeta de PAQUETE (six-pack): la disponibilidad se muestra
+                                            // en packs armables (stock en unidades ÷ unidades por paquete).
+                                            if ((item as any).__esPaqueteCard && Number(item.unidadesPorPaquete) > 1) {
+                                                const packsDisponibles = Math.floor(Number(item.stock ?? 0) / Number(item.unidadesPorPaquete));
+                                                return (
+                                                    <p className="text-emerald-600 dark:text-emerald-400">
+                                                        Disponible: {packsDisponibles} pack{packsDisponibles !== 1 ? 's' : ''} <span className="text-gray-400">({item.stock ?? 0} unid.)</span>
+                                                    </p>
+                                                );
+                                            }
                                             return (
                                                 <p className={esServicio(item) ? "text-violet-600 dark:text-violet-400" : "text-emerald-600 dark:text-emerald-400"}>
                                                     {esServicio(item) ? "Servicio técnico" : `Disponible: ${item.__catalogType === 'COMBO' ? getComboStock(item) : (item.stock ?? 0)}`}

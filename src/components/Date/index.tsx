@@ -32,9 +32,10 @@ interface CalendarProps {
     className?: string;
     isLabel?: boolean;
     portal?: boolean;
+    placeholder?: string;
 }
 
-export const Calendar = ({ mode, events, text, onChange, name, right, left, disabled, top, withOutFormat, value = '', className = '', portal = false }: CalendarProps) => {
+export const Calendar = ({ mode, events, text, onChange, name, right, left, disabled, top, withOutFormat, value = '', className = '', portal = false, placeholder }: CalendarProps) => {
     const { isDarkMode } = useThemeStore();
     const [writeDate, setWriteDate] = useState<string>(value || '');
     const userChangedDate = useRef(false);
@@ -235,6 +236,7 @@ export const Calendar = ({ mode, events, text, onChange, name, right, left, disa
                     isLabel={!!text}
                     label={text}
                     type="text"
+                    placeholder={placeholder}
                     onChange={handleChangeDate}
                     value={writeDate}
                 />

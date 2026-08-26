@@ -288,6 +288,37 @@ export function useCotizacionesViewModel() {
         });
     };
 
+    // "Cotizar a partir de esta": abre el POS de cotización precargado con los
+    // datos de la cotización origen, pero SIN modo edición — al guardar se crea
+    // una cotización NUEVA (nuevo correlativo) y la original queda intacta.
+    // Así el empresario conserva la trazabilidad de versiones (v1, v2, v3...)
+    // en lugar de pisar la cotización al actualizarla.
+    const handleNuevaVersionCotizacion = (data: any) => {
+        const cotizacion = invoices.find((inv: IInvoices) => inv.id === data.id);
+        if (!cotizacion) return;
+
+        const c = cotizacion as any;
+        navigate('/administrador/cotizaciones/nuevo', {
+            state: {
+                fromQuotation: true,
+                quotationData: {
+                    cliente: cotizacion.cliente,
+                    productos: cotizacion.detalles,
+                    observaciones: cotizacion.observaciones,
+                    cotizIncluirImagenes: c.cotizIncluirImagenes,
+                    cotizDescuento: c.cotizDescuento,
+                    mtoDescuentoGlobal: c.mtoDescuentoGlobal,
+                    cotizVigencia: c.cotizVigencia,
+                    cotizFirmante: c.cotizFirmante,
+                    cotizTerminos: c.cotizTerminos,
+                    cotizTipoPago: c.cotizTipoPago,
+                    cotizAdelanto: c.cotizAdelanto,
+                    cotizMoneda: c.cotizMoneda,
+                }
+            }
+        });
+    };
+
     const handleRequestDeleteCotizacion = (data: any) => {
         setDeleteCandidate(data);
         setIsOpenModalDelete(true);
@@ -513,6 +544,7 @@ export function useCotizacionesViewModel() {
         handleConvertirABoleta,
         handleConvertirANotaVenta,
         handleEditCotizacion,
+        handleNuevaVersionCotizacion,
         handleRequestDeleteCotizacion,
         handleConfirmDeleteCotizacion,
         handleConfirmCleanCotizaciones,
