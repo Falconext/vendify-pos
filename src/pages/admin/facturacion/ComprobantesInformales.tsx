@@ -154,7 +154,10 @@ const ComprobantesInformales = () => {
         const estadoValue = ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
             ? item.estadoEnvioSunat
             : item.estadoPago;
-        const saldoStr = `S/ ${item?.saldo?.toFixed(2) || (0).toFixed(2)}`;
+        // mtoImpVenta/saldo se guardan en la moneda nativa del comprobante (p.ej.
+        // USD en una Nota de Venta en dólares); el símbolo debe reflejar esa moneda.
+        const monedaSimboloFila = String(item.tipoMoneda).toUpperCase() === 'USD' ? 'US$' : 'S/';
+        const saldoStr = `${monedaSimboloFila} ${item?.saldo?.toFixed(2) || (0).toFixed(2)}`;
         const estadoPillCfg = estadoPill(estadoValue);
         const rowBase: any = {
             id: item?.id,
@@ -180,7 +183,7 @@ const ComprobantesInformales = () => {
             // Cobranza en campo: prioriza el vendedor de campo atribuido.
             vendedor: item?.vendedorCampoNombre || item?.usuario?.nombre || '-',
             s3PdfUrl: item?.s3PdfUrl,
-            total: `S/ ${item.mtoImpVenta.toFixed(2)}`,
+            total: `${monedaSimboloFila} ${item.mtoImpVenta.toFixed(2)}`,
             saldo: saldoStr,
             saldoBadge: <span className="font-bold text-amber-600 dark:text-amber-500 text-sm whitespace-nowrap">{saldoStr}</span>,
             estado: estadoValue,

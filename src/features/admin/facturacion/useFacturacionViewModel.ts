@@ -1117,6 +1117,9 @@ export const useFacturacionViewModel = () => {
     // Tipo de cambio del día (venta). Se usa para convertir a soles los productos en dólares
     // al agregarlos al carrito. El comprobante siempre se emite en soles (PEN).
     const [tcVenta, setTcVenta] = useState<number | null>(null);
+    // Moneda a la que el usuario intentó cambiar mientras el TC del día no estaba listo
+    // (ver handleChangeQuotationCurrency más abajo).
+    const pendingCurrencyRef = useRef<string | null>(null);
     useEffect(() => {
         tipoCambioService
             .consultar()
@@ -1773,7 +1776,7 @@ export const useFacturacionViewModel = () => {
     const handleChangeQuotationCurrency = (next: string) => {
         const nxt = String(next).toUpperCase();
         const cur = String(quotationCurrency).toUpperCase();
-        if (nxt === cur) return;
+        if (nxt === cur) { pendingCurrencyRef.current = null; return; }
         const targetUSD = nxt === 'USD';
         const hayUSDOrigen = productsInvoice.some(
             (it: any) => String(it?.monedaOriginal || '').toUpperCase() === 'USD',
@@ -1781,22 +1784,39 @@ export const useFacturacionViewModel = () => {
         const tc = Number(tcVenta);
         // Solo necesitamos el tipo de cambio si hay ítems USD-origen que reconvertir.
         if (hayUSDOrigen && (!Number.isFinite(tc) || tc <= 0)) {
+            // El click "no hacía nada" cuando el TC del día aún no había llegado: la
+            // moneda se quedaba en Soles sin avisar de forma persistente. Se guarda la
+            // intención y se reintenta sola en cuanto llegue el TC.
+            pendingCurrencyRef.current = nxt;
             tipoCambioService
                 .consultar()
                 .then((r) => setTcVenta(Number(r?.venta) || null))
                 .catch(() => setTcVenta(null));
             useAlertStore.getState().alert(
-                "Obteniendo el tipo de cambio del día. Vuelve a cambiar la moneda en un momento.",
+                "Obteniendo el tipo de cambio del día. La moneda se aplicará automáticamente en un momento.",
                 "warning",
             );
             return;
         }
+        pendingCurrencyRef.current = null;
         convertirCarritoAMoneda(targetUSD);
         // Reiniciamos el descuento manual para evitar montos ambiguos entre monedas.
         setDescuentoSolesNV(0);
         setDescuentoPctNV(0);
         setQuotationCurrency(nxt);
     };
+
+    // Reintento automático del cambio de moneda pendiente (ver comentario arriba):
+    // en cuanto el tipo de cambio del día esté disponible, se aplica solo, sin que
+    // el usuario tenga que volver a tocar el botón Soles/Dólares.
+    useEffect(() => {
+        if (!pendingCurrencyRef.current) return;
+        if (!Number.isFinite(Number(tcVenta)) || Number(tcVenta) <= 0) return;
+        const nxt = pendingCurrencyRef.current;
+        pendingCurrencyRef.current = null;
+        handleChangeQuotationCurrency(nxt);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tcVenta]);
 
     const handleChangeSelect = (idValue: any, value: any, name: any, id: any) => {
         const clientSelect = clients?.find((item: any) => value.split("-")[0] === item.nroDoc);

@@ -172,11 +172,20 @@ export const FacturacionNuevoView = () => {
     const printMedioPago = isCreditSale
         ? 'Crédito'
         : (vm.formValues?.comprobante === "NOTA DE PEDIDO" ? "" : (vm.isMixedPayment ? 'MIXTO' : vm.paymentMethod));
+    // Pago inicial (adelanto) de una venta a crédito: mixto = suma de líneas; simple = campo adelanto.
+    const printInicialCredito = isCreditSale
+        ? Math.min(
+            vm.isMixedPayment
+                ? (vm.splitPayments || []).reduce((s: number, l: any) => s + Number(l?.amount || 0), 0)
+                : Number(vm.adelanto || 0),
+            vm.totalAdjusted)
+        : 0;
+    // La cuota única financia el saldo (total menos el pago inicial), no el total.
     const printCuotas = isCreditSale
-        ? (Array.isArray(vm.cuotas) && vm.cuotas.length > 0
+        ? (Array.isArray(vm.cuotas) && vm.cuotas.length > 1
             ? vm.cuotas
-            : (vm.fechaVencimientoCredito
-                ? [{ fechaVencimiento: vm.fechaVencimientoCredito, monto: vm.totalAdjusted }]
+            : ((vm.fechaVencimientoCredito || vm.cuotas?.[0]?.fechaVencimiento)
+                ? [{ fechaVencimiento: vm.cuotas?.[0]?.fechaVencimiento || vm.fechaVencimientoCredito, monto: Math.max(0, vm.totalAdjusted - printInicialCredito) }]
                 : []))
         : [];
     const printFormValues = {
@@ -196,6 +205,10 @@ export const FacturacionNuevoView = () => {
         medioPago: printMedioPago,
         splitPayments: vm.isMixedPayment && !isCreditSale ? vm.splitPayments : undefined,
         paymentDetails: isCreditSale ? { mode: 'CREDITO', method: 'Crédito', amount: 0 } : vm.buildPaymentDetails?.(),
+        pagoInicialMonto: isCreditSale ? printInicialCredito : undefined,
+        pagoInicialMetodo: isCreditSale && printInicialCredito > 0
+            ? (vm.isMixedPayment ? 'MIXTO' : String(vm.adelantoMetodo || 'EFECTIVO').toUpperCase())
+            : undefined,
         mtoOperGravadas: vm.opGravadaAdjusted,
         mtoOperExoneradas: vm.opExoneradaAdjusted,
         mtoOperInafectas: vm.opInafectaAdjusted,
