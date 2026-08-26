@@ -19,8 +19,10 @@ export interface IClientsState {
     toggleStateClient: (data: number) => void
     deleteClient: (id: number) => Promise<void>;
     getClientFromDoc: (nroDoc: string, tipoDoc?: string) => Promise<any>;
-    exportClients: (search?: string) => Promise<void>;
-    importClients: (file: File) => Promise<void>;
+    // persona: filtra/etiqueta por tipo (ej. "PROVEEDOR") para reutilizar
+    // este mismo store en la pantalla de Proveedores sin mezclar clientes.
+    exportClients: (search?: string, persona?: string) => Promise<void>;
+    importClients: (file: File, persona?: string) => Promise<void>;
 }
 
 // Solo estos campos acepta el DTO del backend; el resto (id, estado,
@@ -187,11 +189,14 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             return null;
         }
     },
-    exportClients: async (search?: string) => {
+    exportClients: async (search?: string, persona?: string) => {
         try {
             useAlertStore.setState({ loading: true });
             const baseUrl = import.meta.env.VITE_API_URL as string;
-            const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            if (persona) params.set('persona', persona);
+            const qs = params.toString() ? `?${params.toString()}` : '';
             const response = await fetch(`${baseUrl}/clientes/exportar${qs}`, {
                 method: 'GET',
                 headers: {
@@ -206,7 +211,7 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'clientes.xlsx';
+            a.download = persona?.toUpperCase() === 'PROVEEDOR' ? 'proveedores.xlsx' : 'clientes.xlsx';
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -220,11 +225,12 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             useAlertStore.setState({ loading: false });
         }
     },
-    importClients: async (file: File) => {
+    importClients: async (file: File, persona?: string) => {
         try {
             useAlertStore.setState({ loading: true });
             const formData = new FormData();
             formData.append('file', file);
+            if (persona) formData.append('persona', persona);
             const baseUrl = import.meta.env.VITE_API_URL as string;
             const response = await fetch(`${baseUrl}/clientes/importar`, {
                 method: 'POST',
@@ -239,7 +245,10 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             }
             if (result.code === 1 || result.total >= 0) {
                 useAlertStore.setState({ success: true });
-                useAlertStore.getState().alert('Clientes importados exitosamente', 'success');
+                useAlertStore.getState().alert(
+                    persona?.toUpperCase() === 'PROVEEDOR' ? 'Proveedores importados exitosamente' : 'Clientes importados exitosamente',
+                    'success',
+                );
             } else {
                 throw new Error(result.message || 'Error al importar los clientes');
             }

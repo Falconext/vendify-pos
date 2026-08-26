@@ -14,6 +14,17 @@ export default function ProveedoresView() {
 
     const [proveedorEliminar, setProveedorEliminar] = React.useState<any>(null);
     const [eliminando, setEliminando] = React.useState(false);
+    const [showOptionsDropdown, setShowOptionsDropdown] = React.useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowOptionsDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const hasRows = proveedoresTable && proveedoresTable.length > 0;
 
@@ -53,6 +64,56 @@ export default function ProveedoresView() {
                             >
                                 <Icon icon="solar:close-circle-bold" />
                             </button>
+                        )}
+                    </div>
+                    <div className="relative inline-block" ref={dropdownRef}>
+                        <button
+                            onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
+                            className="h-11 px-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shrink-0"
+                        >
+                            <Icon icon="solar:file-bold-duotone" width={16} className="text-emerald-500" />
+                            Excel / CSV
+                            <Icon icon={showOptionsDropdown ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} width={14} />
+                        </button>
+
+                        {showOptionsDropdown && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-none z-50 overflow-hidden py-1.5">
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    ref={vm.fileInputRef}
+                                    onChange={(e) => {
+                                        actions.handleImportExcel(e);
+                                        setShowOptionsDropdown(false);
+                                    }}
+                                    className="hidden"
+                                />
+                                <button
+                                    onClick={() => { actions.exportProveedores(); setShowOptionsDropdown(false); }}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
+                                >
+                                    <Icon icon="solar:export-bold" className="text-emerald-500" width={18} />
+                                    Exportar Proveedores
+                                </button>
+                                <button
+                                    onClick={() => { vm.fileInputRef.current?.click(); }}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
+                                >
+                                    <Icon icon="solar:import-bold" className="text-blue-500" width={18} />
+                                    Importar desde Excel
+                                </button>
+                                <div className="mx-4 my-1 border-t border-slate-100 dark:border-slate-700"></div>
+                                <a
+                                    href="/formatos/plantilla_proveedores.xlsx"
+                                    target="_blank"
+                                    download
+                                    onClick={() => setShowOptionsDropdown(false)}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+                                >
+                                    <Icon icon="solar:file-download-bold" className="text-amber-500" width={18} />
+                                    Descargar Modelo (Guía)
+                                </a>
+                            </div>
                         )}
                     </div>
                     <button

@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useClientsStore } from '@/zustand/clients';
 import useAlertStore from '@/zustand/alert';
 import { IClient } from '@/interfaces/clients';
@@ -26,8 +26,9 @@ const getDocLabel = (data: IClient): string => {
 };
 
 export const useProveedoresViewModel = () => {
-    const { getAllClients, clients, totalClients, toggleStateClient, deleteClient } = useClientsStore();
+    const { getAllClients, clients, totalClients, toggleStateClient, deleteClient, exportClients, importClients } = useClientsStore();
     const { success } = useAlertStore();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [state, setState] = useState<IProveedoresViewModelState>({
         currentPage: 1,
@@ -114,6 +115,24 @@ export const useProveedoresViewModel = () => {
             setState(prev => ({ ...prev, openAccionesId: id })),
         setAnchorEl: (el: HTMLElement | null) =>
             setState(prev => ({ ...prev, anchorEl: el })),
+        exportProveedores: () => exportClients(debounce, 'PROVEEDOR'),
+        handleImportExcel: async (event: ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const allowedTypes = [
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ];
+            if (!allowedTypes.includes(file.type)) {
+                useAlertStore.getState().alert('Por favor, selecciona un archivo Excel válido (.xlsx o .xls)', 'error');
+                return;
+            }
+
+            await importClients(file, 'PROVEEDOR');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            await getAllClients({ page: state.currentPage, limit: state.itemsPerPage, search: debounce, persona: 'PROVEEDOR' });
+        },
     };
 
     return {
@@ -125,5 +144,6 @@ export const useProveedoresViewModel = () => {
         indexOfFirstItem,
         pages,
         actions,
+        fileInputRef,
     };
 };
