@@ -654,9 +654,9 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                             <Icon icon="mdi:trash-can-outline" className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    {/* Nombre e imagen del paquete: solo tienen sentido cuando el
-                                        código representa un pack (más de 1 unidad). */}
-                                    {(item.unidadesPorPaquete ?? 1) > 1 && (
+                                    {/* Nombre e imagen del código adicional: se muestran siempre,
+                                        sin importar la cantidad (Unid. x paq.). */}
+                                    {true && (
                                         <>
                                             <div className="flex items-center gap-2">
                                                 <label className="shrink-0 cursor-pointer group relative" title="Imagen del paquete — clic para subir una foto">
