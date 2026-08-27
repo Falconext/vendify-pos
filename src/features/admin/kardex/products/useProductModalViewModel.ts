@@ -182,6 +182,12 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const [variantImagePreviews, setVariantImagePreviews] = useState<Record<string, string>>({});
   const [variantGalleryImageFiles, setVariantGalleryImageFiles] = useState<Record<string, File[]>>({});
   const [variantGalleryImagePreviews, setVariantGalleryImagePreviews] = useState<Record<string, string[]>>({});
+  // Sugerencias de imagen (IA/Serper) por color de variante + URL elegida por color.
+  const [variantImageCandidates, setVariantImageCandidates] = useState<Record<string, string[]>>({});
+  const [variantImageCandidatesLoading, setVariantImageCandidatesLoading] = useState<Record<string, boolean>>({});
+  const [variantImageUrls, setVariantImageUrls] = useState<Record<string, string>>({});
+  // URLs sugeridas marcadas para la galería del color (se descargan a S3 al guardar).
+  const [variantGalleryUrls, setVariantGalleryUrls] = useState<Record<string, string[]>>({});
 
   // Galería del producto (imagen principal + imágenes adicionales). Límite por rubro.
   const [galleryImages, setGalleryImages] = useState<{ url: string; display: string }[]>([]);
@@ -458,6 +464,10 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
       setFilePrincipal(null);
       setLoadingImage(false);
       setImageCandidates([]);
+      setVariantImageCandidates({});
+      setVariantImageCandidatesLoading({});
+      setVariantImageUrls({});
+      setVariantGalleryUrls({});
       setGruposSeleccionados([]);
       setCreationLote({ lote: "", fechaVencimiento: "" });
       setNewWholesaleOption({ cantidadMinima: "", precio: "" });
@@ -496,6 +506,12 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     } catch {}
   }, [autoImageOnSave, autoImagePrefKey]);
 
+  useEffect(() => {
+    if (!isEdit) {
+      setFormValues({ ...formValues, codigo: productCode });
+    }
+  }, [productCode]);
+
   // Asegura tener la lista real de sedes para decidir si mostrar la sección
   // "Disponibilidad por sede" (solo si la empresa tiene 2+ sedes).
   useEffect(() => {
@@ -504,12 +520,6 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpenModal]);
-
-  useEffect(() => {
-    if (!isEdit) {
-      setFormValues({ ...formValues, codigo: productCode });
-    }
-  }, [productCode]);
 
   useEffect(() => {
     if (!isOpenModal || !productSections.fichaComputo) {
@@ -792,6 +802,85 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     }
   };
 
+  // Busca sugerencias de imagen (IA/Serper) para un color de variante concreto.
+  // Enriquece la consulta con el color para traer fotos específicas de ese acabado.
+  const handleAutoImageColor = async (color: string) => {
+    const base = String(formValues.descripcion || "").trim();
+    const colorClean = String(color || "").trim();
+    if (!base) {
+      useAlertStore
+        .getState()
+        .alert("Ingresa el nombre del producto para buscar imagen", "warning");
+      return;
+    }
+    if (!colorClean) return;
+    const query = `${base} ${colorClean}`.trim();
+    setVariantImageCandidatesLoading((prev) => ({ ...prev, [colorClean]: true }));
+    try {
+      const response = await apiClient.post("/productos/ia/generar-imagen", {
+        nombre: query,
+        marca: (formValues as any)?.marcaNombre || "",
+        categoria: (formValues as any)?.categoriaNombre || "",
+        codigoBarras: "",
+      });
+      const result = response.data?.data || response.data;
+      const candidates = Array.isArray(result?.candidates)
+        ? result.candidates.filter(
+            (url: unknown): url is string =>
+              typeof url === "string" && /^https?:\/\//i.test(url),
+          )
+        : [];
+      // Incluye la mejor coincidencia al frente si vino con éxito.
+      if (result?.success && result?.url && !candidates.includes(result.url)) {
+        candidates.unshift(String(result.url));
+      }
+      setVariantImageCandidates((prev) => ({ ...prev, [colorClean]: candidates }));
+      if (candidates.length === 0) {
+        useAlertStore
+          .getState()
+          .alert(
+            result?.message ||
+              `No encontré imágenes para "${colorClean}". Prueba un nombre más específico o sube una manualmente.`,
+            "info",
+          );
+      }
+    } catch (e) {
+      useAlertStore.getState().alert("Error al buscar imagen del color", "error");
+    } finally {
+      setVariantImageCandidatesLoading((prev) => ({ ...prev, [colorClean]: false }));
+    }
+  };
+
+  // Aplica una URL sugerida como imagen de ese color (se sube a S3 al guardar).
+  const selectColorImageCandidate = (color: string, url: string) => {
+    const colorClean = String(color || "").trim();
+    const imageUrl = String(url || "").trim();
+    if (!colorClean || !/^https?:\/\//i.test(imageUrl)) return;
+    // La URL elegida gana sobre cualquier archivo previamente cargado para el color.
+    setVariantImageFiles((prev) => {
+      const next = { ...prev };
+      delete next[colorClean];
+      return next;
+    });
+    setVariantImagePreviews((prev) => ({ ...prev, [colorClean]: imageUrl }));
+    setVariantImageUrls((prev) => ({ ...prev, [colorClean]: imageUrl }));
+    // Aprende la imagen bajo el nombre ENRIQUECIDO con el color (mismo query que la
+    // búsqueda) para no contaminar la memoria de la imagen principal del producto.
+    const baseNombre = String(formValues?.descripcion || "").trim();
+    if (baseNombre) {
+      void apiClient
+        .post("/productos/ia/aprobar-imagen", {
+          nombre: `${baseNombre} ${colorClean}`.trim(),
+          marca: (formValues as any)?.marcaNombre || "",
+          categoria: (formValues as any)?.categoriaNombre || "",
+          url: imageUrl,
+        })
+        .catch(() => {
+          // silencioso: no bloquear el flujo si el aprendizaje falla
+        });
+    }
+  };
+
   const buscarImagenAutomaticaParaGuardado = async (
     nombre: string,
   ): Promise<string | null> => {
@@ -864,20 +953,40 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   };
 
   const uploadVariantColorImages = async (variantes: any[] = [], parentIdArg?: number) => {
-    const entries = Object.entries(variantImageFiles);
+    const fileEntries = Object.entries(variantImageFiles);
+    // URLs sugeridas por IA/Serper; el archivo manual tiene prioridad sobre la URL.
+    const urlEntries = Object.entries(variantImageUrls).filter(
+      ([colorValue, url]) => url && !variantImageFiles[colorValue],
+    );
     // En creación el id real llega por argumento (formValues.productoId aún es 0)
     const parentId = Number(parentIdArg ?? formValues.productoId);
     // El backend asigna la imagen a las variantes del color buscándolas en BD,
     // así que no requerimos que el frontend ya tenga la lista de variantes.
-    if (entries.length === 0 || !parentId) return variantes;
+    if ((fileEntries.length === 0 && urlEntries.length === 0) || !parentId) return variantes;
 
     const colorOptionName = resolveColorOptionName();
     const updatedById = new Map<number, any>(
       variantes.map((variant) => [Number(variant.id), variant]),
     );
 
-    // Una sola subida por color: el backend aplica la MISMA url a todas las tallas
-    for (const [colorValue, file] of entries) {
+    const aplicarColor = (colorValue: string, nuevaUrl: string, signed?: string) => {
+      variantes
+        .filter(
+          (variant) =>
+            String(variant?.valoresAtributos?.[colorOptionName] || "") === colorValue,
+        )
+        .forEach((variant) => {
+          if (!variant?.id) return;
+          updatedById.set(Number(variant.id), {
+            ...variant,
+            imagenUrl: nuevaUrl,
+            imagenUrlDisplay: signed || nuevaUrl,
+          });
+        });
+    };
+
+    // 1) Archivos cargados manualmente: una sola subida por color (multipart).
+    for (const [colorValue, file] of fileEntries) {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("color", colorValue);
@@ -892,30 +1001,39 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         resp?.data?.imagenUrl ||
         null;
       if (!nuevaUrl) continue;
+      aplicarColor(colorValue, nuevaUrl, signed);
+    }
 
-      // Reflejar la misma url en todas las variantes de ese color localmente
-      variantes
-        .filter(
-          (variant) =>
-            String(variant?.valoresAtributos?.[colorOptionName] || "") === colorValue,
-        )
-        .forEach((variant) => {
-          if (!variant?.id) return;
-          updatedById.set(Number(variant.id), {
-            ...variant,
-            imagenUrl: nuevaUrl,
-            imagenUrlDisplay: signed || nuevaUrl,
-          });
-        });
+    // 2) URLs sugeridas por IA/Serper: el backend descarga la URL y la sube a S3.
+    for (const [colorValue, url] of urlEntries) {
+      try {
+        const resp = await apiClient.post(
+          `/productos/${parentId}/imagen-color-url`,
+          { color: colorValue, url },
+        );
+        const signed = resp?.data?.signedUrl || resp?.data?.data?.signedUrl;
+        const nuevaUrl =
+          resp?.data?.data?.url ||
+          resp?.data?.url ||
+          resp?.data?.data?.imagenUrl ||
+          resp?.data?.imagenUrl ||
+          null;
+        if (!nuevaUrl) continue;
+        aplicarColor(colorValue, nuevaUrl, signed);
+      } catch {
+        // No interrumpir el guardado por una URL que falló al descargar.
+      }
     }
 
     return Array.from(updatedById.values());
   };
 
   const uploadVariantColorGallery = async (parentIdArg?: number) => {
-    const entries = Object.entries(variantGalleryImageFiles).filter(([, files]) => files.length > 0);
+    const fileEntries = Object.entries(variantGalleryImageFiles).filter(([, files]) => files.length > 0);
+    const urlEntries = Object.entries(variantGalleryUrls).filter(([, urls]) => urls.length > 0);
     const parentId = Number(parentIdArg ?? formValues.productoId);
-    if (!entries.length || !parentId) return (formValues as any)?.atributosTecnicos || {};
+    if ((!fileEntries.length && !urlEntries.length) || !parentId)
+      return (formValues as any)?.atributosTecnicos || {};
 
     const attrs = { ...(((formValues as any)?.atributosTecnicos || {}) as Record<string, any>) };
     const currentGallery = attrs.galeriaPorColor && typeof attrs.galeriaPorColor === "object"
@@ -923,7 +1041,13 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
       : {};
     const nextGallery: Record<string, string[]> = { ...currentGallery };
 
-    for (const [colorValue, files] of entries) {
+    const pushColor = (colorValue: string, urls: string[]) => {
+      const previousUrls = Array.isArray(nextGallery[colorValue]) ? nextGallery[colorValue] : [];
+      nextGallery[colorValue] = Array.from(new Set([...previousUrls, ...urls]));
+    };
+
+    // 1) Archivos subidos manualmente (multipart → S3).
+    for (const [colorValue, files] of fileEntries) {
       const uploadedUrls: string[] = [];
       for (const file of files) {
         const fd = new FormData();
@@ -939,8 +1063,28 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
           null;
         if (url) uploadedUrls.push(url);
       }
-      const previousUrls = Array.isArray(nextGallery[colorValue]) ? nextGallery[colorValue] : [];
-      nextGallery[colorValue] = Array.from(new Set([...previousUrls, ...uploadedUrls]));
+      pushColor(colorValue, uploadedUrls);
+    }
+
+    // 2) URLs sugeridas (IA/Serper): el backend descarga a S3; si falla, se guarda la URL
+    //    externa como respaldo para no perder la imagen elegida por el empresario.
+    for (const [colorValue, urls] of urlEntries) {
+      const importedUrls: string[] = [];
+      for (const url of urls) {
+        try {
+          const resp = await apiClient.post(`/productos/${parentId}/importar-imagen-url`, { url });
+          const s3Url =
+            resp?.data?.data?.url ||
+            resp?.data?.url ||
+            resp?.data?.data?.imagenUrl ||
+            resp?.data?.imagenUrl ||
+            null;
+          importedUrls.push(s3Url || url);
+        } catch {
+          importedUrls.push(url); // respaldo: la URL externa igual queda en la galería
+        }
+      }
+      pushColor(colorValue, importedUrls);
     }
 
     const nextAttrs = { ...attrs, galeriaPorColor: nextGallery };
@@ -951,6 +1095,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     } as any);
     setVariantGalleryImageFiles({});
     setVariantGalleryImagePreviews({});
+    setVariantGalleryUrls({});
     return nextAttrs;
   };
 
@@ -1405,6 +1550,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         setPreviewPrincipal(null);
         setVariantImageFiles({});
         setVariantImagePreviews({});
+        setVariantImageCandidates({});
+        setVariantImageUrls({});
+        setVariantGalleryUrls({});
         setFormValues(initialForm);
         closeModal();
       } else {
@@ -1700,6 +1848,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         setPreviewPrincipal(null);
         setVariantImageFiles({});
         setVariantImagePreviews({});
+        setVariantImageCandidates({});
+        setVariantImageUrls({});
+        setVariantGalleryUrls({});
         closeModal();
       }
     } catch (error) {
@@ -1755,6 +1906,12 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     variantImagePreviews,
     variantGalleryImageFiles,
     variantGalleryImagePreviews,
+    variantImageCandidates,
+    variantImageCandidatesLoading,
+    variantImageUrls,
+    variantGalleryUrls,
+    handleAutoImageColor,
+    selectColorImageCandidate,
     tipoAjusteStock,
     cantidadAjuste,
     stockOriginal,
@@ -1775,6 +1932,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     setVariantImagePreviews,
     setVariantGalleryImageFiles,
     setVariantGalleryImagePreviews,
+    setVariantImageCandidates,
+    setVariantImageUrls,
+    setVariantGalleryUrls,
     setTipoAjusteStock,
     setCantidadAjuste,
     setShowMedicamentoModal,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import apiClient from '@/utils/apiClient';
+import { diasRestantesLima } from '@/utils/fechaLima';
 import useAlertStore from '@/zustand/alert';
 
 interface Empresa {
@@ -45,25 +46,9 @@ const LOG_ICONS: Record<string, { icon: string; color: string; label: string }> 
     PLAN_CAMBIADO: { icon: 'solar:star-bold-duotone', color: '#F59E0B', label: 'Plan cambiado' },
 };
 
-const DAY_MS = 86400000;
-
-const normalizeDateOnly = (value?: string | null): string => {
-    if (!value) return '';
-    const iso = value.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
-};
-
-const getDaysUntilDate = (value?: string | null): number | null => {
-    const iso = normalizeDateOnly(value);
-    if (!iso) return null;
-    const [year, month, day] = iso.split('-').map(Number);
-    const today = new Date();
-    const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-    const targetUtc = Date.UTC(year, month - 1, day);
-    return Math.ceil((targetUtc - todayUtc) / DAY_MS);
-};
+// Día calendario en hora de Lima — misma fórmula que backend y panel reseller
+const getDaysUntilDate = (value?: string | null): number | null =>
+    diasRestantesLima(value);
 
 const relativeTime = (dateStr: string) => {
     const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -219,7 +204,7 @@ export default function EmpresaDrawer({
                             )}
                             {diasRestantes !== null && (
                                 <span className={`font-semibold ${expColor}`}>
-                                    {diasRestantes <= 0 ? 'Vencido' : `Vence en ${diasRestantes}d`}
+                                    {diasRestantes < 0 ? 'Vencido' : diasRestantes === 0 ? 'Vence hoy' : `Vence en ${diasRestantes}d`}
                                 </span>
                             )}
                         </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '@/utils/apiClient';
+import { diasRestantesLima, formatFechaLima } from '@/utils/fechaLima';
 import { Icon } from '@iconify/react';
 import { useAuthStore } from '@/zustand/auth';
 import { useResellerPanelStore } from '@/zustand/reseller-panel';
@@ -134,7 +135,7 @@ const initialFormData = {
 
 export default function ResellerClientes() {
     const { auth } = useAuthStore();
-    const { clientes, getClientes, createCliente, updateCliente, deleteDemoCliente, stats, getDashboard, planes, getPlanes, consultarDocumento, getClienteSeries, updateClienteSeries, branding, getBranding } = useResellerPanelStore();
+    const { clientes, getClientes, createCliente, updateCliente, deleteDemoCliente, stats, getDashboard, planes, getPlanes, consultarDocumento, getClienteSeries, updateClienteSeries, branding, getBranding, getRenovarCosto, renovarCliente } = useResellerPanelStore();
     // Marca del reseller (white-label) para firmar los recordatorios al cliente.
     const marcaReseller = branding?.whiteLabelNombre || auth?.nombre || BRAND.name;
     const { rubros, ubigeos, getRubros, getUbigeos } = useExtentionsStore();
@@ -199,6 +200,24 @@ export default function ResellerClientes() {
         onConfirm: () => Promise<void> | void;
     }>(null);
     const [confirmLoading, setConfirmLoading] = useState(false);
+
+    // Botón "Renovar": muestra el costo exacto (misma fórmula del backend) y
+    // solo cobra al confirmar. La renovación de clientes es siempre manual.
+    const abrirRenovar = async (row: any) => {
+        if (!auth?.resellerId) return;
+        const info = await getRenovarCosto(auth.resellerId, row.id);
+        if (!info) {
+            useAlertStore.getState().alert('No se pudo obtener el costo de renovación', 'error');
+            return;
+        }
+        const alcanza = Number(info.saldo) >= Number(info.costo);
+        setConfirm({
+            title: 'Renovar suscripción',
+            information: `Se renovará ${row.empresa} por S/ ${Number(info.costo).toFixed(2)} (${info.ciclo === 'ANUAL' ? 'anual: +365 días' : 'mensual: +30 días'}). Tu saldo actual es S/ ${Number(info.saldo).toFixed(2)}.${alcanza ? '' : ' ⚠️ Saldo insuficiente: recarga antes de renovar.'}`,
+            confirmText: 'Renovar',
+            onConfirm: async () => { await renovarCliente(auth.resellerId!, row.id); },
+        });
+    };
     const runConfirm = async () => {
         if (!confirm) return;
         setConfirmLoading(true);
@@ -456,11 +475,8 @@ export default function ResellerClientes() {
 
     const formatCurrency = (value: number) => `S/ ${value.toFixed(2)}`;
 
-    const diasParaVencer = (fecha?: string) => {
-        if (!fecha) return null;
-        const ms = new Date(fecha).getTime() - Date.now();
-        return Math.ceil(ms / (1000 * 60 * 60 * 24));
-    };
+    // Días calendario en hora de Lima — misma fórmula que backend y panel del cliente
+    const diasParaVencer = (fecha?: string) => diasRestantesLima(fecha);
 
     const resumen = useMemo(() => {
         const activos = clientes.filter((c: any) => c.estado === 'ACTIVO');
@@ -490,9 +506,7 @@ export default function ResellerClientes() {
 
         return filtered.map((cliente: any) => {
             const dias = cliente.estado === 'ACTIVO' ? diasParaVencer(cliente.fechaExpiracion) : null;
-            const vence = cliente.fechaExpiracion
-                ? new Date(cliente.fechaExpiracion).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })
-                : '—';
+            const vence = formatFechaLima(cliente.fechaExpiracion);
             const renueva = dias == null ? '—' : dias < 0 ? 'Vencida' : dias === 0 ? 'Hoy' : `En ${dias}d`;
             return {
                 id: cliente.id,
@@ -661,6 +675,15 @@ export default function ResellerClientes() {
                                                 </td>
                                                 <td className="py-3 px-3 pr-5">
                                                     <div className="flex items-center justify-end gap-1">
+                                                        {!row.usaDemo && (
+                                                            <button
+                                                                onClick={() => void abrirRenovar(row)}
+                                                                title="Renovar suscripción" aria-label="Renovar suscripción"
+                                                                className="h-8 px-2.5 inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 text-violet-600 text-xs font-bold hover:bg-violet-100 transition-colors"
+                                                            >
+                                                                <Icon icon="solar:refresh-circle-bold" width={15} /> Renovar
+                                                            </button>
+                                                        )}
                                                         <button onClick={() => { setSelectedClientId(row.id); setIsDetailsOpen(true); }} title="Ver detalles" aria-label="Ver detalles" className="h-8 w-8 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-violet-600 transition-colors">
                                                             <Icon icon="solar:eye-bold" width={16} />
                                                         </button>

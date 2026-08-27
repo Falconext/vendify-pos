@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useEmpresasStore } from '@/zustand/empresas';
+import { diasRestantesLima } from '@/utils/fechaLima';
 
 interface SuscripcionInfoProps {
   showTitle?: boolean;
@@ -34,21 +35,13 @@ const SuscripcionInfo: React.FC<SuscripcionInfoProps> = ({
     );
   }
 
-  // Calcular días restantes si tenemos la información de la empresa
-  const calcularDiasRestantes = () => {
-    if (!miEmpresa?.fechaExpiracion) return 0;
-    const fechaExp = new Date(miEmpresa.fechaExpiracion);
-    const hoy = new Date();
-    const diffTime = fechaExp.getTime() - hoy.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+  // Días calendario en hora de Lima — misma fórmula que el panel del reseller.
+  // 0 = vence hoy (aún vigente hasta fin del día).
+  const diasRestantes = diasRestantesLima(miEmpresa?.fechaExpiracion) ?? 0;
 
-  const diasRestantes = calcularDiasRestantes();
-  
   // Determinar estado de la suscripción
   const getEstadoSuscripcion = () => {
-    if (diasRestantes <= 0) return 'VENCIDA';
+    if (diasRestantes < 0) return 'VENCIDA';
     if (diasRestantes <= 7) return 'PROXIMA_VENCER';
     return 'ACTIVA';
   };
@@ -176,7 +169,7 @@ const SuscripcionInfo: React.FC<SuscripcionInfoProps> = ({
                   </p>
                 ) : (
                   <p className={`font-semibold ${statusConfig.textColor}`}>
-                    {diasRestantes === 1 ? '1 día restante' : `${diasRestantes} días restantes`}
+                    {diasRestantes === 0 ? 'Vence hoy' : diasRestantes === 1 ? '1 día restante' : `${diasRestantes} días restantes`}
                   </p>
                 )}
                 

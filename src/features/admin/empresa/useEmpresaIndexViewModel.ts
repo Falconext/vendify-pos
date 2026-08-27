@@ -4,34 +4,13 @@ import useAlertStore from '@/zustand/alert';
 import { useDebounce } from '@/hooks/useDebounce';
 import { post } from '@/utils/fetch';
 import apiClient from '@/utils/apiClient';
+import { diasRestantesLima, formatFechaLima } from '@/utils/fechaLima';
 
-const DAY_MS = 86400000;
+// Día calendario en hora de Lima — misma fórmula que backend y panel reseller
+const formatDateOnly = (value?: string | Date | null): string => formatFechaLima(value);
 
-const normalizeDateOnly = (value?: string | Date | null): string => {
-    if (!value) return '';
-    const raw = typeof value === 'string' ? value : value.toISOString();
-    const iso = raw.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-    const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
-};
-
-const formatDateOnly = (value?: string | Date | null): string => {
-    const iso = normalizeDateOnly(value);
-    if (!iso) return '-';
-    const [year, month, day] = iso.split('-');
-    return `${day}/${month}/${year}`;
-};
-
-const getDaysUntilDate = (value?: string | Date | null): number | null => {
-    const iso = normalizeDateOnly(value);
-    if (!iso) return null;
-    const [year, month, day] = iso.split('-').map(Number);
-    const today = new Date();
-    const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-    const targetUtc = Date.UTC(year, month - 1, day);
-    return Math.ceil((targetUtc - todayUtc) / DAY_MS);
-};
+const getDaysUntilDate = (value?: string | Date | null): number | null =>
+    diasRestantesLima(value);
 
 const formatDaysUntil = (days: number | null): string => {
     if (days === null) return '-';

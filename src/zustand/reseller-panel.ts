@@ -157,6 +157,8 @@ export interface IResellerPanelState {
     consultarDocumento: (resellerId: number, tipo: 'DNI' | 'RUC', numero: string) => Promise<any>;
     getClienteSeries: (resellerId: number, clienteId: number) => Promise<any[]>;
     updateClienteSeries: (resellerId: number, clienteId: number, series: any[]) => Promise<{ success: boolean; error?: string }>;
+    getRenovarCosto: (resellerId: number, clienteId: number) => Promise<{ costo: number; ciclo: 'MENSUAL' | 'ANUAL'; saldo: number } | null>;
+    renovarCliente: (resellerId: number, clienteId: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useResellerPanelStore = create<IResellerPanelState>((set, get) => ({
@@ -388,6 +390,39 @@ export const useResellerPanelStore = create<IResellerPanelState>((set, get) => (
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error de conexión', 'error');
             return { success: false, error: error.message };
+        }
+    },
+
+    // Costo exacto de renovar (misma fórmula que el cobro del backend), sin cobrar.
+    getRenovarCosto: async (resellerId: number, clienteId: number) => {
+        try {
+            const resp: any = await httpGet(`resellers/${resellerId}/clientes/${clienteId}/renovar/costo`);
+            return resp.code === 1 ? resp.data : null;
+        } catch {
+            return null;
+        }
+    },
+
+    renovarCliente: async (resellerId: number, clienteId: number) => {
+        try {
+            useAlertStore.setState({ loading: true });
+            const resp: any = await post(`resellers/${resellerId}/clientes/${clienteId}/renovar`, {});
+            useAlertStore.setState({ loading: false });
+
+            if (resp.code === 1) {
+                useAlertStore.getState().alert('Renovación aplicada correctamente', 'success');
+                await get().getClientes(resellerId);
+                await get().getDashboard(resellerId);
+                return { success: true };
+            }
+
+            useAlertStore.getState().alert(resp.error || 'No se pudo renovar el cliente', 'error');
+            return { success: false, error: resp.error };
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            const msg = error?.response?.data?.message || 'No se pudo renovar el cliente';
+            useAlertStore.getState().alert(msg, 'error');
+            return { success: false, error: msg };
         }
     },
 
