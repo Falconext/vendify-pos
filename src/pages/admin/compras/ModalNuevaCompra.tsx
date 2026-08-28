@@ -40,7 +40,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const { getAllClients, clients, resetClients, getClientFromDoc } = useClientsStore();
     const { getAllProducts, products, resetProducts } = useProductsStore();
     const { alert } = useAlertStore();
-    const { auth } = useAuthStore();
+    const { auth, sedeActiva } = useAuthStore();
     const rubroNombre = (auth as any)?.empresa?.rubro?.nombre;
     const esRubroFarmaceutico = usaLotesFarmaciaRubro(rubroNombre);
     const tieneGestionLotes = hasPlanFeature(auth as any, 'tieneGestionLotes') || esRubroFarmaceutico;
@@ -360,7 +360,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     };
 
     const handleProductSearch = (query: string, cb: () => void) => {
-        getAllProducts({ search: query, limit: 20 }, cb);
+        // El stock mostrado debe ser el de la sede activa (no el global sumado de
+        // todas las sedes). Si no hay sede, el backend cae al global.
+        getAllProducts({ search: query, limit: 20, sedeId: sedeActiva?.id || undefined }, cb);
     };
 
     const onSupplierChange = (id: any) => {
