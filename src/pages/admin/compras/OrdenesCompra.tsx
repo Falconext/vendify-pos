@@ -29,6 +29,7 @@ interface OrdenCompra {
     subtotal: any;
     igv: any;
     total: any;
+    igvIncluido?: boolean;
     estado: 'BORRADOR' | 'EMITIDA' | 'RECIBIDA' | 'ANULADA';
     observaciones?: string | null;
     condicionesPago?: string | null;
@@ -394,6 +395,10 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
     const [observaciones, setObservaciones] = useState(orden?.observaciones ?? '');
     const [moneda, setMoneda] = useState(orden?.moneda ?? 'PEN');
     const [aplicaIgv, setAplicaIgv] = useState(orden ? Number(orden.igv) > 0 : true);
+    // true = los precios unitarios que teclea el usuario YA incluyen el IGV
+    // (ej: S/ 100 → Op. Gravada S/ 84.75 + IGV S/ 15.25). Se envía el precio
+    // BRUTO tal cual y el backend extrae el IGV (columna OrdenCompra.igvIncluido).
+    const [igvIncluido, setIgvIncluido] = useState(orden?.igvIncluido ?? false);
 
     const [detalles, setDetalles] = useState<DetalleOC[]>(
         (orden?.detalles ?? []).map((d: any) => ({
@@ -458,8 +463,10 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
         setDetalles((prev) => prev.map((d, j) => (j === i ? { ...d, [campo]: Number(valor) || 0 } : d)));
     };
 
-    const subtotal = useMemo(() => detalles.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0), [detalles]);
-    const igv = aplicaIgv ? subtotal * 0.18 : 0;
+    const sumaItems = useMemo(() => detalles.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0), [detalles]);
+    // Con IGV incluido, el total es la suma tal cual y el IGV se extrae de ella
+    const subtotal = aplicaIgv && igvIncluido ? sumaItems / 1.18 : sumaItems;
+    const igv = aplicaIgv ? (igvIncluido ? sumaItems - subtotal : subtotal * 0.18) : 0;
     const mon = moneda === 'USD' ? 'US$' : 'S/';
 
     const guardar = async (estadoFinal: 'BORRADOR' | 'EMITIDA') => {
@@ -475,6 +482,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                 observaciones: observaciones || undefined,
                 moneda,
                 aplicaIgv,
+                igvIncluido: aplicaIgv && igvIncluido,
                 estado: estadoFinal,
                 detalles,
             };
@@ -654,13 +662,26 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                 </div>
 
                 {/* Totales + acciones */}
-                <div className="flex flex-col items-end gap-3 border-t border-gray-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                        <input type="checkbox" checked={aplicaIgv} onChange={(e) => setAplicaIgv(e.target.checked)} className="h-4 w-4 rounded accent-blue-600" />
-                        Aplicar IGV (18%)
-                    </label>
+                <div className="flex flex-col items-end gap-3 border-t border-gray-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                            <input type="checkbox" checked={aplicaIgv} onChange={(e) => setAplicaIgv(e.target.checked)} className="h-4 w-4 rounded accent-blue-600" />
+                            Aplicar IGV (18%)
+                        </label>
+                        {aplicaIgv && (
+                            <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2 transition-colors ${igvIncluido ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20' : 'border-gray-200 dark:border-slate-700'}`}>
+                                <input type="checkbox" checked={igvIncluido} onChange={(e) => setIgvIncluido(e.target.checked)} className="mt-0.5 h-4 w-4 rounded accent-amber-500" />
+                                <span className="text-sm">
+                                    <span className="block font-semibold text-gray-700 dark:text-gray-200">Precios con IGV incluido</span>
+                                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">
+                                        {igvIncluido ? 'El precio tecleado se desglosa extrayendo el IGV (÷1.18)' : 'Los precios son netos — se agrega el IGV encima (×1.18)'}
+                                    </span>
+                                </span>
+                            </label>
+                        )}
+                    </div>
                     <div className="text-right">
-                        <p className="text-xs text-gray-400">Subtotal {mon} {subtotal.toFixed(2)} · IGV {mon} {igv.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">Op. Gravada {mon} {subtotal.toFixed(2)} · IGV {mon} {igv.toFixed(2)}</p>
                         <p className="text-xl font-black text-gray-900 dark:text-white">TOTAL {mon} {(subtotal + igv).toFixed(2)}</p>
                     </div>
                 </div>

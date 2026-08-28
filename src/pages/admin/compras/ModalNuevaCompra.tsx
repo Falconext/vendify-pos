@@ -170,6 +170,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     // XML import
     const xmlInputRef = useRef<HTMLInputElement>(null);
     const [isParsingXml, setIsParsingXml] = useState(false);
+    // Foto IA (lee una foto de la factura/boleta con IA y pre-llena la compra)
+    const fotoInputRef = useRef<HTMLInputElement>(null);
+    const [isParsingFoto, setIsParsingFoto] = useState(false);
     const [supplierDisplay, setSupplierDisplay] = useState('');
     const [xmlBanner, setXmlBanner] = useState<{ matched: number; total: number; proveedor: boolean } | null>(null);
     const [xmlSupplierInfo, setXmlSupplierInfo] = useState<{ ruc: string; nombre: string } | null>(null);
@@ -590,6 +593,54 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         });
     };
 
+    // Aplica al formulario los datos de una compra importada (XML o FOTO IA).
+    const aplicarDatosImportados = (data: any, origen: 'xml' | 'foto') => {
+        const etiqueta = origen === 'foto' ? 'Foto leída' : 'XML importado';
+        setHeader(h => ({
+            ...h,
+            tipoDoc: data.tipoDoc || h.tipoDoc,
+            serie: data.serie || h.serie,
+            numero: data.numero || h.numero,
+            fechaEmision: data.fechaEmision || h.fechaEmision,
+            fechaVencimiento: data.fechaEmision || h.fechaVencimiento,
+            moneda: data.moneda || h.moneda,
+            proveedorId: data.proveedorId || 0,
+        }));
+
+        const proveedorLabel = [data.proveedorRuc, data.proveedorNombre].filter(Boolean).join(' - ');
+        if (proveedorLabel) setSupplierDisplay(proveedorLabel);
+        setXmlSupplierInfo({
+            ruc: String(data.proveedorRuc || '').trim(),
+            nombre: String(data.proveedorNombre || '').trim(),
+        });
+        if (data.proveedorId) {
+            setSupplierOptions([{ id: data.proveedorId, value: proveedorLabel }]);
+        }
+
+        const importedItems = (data.items || []).map((item: any) => ({
+            productoId: item.productoId || 0,
+            descripcion: item.productoDescripcion || item.descripcion,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            lote: '',
+            fechaVencimiento: '',
+            subtotal: item.subtotal,
+            _fromXml: true,
+            _codigoXml: item.codigo,
+            _sinVincular: !item.productoId,
+        }));
+        setItems(importedItems);
+
+        const matched = importedItems.filter((i: any) => !i._sinVincular).length;
+        setXmlBanner({ matched, total: importedItems.length, proveedor: !!data.proveedorId });
+
+        if (!data.proveedorId) {
+            alert(`${etiqueta}. Proveedor no encontrado (RUC: ${data.proveedorRuc}) — selecciónalo manualmente.`, 'error');
+        } else {
+            alert(`${etiqueta}: ${matched}/${importedItems.length} productos vinculados.`, 'success');
+        }
+    };
+
     const handleXmlFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -603,54 +654,33 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const data = res.data?.data ?? res.data;
-
-            setHeader(h => ({
-                ...h,
-                tipoDoc: data.tipoDoc || h.tipoDoc,
-                serie: data.serie || h.serie,
-                numero: data.numero || h.numero,
-                fechaEmision: data.fechaEmision || h.fechaEmision,
-                fechaVencimiento: data.fechaEmision || h.fechaVencimiento,
-                moneda: data.moneda || h.moneda,
-                proveedorId: data.proveedorId || 0,
-            }));
-
-            const proveedorLabel = [data.proveedorRuc, data.proveedorNombre].filter(Boolean).join(' - ');
-            if (proveedorLabel) setSupplierDisplay(proveedorLabel);
-            setXmlSupplierInfo({
-                ruc: String(data.proveedorRuc || '').trim(),
-                nombre: String(data.proveedorNombre || '').trim(),
-            });
-            if (data.proveedorId) {
-                setSupplierOptions([{ id: data.proveedorId, value: proveedorLabel }]);
-            }
-
-            const importedItems = (data.items || []).map((item: any) => ({
-                productoId: item.productoId || 0,
-                descripcion: item.productoDescripcion || item.descripcion,
-                cantidad: item.cantidad,
-                precioUnitario: item.precioUnitario,
-                lote: '',
-                fechaVencimiento: '',
-                subtotal: item.subtotal,
-                _fromXml: true,
-                _codigoXml: item.codigo,
-                _sinVincular: !item.productoId,
-            }));
-            setItems(importedItems);
-
-            const matched = importedItems.filter((i: any) => !i._sinVincular).length;
-            setXmlBanner({ matched, total: importedItems.length, proveedor: !!data.proveedorId });
-
-            if (!data.proveedorId) {
-                alert(`XML importado. Proveedor no encontrado (RUC: ${data.proveedorRuc}) — selecciónalo manualmente.`, 'error');
-            } else {
-                alert(`XML importado: ${matched}/${importedItems.length} productos vinculados.`, 'success');
-            }
+            aplicarDatosImportados(data, 'xml');
         } catch (err: any) {
             alert(err?.response?.data?.message || 'Error al procesar el XML. Verifica que sea una factura SUNAT válida.', 'error');
         } finally {
             setIsParsingXml(false);
+        }
+    };
+
+    // Sube una FOTO de la factura/boleta; la IA la lee y pre-llena la compra.
+    const handleImagenFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = '';
+        setIsParsingFoto(true);
+        setXmlBanner(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await apiClient.post('/compras/parse-imagen', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const data = res.data?.data ?? res.data;
+            aplicarDatosImportados(data, 'foto');
+        } catch (err: any) {
+            alert(err?.response?.data?.message || 'No se pudo leer la foto. Prueba con una imagen más nítida y bien iluminada.', 'error');
+        } finally {
+            setIsParsingFoto(false);
         }
     };
 
@@ -1033,15 +1063,26 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-transparent">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wide">Detalle de Productos</h3>
-                            <button
-                                type="button"
-                                onClick={() => xmlInputRef.current?.click()}
-                                disabled={isParsingXml}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 disabled:opacity-50 transition-colors bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg"
-                            >
-                                <Icon icon={isParsingXml ? "svg-spinners:270-ring-with-bg" : "solar:upload-minimalistic-bold-duotone"} width={14} />
-                                {isParsingXml ? 'Procesando...' : 'Importar XML'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => fotoInputRef.current?.click()}
+                                    disabled={isParsingFoto}
+                                    className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 disabled:opacity-50 transition-colors bg-violet-50 dark:bg-violet-900/30 px-3 py-1.5 rounded-lg"
+                                >
+                                    <Icon icon={isParsingFoto ? "svg-spinners:270-ring-with-bg" : "solar:camera-bold-duotone"} width={14} />
+                                    {isParsingFoto ? 'Leyendo foto...' : 'Subir foto (IA)'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => xmlInputRef.current?.click()}
+                                    disabled={isParsingXml}
+                                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 disabled:opacity-50 transition-colors bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg"
+                                >
+                                    <Icon icon={isParsingXml ? "svg-spinners:270-ring-with-bg" : "solar:upload-minimalistic-bold-duotone"} width={14} />
+                                    {isParsingXml ? 'Procesando...' : 'Importar XML'}
+                                </button>
+                            </div>
                         </div>
                         <input
                             ref={xmlInputRef}
@@ -1049,6 +1090,14 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             accept=".xml,application/xml,text/xml"
                             className="hidden"
                             onChange={handleXmlFileSelect}
+                        />
+                        <input
+                            ref={fotoInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={handleImagenFileSelect}
                         />
 
                         {/* Banner resultado XML */}

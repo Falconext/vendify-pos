@@ -10,6 +10,7 @@ import { IBrand } from '@/zustand/brands';
 import { GrupoModificador } from '@/zustand/modificadores';
 import { useProductModalViewModel } from '../useProductModalViewModel';
 import { ProductStockManager } from './ProductStockManager';
+import ProductPriceListsPanel from './ProductPriceListsPanel';
 
 import { ProductVariantsManager } from './ProductVariantsManager';
 import { ProductFinancialAnalysis } from './ProductFinancialAnalysis';
@@ -140,6 +141,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     // Moneda del producto: 'PEN' (soles) o 'USD' (dólares). Al facturar, USD se convierte a soles con el TC del día.
     const moneda = ((formValues as any)?.moneda === 'USD') ? 'USD' : 'PEN';
     const simbolo = moneda === 'USD' ? '$' : 'S/';
+    const [listasPrecioOpen, setListasPrecioOpen] = useState(false);
     const setMoneda = (m: 'PEN' | 'USD') => setFormValues({ ...formValues, moneda: m } as any);
     const [tcVenta, setTcVenta] = useState<number | null>(null);
     useEffect(() => {
@@ -1178,6 +1180,37 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             </div>
 
             {!esServicio && productSections.inventario && <ProductStockManager vm={vm} />}
+
+            {/* Listas de Precio: precio de este producto por lista (unidad + paquetes).
+                Solo en edición (necesita productoId). El backend guarda por lista. */}
+            {isEdit && Number((formValues as any)?.productoId) > 0 && (
+                <div className="col-span-1 md:col-span-2">
+                    <div className={`rounded-2xl border transition-all duration-200 overflow-hidden ${listasPrecioOpen ? 'border-violet-200 dark:border-violet-900/40' : 'border-gray-200 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-900/50'}`}>
+                        <button type="button" onClick={() => setListasPrecioOpen(o => !o)}
+                            className="w-full flex items-center justify-between p-4 text-left bg-white dark:bg-[#1E2435]">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${listasPrecioOpen ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'}`}>
+                                    <Icon icon="solar:tag-price-bold-duotone" width={20} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Listas de Precio</h4>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Precio de este producto por lista (local/usuario), unidad y paquetes.</p>
+                                </div>
+                            </div>
+                            <Icon icon="solar:alt-arrow-down-bold" width={16} className={`text-gray-400 transition-transform ${listasPrecioOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {listasPrecioOpen && (
+                            <div className="p-4 border-t border-violet-100 dark:border-violet-900/30">
+                                <ProductPriceListsPanel
+                                    productoId={Number((formValues as any).productoId)}
+                                    paquetes={((formValues as any)?.codigosBarrasExtra || []).filter((c: any) => Number(c.unidadesPorPaquete || 1) > 1)}
+                                    simbolo={simbolo}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {!isRestaurante && productSections.analisisAvanzado && (
                 <div className="col-span-1 md:col-span-2">

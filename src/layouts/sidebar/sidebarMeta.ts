@@ -91,6 +91,7 @@ export const LEGACY_SUBMODULE_ROUTES: Record<string, string> = {
   'kardex:movimientos': '/administrador/kardex',
   'kardex:reservas': '/administrador/reservas',
   'kardex:series-garantias': '/administrador/kardex/series-garantias',
+  'kardex:listas-precio': '/administrador/kardex/listas-precio',
   'comprobantes:lista': '/administrador/facturacion/comprobantes',
   'comprobantes:emitir': '/administrador/facturacion/nuevo',
   'comprobantes:informales': '/administrador/facturacion/comprobantes-informales',
@@ -139,6 +140,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
           { codigo: 'kardex:libro-control', nombre: 'Libro Control', ruta: '/administrador/kardex/libro-control' },
         );
       }
+      // Listas de Precio: gestión de precios por sede/usuario (multi-local).
+      items.push({ codigo: 'kardex:listas-precio', nombre: 'Listas de Precio', ruta: '/administrador/kardex/listas-precio' });
       return items;
     },
   },
