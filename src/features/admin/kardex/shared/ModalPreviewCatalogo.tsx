@@ -122,7 +122,7 @@ export default function ModalPreviewCatalogo({ isOpen, onClose }: Props) {
 
     return createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#0f1535] rounded-2xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col border border-gray-100 dark:border-white/10 overflow-hidden">
+            <div className="bg-white dark:bg-[#0f1535] rounded-2xl shadow-xl w-full max-w-[1400px] h-[95vh] flex flex-col border border-gray-100 dark:border-white/10 overflow-hidden">
                 <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-[#111c44]/60">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -140,7 +140,7 @@ export default function ModalPreviewCatalogo({ isOpen, onClose }: Props) {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Sidebar Configuration */}
-                    <div className="w-72 border-r border-gray-100 dark:border-white/10 p-5 flex flex-col gap-6 overflow-y-auto bg-white dark:bg-[#0f1535]">
+                    <div className="w-80 shrink-0 border-r border-gray-100 dark:border-white/10 p-5 flex flex-col gap-6 overflow-y-auto bg-white dark:bg-[#0f1535]">
                         <div>
                             <Select
                                 label="Diseño del Catálogo"
@@ -192,7 +192,7 @@ export default function ModalPreviewCatalogo({ isOpen, onClose }: Props) {
                         {/* Selección rápida + filtros por categoría / marca / stock */}
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Filtrar / seleccionar</label>
-                            <div className="grid grid-cols-2 gap-2 mb-2">
+                            <div className="grid grid-cols-1 gap-2 mb-2">
                                 <Select
                                     label=""
                                     name="catFilter"

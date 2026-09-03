@@ -45,7 +45,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
             <div className="flex items-center justify-between border-b-2 border-gray-100 pb-6 mb-8">
                 <div className="flex items-center gap-4">
                     {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain" crossOrigin="anonymous" />
+                        <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain" />
                     ) : (
                         <div className="h-16 w-16 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-400">
                             LOGO
@@ -85,7 +85,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                         <div className="w-full aspect-square bg-gray-50 rounded-xl overflow-hidden mb-3 border border-gray-100 flex items-center justify-center p-1">
                                             {p.imagenUrl ? (
                                                 <>
-                                                    <img src={p.imagenUrl} alt={p.descripcion || p.nombre || p.codigo} className="w-full h-full object-cover rounded-lg" crossOrigin="anonymous" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
+                                                    <img src={p.imagenUrl} alt={p.descripcion || p.nombre || p.codigo} className="w-full h-full object-cover rounded-lg" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
                                                     <div className="hidden flex-col items-center justify-center text-gray-300 opacity-50 w-full h-full">
                                                         <Icon icon="solar:gallery-broken" className="text-3xl" />
                                                     </div>
@@ -123,7 +123,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                                 <div className="w-10 h-10 bg-white rounded border border-gray-200 flex items-center justify-center overflow-hidden">
                                                     {p.imagenUrl ? (
                                                         <>
-                                                            <img src={p.imagenUrl} className="w-full h-full object-cover" crossOrigin="anonymous" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                                                            <img src={p.imagenUrl} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
                                                             <Icon icon="solar:gallery-minimalistic-broken" className="hidden text-gray-300 text-xl opacity-50" />
                                                         </>
                                                     ) : <Icon icon="solar:gallery-minimalistic-broken" className="text-gray-300 text-xl opacity-50" />}
@@ -164,7 +164,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                         <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden shadow-sm">
                                             {p.imagenUrl ? (
                                                 <>
-                                                    <img src={p.imagenUrl} className="w-full h-full object-cover" crossOrigin="anonymous" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
+                                                    <img src={p.imagenUrl} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
                                                     <div className="hidden w-full h-full bg-gray-50 items-center justify-center">
                                                         <Icon icon="solar:camera-broken" className="text-gray-300 text-2xl opacity-50" />
                                                     </div>
@@ -204,7 +204,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
 
                                                 {p.imagenUrl ? (
                                                     <>
-                                                        <img src={p.imagenUrl} className="w-[85%] h-[85%] object-contain drop-shadow-xl" crossOrigin="anonymous" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
+                                                        <img src={p.imagenUrl} className="w-[85%] h-[85%] object-contain drop-shadow-xl" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); e.currentTarget.nextElementSibling?.classList.add('flex'); }} />
                                                         <div className="hidden w-full h-full items-center justify-center">
                                                             <Icon icon="solar:laptop-broken" className="text-gray-200 text-5xl" />
                                                         </div>
