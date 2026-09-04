@@ -597,6 +597,23 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                 </div>
             )}
 
+            {/* N° Orden de Compra del cliente (B2B) — Factura y Cotización */}
+            {(vm.formValues?.comprobante === "FACTURA" || vm.isQuotationRoute) && (
+                <div className="mt-2">
+                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                        <Icon icon="solar:document-text-bold-duotone" width={13} className="text-amber-500" />
+                        N° Orden de Compra (cliente)
+                    </label>
+                    <input
+                        type="text"
+                        value={vm.formValues?.ordenCompraCliente || ''}
+                        onChange={(e) => vm.setFormValues({ ...vm.formValues, ordenCompraCliente: e.target.value })}
+                        placeholder="N° de OC que el cliente pide referenciar en la factura"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400 transition-colors"
+                    />
+                </div>
+            )}
+
             {/* Observaciones */}
             <div className="mt-2">
                 <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">

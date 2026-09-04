@@ -472,6 +472,7 @@ console.log(formValues)
                             <span className="text-right">{vendedorNombre}</span>
                         </p>
                         <hr className="my-1 border-dashed border-[#222]" />
+                        {formValues?.ordenCompraCliente && <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">N° ORDEN DE COMPRA : </span>{String(formValues.ordenCompraCliente).toUpperCase()}</p>}
                         {fc('observaciones').visible && <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">OBSERVACIONES : </span>{observation?.toUpperCase() || ''}</p>}
                         <div className="uppercase">
                             {(() => {
@@ -675,6 +676,9 @@ console.log(formValues)
                                 <div className="border border-black rounded-lg p-3">
                                     <div className="flex justify-between items-start">
                                         <div className="w-2/3 pr-4">
+                                            {formValues?.ordenCompraCliente && (
+                                            <div className="font-bold mb-1" style={{ fontSize: px('observaciones') }}>N° ORDEN DE COMPRA: {String(formValues.ordenCompraCliente).toUpperCase()}</div>
+                                            )}
                                             {fc('observaciones').visible && (<>
                                             <div className="font-bold mb-1" style={{ fontSize: px('observaciones') }}>OBSERVACIONES:</div>
                                             <div style={{ fontSize: px('observaciones') }}>{observation?.toUpperCase() || ''}</div>
@@ -1054,6 +1058,9 @@ console.log(formValues)
                                 <div className="border border-black rounded-lg p-3 relative mb-10">
                                     <div className="flex justify-between items-start gap-4">
                                         <div className="w-2/3 pr-2">
+                                            {formValues?.ordenCompraCliente && (
+                                            <div className="font-bold mb-1">N° ORDEN DE COMPRA: {String(formValues.ordenCompraCliente).toUpperCase()}</div>
+                                            )}
                                             <div className="font-bold mb-1">OBSERVACIONES:</div>
                                             <div className="text-xs">{observation?.toUpperCase() || ''}</div>
                                             <div className="text-xs mt-2">

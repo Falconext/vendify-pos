@@ -153,11 +153,17 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
         description: "Completa los datos del traslado según el motivo elegido.",
         tip: "Revisa destinatario, puntos de partida/llegada y transporte antes de guardar.",
     };
-    const selectedModoHelp = MODO_HELP[formValues.modoTransporte] || {
-        title: "Modo de transporte",
-        required: [],
-        tip: "Completa todos los datos del traslado según corresponda.",
-    };
+    const selectedModoHelp = (formValues.modoTransporte === "02" && formValues.vehiculoM1oL)
+        ? {
+            title: "Transporte privado (M1/L)",
+            required: [] as string[],
+            tip: "No se exige placa ni datos del conductor: vehículo categoría M1 o L.",
+        }
+        : MODO_HELP[formValues.modoTransporte] || {
+            title: "Modo de transporte",
+            required: [],
+            tip: "Completa todos los datos del traslado según corresponda.",
+        };
     const destinatarioDocHint =
         formValues.destinatarioTipoDoc === "6"
             ? "RUC: 11 dígitos"
@@ -711,7 +717,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
             }
         }
 
-        if (formValues.modoTransporte === "02") {
+        if (formValues.modoTransporte === "02" && !formValues.vehiculoM1oL) {
             if (!formValues.conductorNumDoc || !formValues.vehiculoPlaca) {
                 useAlertStore.getState().alert("Datos del conductor y vehículo requeridos para transporte privado", "warning");
                 return;
@@ -975,6 +981,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                                             { name: 'transbordoProgramado', label: 'Transbordo Programado', checked: formValues.transbordoProgramado },
                                             { name: 'retornoEnvasesVacios', label: 'Retorno Envases Vacíos', checked: formValues.retornoEnvasesVacios },
                                             { name: 'trasladoTotal', label: 'Traslado Total (DAM/DS)', checked: formValues.trasladoTotal },
+                                            { name: 'vehiculoM1oL', label: 'Vehículos Categoría M1 o L', checked: formValues.vehiculoM1oL },
                                         ] as const).map(flag => (
                                             <label key={flag.name} className="flex items-center space-x-2 cursor-pointer group">
                                                 <input type="checkbox" name={flag.name} checked={flag.checked} onChange={handleChange} className="rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
@@ -1174,7 +1181,16 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                                     </div>
                                 )}
 
-                                {(formValues.modoTransporte === "02" || isGuiaTransportista) && (
+                                {formValues.modoTransporte === "02" && formValues.vehiculoM1oL && !isGuiaTransportista && (
+                                    <div className="p-3 rounded-xl border border-blue-100 dark:border-blue-800/30 bg-blue-50/50 dark:bg-blue-900/10 flex items-start gap-2">
+                                        <Icon icon="solar:info-circle-bold-duotone" className="text-blue-600 dark:text-blue-400 text-lg mt-0.5 shrink-0" />
+                                        <p className="text-xs text-blue-800/80 dark:text-blue-300/60">
+                                            Vehículos categoría <strong>M1 o L</strong> (auto ligero o moto/mototaxi): SUNAT no exige placa ni datos del conductor para este traslado.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {((formValues.modoTransporte === "02" && !formValues.vehiculoM1oL) || isGuiaTransportista) && (
                                     <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30 bg-emerald-50/30 dark:bg-emerald-900/10">
                                         <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-400 mb-3 flex items-center gap-2">
                                             <Icon icon="solar:bus-bold-duotone" />

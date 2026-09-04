@@ -12,6 +12,7 @@ export type IInvoices = {
   fechaRecojo: string
   estadoPago: string
   observaciones: string
+  ordenCompraCliente?: string
   sunatCdrZip: string
   sunatXml: string,
   s3XmlUrl?: string
@@ -113,6 +114,7 @@ export interface IFormInvoice {
   motivo: string
   numDocAfectado: string
   observaciones: string
+  ordenCompraCliente?: string
   clienteId: number
   detalles: Array<{
     productId: number

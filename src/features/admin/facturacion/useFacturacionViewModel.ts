@@ -341,7 +341,8 @@ export const useFacturacionViewModel = () => {
         motivoId: 0,
         medioPago: "",
         numDocAfectado: "",
-        observaciones: ""
+        observaciones: "",
+        ordenCompraCliente: ""
     }
 
     const initialFormClient: IFormClient = {
@@ -2046,8 +2047,12 @@ export const useFacturacionViewModel = () => {
     const validatePaymentDetails = () => {
         if (isQuotationRoute || formValues.medioPago === 'Crédito') return true;
         // El N° de operación/voucher es opcional: no bloquea la emisión (se puede
-        // registrar después). Solo se exige la cuenta bancaria para transferencias.
-        const requiresAccount = (method?: string) => normalizePaymentMethod(method) === 'TRANSFERENCIA';
+        // registrar después). Solo se exige la cuenta bancaria para transferencias,
+        // y solo si la empresa tiene alguna cuenta bancaria registrada — si no
+        // registró ninguna (no quiere llevar ese control), no la bloqueamos: no hay
+        // nada que seleccionar (el selector tampoco se muestra en ese caso).
+        const tieneCuentasBancarias = ((auth?.empresa?.cuentasBancarias as any[]) || []).length > 0;
+        const requiresAccount = (method?: string) => tieneCuentasBancarias && normalizePaymentMethod(method) === 'TRANSFERENCIA';
         const details = buildPaymentDetails();
         const lines: PaymentLine[] = details.mode === 'MIXTO' ? (details.splitPayments ?? []) : [details as PaymentLine];
 
@@ -2356,6 +2361,7 @@ export const useFacturacionViewModel = () => {
             ...(anticipos.length > 0 && formValues?.comprobante === "FACTURA" ? { anticipos } : {}),
             leyenda: totalInWords,
             observaciones: observacionesFinal,
+            ...(formValues?.ordenCompraCliente?.trim() ? { ordenCompraCliente: formValues.ordenCompraCliente.trim() } : {}),
             ...(esPagoCredito && fechaVencimientoCredito ? { fechaVencimientoCredito } : {}),
             ...(esPagoCredito && cuotasCredito.length > 0 ? { cuotas: cuotasCredito } : {}),
             adelanto: (() => {
