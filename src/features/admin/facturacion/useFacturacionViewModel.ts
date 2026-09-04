@@ -1466,9 +1466,17 @@ export const useFacturacionViewModel = () => {
                 : null;
         // Paquete con precio propio y unidades sueltas del mismo producto se
         // manejan como líneas distintas (precios distintos): cada escaneo se
-        // fusiona solo con líneas de su mismo tipo.
+        // fusiona solo con líneas de su mismo tipo. Dos tamaños de paquete
+        // distintos del mismo producto (ej. x50 a S/8 y x100 a S/15) tampoco
+        // deben fusionarse entre sí: si compartieran línea, el precio unitario
+        // fijo del primer paquete agregado se aplicaría a TODA la cantidad
+        // combinada (ej. 150 und al precio del x100 = S/22.50 en vez de los
+        // S/23 reales = 1 caja x100 + 1 caja x50).
         const existingIndex = productsInvoice.findIndex(
-            (p: any) => p.id === product.id && Boolean(p.esPaquete) === esPaqueteConPrecio,
+            (p: any) =>
+                p.id === product.id &&
+                Boolean(p.esPaquete) === esPaqueteConPrecio &&
+                (!esPaqueteConPrecio || (Number(p.unidadesPorPaquete) || 1) === unidadesPorPaquete),
         );
 
         const farmaciaExtra = usaLotesFarmacia && product?.loteFefo
