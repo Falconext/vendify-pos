@@ -195,8 +195,8 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                 />
 
                 {vm.showFreeQuoteItemForm && (
-                    <div className="mb-4 rounded-2xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/10 p-3">
-                        <div className="flex flex-col gap-2">
+                    <div className="mb-4 rounded-2xl border-2 border-violet-200 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/10 p-3">
+                        <div className="flex flex-col gap-3">
                             {/* El nombre del ítem es el dato principal: fila propia a todo el ancho */}
                             <input
                                 value={vm.freeQuoteItem.descripcion}
@@ -208,103 +208,111 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                 placeholder="Nombre del producto o servicio — Ej: Instalación de Windows, mantenimiento, producto a pedido..."
                                 className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
                             />
-                            <div className="flex flex-col lg:flex-row gap-2">
-                            <div className="flex rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-1">
-                                {(['SERVICIO', 'PRODUCTO'] as const).map((tipo) => (
+
+                            {/* Fila PRIORITARIA: cantidad, precio y el botón Agregar van juntos y
+                                arriba de las opciones secundarias, para que el botón nunca quede
+                                enterrado al final de una columna larga en pantallas angostas/zoom. */}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="number"
+                                    min="0.001"
+                                    step="0.001"
+                                    value={vm.freeQuoteItem.cantidad}
+                                    onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, cantidad: e.target.value }))}
+                                    placeholder="Cant."
+                                    className="w-full sm:w-24 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
+                                />
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={vm.freeQuoteItem.precioUnitario}
+                                    onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, precioUnitario: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
+                                    }}
+                                    placeholder="P. Unit."
+                                    className="w-full sm:w-32 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
+                                />
+                                <div className="flex-1" />
+                                <div className="flex gap-2">
                                     <button
-                                        key={tipo}
                                         type="button"
-                                        onClick={() => vm.setFreeQuoteItem((prev: any) => ({ ...prev, tipo }))}
-                                        className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${vm.freeQuoteItem.tipo === tipo ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                                        onClick={vm.handleAddFreeQuoteItem}
+                                        className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-black text-base shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-300/60 dark:ring-emerald-500/30 transition-all flex items-center justify-center gap-2"
                                     >
-                                        {tipo === 'SERVICIO' ? 'Servicio' : 'Producto'}
+                                        <Icon icon="solar:cart-plus-bold-duotone" className="text-xl" />
+                                        Agregar
                                     </button>
-                                ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => vm.setShowFreeQuoteItemForm(false)}
+                                        className="px-4 py-3.5 rounded-xl bg-gray-200 dark:bg-slate-800 hover:bg-gray-300 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold text-sm transition-all flex items-center justify-center shrink-0"
+                                        title="Cerrar form"
+                                    >
+                                        <Icon icon="solar:close-circle-bold-duotone" className="text-lg" />
+                                    </button>
+                                </div>
                             </div>
-                            {/* Afectación IGV: permite emitir la línea sin IGV (anticipo export/exonerado) */}
-                            <select
-                                value={vm.freeQuoteItem.afectacion}
-                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, afectacion: e.target.value }))}
-                                title="Afectación IGV de la línea"
-                                className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
-                            >
-                                <option value="10">Gravado (IGV)</option>
-                                <option value="20">Exonerado</option>
-                                <option value="30">Inafecto</option>
-                                <option value="40">Exportación</option>
-                                <optgroup label="Gratuito (transferencia gratuita)">
-                                    <option value="15">Gravado – Bonificación</option>
-                                    <option value="13">Gravado – Retiro</option>
-                                    <option value="21">Exonerado – Transf. gratuita</option>
-                                    <option value="31">Inafecto – Bonificación</option>
-                                    <option value="32">Inafecto – Retiro</option>
-                                </optgroup>
-                            </select>
-                            {/* Atajo: anticipo/adelanto del pedido como línea de servicio (exportación) */}
-                            <button
-                                type="button"
-                                onClick={() => vm.setFreeQuoteItem((prev: any) => ({ ...prev, tipo: 'SERVICIO', descripcion: 'ADELANTO DEL PEDIDO', afectacion: '40' }))}
-                                title="Rellenar como anticipo / adelanto del pedido"
-                                className="px-3 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/40 text-xs font-black text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all whitespace-nowrap"
-                            >
-                                Anticipo
-                            </button>
-                            {/* Producto externo con número de serie (garantía/trazabilidad).
-                                Solo para tipo Producto; al marcarlo aparece el campo de series en el carrito. */}
-                            {vm.freeQuoteItem.tipo === 'PRODUCTO' && (
-                                <label
-                                    title="Pedir el número de serie de este producto externo"
-                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-slate-100 cursor-pointer whitespace-nowrap"
+
+                            {/* Fila SECUNDARIA: opciones menos usadas, debajo del botón principal */}
+                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-violet-100 dark:border-violet-900/30">
+                                <div className="flex rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-1">
+                                    {(['SERVICIO', 'PRODUCTO'] as const).map((tipo) => (
+                                        <button
+                                            key={tipo}
+                                            type="button"
+                                            onClick={() => vm.setFreeQuoteItem((prev: any) => ({ ...prev, tipo }))}
+                                            className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${vm.freeQuoteItem.tipo === tipo ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                                        >
+                                            {tipo === 'SERVICIO' ? 'Servicio' : 'Producto'}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Afectación IGV: permite emitir la línea sin IGV (anticipo export/exonerado) */}
+                                <select
+                                    value={vm.freeQuoteItem.afectacion}
+                                    onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, afectacion: e.target.value }))}
+                                    title="Afectación IGV de la línea"
+                                    className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
                                 >
-                                    <input
-                                        type="checkbox"
-                                        checked={vm.freeQuoteItem.requiereSerie === true}
-                                        onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, requiereSerie: e.target.checked }))}
-                                        className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
-                                    />
-                                    N° de serie
-                                </label>
-                            )}
-                            <div className="flex-1" />
-                            <input
-                                type="number"
-                                min="0.001"
-                                step="0.001"
-                                value={vm.freeQuoteItem.cantidad}
-                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, cantidad: e.target.value }))}
-                                placeholder="Cant."
-                                className="w-full lg:w-24 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
-                            />
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={vm.freeQuoteItem.precioUnitario}
-                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, precioUnitario: e.target.value }))}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') vm.handleAddFreeQuoteItem();
-                                }}
-                                placeholder="P. Unit."
-                                className="w-full lg:w-32 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
-                            />
-                            <div className="flex gap-2">
+                                    <option value="10">Gravado (IGV)</option>
+                                    <option value="20">Exonerado</option>
+                                    <option value="30">Inafecto</option>
+                                    <option value="40">Exportación</option>
+                                    <optgroup label="Gratuito (transferencia gratuita)">
+                                        <option value="15">Gravado – Bonificación</option>
+                                        <option value="13">Gravado – Retiro</option>
+                                        <option value="21">Exonerado – Transf. gratuita</option>
+                                        <option value="31">Inafecto – Bonificación</option>
+                                        <option value="32">Inafecto – Retiro</option>
+                                    </optgroup>
+                                </select>
+                                {/* Atajo: anticipo/adelanto del pedido como línea de servicio (exportación) */}
                                 <button
                                     type="button"
-                                    onClick={vm.handleAddFreeQuoteItem}
-                                    className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => vm.setFreeQuoteItem((prev: any) => ({ ...prev, tipo: 'SERVICIO', descripcion: 'ADELANTO DEL PEDIDO', afectacion: '40' }))}
+                                    title="Rellenar como anticipo / adelanto del pedido"
+                                    className="px-3 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/40 text-xs font-black text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all whitespace-nowrap"
                                 >
-                                    <Icon icon="solar:cart-plus-bold-duotone" className="text-lg" />
-                                    Agregar
+                                    Anticipo
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => vm.setShowFreeQuoteItemForm(false)}
-                                    className="px-4 py-3 rounded-xl bg-gray-200 dark:bg-slate-800 hover:bg-gray-300 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold text-sm transition-all flex items-center justify-center"
-                                    title="Cerrar form"
-                                >
-                                    <Icon icon="solar:close-circle-bold-duotone" className="text-lg" />
-                                </button>
-                            </div>
+                                {/* Producto externo con número de serie (garantía/trazabilidad).
+                                    Solo para tipo Producto; al marcarlo aparece el campo de series en el carrito. */}
+                                {vm.freeQuoteItem.tipo === 'PRODUCTO' && (
+                                    <label
+                                        title="Pedir el número de serie de este producto externo"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-slate-100 cursor-pointer whitespace-nowrap"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={vm.freeQuoteItem.requiereSerie === true}
+                                            onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, requiereSerie: e.target.checked }))}
+                                            className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
+                                        />
+                                        N° de serie
+                                    </label>
+                                )}
                             </div>
                         </div>
                         <p className="mt-2 text-xs text-violet-700/80 dark:text-violet-300/80 font-semibold">
