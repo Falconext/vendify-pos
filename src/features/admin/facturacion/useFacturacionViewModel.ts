@@ -799,6 +799,11 @@ export const useFacturacionViewModel = () => {
             if (processedGuiaRef.current !== guiaKey) {
                 processedGuiaRef.current = guiaKey;
 
+                // Evita que el efecto de "reset a cliente vacío en FACTURA" (más abajo,
+                // keyed por formValues.comprobante) borre el cliente que se recién se
+                // precarga desde la guía — mismo blindaje que usa el flujo de cotización.
+                fromNVComprobanteRef.current = 'FACTURA';
+
                 // 1. Cliente
                 const newClient = {
                     id: guiaRemision.clienteId || 0,
@@ -827,35 +832,51 @@ export const useFacturacionViewModel = () => {
                     observaciones: prev.observaciones ? `${prev.observaciones}\n${refText}` : refText
                 }));
 
-                // 3. Productos (Detalles)
+                // 3. Productos (Detalles) — jala precio, imagen y afectación real del
+                // catálogo cuando el ítem tiene productoId (igual que al convertir una
+                // cotización/nota de venta). Sin match en catálogo (ítem libre de la
+                // guía) cae a los valores genéricos de antes.
                 if (guiaRemision.detalles && Array.isArray(guiaRemision.detalles)) {
                     resetProductInvoice();
+                    let huboSinPrecio = false;
                     guiaRemision.detalles.forEach((d: any) => {
+                        const productoEnCatalogo = products && Array.isArray(products)
+                            ? products.find((p: any) => p.id === d.productoId)
+                            : null;
+                        const precioUnitario = Number(productoEnCatalogo?.precioUnitario ?? 0);
+                        if (!precioUnitario) huboSinPrecio = true;
+                        const categoriaNombre = productoEnCatalogo
+                            ? (categories?.find((c: any) => c.id === productoEnCatalogo.categoriaId)?.nombre || "General")
+                            : "General";
+                        const tipoAfectacionIGV = productoEnCatalogo?.tipoAfectacionIGV || "10";
                         addProductsInvoice({
                             productoId: d.productoId || 0,
                             descripcion: d.descripcion,
-                            categoriaId: 1,
-                            precioUnitario: 0,
-                            categoriaNombre: "General",
-                            afectacionNombre: "Gravado – Operación Onerosa",
-                            tipoAfectacionIGV: "10",
-                            stock: 999,
+                            categoriaId: productoEnCatalogo?.categoriaId || 1,
+                            precioUnitario,
+                            categoriaNombre,
+                            afectacionNombre: NOMBRE_AFECTACION[tipoAfectacionIGV] || "Gravado – Operación Onerosa",
+                            tipoAfectacionIGV,
+                            stock: productoEnCatalogo?.stock ?? 999,
                             codigo: d.codigoProducto,
-                            unidadMedidaId: 1,
+                            unidadMedidaId: productoEnCatalogo?.unidadMedidaId || 1,
                             unidadMedidaNombre: d.unidadMedida || "NIU",
-                            estado: "ACTIVO",
-                            codigoBarras: "",
+                            estado: productoEnCatalogo?.estado || "ACTIVO",
+                            codigoBarras: productoEnCatalogo?.codigoBarras || "",
+                            imagenUrl: productoEnCatalogo?.imagenUrl || null,
                             cantidadToInvoice: d.cantidad,
                             discount: 0,
                             cantidad: d.cantidad,
-                            precioBase: 0,
-                            atributosTecnicos: d.producto?.atributosTecnicos || undefined,
+                            precioBase: precioUnitario,
+                            atributosTecnicos: d.producto?.atributosTecnicos || productoEnCatalogo?.atributosTecnicos || undefined,
                         } as any);
                     });
 
-                    setTimeout(() => {
-                        useAlertStore.getState().alert("Guía cargada. Por favor, asigne los precios unitarios a los productos.", "info");
-                    }, 500);
+                    if (huboSinPrecio) {
+                        setTimeout(() => {
+                            useAlertStore.getState().alert("Guía cargada. Algunos ítems no tienen producto en catálogo — asigna su precio manualmente.", "info");
+                        }, 500);
+                    }
                 }
             }
 

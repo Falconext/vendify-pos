@@ -262,24 +262,28 @@ const GuiaRemision = () => {
         documento: `${guia.serie}-${guia.correlativo}`,
         destinatario: guia.destinatarioRazonSocial,
         motivo: MOTIVOS_TRASLADO[guia.tipoTraslado] || guia.tipoTraslado,
-        estadoSunat: (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                guia.estadoSunat === 'ACEPTADO'
-                ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
-                guia.estadoSunat === 'RECHAZADO' || guia.estadoSunat === 'FALLIDO_ENVIO'
-                ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' :
-                guia.estadoSunat === 'ENVIADO'
-                ? 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400' :
-                'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-            }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                    guia.estadoSunat === 'ACEPTADO' ? 'bg-emerald-500' :
-                    guia.estadoSunat === 'RECHAZADO' || guia.estadoSunat === 'FALLIDO_ENVIO' ? 'bg-rose-500' :
-                    guia.estadoSunat === 'ENVIADO' ? 'bg-violet-500' : 'bg-blue-500'
-                }`}></span>
-                {guia.estadoSunat === 'FALLIDO_ENVIO' ? 'FALLIDO' : (guia.estadoSunat || 'PENDIENTE')}
-            </span>
-        ),
+        estadoSunat: (() => {
+            // EMITIDO es el estado de éxito real de una guía (el enum no tiene
+            // 'ACEPTADO' — ese es propio de Comprobante), por eso antes una guía
+            // emitida caía al color por defecto en vez de verde.
+            const estado = guia.estadoSunat || 'PENDIENTE';
+            const tone =
+                estado === 'EMITIDO' || estado === 'REGISTRADO'
+                    ? { badge: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', dot: 'bg-emerald-500' }
+                    : estado === 'RECHAZADO' || estado === 'FALLIDO_ENVIO' || estado === 'ANULADO'
+                        ? { badge: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400', dot: 'bg-rose-500' }
+                        : estado === 'PENDIENTE_CONCILIACION'
+                            ? { badge: 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300', dot: 'bg-sky-500' }
+                            : estado === 'ENVIADO'
+                                ? { badge: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400', dot: 'bg-violet-500' }
+                                : { badge: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', dot: 'bg-amber-500' };
+            return (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${tone.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`}></span>
+                    {estado === 'FALLIDO_ENVIO' ? 'FALLIDO' : estado}
+                </span>
+            );
+        })(),
         acciones: (
             <button
                 onClick={(e) => handleOpenMenu(e, guia)}
@@ -397,7 +401,7 @@ const GuiaRemision = () => {
                             <button
                                 onClick={() => {
                                     handleCloseMenu();
-                                    navigate("/administrador/facturacion/nuevo", { state: { guiaRemision: selectedRow } });
+                                    navigate("/administrador/facturacion/nuevo", { state: { guiaRemision: selectedRow, defaultType: 'FACTURA' } });
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             >
