@@ -208,6 +208,14 @@ interface CajaState {
 
 // Usamos apiClient con baseURL y token via interceptores
 
+// Fecha de HOY en la zona horaria del negocio (America/Lima), en formato
+// YYYY-MM-DD. No usar `new Date().toISOString()`: eso devuelve UTC, y desde las
+// 19:00 de Lima ya es el día siguiente, así que el filtro por defecto saltaba a
+// mañana y el historial de caja salía vacío. 'en-CA' formatea como YYYY-MM-DD,
+// igual que `parseRangeDates` en el backend.
+const hoyLima = () =>
+  new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+
 export const useCajaStore = create<CajaState>()(
   devtools(
     (set, get) => ({
@@ -228,8 +236,8 @@ export const useCajaStore = create<CajaState>()(
         totalPages: 0,
       },
       filters: {
-        fechaInicio: new Date().toISOString().split('T')[0],
-        fechaFin: new Date().toISOString().split('T')[0],
+        fechaInicio: hoyLima(),
+        fechaFin: hoyLima(),
         sedeId: null,
       },
 
@@ -606,7 +614,7 @@ export const useCajaStore = create<CajaState>()(
       },
 
       clearFilters: () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = hoyLima();
         set({
           filters: {
             fechaInicio: today,

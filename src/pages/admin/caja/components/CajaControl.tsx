@@ -130,6 +130,10 @@ const CajaControl: React.FC = () => {
     };
 
     const isAbierta = estadoCaja?.estado === 'ABIERTA';
+    // Con la caja cerrada, el backend devuelve el acumulado del DÍA (misma
+    // ventana que ventasDelDia); con turno abierto, lo del turno. La etiqueta
+    // acompaña ese cambio para no mentirle al usuario.
+    const periodoLabel = isAbierta ? 'Turno' : 'Día';
 
     useEscapeKey(() => setShowApertura(false), showApertura);
     useEscapeKey(() => setShowCierre(false), showCierre);
@@ -257,27 +261,30 @@ const CajaControl: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Grid - Only visible when Open */}
-            {isAbierta && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
-                        <div className="h-12 w-12 grid place-items-center bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300 rounded-2xl">
-                            <Icon icon="solar:wallet-money-bold-duotone" className="text-2xl" />
+            {/* Resumen del turno abierto o, si ya se cerró, del día. */}
+            {estadoCaja && (
+                <div className={`grid grid-cols-1 gap-6 ${isAbierta ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                    {/* El monto inicial solo existe mientras el turno está abierto. */}
+                    {isAbierta && (
+                        <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
+                            <div className="h-12 w-12 grid place-items-center bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300 rounded-2xl">
+                                <Icon icon="solar:wallet-money-bold-duotone" className="text-2xl" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Monto Inicial</p>
+                                <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
+                                    {formatCurrency(Number(estadoCaja?.movimiento?.montoInicial || 0))}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Monto Inicial</p>
-                            <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
-                                {formatCurrency(Number(estadoCaja?.movimiento?.montoInicial || 0))}
-                            </p>
-                        </div>
-                    </div>
+                    )}
 
                     <div className="bg-white dark:bg-[#111827] p-6 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] flex items-center gap-4">
                         <div className="h-12 w-12 grid place-items-center bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300 rounded-2xl">
                             <Icon icon="solar:hand-money-bold-duotone" className="text-2xl" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Ingresos del Turno</p>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">{`Ingresos del ${periodoLabel}`}</p>
                             <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
                                 {formatCurrency(Number(estadoCaja?.ventasDelDia?.totalIngresos || 0))}
                             </p>
@@ -289,7 +296,7 @@ const CajaControl: React.FC = () => {
                             <Icon icon="solar:bill-list-bold-duotone" className="text-2xl" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Gastos del Turno</p>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">{`Gastos del ${periodoLabel}`}</p>
                             <p className="text-2xl font-extrabold text-slate-800 dark:text-white mt-0.5">
                                 {formatCurrency(Number(estadoCaja?.totalEgresos || 0))}
                             </p>
