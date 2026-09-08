@@ -77,7 +77,17 @@ export interface GastoOperativo {
     numeroOperacion?: string | null;
     descripcion: string | null;
     creadoEn: string;
+    // Gastos que vienen de la CAJA (MovimientoCaja EGRESO). Se muestran en su
+    // propio bloque y en solo lectura: se corrigen en Caja, no acá.
+    origen?: 'OPERATIVO' | 'CAJA';
+    editable?: boolean;
+    sedeNombre?: string | null;
+    usuarioNombre?: string | null;
 }
+
+/** Un gasto es de caja chica (solo lectura) si el backend lo marcó así. */
+export const esGastoDeCaja = (g: GastoOperativo): boolean =>
+    g.origen === 'CAJA' || g.editable === false;
 
 export interface IngresoManual {
     id: number;

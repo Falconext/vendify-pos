@@ -1,5 +1,6 @@
+import { Fragment } from 'react';
 import { Icon } from '@iconify/react';
-import { GastoOperativo, formatCurrency, formatMonto, formatDate, getCategoriaLabel, getCategoriaIcon, MEDIOS_PAGO_GASTO } from '../RentabilidadModel';
+import { GastoOperativo, formatCurrency, formatMonto, formatDate, getCategoriaLabel, getCategoriaIcon, MEDIOS_PAGO_GASTO, esGastoDeCaja } from '../RentabilidadModel';
 
 /** Convierte un gasto a soles: si es USD usa su tipo de cambio; si no, el monto tal cual. */
 function gastoEnSoles(gasto: GastoOperativo): number {
@@ -22,6 +23,16 @@ interface GastosPanelProps {
 }
 
 export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }: GastosPanelProps) {
+    // Dos orígenes distintos que suman al mismo total: los operativos se
+    // registran y editan acá; los de caja chica salen del cajón y son solo
+    // lectura (se corrigen en Caja, donde se registraron).
+    const operativos = gastos.filter(g => !esGastoDeCaja(g));
+    const deCaja = gastos.filter(esGastoDeCaja);
+    const listaOrdenada = [...operativos, ...deCaja];
+    const primerIndiceCaja = deCaja.length > 0 ? operativos.length : -1;
+    const totalOperativos = operativos.reduce((sum, g) => sum + gastoEnSoles(g), 0);
+    const totalCaja = deCaja.reduce((sum, g) => sum + gastoEnSoles(g), 0);
+
     return (
         <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent max-h-[360px] flex flex-col">
             {/* Header */}
@@ -32,7 +43,10 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                     </div>
                     <div>
                         <h3 className="font-bold text-gray-900 dark:text-white text-base">Gastos Operativos</h3>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{gastos.length} registros</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {operativos.length} operativos
+                            {deCaja.length > 0 && ` · ${deCaja.length} de caja`}
+                        </p>
                     </div>
                 </div>
                 <button
@@ -46,7 +60,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
 
             {/* List */}
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0 pr-1">
-                {gastos.length === 0 ? (
+                {listaOrdenada.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                         <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center mb-4">
                             <Icon icon="solar:bill-list-bold-duotone" className="text-3xl text-gray-300 dark:text-slate-600" />
@@ -62,9 +76,19 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                         </button>
                     </div>
                 ) : (
-                    gastos.map(gasto => (
+                    listaOrdenada.map((gasto, idx) => (
+                        <Fragment key={`${gasto.origen ?? 'OPERATIVO'}-${gasto.id}`}>
+                        {idx === primerIndiceCaja && (
+                            <div className="flex items-center gap-2 pt-3 pb-1">
+                                <Icon icon="solar:wallet-money-bold-duotone" className="text-amber-500 text-sm" />
+                                <span className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                    Gastos de caja chica
+                                </span>
+                                <span className="text-[10px] text-gray-400 dark:text-gray-500">· solo lectura, se editan en Caja</span>
+                                <div className="flex-1 border-t border-dashed border-gray-200 dark:border-slate-700" />
+                            </div>
+                        )}
                         <div
-                            key={gasto.id}
                             className="group flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors"
                         >
                             {/* Category icon */}
@@ -149,7 +173,16 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                                 )}
                             </div>
 
-                            {/* Actions */}
+                            {/* Actions — los gastos de caja no se tocan desde acá */}
+                            {esGastoDeCaja(gasto) ? (
+                                <span
+                                    className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold"
+                                    title={`Registrado en Caja${gasto.sedeNombre ? ` · ${gasto.sedeNombre}` : ''}${gasto.usuarioNombre ? ` · ${gasto.usuarioNombre}` : ''}`}
+                                >
+                                    <Icon icon="solar:lock-keyhole-minimalistic-bold" className="text-xs" />
+                                    Caja
+                                </span>
+                            ) : (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                                 <button
                                     onClick={() => onEditar(gasto)}
@@ -166,18 +199,36 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                                     <Icon icon="solar:trash-bin-trash-bold" className="text-sm" />
                                 </button>
                             </div>
+                            )}
                         </div>
+                        </Fragment>
                     ))
                 )}
             </div>
 
-            {/* Footer total */}
-            {gastos.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Monto configurado</span>
-                    <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
-                        {formatCurrency(gastos.reduce((sum, g) => sum + gastoEnSoles(g), 0))}
-                    </span>
+            {/* Footer: cada origen por separado y el total real del periodo */}
+            {listaOrdenada.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-1.5">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gastos operativos</span>
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 tabular-nums">
+                            {formatCurrency(totalOperativos)}
+                        </span>
+                    </div>
+                    {deCaja.length > 0 && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gastos de caja chica</span>
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 tabular-nums">
+                                {formatCurrency(totalCaja)}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 dark:border-slate-800">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total del periodo</span>
+                        <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
+                            {formatCurrency(totalOperativos + totalCaja)}
+                        </span>
+                    </div>
                 </div>
             )}
         </div>
