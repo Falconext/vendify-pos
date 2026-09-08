@@ -95,6 +95,16 @@ export interface MovimientoCaja {
 
 export interface EstadoCaja {
   estado: 'CERRADA' | 'ABIERTA' | 'PENDIENTE_CIERRE';
+  // Turnos de días anteriores que se abrieron y nunca se cerraron: sus
+  // movimientos sí se contabilizan, pero nadie contó el cajón (sin arqueo).
+  pendientesDeCierre?: {
+    id: number;
+    fecha: string;
+    turno: string | null;
+    sedeId: number | null;
+    sede: string | null;
+    usuario: string | null;
+  }[];
   totalEgresos?: number;
   totalTransferenciasEnviadas?: number;
   totalTransferenciasRecibidas?: number;
