@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { get, post } from '../utils/fetch';
+import apiClient from '../utils/apiClient';
 import useAlertStore from './alert';
 
 export interface IKardexFilters {
@@ -51,6 +52,7 @@ export interface IKardexState {
   kardex: IKardexResponse | null;
   loading: boolean;
   getKardex: (params: { page?: number; limit?: number } & IKardexFilters) => Promise<void>;
+  exportKardex: (filters: IKardexFilters, formato?: 'excel' | 'csv') => Promise<void>;
   createMovimientoAjuste: (data: {
     productoId: number;
     stockAnterior: number;
@@ -101,6 +103,43 @@ export const useKardexStore = create<IKardexState>()(devtools((set, _get) => ({
       useAlertStore.getState().alert('Error al cargar kardex', 'error');
     } finally {
       set({ loading: false }, false, 'KARDEX_LOADING_DONE');
+      useAlertStore.setState({ loading: false });
+    }
+  },
+  exportKardex: async (filters, formato = 'excel') => {
+    try {
+      set({ loading: true }, false, 'KARDEX_EXPORT_LOADING');
+      useAlertStore.setState({ loading: true });
+
+      // Solo los filtros con valor: un string vacío haría fallar la validación
+      // de tipoMovimiento (IsEnum) o de las fechas (IsDateString) en el backend.
+      const params = Object.entries(filters)
+        .filter(([, value]) => value !== undefined && value !== null && value !== '')
+        .reduce((obj, [key, value]) => ({ ...obj, [key]: String(value) }), {} as Record<string, string>);
+
+      const query = new URLSearchParams(params).toString();
+      const response = await apiClient.get(
+        `kardex/exportar/${formato}${query ? `?${query}` : ''}`,
+        // La exportación recorre todo el rango sin paginar, así que necesita
+        // más margen que los 12s por defecto del cliente.
+        { responseType: 'blob', timeout: 120_000 },
+      );
+
+      const extension = formato === 'csv' ? 'csv' : 'xlsx';
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `kardex_movimientos.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      useAlertStore.getState().alert('Reporte descargado', 'success');
+    } catch (error) {
+      useAlertStore.getState().alert('Error al exportar el kardex', 'error');
+    } finally {
+      set({ loading: false }, false, 'KARDEX_EXPORT_DONE');
       useAlertStore.setState({ loading: false });
     }
   },

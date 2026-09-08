@@ -102,6 +102,15 @@ export default function MovementsView() {
                         <p className="text-sm text-slate-400 dark:text-gray-500 mt-0.5">Control de entradas, salidas y ajustes de inventario</p>
                     </div>
                 </div>
+                <button
+                    type="button"
+                    onClick={() => actions.exportToExcel('excel')}
+                    className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: ACCENT }}
+                >
+                    <Icon icon="solar:export-bold" width={18} />
+                    Exportar Excel
+                </button>
             </div>
 
             {/* Filtros */}
@@ -119,6 +128,9 @@ export default function MovementsView() {
                             name="fechaInicio"
                             onChange={actions.handleDate}
                             isLabel
+                            // El panel se monta en document.body para que no lo
+                            // recorte ni tape ningún contenedor con overflow.
+                            portal
                             value={moment(filters.fechaInicio, 'YYYY-MM-DD').format('DD/MM/YYYY')}
                         />
                     </div>
@@ -128,6 +140,9 @@ export default function MovementsView() {
                             name="fechaFin"
                             onChange={actions.handleDate}
                             isLabel
+                            // El panel se monta en document.body para que no lo
+                            // recorte ni tape ningún contenedor con overflow.
+                            portal
                             value={moment(filters.fechaFin, 'YYYY-MM-DD').format('DD/MM/YYYY')}
                         />
                     </div>

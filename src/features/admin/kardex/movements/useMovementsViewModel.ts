@@ -10,7 +10,7 @@ import { IMovementsViewModelState, MovimientoKardex, TIPOS_MOVIMIENTO } from './
 
 export const useMovementsViewModel = () => {
     // Stores
-    const { kardex, loading, getKardex } = useKardexStore();
+    const { kardex, loading, getKardex, exportKardex } = useKardexStore();
     const { getAllProducts, products } = useProductsStore();
     const { alert } = useAlertStore();
 
@@ -164,6 +164,16 @@ export const useMovementsViewModel = () => {
         }));
     };
 
+    // Exporta lo que hay en pantalla según los filtros activos, no solo la
+    // página visible: el backend recorre todo el rango sin paginar.
+    const exportToExcel = async (formato: 'excel' | 'csv' = 'excel') => {
+        if (!kardex?.paginacion?.total) {
+            alert('No hay movimientos para exportar', 'error');
+            return;
+        }
+        await exportKardex(state.filters, formato);
+    };
+
     const openModal = (data: MovimientoKardex) => {
         setState(prev => ({ ...prev, selectedMovimiento: data }));
     };
@@ -220,6 +230,7 @@ export const useMovementsViewModel = () => {
         setShowSuggestions: (v: boolean) => setState(prev => ({ ...prev, showSuggestions: v })),
         clearFilters,
         applyFilters,
+        exportToExcel,
         openModal,
         closeModal
     };
