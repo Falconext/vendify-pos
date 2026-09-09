@@ -120,6 +120,15 @@ const esAfectacionGratuita = (codigo: any): boolean => {
     return (n >= 11 && n <= 16) || n === 21 || (n >= 31 && n <= 37);
 };
 
+// Operación de exportación (Catálogo 51). Debe coincidir con la detección del backend
+// (comprobante.service → esExportacion): la exportación de SERVICIOS (0200/0201/0202…)
+// empieza con '02', pero la exportación de BIENES (0102) y la exportación con anticipos
+// (0113) no, hay que detectarlas aparte.
+const esCodigoExportacion = (codigo: any): boolean => {
+    const cod = String(codigo ?? '').trim();
+    return cod.startsWith('02') || cod === '0102' || cod === '0113';
+};
+
 const isCompleteEnvioDespacho = (data: EnvioDespachoFormData) => {
     const celular = cleanText(data.celularDest).replace(/\D/g, '');
     return Boolean(
@@ -2106,14 +2115,9 @@ export const useFacturacionViewModel = () => {
     const igvRate = 0.18;
 
     // Operación de exportación (Catálogo 51): fuerza todas las líneas a exportación
-    // (afectación 40, sin IGV). Debe coincidir con la detección del backend
-    // (comprobante.service → esExportacion) para que el preview cuadre con el XML.
+    // (afectación 40, sin IGV) para que el preview cuadre con el XML.
     const operacionActual = tiposOperacion.find((op: any) => op.id === formValues.tipoOperacionId);
-    const esOperacionExportacion = !!operacionActual?.codigo && (
-        String(operacionActual.codigo).startsWith('02') ||
-        operacionActual.codigo === '0102' ||
-        operacionActual.codigo === '0113'
-    );
+    const esOperacionExportacion = esCodigoExportacion(operacionActual?.codigo);
 
     let sumGravadas = 0;
     let sumExoneradas = 0;
@@ -2173,10 +2177,10 @@ export const useFacturacionViewModel = () => {
     const addInvoiceReceipt = async () => {
         if (!validateForm()) return;
         const selectedOperacion = tiposOperacion.find(op => op.id === formValues.tipoOperacionId);
-        // Operaciones de exportación (Catálogo 51: 0102/0200/0201/0202…): el receptor es NO
-        // domiciliado (pasaporte/otros), así que NO se exige RUC de 11 dígitos.
+        // Operaciones de exportación (Catálogo 51: 0102/0113/0200/0201/0202…): el receptor
+        // es NO domiciliado (pasaporte/otros), así que NO se exige RUC de 11 dígitos.
         if (formValues?.comprobante === "FACTURA" && selectedClient?.nroDoc?.length !== 11 && !esOperacionExportacion) {
-            return useAlertStore.getState().alert("El cliente debe tener RUC (11 dígitos) para generar una factura. Para exportación a no domiciliados, elige un Tipo de operación de exportación (0102/0200/0201/0202).", "error");
+            return useAlertStore.getState().alert("El cliente debe tener RUC (11 dígitos) para generar una factura. Para exportación a no domiciliados, elige un Tipo de operación de exportación (0102/0113/0200/0201/0202).", "error");
         }
         if ((serie === "" || correlative === "") && formValues?.comprobante === "NOTA DE CREDITO") {
             return useAlertStore.getState().alert("Serie y correlativo son obligatorios para nota de credito", "error")
