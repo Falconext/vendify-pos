@@ -3,6 +3,7 @@ import moment from 'moment';
 import QRCode from 'qrcode';
 import { IGuiaRemision } from '@/zustand/guia-remision';
 import { useAuthStore } from '@/zustand/auth';
+import { BRAND } from '@/lib/branding';
 
 interface GuiaRemisionPrintProps {
     guia: IGuiaRemision;
@@ -12,6 +13,15 @@ interface GuiaRemisionPrintProps {
 const GuiaRemisionPrint = forwardRef<HTMLDivElement, GuiaRemisionPrintProps>(({ guia, company }, ref) => {
     const { auth } = useAuthStore();
     const [qrCodeDataUrl, setQrCodeDataUrl] = React.useState('');
+    // Marca del pie: igual que en el comprobante — la del reseller si la empresa
+    // pertenece a uno, si no la del sistema. Antes estaba escrito "SmartClic" /
+    // "www.smartclic.pe" a mano, así que a todos los clientes les salía impresa
+    // una marca ajena en la guía que entregan al transportista.
+    const reseller = company?.reseller;
+    const brandName = reseller?.whiteLabelNombre || BRAND.name;
+    const brandWebsite = (reseller?.whiteLabelWebsite || BRAND.website)
+        .replace(/^https?:\/\//, '')
+        .replace(/\/$/, '');
 
     React.useEffect(() => {
         if (guia) {
@@ -221,17 +231,22 @@ const GuiaRemisionPrint = forwardRef<HTMLDivElement, GuiaRemisionPrintProps>(({ 
                 </div>
 
                 <div className="mt-8 text-center text-[9px] font-bold">
-                    <p>"GRACIAS POR ELEGIR {company?.razonSocial} PARA CUBRIR SUS REQUERIMIENTOS DE MATERIALES MEDICOS"</p>
+                    {/* Mismo pie que el comprobante y la cotización: sin el rubro (antes
+                        decía "DE MATERIALES MEDICOS" fijo, que solo aplicaba a una empresa). */}
+                    <p>GRACIAS POR ELEGIR {(company?.nombreComercial || company?.razonSocial || '').toUpperCase()} PARA CUBRIR SUS REQUERIMIENTOS</p>
                     <p>VUELVA PRONTO</p>
                 </div>
 
                 <div className="mt-2 text-[8px] flex justify-between text-gray-500">
                     <span>USUARIO: {auth?.nombre || 'ADMIN'} {moment().format('DD/MM/YYYY HH:mm')}</span>
-                    <span>Representación impresa de la GUÍA DE REMISIÓN ELECTRÓNICA REMITENTE. Autorizado mediante resolución N° 054-006-0001490 /SUNAT. Consulte su comprobante en www.smartclic.pe</span>
+                    {/* No se pone "Consulte su comprobante en <web>": hoy no existe una
+                        consulta pública de comprobantes, así que ese enlace mandaba al
+                        destinatario a la landing. El acceso real es el QR de SUNAT. */}
+                    <span>Representación impresa de la GUÍA DE REMISIÓN ELECTRÓNICA REMITENTE. Autorizado mediante resolución N° 054-006-0001490 /SUNAT.</span>
                 </div>
                 <div className="text-center mt-2">
-                    <div className="font-bold text-sm">SmartClic ™</div>
-                    <div className="text-[9px]">Comprobante emitido a través de www.smartclic.pe</div>
+                    <div className="font-bold text-sm">{brandName} ™</div>
+                    <div className="text-[9px]">Comprobante emitido a través de {brandWebsite}</div>
                 </div>
 
             </div>

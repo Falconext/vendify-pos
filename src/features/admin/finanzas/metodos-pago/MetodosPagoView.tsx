@@ -111,8 +111,8 @@ function MetodoRow({ metodo, maxTotal, expanded, onToggle }: {
     );
 }
 
-export default function MetodosPagoView() {
-    const vm = useMetodosPagoViewModel();
+export default function MetodosPagoView({ sedeId }: { sedeId?: number | null } = {}) {
+    const vm = useMetodosPagoViewModel(sedeId);
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
     const isDarkMode = useThemeStore((s) => s.isDarkMode);

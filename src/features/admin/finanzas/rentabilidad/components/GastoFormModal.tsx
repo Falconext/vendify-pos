@@ -18,9 +18,15 @@ interface GastoFormModalProps {
     onClose: () => void;
     onCrear: (data: GastoFormData) => Promise<boolean>;
     onActualizar: (id: number, data: Partial<GastoFormData>) => Promise<boolean>;
+    /** Sedes de la empresa para asignar el gasto. Vacío = empresa de una sola sede. */
+    sedesOptions?: Array<{ id: number; value: string }>;
+    /** Sede sugerida al abrir el modal (la que está viendo el usuario). */
+    sedeIdActual?: number | null;
 }
 
 const INITIAL_FORM = {
+    // '' = gasto de toda la empresa; un id = gasto de esa sede.
+    sedeId: '',
     categoria: 'PUBLICIDAD',
     etiqueta: '',
     monto: '',
@@ -61,6 +67,8 @@ export default function GastoFormModal({
     onClose,
     onCrear,
     onActualizar,
+    sedesOptions = [],
+    sedeIdActual = null,
 }: GastoFormModalProps) {
     const [form, setForm] = useState(INITIAL_FORM);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -81,6 +89,7 @@ export default function GastoFormModal({
     useEffect(() => {
         if (gastoEditando) {
             setForm({
+                sedeId: (gastoEditando as any).sedeId != null ? String((gastoEditando as any).sedeId) : '',
                 categoria: gastoEditando.categoria,
                 etiqueta: gastoEditando.etiqueta ?? '',
                 monto: String(gastoEditando.monto),
@@ -97,10 +106,16 @@ export default function GastoFormModal({
                 descripcion: gastoEditando.descripcion ?? '',
             });
         } else {
-            setForm({ ...INITIAL_FORM, fecha: getDefaultDate(mesActual, anioActual) });
+            // Al crear, se sugiere la sede que el usuario está viendo; si está en
+            // "Todas las sedes" queda como gasto de empresa.
+            setForm({
+                ...INITIAL_FORM,
+                sedeId: sedeIdActual ? String(sedeIdActual) : '',
+                fecha: getDefaultDate(mesActual, anioActual),
+            });
         }
         setErrors({});
-    }, [gastoEditando, isOpen, mesActual, anioActual]);
+    }, [gastoEditando, isOpen, mesActual, anioActual, sedeIdActual]);
 
     if (!isOpen) return null;
 
@@ -145,6 +160,9 @@ export default function GastoFormModal({
             ...(form.recurrenteDiario ? { fechaInicio: form.fecha } : {}),
             ...(form.recurrenteDiario && form.fechaFin ? { fechaFin: form.fechaFin } : {}),
             categoria: form.categoria,
+            // Vacío = gasto de toda la empresa. Se manda null explícito para que al
+            // EDITAR se pueda mover un gasto de una sede al ámbito empresa.
+            sedeId: form.sedeId ? parseInt(form.sedeId, 10) : null,
             monto: parseFloat(form.monto),
             moneda: form.moneda,
             ...(form.moneda === 'USD' && form.tipoCambio ? { tipoCambio: parseFloat(form.tipoCambio) } : {}),
@@ -210,6 +228,30 @@ export default function GastoFormModal({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+                    {/* Sede — solo si la empresa tiene más de una */}
+                    {sedesOptions.length > 1 && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Sede
+                            </label>
+                            <select
+                                value={form.sedeId}
+                                onChange={(e) => handleChange('sedeId', e.target.value)}
+                                className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                            >
+                                <option value="">Toda la empresa (gasto compartido)</option>
+                                {sedesOptions.map(s => (
+                                    <option key={s.id} value={String(s.id)}>{s.value}</option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                {form.sedeId
+                                    ? 'Este gasto se le carga solo a esa sede.'
+                                    : 'Un gasto compartido (alquiler central, contador) no se le carga a ninguna sede: solo suma en la vista de todas las sedes.'}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Categoría */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

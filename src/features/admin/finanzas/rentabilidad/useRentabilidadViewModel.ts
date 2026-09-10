@@ -30,7 +30,13 @@ interface RentabilidadState {
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
 
-export function useRentabilidadViewModel() {
+/**
+ * @param sedeId sede por la que filtrar; `null`/undefined = todas las sedes.
+ *   OJO: los gastos marcados como "de toda la empresa" (sedeId null) no se le
+ *   cargan a ninguna sede — la vista lo advierte cuando hay una seleccionada.
+ */
+export function useRentabilidadViewModel(sedeId?: number | null) {
+    const qSede = sedeId ? `&sedeId=${sedeId}` : '';
     const { alert } = useAlertStore();
 
     const now = new Date();
@@ -62,14 +68,14 @@ export function useRentabilidadViewModel() {
     // ─── Fetchers ─────────────────────────────────────────────────────────────
 
     const fetchPnl = useCallback(async (mes: number, anio: number) => {
-        const resp = await get<PnlResponse>(`analisis-financiero/pnl?mes=${mes}&anio=${anio}`);
+        const resp = await get<PnlResponse>(`analisis-financiero/pnl?mes=${mes}&anio=${anio}${qSede}`);
         if (resp.data) {
             setState(prev => ({ ...prev, pnl: resp.data! }));
         }
     }, []);
 
     const fetchGastos = useCallback(async (mes: number, anio: number) => {
-        const resp = await get<GastoOperativo[]>(`analisis-financiero/gastos?mes=${mes}&anio=${anio}`);
+        const resp = await get<GastoOperativo[]>(`analisis-financiero/gastos?mes=${mes}&anio=${anio}${qSede}`);
         if (resp.data) {
             setState(prev => ({ ...prev, gastos: resp.data! }));
         }
@@ -85,7 +91,7 @@ export function useRentabilidadViewModel() {
     }, []);
 
     const fetchEvolucion = useCallback(async () => {
-        const resp = await get<EvolucionPoint[]>(`analisis-financiero/evolucion?meses=6`);
+        const resp = await get<EvolucionPoint[]>(`analisis-financiero/evolucion?meses=6${qSede}`);
         if (resp.data) {
             setState(prev => ({ ...prev, evolucion: resp.data! }));
         }
@@ -107,12 +113,11 @@ export function useRentabilidadViewModel() {
             }
         };
         load();
-    }, [state.mesActual, state.anioActual]);
+    }, [state.mesActual, state.anioActual, qSede]);
 
-    // Fetch evolution only once on mount
     useEffect(() => {
         fetchEvolucion();
-    }, []);
+    }, [qSede]);
 
     // ─── Navigation ───────────────────────────────────────────────────────────
 
@@ -282,6 +287,7 @@ export function useRentabilidadViewModel() {
         ingresoEditando: state.ingresoEditando,
         isSavingIngreso: state.isSavingIngreso,
         isCurrentOrFuture,
+        sedeFiltrada: !!sedeId,
 
         // Actions
         navegarMes,

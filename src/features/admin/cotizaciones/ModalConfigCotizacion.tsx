@@ -59,6 +59,8 @@ export default function ModalConfigCotizacion({
 
   const setVisible = (key: string, visible: boolean) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], visible } }));
+  const setTexto = (key: string, texto: string) =>
+    setConfig((prev) => ({ ...prev, [key]: { ...prev[key], texto } }));
   const setSize = (key: string, size: number) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], size } }));
 
@@ -134,10 +136,11 @@ export default function ModalConfigCotizacion({
               <div key={g} className="mb-5">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{g}</p>
                 <div className="space-y-2">
-                  {COTIZ_ELEMENTOS.filter((e) => e.grupo === g).map((el) => {
+                  {COTIZ_ELEMENTOS.filter((e) => e.grupo === g && (!e.soloEn || e.soloEn.includes(configKey))).map((el) => {
                     const cur = elemCfg(config, el.key);
                     return (
-                      <div key={el.key} className="flex items-center gap-2 p-2.5 rounded-xl border border-gray-100 dark:border-transparent bg-gray-50/50 dark:bg-slate-900/40">
+                      <div key={el.key} className="p-2.5 rounded-xl border border-gray-100 dark:border-transparent bg-gray-50/50 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2">
                         {el.hasVisible ? (
                           <button
                             onClick={() => setVisible(el.key, !cur.visible)}
@@ -149,12 +152,24 @@ export default function ModalConfigCotizacion({
                         ) : (
                           <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 dark:text-gray-600"><Icon icon="solar:lock-keyhole-minimalistic-bold" width={14} /></div>
                         )}
-                        <span className={`flex-1 text-sm ${cur.visible ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{el.label}</span>
+                        <span className={`flex-1 text-sm ${cur.visible || el.esModo ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{el.label}</span>
+                        {!el.esModo && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
                           <span className="w-11 text-center text-xs font-mono text-gray-600 dark:text-gray-300">{cur.size}{el.unit || 'px'}</span>
                           <button onClick={() => setSize(el.key, Math.min(el.max, cur.size + 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:add-square-bold" width={14} /></button>
                         </div>
+                        )}
+                        </div>
+                        {el.esTexto && cur.visible && (
+                          <textarea
+                            value={cur.texto}
+                            onChange={(e) => setTexto(el.key, e.target.value)}
+                            placeholder={el.placeholder}
+                            rows={2}
+                            className="mt-2 w-full resize-y rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
+                          />
+                        )}
                       </div>
                     );
                   })}

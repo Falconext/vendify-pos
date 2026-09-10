@@ -2,8 +2,20 @@ import moment from 'moment';
 import React, { useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { BRAND } from '@/lib/branding';
-import { elemCfg } from '@/features/admin/cotizaciones/cotizFormatoElementos';
+import { elemCfg, lineasDeTexto } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
+
+// Factor para pasar de precio (con IGV) a valor (sin IGV) en una línea. Se saca de
+// la propia línea cuando ya está persistida, así respeta la afectación real de cada
+// ítem sin asumir 18%; en el carrito en vivo aún no existen esos montos, así que se
+// deduce del código de afectación (Catálogo 07: 10-17 gravado, el resto sin IGV).
+const factorSinIgv = (item: any): number => {
+    const pu = Number(item?.mtoPrecioUnitario || 0);
+    const vu = Number(item?.mtoValorUnitario || 0);
+    if (pu > 0 && vu > 0) return vu / pu;
+    const n = Number(item?.tipoAfectacionIGV ?? item?.tipAfeIgv ?? 10);
+    return n >= 10 && n <= 17 ? 1 / 1.18 : 1;
+};
 
 const ComprobantePrintPage = ({
     productsInvoice,
@@ -78,6 +90,9 @@ const ComprobantePrintPage = ({
         : (company?.empresa as any)?.cotizFormatoConfig;
     const fc = (key: string) => elemCfg(formatoConfig, key);
     const px = (key: string) => `${fc(key).size}px`;
+    // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
+    // nota de venta, no a los comprobantes fiscales.
+    const sinIgv = fc('preciosSinIgv').visible;
 
     const round2 = (n: any) => parseFloat(n?.toFixed(2)) || 0;
     const parseAmount = (value: any, fallback = 0): number => {
@@ -629,8 +644,8 @@ console.log(formValues)
                                         {/* <div className="w-[10%] text-center border-r border-gray-400">V.UNIT.</div> */}
                                         {/* <div className="w-[8%] text-center border-r border-gray-400">IGV.</div> */}
                                         <div className="w-[9%] text-center border-r border-gray-400">MONEDA</div>
-                                        <div className="w-[10%] text-center border-r border-gray-400">P.UNIT.</div>
-                                        <div className="w-[10%] text-center">TOTAL</div>
+                                        <div className="w-[10%] text-center border-r border-gray-400">{sinIgv ? 'V.UNIT.' : 'P.UNIT.'}</div>
+                                        <div className="w-[10%] text-center">{sinIgv ? 'V.VENTA' : 'TOTAL'}</div>
                                     </div>
 
                                     {/* Table Body */}
@@ -639,10 +654,16 @@ console.log(formValues)
                                         // Precio final (ya con descuento) para el importe de la línea.
                                         const pUnitFinal = Number(item?.mtoPrecioUnitario || item?.precioUnitario || item?.producto?.precioUnitario || 0);
                                         // Precio de lista para la columna P.UNIT: en reimpresión = final + descuento por unidad.
-                                        const pUnit = item?.precioUnitario != null
+                                        const pUnitBruto = item?.precioUnitario != null
                                             ? Number(item.precioUnitario)
                                             : pUnitFinal + (Number(item?.mtoDescuento || 0) / (cant || 1));
-                                        const totalItem = Number(item?.total || (pUnitFinal * cant));
+                                        const totalBruto = Number(item?.total || (pUnitFinal * cant));
+                                        // Con el formato en "precios sin IGV" la columna pasa a ser el VALOR
+                                        // unitario y el importe el valor de venta. El factor se saca de la
+                                        // propia línea para respetar la afectación real de cada ítem.
+                                        const f = sinIgv ? factorSinIgv(item) : 1;
+                                        const pUnit = pUnitBruto * f;
+                                        const totalItem = totalBruto * f;
 
                                         return (
                                             <div key={i} className="flex border-b border-l border-r border-gray-300" style={{ fontSize: px('productos') }}>
@@ -681,7 +702,15 @@ console.log(formValues)
                                             )}
                                             {fc('observaciones').visible && (<>
                                             <div className="font-bold mb-1" style={{ fontSize: px('observaciones') }}>OBSERVACIONES:</div>
-                                            <div style={{ fontSize: px('observaciones') }}>{observation?.toUpperCase() || ''}</div>
+                                            {(() => {
+                                                // Cada línea escrita por el empresario se imprime en su propio
+                                                // renglón (el HTML colapsa los saltos), sin viñetas ni numeración.
+                                                const lineas = lineasDeTexto(observation);
+                                                if (!lineas.length) return <div style={{ fontSize: px('observaciones') }} />;
+                                                return lineas.map((l, i) => (
+                                                    <div key={i} style={{ fontSize: px('observaciones') }}>{l.toUpperCase()}</div>
+                                                ));
+                                            })()}
                                             </>)}
 
                                             {quotationTerms && (
@@ -815,10 +844,22 @@ console.log(formValues)
                                 {/* Custom Footer: Gracias / Vuelva Pronto */}
                                 <div className="mt-8 text-center text-[10px]">
                                     {fc('gracias').visible && (<>
-                                    <div className="font-bold mb-1" style={{ fontSize: px('gracias') }}>
-                                        GRACIAS POR ELEGIR {company?.empresa?.nombreComercial?.toUpperCase() || company?.empresa?.razonSocial?.toUpperCase()} PARA CUBRIR SUS REQUERIMIENTOS DE {company?.empresa?.rubro?.nombre?.toUpperCase() || 'SERVICIOS'}
-                                    </div>
-                                    <div className="font-bold mb-8" style={{ fontSize: px('gracias') }}>VUELVA PRONTO</div>
+                                    {(() => {
+                                        // Mensaje del pie configurable por empresa (Configurar formato →
+                                        // Mensaje de agradecimiento). Vacío = el texto por defecto de siempre.
+                                        const propio = lineasDeTexto(fc('gracias').texto);
+                                        if (propio.length) return propio.map((l, i) => (
+                                            <div key={i} className={`font-bold ${i === propio.length - 1 ? 'mb-8' : 'mb-1'}`} style={{ fontSize: px('gracias') }}>
+                                                {l.toUpperCase()}
+                                            </div>
+                                        ));
+                                        return (<>
+                                            <div className="font-bold mb-1" style={{ fontSize: px('gracias') }}>
+                                                GRACIAS POR ELEGIR {company?.empresa?.nombreComercial?.toUpperCase() || company?.empresa?.razonSocial?.toUpperCase()} PARA CUBRIR SUS REQUERIMIENTOS
+                                            </div>
+                                            <div className="font-bold mb-8" style={{ fontSize: px('gracias') }}>VUELVA PRONTO</div>
+                                        </>);
+                                    })()}
                                     </>)}
 
                                     <div className="flex justify-between items-end border-t border-gray-400 pt-1">
@@ -1108,7 +1149,7 @@ console.log(formValues)
                                 <div className="mt-8 text-center text-[10px]">
                                     {fc('gracias').visible && (<>
                                     <div className="font-bold mb-1" style={{ fontSize: px('gracias') }}>
-                                        GRACIAS POR ELEGIR {company?.empresa?.nombreComercial?.toUpperCase() || company?.empresa?.razonSocial?.toUpperCase()} PARA CUBRIR SUS REQUERIMIENTOS DE {company?.empresa?.rubro?.nombre?.toUpperCase() || 'SERVICIOS'}
+                                        GRACIAS POR ELEGIR {company?.empresa?.nombreComercial?.toUpperCase() || company?.empresa?.razonSocial?.toUpperCase()} PARA CUBRIR SUS REQUERIMIENTOS
                                     </div>
                                     <div className="font-bold mb-8" style={{ fontSize: px('gracias') }}>VUELVA PRONTO</div>
                                     </>)}

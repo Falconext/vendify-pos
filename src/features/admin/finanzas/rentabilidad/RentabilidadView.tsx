@@ -26,6 +26,10 @@ import HistorialFinancieroDrawer from './components/HistorialFinancieroDrawer';
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 interface RentabilidadViewProps {
+    /** Sedes de la empresa, para asignar la sede al registrar un gasto. */
+    sedesOptions?: Array<{ id: number; value: string }>;
+    /** Sede que se está viendo; se sugiere al crear un gasto. */
+    sedeIdActual?: number | null;
     mesActual: number;
     anioActual: number;
     pnl: PnlResponse | null;
@@ -169,6 +173,7 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
         abrirModalCrear, abrirModalEditar, cerrarModal,
         crearIngreso, actualizarIngreso, eliminarIngreso,
         abrirModalCrearIngreso, abrirModalEditarIngreso, cerrarModalIngreso,
+        sedesOptions = [], sedeIdActual = null,
     } = props;
 
     const isNeta = (pnl?.gananciaNeta ?? 0) >= 0;
@@ -232,7 +237,13 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
             label: 'Gastos op.',
             value: formatCurrency(pnl?.gastosTotales ?? 0),
             mini: 'bars',
-            sub: pnl ? `Publicidad ${formatCurrency(pnl.gastoPublicidad)}` : 'sin gastos',
+            // Viendo una sede: los gastos compartidos no se le cargan, pero hay que
+            // decir cuánto quedó fuera o el número engaña.
+            sub: pnl
+                ? (pnl.gastosEmpresa
+                    ? `Publicidad ${formatCurrency(pnl.gastoPublicidad)} · ${formatCurrency(pnl.gastosEmpresa)} de empresa no incluidos`
+                    : `Publicidad ${formatCurrency(pnl.gastoPublicidad)}`)
+                : 'sin gastos',
         },
         {
             label: 'Utilidad neta',
@@ -458,6 +469,8 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                 onClose={cerrarModal}
                 onCrear={crearGasto}
                 onActualizar={actualizarGasto}
+                sedesOptions={sedesOptions}
+                sedeIdActual={sedeIdActual}
             />
 
             {/* ── Ingreso Form Modal ── */}

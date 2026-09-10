@@ -13,6 +13,14 @@ export interface ElemDef {
   min: number;
   max: number;
   unit?: string;
+  /** Opción de modo (solo on/off): no se muestra el control de tamaño. */
+  esModo?: boolean;
+  /** El elemento admite un texto propio editable (se guarda en `texto`). */
+  esTexto?: boolean;
+  /** Ayuda mostrada en el campo de texto. */
+  placeholder?: string;
+  /** Formatos donde aplica. Si se omite, aplica a todos. */
+  soloEn?: string[];
   grupo: 'Encabezado' | 'Cuerpo' | 'Pie';
 }
 
@@ -39,12 +47,22 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'descuentos', label: 'Descuentos', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'igv', label: 'IGV', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'montoTotal', label: 'Monto total', hasVisible: true, defaultSize: 18, min: 10, max: 24, grupo: 'Cuerpo' },
+  // Modo: imprime la columna de precio como VALOR unitario (sin IGV) y el importe
+  // de línea como valor de venta. El bloque de totales no cambia — ya muestra
+  // Op. gravadas (sin IGV) + IGV + Total.
+  { key: 'preciosSinIgv', label: 'Precios unitarios sin IGV', hasVisible: true, defaultVisible: false, esModo: true, defaultSize: 12, min: 12, max: 12, grupo: 'Cuerpo', soloEn: ['cotizFormatoConfig', 'notaVentaFormatoConfig'] },
   { key: 'qrPagos', label: 'QR de pago (Yape / Plin)', hasVisible: true, defaultVisible: false, defaultSize: 90, min: 60, max: 180, unit: 'px', grupo: 'Cuerpo' },
   { key: 'cuentas', label: 'Cuentas bancarias', hasVisible: true, defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
-  { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
+  // El mensaje del pie es editable: si la empresa no escribe uno propio se usa el
+  // texto por defecto ("GRACIAS POR ELEGIR <empresa> PARA CUBRIR SUS
+  // REQUERIMIENTOS" + "VUELVA PRONTO"). Admite varias líneas.
+  { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, esTexto: true, placeholder: 'Dejar vacío para usar el mensaje por defecto', defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
 ];
 
-export type CotizConfig = Record<string, { visible?: boolean; size?: number }>;
+export type CotizConfig = Record<
+  string,
+  { visible?: boolean; size?: number; texto?: string }
+>;
 
 /** Lee visibilidad y tamaño de un elemento con sus valores por defecto. */
 export function elemCfg(config: CotizConfig | undefined | null, key: string) {
@@ -54,5 +72,19 @@ export function elemCfg(config: CotizConfig | undefined | null, key: string) {
     // Si no hay valor guardado, se usa defaultVisible del elemento (default: true).
     visible: c.visible !== undefined ? c.visible : (def?.defaultVisible ?? true),
     size: c.size ?? def?.defaultSize ?? 12,
+    // Vacío = usar el texto por defecto que arma cada plantilla.
+    texto: String(c.texto ?? '').trim(),
   };
+}
+
+/**
+ * Parte un texto libre en líneas para imprimirlo como renglones separados. El
+ * empresario escribe una observación por línea en el textarea; el HTML colapsa
+ * los saltos, así que hay que separarlas explícitamente.
+ */
+export function lineasDeTexto(texto: string | undefined | null): string[] {
+  return String(texto ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 }

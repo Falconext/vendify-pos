@@ -343,8 +343,8 @@ function EmptyState({ mes, anio }: { mes: number; anio: number }) {
 
 const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-export default function CategoriasView() {
-    const vm = useCategoriasViewModel();
+export default function CategoriasView({ sedeId }: { sedeId?: number | null } = {}) {
+    const vm = useCategoriasViewModel(sedeId);
     const { data, isLoading, mesActual, anioActual, expandedCat, isCurrentOrFuture } = vm;
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';

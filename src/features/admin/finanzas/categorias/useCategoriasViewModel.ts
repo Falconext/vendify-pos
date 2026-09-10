@@ -15,7 +15,7 @@ interface State {
     isGeneratingPDF: boolean;
 }
 
-export function useCategoriasViewModel() {
+export function useCategoriasViewModel(sedeId?: number | null) {
     const { auth } = useAuthStore();
     const now = new Date();
     const [state, setState] = useState<State>({
@@ -31,7 +31,7 @@ export function useCategoriasViewModel() {
         setState(prev => ({ ...prev, isLoading: true }));
         try {
             const resp = await get<CategoriasResponse>(
-                `analisis-financiero/categorias?mes=${mes}&anio=${anio}`,
+                `analisis-financiero/categorias?mes=${mes}&anio=${anio}${sedeId ? `&sedeId=${sedeId}` : ''}`,
             );
             if (resp.data) setState(prev => ({ ...prev, data: resp.data! }));
         } finally {
@@ -41,7 +41,7 @@ export function useCategoriasViewModel() {
 
     useEffect(() => {
         fetchData(state.mesActual, state.anioActual);
-    }, [state.mesActual, state.anioActual]);
+    }, [state.mesActual, state.anioActual, sedeId]);
 
     const navegarMes = useCallback((delta: -1 | 1) => {
         setState(prev => {

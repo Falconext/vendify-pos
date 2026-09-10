@@ -25,7 +25,7 @@ const today = () => {
 
 const monthStart = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 
-export function useMetodosPagoViewModel() {
+export function useMetodosPagoViewModel(sedeId?: number | null) {
     const now = new Date();
     const { auth } = useAuthStore();
     const [state, setState] = useState<State>({
@@ -55,12 +55,13 @@ export function useMetodosPagoViewModel() {
                 params.set('mes', String(state.mesActual));
                 params.set('anio', String(state.anioActual));
             }
+            if (sedeId) params.set('sedeId', String(sedeId));
             const resp = await get<MetodosPagoResponse>(`analisis-financiero/metodos-pago?${params}`);
             if (resp.data) setState(prev => ({ ...prev, data: resp.data! }));
         } finally {
             setState(prev => ({ ...prev, isLoading: false }));
         }
-    }, [state.usarRango, state.fechaInicio, state.fechaFin, state.mesActual, state.anioActual]);
+    }, [state.usarRango, state.fechaInicio, state.fechaFin, state.mesActual, state.anioActual, sedeId]);
 
     useEffect(() => {
         fetchData();
