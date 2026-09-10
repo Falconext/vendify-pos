@@ -5,6 +5,7 @@ import { get, patch } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+import { dentroDelRangoLima } from '@/utils/fechaLima';
 
 interface ComisionDetalle {
     id: number;
@@ -126,10 +127,13 @@ export default function ComisionesView() {
         return data.vendedores
             .filter(v => filtroVendedor === null || v.vendedor.id === filtroVendedor)
             .map(v => {
-                const comisionesFiltradas = v.comisiones.filter(c => {
-                    const fechaStr = c.comprobante.fechaEmision.slice(0, 10);
-                    return fechaStr >= desde && fechaStr <= hasta;
-                });
+                // El día se toma en hora de Lima, no del ISO en UTC: una venta de las
+                // 19:00 de Lima ya es del día siguiente en UTC, así que con `.slice(0,10)`
+                // las ventas de la tarde-noche caían en el día equivocado y las del
+                // último día del mes se iban al mes siguiente.
+                const comisionesFiltradas = v.comisiones.filter(c =>
+                    dentroDelRangoLima(c.comprobante.fechaEmision, desde, hasta),
+                );
 
                 const totalComision  = comisionesFiltradas.reduce((s, c) => s + parseFloat(String(c.montoComision || 0)), 0);
                 const totalPagado    = comisionesFiltradas.filter(c => c.estado === 'PAGADO').reduce((s, c) => s + parseFloat(String(c.montoComision || 0)), 0);
