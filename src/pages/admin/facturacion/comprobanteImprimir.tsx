@@ -88,7 +88,8 @@ const ComprobantePrintPage = ({
         : _rc === 'NOTA DE VENTA'
         ? (company?.empresa as any)?.notaVentaFormatoConfig
         : (company?.empresa as any)?.cotizFormatoConfig;
-    const fc = (key: string) => elemCfg(formatoConfig, key);
+    const esFormatoFiscal = _rc === 'FACTURA' || _rc === 'BOLETA';
+    const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal);
     const px = (key: string) => `${fc(key).size}px`;
     // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
     // nota de venta, no a los comprobantes fiscales.
@@ -886,11 +887,20 @@ console.log(formValues)
                         ) : (
                             /* Standard invoice footer (Existing Logic for non-quotation) */
                             <div className="w-full">
+                                {/* Encabezado: cada línea respeta visibilidad y tamaño del formato (facturaFormatoConfig / boletaFormatoConfig) */}
                                 <div className="flex justify-between items-start">
-                                    {logoDataUrl && <img src={logoDataUrl} alt="logo" className="object-contain object-left" style={{ width: company?.empresa?.ticketLogoSize ?? 150, height: company?.empresa?.ticketLogoSize ?? 150, objectFit: 'contain', objectPosition: 'left' }} />}
+                                    {fc('logo').visible && logoDataUrl && <img src={logoDataUrl} alt="logo" className="object-contain object-left" style={{ width: fc('logo').size, height: fc('logo').size, objectFit: 'contain', objectPosition: 'left' }} />}
                                     <div className="flex-1 ml-4">
-                                        <h6 className="text-xl font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</h6>
-                                        <p className="text-xs">{company?.empresa?.direccion}<br />{sedeDireccion && <>SEDE: {sedeDireccion}<br /></>}{company?.empresa?.rubro?.nombre?.toUpperCase()}<br />{company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}<br /></>}{empresaNumero && <>CELULAR: {empresaNumero}<br /></>}EMAIL: {company?.email}{(company?.empresa as any)?.paginaWeb && <><br />WEB: {(company?.empresa as any).paginaWeb}</>}</p>
+                                        {fc('razonSocial').visible && <h6 className="font-bold leading-tight" style={{ fontSize: px('razonSocial') }}>{company?.empresa?.razonSocial?.toUpperCase()}</h6>}
+                                        <div className="leading-snug">
+                                            {fc('direccion').visible && <div style={{ fontSize: px('direccion') }}>{company?.empresa?.direccion}</div>}
+                                            {fc('direccion').visible && sedeDireccion && <div style={{ fontSize: px('direccion') }}>SEDE: {sedeDireccion}</div>}
+                                            {fc('rubro').visible && company?.empresa?.rubro?.nombre && <div style={{ fontSize: px('rubro') }}>{company?.empresa?.rubro?.nombre?.toUpperCase()}</div>}
+                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}</div>}
+                                            {fc('celular').visible && empresaNumero && <div style={{ fontSize: px('celular') }}>CELULAR: {empresaNumero}</div>}
+                                            {fc('email').visible && company?.email && <div style={{ fontSize: px('email') }}>EMAIL: {company?.email}</div>}
+                                            {fc('web').visible && (company?.empresa as any)?.paginaWeb && <div style={{ fontSize: px('web') }}>WEB: {(company?.empresa as any).paginaWeb}</div>}
+                                        </div>
                                     </div>
                                     <div className="border border-black px-4 pt-4 pb-2 text-center ml-4">
                                         <div className="text-xs">RUC: {company?.empresa?.ruc}</div>
@@ -901,8 +911,10 @@ console.log(formValues)
                                 </div>
                                 <div className="mt-4 mb-4">
                                     {/* Datos de Cliente + Comprobante en un solo cuadro (mismo estilo que cotización) */}
+                                    {(fc('datosCliente').visible || fc('datosCotizacion').visible) && (
                                     <div className="flex gap-6 mb-2 border border-black rounded-lg p-3">
-                                        <div className="flex-1 text-xs">
+                                        {fc('datosCliente').visible && (
+                                        <div className="flex-1" style={{ fontSize: px('datosCliente') }}>
                                             <div className="grid grid-cols-[80px_1fr] gap-y-1">
                                                 <span className="font-bold">CLIENTE:</span>
                                                 <span className="break-words">{selectedClient?.nombre?.toUpperCase() || '-'}</span>
@@ -920,7 +932,9 @@ console.log(formValues)
                                                 <span className="break-words leading-tight">{selectedClient?.direccion?.toUpperCase() || '-'}</span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 border-l border-gray-300 pl-6 text-xs">
+                                        )}
+                                        {fc('datosCotizacion').visible && (
+                                        <div className={`flex-1 ${fc('datosCliente').visible ? 'border-l border-gray-300 pl-6' : ''}`} style={{ fontSize: px('datosCotizacion') }}>
                                             <div className="grid grid-cols-[115px_1fr] gap-y-1">
                                                 <span className="font-bold">FECHA:</span>
                                                 <span>{moment(formValues?.fechaEmision || new Date()).format('DD/MM/YYYY')}</span>
@@ -983,7 +997,9 @@ console.log(formValues)
                                                 <span>{vendedorNombre}</span>
                                             </div>
                                         </div>
+                                        )}
                                     </div>
+                                    )}
 
                                     {hasCreditInstallments && (
                                         <div className="mt-2 border p-2 border-gray-300 rounded-md">
@@ -1003,33 +1019,33 @@ console.log(formValues)
                                     )}
                                 </div>
                                 {/* Información de Detracción - ANTES de productos */}
-                                {formValues?.tipoDetraccion && (
-                                    <div className="p-3 mt-3">
-                                        <p className="text-sm font-bold mb-2">OPERACIÓN SUJETA A DETRACCIÓN</p>
+                                {fc('detraccion').visible && formValues?.tipoDetraccion && (
+                                    <div className="p-3 mt-3" style={{ fontSize: px('detraccion') }}>
+                                        <p className="font-bold mb-2">OPERACIÓN SUJETA A DETRACCIÓN</p>
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                                             <div className="flex">
-                                                <span className="text-xs font-bold w-[130px]">Tipo Detracción:</span>
-                                                <span className="text-xs">{formValues.tipoDetraccion?.codigo} - {formValues.tipoDetraccion?.descripcion} ({formValues.tipoDetraccion?.porcentaje}%)</span>
+                                                <span className="font-bold w-[130px]">Tipo Detracción:</span>
+                                                <span>{formValues.tipoDetraccion?.codigo} - {formValues.tipoDetraccion?.descripcion} ({formValues.tipoDetraccion?.porcentaje}%)</span>
                                             </div>
                                             <div className="flex">
-                                                <span className="text-xs font-bold w-[100px]">Cuenta BN:</span>
-                                                <span className="text-xs">{formValues.cuentaBancoNacion || '-'}</span>
+                                                <span className="font-bold w-[100px]">Cuenta BN:</span>
+                                                <span>{formValues.cuentaBancoNacion || '-'}</span>
                                             </div>
                                             <div className="flex">
-                                                <span className="text-xs font-bold w-[130px]">Monto Detracción:</span>
-                                                <span className="text-xs">S/ {Number(formValues.montoDetraccion || 0).toFixed(2)}</span>
+                                                <span className="font-bold w-[130px]">Monto Detracción:</span>
+                                                <span>S/ {Number(formValues.montoDetraccion || 0).toFixed(2)}</span>
                                             </div>
                                             {formValues.medioPagoDetraccion && (
                                                 <div className="flex">
-                                                    <span className="text-xs font-bold w-[100px]">Medio de Pago:</span>
-                                                    <span className="text-xs">{formValues.medioPagoDetraccion?.codigo} - {formValues.medioPagoDetraccion?.descripcion}</span>
+                                                    <span className="font-bold w-[100px]">Medio de Pago:</span>
+                                                    <span>{formValues.medioPagoDetraccion?.codigo} - {formValues.medioPagoDetraccion?.descripcion}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
                                 <div className="w-full mb-3">
-                                    <div className="flex bg-gray-300 text-black font-bold border border-gray-400 text-xs py-1">
+                                    <div className="flex bg-gray-300 text-black font-bold border border-gray-400 py-1" style={{ fontSize: px('productos') }}>
                                         <div className="w-[8%] text-center border-r border-gray-400">N°</div>
                                         <div className="w-[10%] text-center border-r border-gray-400">CANT.</div>
                                         <div className="w-[10%] text-center border-r border-gray-400">UNIDAD</div>
@@ -1092,18 +1108,22 @@ console.log(formValues)
                                     })}
                                 </div>
 
-                                <div className="border border-black rounded-lg p-2 mb-2 font-bold text-center text-lg bg-gray-50">
+                                {fc('sonTexto').visible && (
+                                <div className="border border-black rounded-lg p-2 mb-2 font-bold text-center bg-gray-50" style={{ fontSize: px('sonTexto') }}>
                                     SON: {totalInWords || ''}
                                 </div>
+                                )}
 
                                 <div className="border border-black rounded-lg p-3 relative mb-10">
                                     <div className="flex justify-between items-start gap-4">
                                         <div className="w-2/3 pr-2">
                                             {formValues?.ordenCompraCliente && (
-                                            <div className="font-bold mb-1">N° ORDEN DE COMPRA: {String(formValues.ordenCompraCliente).toUpperCase()}</div>
+                                            <div className="font-bold mb-1" style={{ fontSize: px('observaciones') }}>N° ORDEN DE COMPRA: {String(formValues.ordenCompraCliente).toUpperCase()}</div>
                                             )}
-                                            <div className="font-bold mb-1">OBSERVACIONES:</div>
-                                            <div className="text-xs">{observation?.toUpperCase() || ''}</div>
+                                            {fc('observaciones').visible && (<>
+                                            <div className="font-bold mb-1" style={{ fontSize: px('observaciones') }}>OBSERVACIONES:</div>
+                                            <div style={{ fontSize: px('observaciones') }}>{observation?.toUpperCase() || ''}</div>
+                                            </>)}
                                             <div className="text-xs mt-2">
                                                 Representación impresa del Comprobante de Pago Electrónico.
                                                 <br />
@@ -1116,14 +1136,14 @@ console.log(formValues)
                                         <div className="w-1/3 text-right space-y-0.5">
                                             {isDocumentoFiscal && (
                                                 <>
-                                                    {fc('opGravadas').visible && <div className="flex justify-between"><span className="font-bold">OP. GRAVADAS:</span><span>S/ {round2(mtoOperGravadas).toFixed(2)}</span></div>}
-                                                    {fc('opExoneradas').visible && <div className="flex justify-between"><span className="font-bold">OP. EXONERADAS:</span><span>S/ {round2(mtoOperExoneradas).toFixed(2)}</span></div>}
-                                                    {fc('opInafectas').visible && <div className="flex justify-between"><span className="font-bold">OP. INAFECTAS:</span><span>S/ {round2(mtoOperInafectas).toFixed(2)}</span></div>}
-                                                    {fc('opGratuitas').visible && <div className="flex justify-between"><span className="font-bold">OP. GRATUITAS:</span><span>S/ {round2(mtoOperGratuitas).toFixed(2)}</span></div>}
-                                                    {fc('icbper').visible && <div className="flex justify-between"><span className="font-bold">ICBPER:</span><span>S/ {round2(mtoIcbper).toFixed(2)}</span></div>}
-                                                    {fc('subTotal').visible && <div className="flex justify-between"><span className="font-bold">SUB TOTAL:</span><span>S/ {round2(mtoOperGravadas + mtoOperExoneradas + mtoOperInafectas).toFixed(2)}</span></div>}
-                                                    {fc('descuentos').visible && <div className="flex justify-between"><span>DESCUENTOS TOTAL:</span><span>S/ {round2(totalDescuentos).toFixed(2)}</span></div>}
-                                                    {fc('igv').visible && <div className="flex justify-between"><span className="font-bold">IGV 18%:</span><span>S/ {round2(mtoIgv).toFixed(2)}</span></div>}
+                                                    {fc('opGravadas').visible && <div className="flex justify-between" style={{ fontSize: px('opGravadas') }}><span className="font-bold">OP. GRAVADAS:</span><span>S/ {round2(mtoOperGravadas).toFixed(2)}</span></div>}
+                                                    {fc('opExoneradas').visible && <div className="flex justify-between" style={{ fontSize: px('opExoneradas') }}><span className="font-bold">OP. EXONERADAS:</span><span>S/ {round2(mtoOperExoneradas).toFixed(2)}</span></div>}
+                                                    {fc('opInafectas').visible && <div className="flex justify-between" style={{ fontSize: px('opInafectas') }}><span className="font-bold">OP. INAFECTAS:</span><span>S/ {round2(mtoOperInafectas).toFixed(2)}</span></div>}
+                                                    {fc('opGratuitas').visible && <div className="flex justify-between" style={{ fontSize: px('opGratuitas') }}><span className="font-bold">OP. GRATUITAS:</span><span>S/ {round2(mtoOperGratuitas).toFixed(2)}</span></div>}
+                                                    {fc('icbper').visible && <div className="flex justify-between" style={{ fontSize: px('icbper') }}><span className="font-bold">ICBPER:</span><span>S/ {round2(mtoIcbper).toFixed(2)}</span></div>}
+                                                    {fc('subTotal').visible && <div className="flex justify-between" style={{ fontSize: px('subTotal') }}><span className="font-bold">SUB TOTAL:</span><span>S/ {round2(mtoOperGravadas + mtoOperExoneradas + mtoOperInafectas).toFixed(2)}</span></div>}
+                                                    {fc('descuentos').visible && <div className="flex justify-between" style={{ fontSize: px('descuentos') }}><span>DESCUENTOS TOTAL:</span><span>S/ {round2(totalDescuentos).toFixed(2)}</span></div>}
+                                                    {fc('igv').visible && <div className="flex justify-between" style={{ fontSize: px('igv') }}><span className="font-bold">IGV 18%:</span><span>S/ {round2(mtoIgv).toFixed(2)}</span></div>}
                                                 </>
                                             )}
                                             {!isDocumentoFiscal && totalDescuentos > 0 && (
@@ -1132,10 +1152,12 @@ console.log(formValues)
                                                     <span>- S/ {round2(totalDescuentos).toFixed(2)}</span>
                                                 </div>
                                             )}
-                                            <div className="flex justify-between items-center text-lg font-bold border-t border-black pt-1 mt-1">
+                                            {fc('montoTotal').visible && (
+                                            <div className="flex justify-between items-center font-bold border-t border-black pt-1 mt-1" style={{ fontSize: px('montoTotal') }}>
                                                 <span>MONTO TOTAL:</span>
                                                 <span>S/ {round2(mtoImpVenta).toFixed(2)}</span>
                                             </div>
+                                            )}
                                             {shouldShowRetention && (
                                                 <>
                                                     <div className="flex justify-between"><span className="font-bold">RETENCIÓN (3%):</span><span>S/ {displayRetencionMonto.toFixed(2)}</span></div>
@@ -1144,7 +1166,69 @@ console.log(formValues)
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* QR de pago (Yape / Plin) — oculto por defecto, se activa desde el formato */}
+                                    {fc('qrPagos').visible && (() => {
+                                        const emp = company?.empresa as any;
+                                        const qrs = [
+                                            { label: 'Yape', url: emp?.yapeQrUrl, numero: emp?.yapeNumero },
+                                            { label: 'Plin', url: emp?.plinQrUrl, numero: emp?.plinNumero },
+                                        ].filter((q) => q.url);
+                                        if (qrs.length === 0) return null;
+                                        const qrSize = fc('qrPagos').size;
+                                        return (
+                                            <div className="flex justify-end gap-6 mt-3">
+                                                {qrs.map((q, i) => (
+                                                    <div key={i} className="flex flex-col items-center">
+                                                        <div className="font-bold text-[11px] mb-1">{q.label}</div>
+                                                        <img src={q.url} alt={`QR ${q.label}`} style={{ width: qrSize, height: qrSize, objectFit: 'contain' }} className="border border-gray-300" />
+                                                        {q.numero && <div className="text-[10px] mt-1">{q.numero}</div>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
+
+                                {/* Cuentas bancarias — misma tabla compacta que la cotización */}
+                                {fc('cuentas').visible && (() => {
+                                    const emp = company?.empresa as any;
+                                    const nuevas = (Array.isArray(emp?.cuentasBancarias) ? emp.cuentasBancarias : [])
+                                        .filter((c: any) => c.mostrarEnCotizacion !== false);
+                                    const cuentas = nuevas.length > 0
+                                        ? nuevas.map((c: any) => ({
+                                            banco: (c.banco || '').toUpperCase(),
+                                            moneda: c.moneda === 'USD' ? 'DÓLARES' : 'SOLES',
+                                            numeroCuenta: c.numeroCuenta || '',
+                                            cci: c.cci || '',
+                                        }))
+                                        : (emp?.bancoNombre
+                                            ? [{ banco: String(emp.bancoNombre).toUpperCase(), moneda: emp?.monedaCuenta || 'SOLES', numeroCuenta: emp?.numeroCuenta || '', cci: emp?.cci || '' }]
+                                            : []);
+                                    if (cuentas.length === 0) return null;
+                                    return (
+                                        <table className="w-full -mt-6 mb-4 border-collapse" style={{ fontSize: px('cuentas') }}>
+                                            <thead>
+                                                <tr>
+                                                    <th className="border border-black px-2 py-0.5 text-center bg-gray-100">BANCO</th>
+                                                    <th className="border border-black px-2 py-0.5 text-center bg-gray-100">MONEDA</th>
+                                                    <th className="border border-black px-2 py-0.5 text-center bg-gray-100">CUENTA</th>
+                                                    <th className="border border-black px-2 py-0.5 text-center bg-gray-100">CCI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {cuentas.map((c: any, i: number) => (
+                                                    <tr key={i}>
+                                                        <td className="border border-black px-2 py-0.5 text-center font-bold">{c.banco}</td>
+                                                        <td className="border border-black px-2 py-0.5 text-center">{c.moneda}</td>
+                                                        <td className="border border-black px-2 py-0.5 text-center">{c.numeroCuenta}</td>
+                                                        <td className="border border-black px-2 py-0.5 text-center">{c.cci}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    );
+                                })()}
 
                                 <div className="mt-8 text-center text-[10px]">
                                     {fc('gracias').visible && (<>

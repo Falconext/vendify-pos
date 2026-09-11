@@ -21,6 +21,10 @@ export interface ElemDef {
   placeholder?: string;
   /** Formatos donde aplica. Si se omite, aplica a todos. */
   soloEn?: string[];
+  /** Tamaño por defecto en factura/boleta cuando difiere del de cotización. */
+  defaultSizeFiscal?: number;
+  /** Etiqueta alternativa para factura/boleta. */
+  labelFiscal?: string;
   grupo: 'Encabezado' | 'Cuerpo' | 'Pie';
 }
 
@@ -29,12 +33,13 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'nombreComercial', label: 'Nombre comercial', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'direccion', label: 'Dirección', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'rubro', label: 'Rubro / actividad', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
-  { key: 'razonSocial', label: 'Razón social', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
+  // En factura/boleta la razón social es el título del documento (20px), en cotización es una línea más.
+  { key: 'razonSocial', label: 'Razón social', hasVisible: true, defaultSize: 12, defaultSizeFiscal: 20, min: 8, max: 24, grupo: 'Encabezado' },
   { key: 'celular', label: 'Celular', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'email', label: 'Email', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'web', label: 'Página web', hasVisible: true, defaultSize: 12, min: 8, max: 18, grupo: 'Encabezado' },
   { key: 'datosCliente', label: 'Datos del cliente', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
-  { key: 'datosCotizacion', label: 'Datos de la cotización', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
+  { key: 'datosCotizacion', label: 'Datos de la cotización', labelFiscal: 'Datos del comprobante', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'productos', label: 'Tabla de productos', hasVisible: false, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'sonTexto', label: 'Total en letras (SON:)', hasVisible: true, defaultSize: 18, min: 10, max: 24, grupo: 'Cuerpo' },
   { key: 'observaciones', label: 'Observaciones', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
@@ -43,6 +48,7 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'opExoneradas', label: 'Op. exoneradas', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'opInafectas', label: 'Op. inafectas', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'opGratuitas', label: 'Op. gratuitas', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
+  { key: 'icbper', label: 'ICBPER', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo', soloEn: ['facturaFormatoConfig', 'boletaFormatoConfig'] },
   { key: 'subTotal', label: 'Sub total', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'descuentos', label: 'Descuentos', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
   { key: 'igv', label: 'IGV', hasVisible: true, defaultSize: 12, min: 8, max: 16, grupo: 'Cuerpo' },
@@ -64,14 +70,21 @@ export type CotizConfig = Record<
   { visible?: boolean; size?: number; texto?: string }
 >;
 
-/** Lee visibilidad y tamaño de un elemento con sus valores por defecto. */
-export function elemCfg(config: CotizConfig | undefined | null, key: string) {
+/** Campos de empresa que guardan el formato de factura/boleta (usan defaults fiscales). */
+export const FORMATO_KEYS_FISCALES = ['facturaFormatoConfig', 'boletaFormatoConfig'] as const;
+
+/**
+ * Lee visibilidad, tamaño y texto propio de un elemento con sus valores por defecto.
+ * `fiscal` = true para factura/boleta (aplica defaultSizeFiscal cuando existe).
+ */
+export function elemCfg(config: CotizConfig | undefined | null, key: string, fiscal = false) {
   const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
   const c = (config || {})[key] || {};
+  const defaultSize = (fiscal ? def?.defaultSizeFiscal : undefined) ?? def?.defaultSize ?? 12;
   return {
     // Si no hay valor guardado, se usa defaultVisible del elemento (default: true).
     visible: c.visible !== undefined ? c.visible : (def?.defaultVisible ?? true),
-    size: c.size ?? def?.defaultSize ?? 12,
+    size: c.size ?? defaultSize,
     // Vacío = usar el texto por defecto que arma cada plantilla.
     texto: String(c.texto ?? '').trim(),
   };

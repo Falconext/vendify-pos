@@ -4,7 +4,7 @@ import useEmpresasStore from '@/zustand/empresas';
 import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from '@/pages/admin/facturacion/comprobanteImprimir';
-import { COTIZ_ELEMENTOS, CotizConfig, elemCfg } from './cotizFormatoElementos';
+import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES } from './cotizFormatoElementos';
 
 interface Props {
   isOpen: boolean;
@@ -50,6 +50,8 @@ export default function ModalConfigCotizacion({
   const alertStore = useAlertStore();
   const [config, setConfig] = useState<CotizConfig>({});
   const [saving, setSaving] = useState(false);
+  // Factura/boleta: defaults de tamaño propios y etiquetas alternativas.
+  const esFiscal = (FORMATO_KEYS_FISCALES as readonly string[]).includes(configKey);
 
   useEffect(() => {
     if (isOpen) {
@@ -137,7 +139,7 @@ export default function ModalConfigCotizacion({
                 <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{g}</p>
                 <div className="space-y-2">
                   {COTIZ_ELEMENTOS.filter((e) => e.grupo === g && (!e.soloEn || e.soloEn.includes(configKey))).map((el) => {
-                    const cur = elemCfg(config, el.key);
+                    const cur = elemCfg(config, el.key, esFiscal);
                     return (
                       <div key={el.key} className="p-2.5 rounded-xl border border-gray-100 dark:border-transparent bg-gray-50/50 dark:bg-slate-900/40">
                         <div className="flex items-center gap-2">
@@ -152,7 +154,7 @@ export default function ModalConfigCotizacion({
                         ) : (
                           <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 dark:text-gray-600"><Icon icon="solar:lock-keyhole-minimalistic-bold" width={14} /></div>
                         )}
-                        <span className={`flex-1 text-sm ${cur.visible || el.esModo ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{el.label}</span>
+                        <span className={`flex-1 text-sm ${cur.visible || el.esModo ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{esFiscal && el.labelFiscal ? el.labelFiscal : el.label}</span>
                         {!el.esModo && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
