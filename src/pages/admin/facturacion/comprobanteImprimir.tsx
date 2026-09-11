@@ -80,15 +80,17 @@ const ComprobantePrintPage = ({
     // Configuración del formato (visibilidad + tamaño por elemento).
     // Cada tipo de comprobante tiene su propio formato independiente:
     // cotización, nota de venta, factura y boleta.
+    // Notas de crédito/débito usan el formato de factura, igual que el PDF del backend.
     const _rc = String(receipt || '').toUpperCase();
-    const formatoConfig = _rc === 'FACTURA'
+    const usaFormatoFactura = _rc === 'FACTURA' || /^NOTA DE (CR[EÉ]DITO|D[EÉ]BITO)$/.test(_rc);
+    const formatoConfig = usaFormatoFactura
         ? (company?.empresa as any)?.facturaFormatoConfig
         : _rc === 'BOLETA'
         ? (company?.empresa as any)?.boletaFormatoConfig
         : _rc === 'NOTA DE VENTA'
         ? (company?.empresa as any)?.notaVentaFormatoConfig
         : (company?.empresa as any)?.cotizFormatoConfig;
-    const esFormatoFiscal = _rc === 'FACTURA' || _rc === 'BOLETA';
+    const esFormatoFiscal = usaFormatoFactura || _rc === 'BOLETA';
     const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal);
     const px = (key: string) => `${fc(key).size}px`;
     // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
