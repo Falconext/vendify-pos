@@ -263,7 +263,7 @@ export default function ResellerGanancias() {
                                         {clientesView.map((c) => (
                                             <tr key={c.empresaId} className={BODY_TR}>
                                                 <td className="py-3 pl-2 pr-3"><EntityCell name={c.razonSocial} /></td>
-                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[150px]">{c.plan}</td>
+                                                <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 truncate max-w-[150px]">{c.plan}{c.esAnual && <span className="ml-1 rounded-md bg-sky-50 dark:bg-sky-900/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400" title={`Plan anual: cobra ${fmt(Number(c.ingresoAnual || 0))} y paga ${fmt(Number(c.costoAnual || 0))} una vez al año; en esta tabla va prorrateado a 12 meses`}>anual ÷12</span>}</td>
                                                 <td className="py-3 px-3">
                                                     {c.esWhiteLabel
                                                         ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 whitespace-nowrap"><Icon icon="solar:crown-star-bold" width={12} /> Marca blanca</span>

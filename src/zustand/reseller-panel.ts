@@ -46,6 +46,10 @@ export interface ResellerProyeccionCliente {
     costo: number;
     ganancia: number;
     ingresoEsEstimado: boolean;
+    /** Plan anual: ingreso/costo vienen prorrateados a 12 meses; aquí el total del año. */
+    esAnual?: boolean;
+    ingresoAnual?: number | null;
+    costoAnual?: number | null;
 }
 
 export interface ResellerProyeccionData {
