@@ -55,6 +55,16 @@ export interface ResellerProyeccionData {
         costoMensual: number;
         /** Cuota mensual de marca blanca (0 si aún no tiene clientes en producción). */
         costoMarcaBlanca?: number;
+        /** Detalle de la cuota de marca blanca: cuánto, por qué (tramo) y cuándo. */
+        marcaBlanca?: {
+            cuota: number;
+            cicloIniciado: boolean;
+            desde: string | null;
+            proximoCobro: string | null;
+            clientesProduccion: number;
+            tramoHasta: number | null;
+            siguienteCuota: number | null;
+        };
         gananciaMensual: number;
         margenPct: number;
         clientesConPrecio: number;

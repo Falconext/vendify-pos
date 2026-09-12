@@ -92,6 +92,34 @@ export default function ResellerGanancias() {
                 </div>
 
                 <div className="lg:col-span-2">
+                    {r!.marcaBlanca && (
+                        <div className="mb-4 rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">Cuota de marca blanca</p>
+                                    <p className="text-2xl font-extrabold text-slate-800 dark:text-white">{fmt(r!.marcaBlanca.cuota)}<span className="text-sm font-semibold text-slate-500 dark:text-gray-400"> / mes</span></p>
+                                    <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">
+                                        Por usar la plataforma con tu propia marca. Se calcula por tus clientes en producción:
+                                        tienes <span className="font-bold">{r!.marcaBlanca.clientesProduccion}</span>
+                                        {r!.marcaBlanca.tramoHasta != null
+                                            ? <> (tramo hasta {r!.marcaBlanca.tramoHasta}). {r!.marcaBlanca.siguienteCuota != null && <>A partir de {r!.marcaBlanca.tramoHasta + 1} clientes pasa a {fmt(r!.marcaBlanca.siguienteCuota)}/mes.</>}</>
+                                            : <> (tramo máximo).</>}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    {r!.marcaBlanca.cicloIniciado && r!.marcaBlanca.proximoCobro ? (
+                                        <>
+                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-gray-400">Próximo cobro</p>
+                                            <p className="text-lg font-extrabold text-slate-800 dark:text-white">{new Date(r!.marcaBlanca.proximoCobro).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                            <p className="text-[11px] text-slate-500 dark:text-gray-400">Se descuenta de tu saldo cada mes en esta fecha{r!.marcaBlanca.desde ? ` (desde el ${new Date(r!.marcaBlanca.desde).toLocaleDateString('es-PE')})` : ''}. Si no hay saldo, queda pendiente y se reintenta a diario.</p>
+                                        </>
+                                    ) : (
+                                        <p className="text-xs text-slate-600 dark:text-gray-400 max-w-[260px]">Empieza a cobrarse cuando actives tu primer cliente en producción, y se repite cada mes en esa misma fecha.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <KpiHero items={([
                         { label: 'Ingreso mensual', value: fmt(r!.ingresoMensual), mini: 'line', sub: `${r!.clientesConPrecio} con precio · ${r!.clientesEstimados} estimados` },
                         { label: 'Costo plataforma', value: fmt(r!.costoMensual + Number(r!.costoMarcaBlanca || 0)), mini: 'wave', warn: true, sub: Number(r!.costoMarcaBlanca || 0) > 0 ? `Clientes ${fmt(r!.costoMensual)} + marca blanca ${fmt(Number(r!.costoMarcaBlanca))}/mes` : 'Lo que pagas por tus clientes' },
