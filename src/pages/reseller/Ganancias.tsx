@@ -94,7 +94,7 @@ export default function ResellerGanancias() {
                 <div className="lg:col-span-2">
                     <KpiHero items={([
                         { label: 'Ingreso mensual', value: fmt(r!.ingresoMensual), mini: 'line', sub: `${r!.clientesConPrecio} con precio · ${r!.clientesEstimados} estimados` },
-                        { label: 'Costo plataforma', value: fmt(r!.costoMensual), mini: 'wave', warn: true, sub: 'Lo que pagas por tus clientes' },
+                        { label: 'Costo plataforma', value: fmt(r!.costoMensual + Number(r!.costoMarcaBlanca || 0)), mini: 'wave', warn: true, sub: Number(r!.costoMarcaBlanca || 0) > 0 ? `Clientes ${fmt(r!.costoMensual)} + marca blanca ${fmt(Number(r!.costoMarcaBlanca))}/mes` : 'Lo que pagas por tus clientes' },
                         { label: 'Ganancia mensual', value: fmt(r!.gananciaMensual), mini: 'bars', sub: `Margen ${r!.margenPct.toFixed(1)}%` },
                         { label: 'Renuevan en 30 días', value: String(r!.clientesPorRenovar), mini: 'donut', sub: `Costo estimado ${fmt(r!.costoRenovacionesProximas)}` },
                     ] as KpiHeroItem[])} />
@@ -175,6 +175,9 @@ export default function ResellerGanancias() {
                                 <div className="mt-3 space-y-1.5 text-sm">
                                     <div className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-slate-600 dark:text-gray-400"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Ganancia</span><span className="font-bold text-emerald-600 dark:text-emerald-400">{fmt(r!.gananciaMensual)}</span></div>
                                     <div className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-slate-600 dark:text-gray-400"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Costo plataforma</span><span className="font-bold text-rose-500 dark:text-rose-400">{fmt(r!.costoMensual)}</span></div>
+                                    {Number(r!.costoMarcaBlanca || 0) > 0 && (
+                                        <div className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-slate-600 dark:text-gray-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> Cuota marca blanca</span><span className="font-bold text-amber-600 dark:text-amber-400">{fmt(Number(r!.costoMarcaBlanca))}</span></div>
+                                    )}
                                     <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-1.5"><span className="text-slate-500 dark:text-gray-400">Margen</span><span className="font-extrabold text-slate-800 dark:text-white">{r!.margenPct.toFixed(1)}%</span></div>
                                 </div>
                             </>

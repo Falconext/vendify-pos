@@ -53,6 +53,8 @@ export interface ResellerProyeccionData {
         clientesActivos: number;
         ingresoMensual: number;
         costoMensual: number;
+        /** Cuota mensual de marca blanca (0 si aún no tiene clientes en producción). */
+        costoMarcaBlanca?: number;
         gananciaMensual: number;
         margenPct: number;
         clientesConPrecio: number;
@@ -73,6 +75,7 @@ export interface ResellerEstadoCuentaResumen {
     recargas: { total: number; cantidad: number };
     activaciones: { cobrado: number; cantidad: number };
     mensualidades: { cobrado: number; aplicadas: number; pendientes: number; rechazadas: number };
+    marcaBlanca?: { cobrado: number; aplicadas: number; pendientes: number; rechazadas: number };
     devoluciones: { total: number; cantidad: number };
     totalCobrado: number;
     flujoNeto: number;

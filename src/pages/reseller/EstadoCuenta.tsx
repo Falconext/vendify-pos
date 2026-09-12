@@ -16,8 +16,16 @@ const TIPO_OPTS = [
     { id: 'RECARGA', value: 'Recarga' },
     { id: 'ACTIVACION', value: 'Activación' },
     { id: 'MENSUALIDAD', value: 'Mensualidad' },
+    { id: 'MARCA_BLANCA', value: 'Marca blanca' },
     { id: 'DEVOLUCION', value: 'Devolución' },
 ];
+const TIPO_LABEL: Record<string, string> = {
+    RECARGA: 'Recarga',
+    ACTIVACION: 'Activación',
+    MENSUALIDAD: 'Mensualidad',
+    MARCA_BLANCA: 'Marca blanca',
+    DEVOLUCION: 'Devolución',
+};
 const ESTADO_OPTS = [
     { id: '', value: 'Todos los estados' },
     { id: 'APLICADO', value: 'Aplicado' },
@@ -26,7 +34,7 @@ const ESTADO_OPTS = [
 ];
 
 type EstadoFilter = '' | 'APLICADO' | 'PENDIENTE' | 'RECHAZADO';
-type TipoFilter = '' | 'RECARGA' | 'ACTIVACION' | 'MENSUALIDAD' | 'DEVOLUCION';
+type TipoFilter = '' | 'RECARGA' | 'ACTIVACION' | 'MENSUALIDAD' | 'MARCA_BLANCA' | 'DEVOLUCION';
 
 export default function ResellerEstadoCuenta() {
     const { auth, estadoCuenta, getEstadoCuenta } = useResellerEstadoCuentaViewModel();
@@ -180,6 +188,7 @@ export default function ResellerEstadoCuenta() {
                 const cobros = [
                     { name: 'Activaciones', value: Number(resumen.activaciones.cobrado || 0), cantidad: resumen.activaciones.cantidad },
                     { name: 'Mensualidades', value: Number(resumen.mensualidades.cobrado || 0), cantidad: resumen.mensualidades.aplicadas },
+                    { name: 'Marca blanca', value: Number(resumen.marcaBlanca?.cobrado || 0), cantidad: Number(resumen.marcaBlanca?.aplicadas || 0) },
                 ].filter((x) => x.value > 0);
                 const totalCobros = cobros.reduce((a, c) => a + c.value, 0);
                 const mens = resumen.mensualidades;
@@ -203,6 +212,9 @@ export default function ResellerEstadoCuenta() {
                                     <div className="mt-2 space-y-1 text-xs text-slate-600 dark:text-gray-400">
                                         <div className="flex justify-between"><span>Activaciones ({resumen.activaciones.cantidad})</span><span className="font-semibold">{money(resumen.activaciones.cobrado)}</span></div>
                                         <div className="flex justify-between"><span>Mensualidades ({mens.aplicadas})</span><span className="font-semibold">{money(mens.cobrado)}</span></div>
+                                        {resumen.marcaBlanca && (Number(resumen.marcaBlanca.cobrado || 0) > 0 || Number(resumen.marcaBlanca.pendientes || 0) > 0) && (
+                                            <div className="flex justify-between"><span>Marca blanca ({resumen.marcaBlanca.aplicadas}{Number(resumen.marcaBlanca.pendientes || 0) > 0 ? ` · ${resumen.marcaBlanca.pendientes} pendiente${resumen.marcaBlanca.pendientes === 1 ? '' : 's'}` : ''})</span><span className="font-semibold">{money(resumen.marcaBlanca.cobrado)}</span></div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -286,7 +298,7 @@ export default function ResellerEstadoCuenta() {
                                                     : <span className="text-sm text-slate-400 dark:text-gray-500">Movimiento de saldo</span>}
                                             </td>
                                             <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 whitespace-nowrap">{m.fecha}</td>
-                                            <td className="py-3 px-3"><span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 whitespace-nowrap">{m.tipo}</span></td>
+                                            <td className="py-3 px-3"><span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 whitespace-nowrap">{TIPO_LABEL[m.tipo] ?? m.tipo}</span></td>
                                             <td className={`py-3 px-3 font-bold text-sm whitespace-nowrap ${montoCls}`}>{m.monto}</td>
                                             <td className="py-3 px-3"><EstadoPill estado={m.estado} /></td>
                                             <td className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400">{m.intento}</td>
