@@ -1023,6 +1023,7 @@ const ComprobantesInformales = () => {
                 auth={auth}
                 configKey="notaVentaFormatoConfig"
                 previewReceipt="NOTA DE VENTA"
+                previewSize={printSize as any}
                 title="Configurar formato de nota de venta"
                 savedMsg="Formato de nota de venta guardado"
             />

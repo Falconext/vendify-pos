@@ -141,4 +141,26 @@ describe('formato configurable en factura/boleta A4', () => {
     expect(html).toContain('JR. C MZ. S LT. 6'); // la dirección oculta en factura sí se ve en boleta
     expect(html).not.toContain('>BAZAR<'); // la línea de rubro oculta en boleta no se ve
   });
+
+  it('el ticket de nota de venta respeta mostrar/ocultar de notaVentaFormatoConfig', () => {
+    const renderTicketNV = (formato: Record<string, { visible?: boolean; size?: number }>) =>
+      render(
+        <ComprobantePrintPage
+          company={{ email: 'x@y.com', empresa: { ...empresaBase, notaVentaFormatoConfig: formato } }}
+          formValues={{ serie: 'NV01', correlativo: '1', mtoImpVenta: 10, mtoOperGravadas: 8.47, mtoIGV: 1.53 }}
+          size="TICKET" serie="NV01" correlative="1"
+          productsInvoice={[{ cantidad: 1, unidad: 'UNIDAD', descripcion: 'Prod', precioUnitario: 10, total: 10 }]}
+          total="10.00" mode="preview" receipt="NOTA DE VENTA"
+          selectedClient={{ nombre: 'CLIENTE', nroDoc: '10000000' }} totalInWords="DIEZ CON 00/100 SOLES" observation="OBS NV" includeProductImages={false}
+        />,
+      ).container.innerHTML;
+    const todo = renderTicketNV({});
+    expect(todo).toContain('JR. C MZ. S LT. 6');
+    expect(todo).toContain('GRACIAS POR SU COMPRA');
+    expect(todo).toContain('OBS NV');
+    const oculto = renderTicketNV({ direccion: { visible: false }, gracias: { visible: false }, observaciones: { visible: false } });
+    expect(oculto).not.toContain('JR. C MZ. S LT. 6');
+    expect(oculto).not.toContain('GRACIAS POR SU COMPRA');
+    expect(oculto).not.toContain('OBS NV');
+  });
 });

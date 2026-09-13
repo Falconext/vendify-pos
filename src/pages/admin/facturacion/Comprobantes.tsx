@@ -1313,6 +1313,7 @@ const Comprobantes = () => {
                 auth={auth}
                 configKey={configFormato === 'BOLETA' ? 'boletaFormatoConfig' : 'facturaFormatoConfig'}
                 previewReceipt={configFormato === 'BOLETA' ? 'BOLETA' : 'FACTURA'}
+                previewSize={printSize as any}
                 title={configFormato === 'BOLETA' ? 'Configurar formato de boleta' : 'Configurar formato de factura'}
                 savedMsg={configFormato === 'BOLETA' ? 'Formato de boleta guardado' : 'Formato de factura guardado'}
             />

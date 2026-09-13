@@ -5,6 +5,14 @@ import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from '@/pages/admin/facturacion/comprobanteImprimir';
 import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES } from './cotizFormatoElementos';
+import { FORMATOS_IMPRESION_INFO, type FormatoImpresion } from '@/utils/formatoImpresion';
+
+// Ancho real de cada formato en px (96dpi) y escala para que quepa en el panel.
+const PREVIEW_DIMS: Record<FormatoImpresion, { width: number; scale: number }> = {
+  A4: { width: 794, scale: 0.68 },
+  A5: { width: 559, scale: 0.85 },
+  TICKET: { width: 302, scale: 1 },
+};
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +26,12 @@ interface Props {
   title?: string;
   /** Mensaje al guardar. */
   savedMsg?: string;
+  /**
+   * Formato con el que arranca la vista previa (Ticket / A5 / A4). La página lo
+   * pasa desde su selector "Formato impresión" para que el modal muestre lo que
+   * realmente va a salir por la impresora; dentro del modal se puede cambiar.
+   */
+  previewSize?: FormatoImpresion;
 }
 
 const numberToWords = (n: number) =>
@@ -46,18 +60,21 @@ export default function ModalConfigCotizacion({
   previewReceipt = 'COTIZACIÓN',
   title = 'Configurar formato de cotización',
   savedMsg = 'Formato de cotización guardado',
+  previewSize = 'A4',
 }: Props) {
   const alertStore = useAlertStore();
   const [config, setConfig] = useState<CotizConfig>({});
   const [saving, setSaving] = useState(false);
+  const [previewFmt, setPreviewFmt] = useState<FormatoImpresion>(previewSize);
   // Factura/boleta: defaults de tamaño propios y etiquetas alternativas.
   const esFiscal = (FORMATO_KEYS_FISCALES as readonly string[]).includes(configKey);
 
   useEffect(() => {
     if (isOpen) {
       setConfig({ ...((auth?.empresa?.[configKey] as CotizConfig) || {}) });
+      setPreviewFmt(previewSize);
     }
-  }, [isOpen, auth, configKey]);
+  }, [isOpen, auth, configKey, previewSize]);
 
   const setVisible = (key: string, visible: boolean) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], visible } }));
@@ -184,13 +201,36 @@ export default function ModalConfigCotizacion({
           </div>
 
           {/* Preview */}
-          <div className="hidden md:flex flex-1 bg-gray-100 dark:bg-slate-950 overflow-auto p-6 justify-center">
-            <div style={{ width: 794, transform: 'scale(0.68)', transformOrigin: 'top center' }}>
+          <div className="hidden md:flex flex-1 flex-col bg-gray-100 dark:bg-slate-950 overflow-hidden">
+            {/* Selector de formato: la vista previa muestra el mismo layout que se imprime en cada uno. */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-gray-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60">
+              <div className="inline-flex bg-gray-100 dark:bg-slate-800 rounded-xl p-1 gap-0.5">
+                {[...FORMATOS_IMPRESION_INFO].reverse().map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setPreviewFmt(f.value)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${previewFmt === f.value ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                  >
+                    <Icon icon={f.icon} width={15} />
+                    {f.label}
+                    <span className="font-normal text-[10px] opacity-70">{f.sub}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {previewFmt === 'TICKET'
+                  ? 'Ticket térmico: se aplica mostrar/ocultar de cada elemento; los tamaños de texto son fijos para la impresora de 80mm.'
+                  : 'Se aplican visibilidad y tamaño de cada elemento, igual que en el PDF.'}
+              </p>
+            </div>
+            <div className="flex-1 overflow-auto p-6 flex justify-center">
+            <div style={{ width: PREVIEW_DIMS[previewFmt].width, transform: `scale(${PREVIEW_DIMS[previewFmt].scale})`, transformOrigin: 'top center' }}>
               <div className="bg-white shadow-xl">
                 <ComprobantePrintPage
                   company={previewCompany}
                   formValues={previewInvoice}
-                  size="A4"
+                  size={previewFmt}
                   serie="COT1"
                   correlative="1"
                   productsInvoice={SAMPLE_PRODUCTS}
@@ -207,6 +247,7 @@ export default function ModalConfigCotizacion({
                   quotationAdvance={0}
                 />
               </div>
+            </div>
             </div>
           </div>
         </div>
