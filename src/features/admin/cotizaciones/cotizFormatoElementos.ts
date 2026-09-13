@@ -3,6 +3,8 @@
 
 export interface ElemDef {
   key: string;
+  /** Tamaño histórico del elemento en el ticket de 80mm (px). Default 16. */
+  ticketBase?: number;
   label: string;
   /** Si el elemento se puede mostrar/ocultar. */
   hasVisible: boolean;
@@ -62,7 +64,7 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   // El mensaje del pie es editable: si la empresa no escribe uno propio se usa el
   // texto por defecto ("GRACIAS POR ELEGIR <empresa> PARA CUBRIR SUS
   // REQUERIMIENTOS" + "VUELVA PRONTO"). Admite varias líneas.
-  { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, esTexto: true, placeholder: 'Dejar vacío para usar el mensaje por defecto', defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
+  { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, esTexto: true, placeholder: 'Dejar vacío para usar el mensaje por defecto', defaultSize: 10, min: 7, max: 16, grupo: 'Pie', ticketBase: 15 },
 ];
 
 /**
@@ -124,6 +126,23 @@ export function elemCfg(config: CotizConfig | undefined | null, key: string, fis
     // Vacío = usar el texto por defecto que arma cada plantilla.
     texto: String(c.texto ?? '').trim(),
   };
+}
+
+/**
+ * Tamaño efectivo (px) de un elemento en el TICKET de 80mm.
+ *
+ * El ticket se imprime con fuente VT323 a 16px de base, mientras que los
+ * tamaños del modal están pensados para A4 (10-12px). Por eso el valor
+ * configurado no se aplica tal cual: se escala respecto a su default, de modo
+ * que sin configurar el ticket sale exactamente como siempre, y cada "+"/"−"
+ * del modal lo agranda o achica en proporción. `base` permite escalar líneas
+ * secundarias (p. ej. notas de lote a 12px) con el mismo factor.
+ */
+export function ticketPx(config: CotizConfig | undefined | null, key: string, fiscal = false, base?: number): number {
+  const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
+  const defaultSize = (fiscal ? def?.defaultSizeFiscal : undefined) ?? def?.defaultSize ?? 12;
+  const b = base ?? def?.ticketBase ?? 16;
+  return Math.max(8, Math.round((b * elemCfg(config, key, fiscal).size) / defaultSize));
 }
 
 /**

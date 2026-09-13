@@ -4,7 +4,7 @@ import useEmpresasStore from '@/zustand/empresas';
 import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from '@/pages/admin/facturacion/comprobanteImprimir';
-import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES } from './cotizFormatoElementos';
+import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES, ticketPx } from './cotizFormatoElementos';
 import { FORMATOS_IMPRESION_INFO, type FormatoImpresion } from '@/utils/formatoImpresion';
 
 // Ancho real de cada formato en px (96dpi) y escala para que quepa en el panel.
@@ -175,7 +175,7 @@ export default function ModalConfigCotizacion({
                         {!el.esModo && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
-                          <span className="w-11 text-center text-xs font-mono text-gray-600 dark:text-gray-300">{cur.size}{el.unit || 'px'}</span>
+                          <span className="w-11 text-center text-xs font-mono text-gray-600 dark:text-gray-300" title={previewFmt === 'TICKET' && !el.unit ? `Tamaño en ticket (equivale a ${cur.size}px en A4/A5)` : undefined}>{previewFmt === 'TICKET' && !el.unit ? ticketPx(config, el.key, esFiscal) : cur.size}{el.unit || 'px'}</span>
                           <button onClick={() => setSize(el.key, Math.min(el.max, cur.size + 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:add-square-bold" width={14} /></button>
                         </div>
                         )}
@@ -220,7 +220,7 @@ export default function ModalConfigCotizacion({
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 {previewFmt === 'TICKET'
-                  ? 'Ticket térmico: se aplica mostrar/ocultar de cada elemento; los tamaños de texto son fijos para la impresora de 80mm.'
+                  ? 'Ticket térmico: los tamaños se muestran ya convertidos a la fuente de 80mm (el logo del ticket se ajusta en Perfil → Configuración).'
                   : 'Se aplican visibilidad y tamaño de cada elemento, igual que en el PDF.'}
               </p>
             </div>

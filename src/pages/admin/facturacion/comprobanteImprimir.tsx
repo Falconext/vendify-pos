@@ -2,7 +2,7 @@ import moment from 'moment';
 import React, { useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { BRAND } from '@/lib/branding';
-import { elemCfg, lineasDeTexto } from '@/features/admin/cotizaciones/cotizFormatoElementos';
+import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
 
 // Factor para pasar de precio (con IGV) a valor (sin IGV) en una línea. Se saca de
@@ -95,6 +95,8 @@ const ComprobantePrintPage = ({
     // sizeOverride en cotizFormatoElementos.
     const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal, size === 'A5' ? 'A5' : undefined);
     const px = (key: string) => `${fc(key).size}px`;
+    // Ticket: tamaño configurado escalado a la base del ticket (ver ticketPx).
+    const tpx = (key: string, base?: number) => `${ticketPx(formatoConfig, key, esFormatoFiscal, base)}px`;
     // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
     // nota de venta, no a los comprobantes fiscales.
     const sinIgv = fc('preciosSinIgv').visible;
@@ -279,26 +281,27 @@ console.log(formValues)
                 {size === 'TICKET' ? (
                     <div className="">
                         {fc('logo').visible && logoDataUrl && <img src={logoDataUrl} alt="logo" className="mx-auto mb-1 object-contain" style={{ maxWidth: company?.empresa?.ticketLogoSize ?? 96, maxHeight: company?.empresa?.ticketLogoSize ?? 96, width: '100%', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />}
-                        {fc('razonSocial').visible && <p className="text-center text-[16px] font-bold">{company?.empresa?.razonSocial?.toUpperCase()}</p>}
-                        <p className={`text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>
-                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></>}
-                            {fc('direccion').visible && <>DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br /></>}
-                            {fc('direccion').visible && sedeDireccion && <>SEDE: {sedeDireccion}<br /></>}
-                            {fc('rubro').visible && company?.empresa?.rubro?.nombre && <>RUBRO: {company?.empresa?.rubro?.nombre?.toUpperCase()}<br /></>}
-                            {fc('celular').visible && empresaNumero && <>CELULAR: {empresaNumero}<br /></>}
-                            {fc('email').visible && company?.email && <>EMAIL: {company?.email}<br /></>}
-                            {fc('web').visible && (company?.empresa as any)?.paginaWeb && <>WEB: {(company?.empresa as any).paginaWeb}<br /></>}
+                        {fc('razonSocial').visible && <p className="text-center font-bold" style={{ fontSize: tpx('razonSocial') }}>{company?.empresa?.razonSocial?.toUpperCase()}</p>}
+                        {/* Cada dato del encabezado lleva su propio tamaño configurado (modal "Configurar formato"). */}
+                        <p className="text-center" style={{ fontSize: '16px' }}>
+                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <span style={{ fontSize: tpx('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></span>}
+                            {fc('direccion').visible && <span style={{ fontSize: tpx('direccion') }}>DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br /></span>}
+                            {fc('direccion').visible && sedeDireccion && <span style={{ fontSize: tpx('direccion') }}>SEDE: {sedeDireccion}<br /></span>}
+                            {fc('rubro').visible && company?.empresa?.rubro?.nombre && <span style={{ fontSize: tpx('rubro') }}>RUBRO: {company?.empresa?.rubro?.nombre?.toUpperCase()}<br /></span>}
+                            {fc('celular').visible && empresaNumero && <span style={{ fontSize: tpx('celular') }}>CELULAR: {empresaNumero}<br /></span>}
+                            {fc('email').visible && company?.email && <span style={{ fontSize: tpx('email') }}>EMAIL: {company?.email}<br /></span>}
+                            {fc('web').visible && (company?.empresa as any)?.paginaWeb && <span style={{ fontSize: tpx('web') }}>WEB: {(company?.empresa as any).paginaWeb}<br /></span>}
                             <span className="">RUC: {company?.empresa?.ruc}</span>
                         </p>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        <h2 className={`text-center font-bold ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{receipt === "COTIZACIÓN" ? "COTIZACIÓN DE VENTA ELECTRÓNICA" : /VENTA$/i.test(String(receipt || '')) ? `${receipt} ELECTRÓNICA` : `${receipt} DE VENTA ELECTRÓNICA`}<br />{formValues?.serie}-{formValues?.correlativo}</h2>
+                        <h2 className={`text-[16px] text-center font-bold`}>{receipt === "COTIZACIÓN" ? "COTIZACIÓN DE VENTA ELECTRÓNICA" : /VENTA$/i.test(String(receipt || '')) ? `${receipt} ELECTRÓNICA` : `${receipt} DE VENTA ELECTRÓNICA`}<br />{formValues?.serie}-{formValues?.correlativo}</h2>
                         <hr className="my-1 border-dashed border-[#222]" />
                         {fc('datosCliente').visible && (
                         <div>
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">FECHA/HORA:</span> {moment(formValues?.fechaEmision).format('DD/MM/YYYY HH:mm:ss')}</p>
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">RAZON SOCIAL:</span> {selectedClient?.nombre?.toUpperCase() || ''}</p>
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">NÚMERO DE DOCUMENTO:</span> {selectedClient?.nroDoc || ''}</p>
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">DIRECCION:</span> {selectedClient?.direccion?.toUpperCase() || ''}</p>
+                            <p style={{ fontSize: tpx('datosCliente') }}><span className="">FECHA/HORA:</span> {moment(formValues?.fechaEmision).format('DD/MM/YYYY HH:mm:ss')}</p>
+                            <p style={{ fontSize: tpx('datosCliente') }}><span className="">RAZON SOCIAL:</span> {selectedClient?.nombre?.toUpperCase() || ''}</p>
+                            <p style={{ fontSize: tpx('datosCliente') }}><span className="">NÚMERO DE DOCUMENTO:</span> {selectedClient?.nroDoc || ''}</p>
+                            <p style={{ fontSize: tpx('datosCliente') }}><span className="">DIRECCION:</span> {selectedClient?.direccion?.toUpperCase() || ''}</p>
                         </div>
                         )}
                         {/* Información de Detracción - ANTES de productos */}
@@ -306,24 +309,24 @@ console.log(formValues)
                             <>
                                 <hr className="my-1 border-dashed border-[#222]" />
                                 <div className="">
-                                    <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold mb-1`}>OPERACIÓN SUJETA A DETRACCIÓN</p>
+                                    <p className="font-bold mb-1" style={{ fontSize: tpx('detraccion') }}>OPERACIÓN SUJETA A DETRACCIÓN</p>
                                     <div className="space-y-0.5">
                                         <div className="flex justify-between">
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold`}>Tipo Detracción:</span>
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{formValues.tipoDetraccion?.codigo} - {formValues.tipoDetraccion?.descripcion} ({formValues.tipoDetraccion?.porcentaje}%)</span>
+                                            <span className="font-bold" style={{ fontSize: tpx('detraccion') }}>Tipo Detracción:</span>
+                                            <span style={{ fontSize: tpx('detraccion') }}>{formValues.tipoDetraccion?.codigo} - {formValues.tipoDetraccion?.descripcion} ({formValues.tipoDetraccion?.porcentaje}%)</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold`}>Monto Detracción:</span>
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>S/ {Number(formValues.montoDetraccion || 0).toFixed(2)}</span>
+                                            <span className="font-bold" style={{ fontSize: tpx('detraccion') }}>Monto Detracción:</span>
+                                            <span style={{ fontSize: tpx('detraccion') }}>S/ {Number(formValues.montoDetraccion || 0).toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold`}>Cuenta BN:</span>
-                                            <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{formValues.cuentaBancoNacion || '-'}</span>
+                                            <span className="font-bold" style={{ fontSize: tpx('detraccion') }}>Cuenta BN:</span>
+                                            <span style={{ fontSize: tpx('detraccion') }}>{formValues.cuentaBancoNacion || '-'}</span>
                                         </div>
                                         {formValues.medioPagoDetraccion && (
                                             <div className="flex justify-between">
-                                                <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold`}>Medio de Pago:</span>
-                                                <span className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>{formValues.medioPagoDetraccion?.codigo} - {formValues.medioPagoDetraccion?.descripcion}</span>
+                                                <span className="font-bold" style={{ fontSize: tpx('detraccion') }}>Medio de Pago:</span>
+                                                <span style={{ fontSize: tpx('detraccion') }}>{formValues.medioPagoDetraccion?.codigo} - {formValues.medioPagoDetraccion?.descripcion}</span>
                                             </div>
                                         )}
                                     </div>
@@ -333,44 +336,44 @@ console.log(formValues)
                         <hr className="my-1 border-dashed border-[#222]" />
                         <div className="">
                             <div className="flex text-center">
-                                <span className={`basis-[16%] shrink-0 text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>CANT.</span>
-                                <span className={`basis-[44%] shrink-0 text-left ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>DESCRIPCION</span>
-                                <span className={`basis-[20%] shrink-0 text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>P.U.</span>
-                                <span className={`basis-[20%] shrink-0 text-center ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}>IMP.</span>
+                                <span className="basis-[16%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>CANT.</span>
+                                <span className="basis-[44%] shrink-0 text-left" style={{ fontSize: tpx('productos') }}>DESCRIPCION</span>
+                                <span className="basis-[20%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>P.U.</span>
+                                <span className="basis-[20%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>IMP.</span>
                             </div>
                             {productsInvoice?.map((item: any, i: any) => (
                                 <div key={i} className="flex">
-                                    <span className={`basis-[16%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{item?.cantidad || 0}</span>
-                                    <span className={`basis-[44%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-left`}>
+                                    <span className="basis-[16%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>{item?.cantidad || 0}</span>
+                                    <span className="basis-[44%] shrink-0 text-left" style={{ fontSize: tpx('productos') }}>
                                         {item?.descripcion?.toUpperCase() || ''}
                                         {item?.lotes && item.lotes.length > 0 && (
                                             <div className="flex flex-col mt-0.5">
                                                 {item.lotes.map((l: any, idx: number) => (
-                                                    <span key={idx} className={`${size === 'TICKET' ? 'text-[12px]' : 'text-[9px]'}`}>Lote: {l.lote} Venc: {moment(l.fechaVencimiento).format('DD/MM/YYYY')}</span>
+                                                    <span key={idx} style={{ fontSize: tpx('productos', 12) }}>Lote: {l.lote} Venc: {moment(l.fechaVencimiento).format('DD/MM/YYYY')}</span>
                                                 ))}
                                             </div>
                                         )}
                                         {/* Lote directo desde DetalleComprobante (farmacia POS) */}
                                         {!item?.lotes?.length && item?.lote && (
-                                            <div className={`${size === 'TICKET' ? 'text-[12px]' : 'text-[9px]'} mt-0.5`}>
+                                            <div className="mt-0.5" style={{ fontSize: tpx('productos', 12) }}>
                                                 Lote: {item.lote.lote}{item.lote.fechaVencimiento ? ` Venc: ${moment(item.lote.fechaVencimiento).format('DD/MM/YYYY')}` : ''}
                                             </div>
                                         )}
                                         {/* Datos de receta médica */}
                                         {item?.numeroReceta && (
-                                            <div className={`${size === 'TICKET' ? 'text-[12px]' : 'text-[9px]'} mt-0.5 text-gray-600`}>
+                                            <div className="mt-0.5 text-gray-600" style={{ fontSize: tpx('productos', 12) }}>
                                                 Receta: {item.numeroReceta}
                                                 {item.medicoNombre ? ` — Dr. ${item.medicoNombre}` : ''}
                                                 {item.dniPaciente ? ` — Pac. DNI: ${item.dniPaciente}` : ''}
                                             </div>
                                         )}
                                     </span>
-                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(
+                                    <span className="basis-[20%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>{Number(
                                         item?.precioUnitario != null
                                             ? item.precioUnitario
                                             : Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || 0) + (Number(item?.mtoDescuento || 0) / Number(item?.cantidad || 1))
                                     ).toFixed(2)}</span>
-                                    <span className={`basis-[20%] shrink-0 ${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} text-center`}>{Number(
+                                    <span className="basis-[20%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>{Number(
                                         (item?.precioUnitario != null
                                             ? Number(item.precioUnitario)
                                             : Number(item?.mtoPrecioUnitario || item?.producto?.precioUnitario || 0) + (Number(item?.mtoDescuento || 0) / Number(item?.cantidad || 1))
@@ -380,33 +383,33 @@ console.log(formValues)
                             ))}
                         </div>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        {fc('sonTexto').visible && <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} `}>SON: {totalInWords || ''}</p>}
+                        {fc('sonTexto').visible && <p style={{ fontSize: tpx('sonTexto') }}>SON: {totalInWords || ''}</p>}
                         <hr className="my-1 border-dashed border-[#222]" />
                         {fc('subTotal').visible && totalDescuentos > 0 && (
-                            <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                            <label className="flex justify-between" style={{ fontSize: tpx('subTotal') }}>
                                 <div className="">SUBTOTAL:</div>
                                 <div>{round2(totalPrices).toFixed(2)}</div>
                             </label>
                         )}
                         {fc('descuentos').visible && totalDescuentos > 0 && (
-                            <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                            <label className="flex justify-between" style={{ fontSize: tpx('descuentos') }}>
                                 <div className="">DESCUENTO:</div>
                                 <div>- {round2(totalDescuentos).toFixed(2)}</div>
                             </label>
                         )}
-                        {fc('opGravadas').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">TOTAL GRAVADAS:</div> <div>{round2(mtoOperGravadas).toFixed(2)}</div></label>}
-                        {fc('opExoneradas').visible && round2(mtoOperExoneradas) > 0 && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">OP. EXONERADAS:</div> <div>{round2(mtoOperExoneradas).toFixed(2)}</div></label>}
-                        {fc('opInafectas').visible && round2(mtoOperInafectas) > 0 && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">OP. INAFECTAS:</div> <div>{round2(mtoOperInafectas).toFixed(2)}</div></label>}
-                        {fc('igv').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">I.G.V 18.00 %:</div> <div>{round2(mtoIgv).toFixed(2)}</div></label>}
-                        {fc('montoTotal').visible && <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}><div className="">IMPORTE TOTAL:</div> <div>{round2(mtoImpVenta).toFixed(2)}</div></label>}
+                        {fc('opGravadas').visible && <label className="flex justify-between" style={{ fontSize: tpx('opGravadas') }}><div className="">TOTAL GRAVADAS:</div> <div>{round2(mtoOperGravadas).toFixed(2)}</div></label>}
+                        {fc('opExoneradas').visible && round2(mtoOperExoneradas) > 0 && <label className="flex justify-between" style={{ fontSize: tpx('opExoneradas') }}><div className="">OP. EXONERADAS:</div> <div>{round2(mtoOperExoneradas).toFixed(2)}</div></label>}
+                        {fc('opInafectas').visible && round2(mtoOperInafectas) > 0 && <label className="flex justify-between" style={{ fontSize: tpx('opInafectas') }}><div className="">OP. INAFECTAS:</div> <div>{round2(mtoOperInafectas).toFixed(2)}</div></label>}
+                        {fc('igv').visible && <label className="flex justify-between" style={{ fontSize: tpx('igv') }}><div className="">I.G.V 18.00 %:</div> <div>{round2(mtoIgv).toFixed(2)}</div></label>}
+                        {fc('montoTotal').visible && <label className="flex justify-between" style={{ fontSize: tpx('montoTotal') }}><div className="">IMPORTE TOTAL:</div> <div>{round2(mtoImpVenta).toFixed(2)}</div></label>}
                         {
                             shouldShowRetention && (
                                 <>
-                                    <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                                    <label className={`text-[16px] flex justify-between`}>
                                         <div className="">RETENCIÓN (3%):</div>
                                         <div>{displayRetencionMonto.toFixed(2)}</div>
                                     </label>
-                                    <label className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between font-bold`}>
+                                    <label className={`text-[16px] flex justify-between font-bold`}>
                                         <div className="">IMPORTE NETO:</div>
                                         <div>{Number(mtoImpVenta - displayRetencionMonto).toFixed(2)}</div>
                                     </label>
@@ -414,31 +417,31 @@ console.log(formValues)
                             )
                         }
                         <hr className="my-1 border-dashed border-[#222]" />
-                        <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                        <p className={`text-[16px] flex justify-between gap-3`}>
                             <span>CONDICIÓN DE PAGO:</span>
                             <span className="text-right">{paymentConditionLabel}</span>
                         </p>
                         {isCreditPayment && pagoInicialCredito > 0 && (
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                            <p className={`text-[16px] flex justify-between gap-3`}>
                                 <span>PAGO INICIAL:</span>
                                 <span className="text-right">{pagoInicialMetodo} S/ {pagoInicialCredito.toFixed(2)}</span>
                             </p>
                         )}
                         {isCreditPayment && (
-                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                            <p className={`text-[16px] flex justify-between gap-3`}>
                                 <span>SALDO CRÉDITO:</span>
                                 <span className="text-right">S/ {saldoCredito.toFixed(2)}</span>
                             </p>
                         )}
                         {hasCreditInstallments && (
                             <div className="mt-1 mb-1">
-                                <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'}`}>CUOTAS:</p>
+                                <p className="text-[15px]">CUOTAS:</p>
                                 {cuotasCredito.map((cuota: any, idx: number) => (
                                     <div key={idx} className="mb-0.5">
-                                        <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} uppercase`}>
+                                        <p className={`text-[15px] uppercase`}>
                                             CUOTA {idx + 1}
                                         </p>
-                                        <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} flex justify-between gap-3`}>
+                                        <p className={`text-[15px] flex justify-between gap-3`}>
                                             <span>{moment(cuota.fechaVencimiento).format('DD/MM/YYYY')}</span>
                                             <span>S/ {Number(cuota.monto).toFixed(2)}</span>
                                         </p>
@@ -448,12 +451,12 @@ console.log(formValues)
                         )}
                         {isMixedPayment && Array.isArray(formValues?.splitPayments) && formValues.splitPayments.length > 0 ? (
                             <div>
-                                <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} font-bold`}>MEDIOS DE PAGO:</p>
+                                <p className={`text-[16px] font-bold`}>MEDIOS DE PAGO:</p>
                                 {formValues.splitPayments.map((sp: { method: string; amount: number }, idx: number) => {
                                     const detail = splitPaymentDetails[idx] || sp;
                                     return (
                                         <div key={idx} className="mb-0.5">
-                                            <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                                            <p className={`text-[16px] flex justify-between`}>
                                                 <span>{sp.method?.toUpperCase()}:</span>
                                                 <span>S/ {Number(sp.amount).toFixed(2)}</span>
                                             </p>
@@ -466,7 +469,7 @@ console.log(formValues)
                             </div>
                         ) : (
                             <>
-                                <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between gap-3`}>
+                                <p className={`text-[16px] flex justify-between gap-3`}>
                                     <span>MEDIO DE PAGO:</span>
                                     <span className="text-right">
                                         {isCreditPayment && pagoInicialCredito > 0
@@ -479,21 +482,21 @@ console.log(formValues)
                                 ))}
                             </>
                         )}
-                        <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                        <p className={`text-[16px] flex justify-between`}>
                             <span>VUELTO:</span>
                             <span>S/ {displayVuelto.toFixed(2)}</span>
                         </p>
-                        <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                        <p className={`text-[16px] flex justify-between`}>
                             <span>PAGADO:</span>
                             <span>S/ {displayPagado.toFixed(2)}</span>
                         </p>
-                        <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'} flex justify-between`}>
+                        <p className={`text-[16px] flex justify-between`}>
                             <span>VENDEDOR:</span>
                             <span className="text-right">{vendedorNombre}</span>
                         </p>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        {formValues?.ordenCompraCliente && <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">N° ORDEN DE COMPRA : </span>{String(formValues.ordenCompraCliente).toUpperCase()}</p>}
-                        {fc('observaciones').visible && <p className={`${size === 'TICKET' ? 'text-[16px]' : 'text-xs'}`}><span className="">OBSERVACIONES : </span>{observation?.toUpperCase() || ''}</p>}
+                        {formValues?.ordenCompraCliente && <p style={{ fontSize: tpx('observaciones') }}><span className="">N° ORDEN DE COMPRA : </span>{String(formValues.ordenCompraCliente).toUpperCase()}</p>}
+                        {fc('observaciones').visible && <p style={{ fontSize: tpx('observaciones') }}><span className="">OBSERVACIONES : </span>{observation?.toUpperCase() || ''}</p>}
                         <div className="uppercase">
                             {(() => {
                                 const reseller = company?.empresa?.reseller;
@@ -502,10 +505,10 @@ console.log(formValues)
                                 const brandWebsite = reseller?.whiteLabelWebsite || BRAND.website;
                                 return (
                                     <>
-                                        <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center mt-4`}>
+                                        <p className={`text-[15px] text-center mt-4`}>
                                             Sistema punto de venta - {brandName}.</p>
-                                        <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>Desarrollado por {developerName}.</p>
-                                        <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>{brandWebsite}.</p>
+                                        <p className={`text-[15px] text-center`}>Desarrollado por {developerName}.</p>
+                                        <p className={`text-[15px] text-center`}>{brandWebsite}.</p>
                                     </>
                                 );
                             })()}
@@ -516,9 +519,9 @@ console.log(formValues)
                             // Mensaje de agradecimiento). Vacío = el texto por defecto de siempre.
                             const propio = lineasDeTexto(fc('gracias').texto);
                             if (propio.length) return propio.map((l, i) => (
-                                <p key={i} className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>{l.toUpperCase()}</p>
+                                <p key={i} className="text-center" style={{ fontSize: tpx('gracias', 15) }}>{l.toUpperCase()}</p>
                             ));
-                            return <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>GRACIAS POR SU COMPRA, VUELVA PRONTO !</p>;
+                            return <p className="text-center" style={{ fontSize: tpx('gracias', 15) }}>GRACIAS POR SU COMPRA, VUELVA PRONTO !</p>;
                         })()}
                         {fc('gracias').visible && <hr className="my-1 border-dashed border-[#222]" />}
                     </div>

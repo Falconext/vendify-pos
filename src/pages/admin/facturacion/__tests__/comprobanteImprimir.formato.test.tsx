@@ -163,4 +163,33 @@ describe('formato configurable en factura/boleta A4', () => {
     expect(oculto).not.toContain('GRACIAS POR SU COMPRA');
     expect(oculto).not.toContain('OBS NV');
   });
+
+  it('el ticket aplica los tamaños configurados escalados a su base de 16px', () => {
+    const renderTicket = (formato: Record<string, { visible?: boolean; size?: number }>) =>
+      render(
+        <ComprobantePrintPage
+          company={{ email: 'x@y.com', empresa: { ...empresaBase, notaVentaFormatoConfig: formato } }}
+          formValues={{ serie: 'NV01', correlativo: '1', mtoImpVenta: 10, mtoOperGravadas: 8.47, mtoIGV: 1.53 }}
+          size="TICKET" serie="NV01" correlative="1"
+          productsInvoice={[{ cantidad: 1, unidad: 'UNIDAD', descripcion: 'Prod', precioUnitario: 10, total: 10 }]}
+          total="10.00" mode="preview" receipt="NOTA DE VENTA"
+          selectedClient={{ nombre: 'CLIENTE', nroDoc: '10000000' }} totalInWords="DIEZ CON 00/100 SOLES" observation="OBS NV" includeProductImages={false}
+        />,
+      ).container;
+    const razon = (c: HTMLElement) => Array.from(c.querySelectorAll('p')).find((p) => p.textContent === 'DEMENVER IMPORT S.A.C.') as HTMLElement;
+    const gracias = (c: HTMLElement) => Array.from(c.querySelectorAll('p')).find((p) => p.textContent?.startsWith('GRACIAS POR SU COMPRA')) as HTMLElement;
+    const importe = (c: HTMLElement) => Array.from(c.querySelectorAll('label')).find((l) => l.textContent?.includes('IMPORTE TOTAL')) as HTMLElement;
+
+    // Sin configurar: el ticket sale como siempre (16px, agradecimiento 15px).
+    const base = renderTicket({});
+    expect(razon(base).style.fontSize).toBe('16px');
+    expect(gracias(base).style.fontSize).toBe('15px');
+    expect(importe(base).style.fontSize).toBe('16px');
+
+    // Configurado: se escala respecto al default del modal (razón social 12 → 24 = doble).
+    const cfg = renderTicket({ razonSocial: { size: 24 }, montoTotal: { size: 21 }, gracias: { size: 5 } });
+    expect(razon(cfg).style.fontSize).toBe('32px');
+    expect(importe(cfg).style.fontSize).toBe('24px'); // default 14 → 21 = ×1.5
+    expect(gracias(cfg).style.fontSize).toBe('8px');  // default 10 → 5 = mitad, con piso de 8px
+  });
 });
