@@ -234,7 +234,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
         if (!comprobanteId) return null;
         setGenerandoPdf(true);
         try {
-            const res = await post<{ pdfUrl: string }>(`comprobante/${comprobanteId}/generar-pdf`, {});
+            const res = await post<{ pdfUrl: string }>(`comprobante/${comprobanteId}/generar-pdf?force=true`, {});
             const url = (res as any)?.data?.pdfUrl || (res as any)?.pdfUrl;
             if (url) { setPdfUrl(url); return url; }
             return null;
@@ -256,17 +256,20 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
     };
 
     // ── WhatsApp ──
-    const handleEnviarWhatsApp = () => {
+    // Siempre regenera el PDF antes de armar el link: usar comprobante.s3PdfUrl
+    // directamente mandaba al cliente un PDF cacheado con la plantilla o marca
+    // (branding) de la primera vez que se generó, en vez de la vigente.
+    const handleEnviarWhatsApp = async () => {
         const num = waNumber.trim().replace(/\D/g, '');
         if (!num) { alert('Ingrese un número de WhatsApp válido', 'error'); return; }
-        if (!pdfUrl && !comprobante?.s3PdfUrl) {
-            alert('Primero genera el PDF para compartirlo', 'warning');
+        const link = await handleGenerarPdf();
+        if (!link) {
+            alert('No se pudo generar el PDF para compartir', 'error');
             return;
         }
         const finalNum = num.startsWith('51') ? num : `51${num}`;
         const serie = `${comprobante.serie}-${String(comprobante.correlativo).padStart(8, '0')}`;
         const monto = `${monedaSimbolo} ${getComprobanteTotal(comprobante).toFixed(2)}`;
-        const link = pdfUrl || comprobante.s3PdfUrl || '';
         const mensaje = encodeURIComponent(
             `Hola ${comprobante?.cliente?.nombre || ''}, te enviamos tu ${getComprobanteLabel(comprobante)} ${serie} por ${monto}.\n\nPuedes descargarlo aquí: ${link}`
         );

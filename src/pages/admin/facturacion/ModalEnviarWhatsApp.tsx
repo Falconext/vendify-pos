@@ -35,24 +35,24 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
     const [enviandoWhatsApp, setEnviandoWhatsApp] = useState(false);
     const [enviandoEmail, setEnviandoEmail] = useState(false);
 
-    // Reset y pre-llenar al abrir. Si no hay PDF persistido, lo preparamos en segundo plano.
+    // Reset y pre-llenar al abrir. Siempre regeneramos el PDF en segundo plano:
+    // comprobante.pdfUrl puede venir de un PDF cacheado con una plantilla o
+    // marca (branding) desactualizada, así que no lo usamos como vista previa.
     useEffect(() => {
         if (!isOpen) return;
         setTab(defaultTab);
-        setPdfUrl(comprobante.pdfUrl);
+        setPdfUrl(undefined);
         setNumeroDestino(comprobante.clienteCelular || '');
         setEmailDestino(comprobante.clienteEmail || '');
-        if (!comprobante.pdfUrl) {
-            void generarPdf();
-        }
-    }, [isOpen, comprobante.id, comprobante.pdfUrl, defaultTab]);
+        void generarPdf();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, comprobante.id, defaultTab]);
 
     const generarPdf = async (): Promise<string | null> => {
-        if (pdfUrl) return pdfUrl;
         setGenerando(true);
         try {
             const res = await post<{ pdfUrl: string }>(
-                `comprobante/${comprobante.id}/generar-pdf`,
+                `comprobante/${comprobante.id}/generar-pdf?force=true`,
                 {},
             );
             const error = (res as any)?.error;
