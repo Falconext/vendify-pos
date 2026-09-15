@@ -22,6 +22,26 @@ const formatDaysUntil = (days: number | null): string => {
     return `${days} día${days === 1 ? '' : 's'}`;
 };
 
+// Texto humano de la actividad de facturación ("Facturó hoy", "Hace 12 días", "Nunca facturó").
+const describirUltimaVenta = (salud?: { ultimaVenta?: string | null; diasSinVender?: number } | null): string => {
+    if (!salud) return '—';
+    if (!salud.ultimaVenta) return 'Nunca facturó';
+    const dias = salud.diasSinVender ?? 0;
+    if (dias <= 0) return 'Facturó hoy';
+    if (dias === 1) return 'Ayer';
+    return `Hace ${dias} días`;
+};
+
+// Cliente en prueba/demo: no cuenta como riesgo de fuga (aún no es cliente de pago).
+const esClienteDemo = (empresa: any): boolean => {
+    const plan = empresa?.plan ?? {};
+    return plan.esPrueba === true || empresa?.usaDemo === true || /\b(demo|prueba)\b/i.test(String(plan.nombre ?? ''));
+};
+
+// Empresa activa que dejó de facturar (amarillo ≥7 días, rojo ≥14) — prioridad de retención.
+const estaEnRiesgoFuga = (e: any): boolean =>
+    !e.esDemo && e.estado === 'ACTIVO' && (e.saludEstado === 'riesgo' || e.saludEstado === 'critico');
+
 const normalizeWhatsappPhone = (value?: string | null): string => {
     const digits = String(value ?? '').replace(/\D/g, '');
     if (!digits) return '';
@@ -37,6 +57,7 @@ export const useEmpresaIndexViewModel = (): any => {
     const [searchTerm, setSearchTerm] = useState('');
     const [tipoFiltro, setTipoFiltro] = useState<'FORMAL' | 'INFORMAL' | ''>('');
     const [estadoFiltro, setEstadoFiltro] = useState<'ACTIVO' | 'INACTIVO' | 'TODOS'>('TODOS');
+    const [saludFiltro, setSaludFiltro] = useState<'' | 'EN_RIESGO'>('');
     const [itemsPerPage, setItemsPerPage] = useState(50);
     const [isOpenModalConfirm, setIsOpenModalConfirm] = useState(false);
     const [selectedEmpresa, setSelectedEmpresa] = useState<any>(null);
@@ -121,6 +142,13 @@ export const useEmpresaIndexViewModel = (): any => {
             estado: empresa.estado,
             // Uso del sistema: comprobantes emitidos (boleta / factura / nota de venta)
             comprobantes: empresa.comprobantes ?? { boletas: 0, facturas: 0, notasVenta: 0, total: 0 },
+            // Salud (actividad de facturación) + gestión postventa
+            esDemo: esClienteDemo(empresa),
+            salud: empresa.salud ?? null,
+            saludEstado: empresa.salud?.estado ?? 'sana',
+            diasSinVender: empresa.salud?.diasSinVender ?? null,
+            ultimaVentaTexto: describirUltimaVenta(empresa.salud),
+            estadoGestion: empresa.estadoGestion ?? null,
         };
     }) || [];
 
@@ -179,14 +207,49 @@ export const useEmpresaIndexViewModel = (): any => {
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
     };
 
-    const empresasTableFiltradas = filtroPorVencer
-        ? empresasTable.filter((e: any) => {
-            const full = empresas?.find((emp: any) => emp.id === e.id);
-            if (!full?.fechaExpiracion) return false;
-            const dias = getDiasRestantes(full.fechaExpiracion);
-            return dias >= 0 && dias <= 7;
-        })
-        : empresasTable;
+    // ── Postventa: bitácora de seguimiento + estado de gestión ──
+    const [seguimientoEmpresa, setSeguimientoEmpresa] = useState<any>(null); // empresa/row abierto en el modal
+    const openSeguimiento = (row: any) => {
+        const full = empresas?.find((e: any) => e.id === row.id);
+        setSeguimientoEmpresa({ ...(full ?? {}), ...row });
+    };
+    const closeSeguimiento = () => setSeguimientoEmpresa(null);
+    const onGestionActualizada = (id: number, estadoGestion: string | null) => {
+        // refresca la fila en memoria para reflejar el nuevo estado sin recargar todo
+        useEmpresasStore.setState((s: any) => ({
+            empresas: (s.empresas || []).map((e: any) => (e.id === id ? { ...e, estadoGestion } : e)),
+        }));
+        setSeguimientoEmpresa((prev: any) => (prev && prev.id === id ? { ...prev, estadoGestion } : prev));
+    };
 
-    return { exportando, exportarEmpresas, empresas, empresasTable: empresasTableFiltradas, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp };
+    // Abre el chat de WhatsApp del admin de la empresa, EN BLANCO, para escribir libremente.
+    // (Distinto del recordatorio: no lleva mensaje predefinido.)
+    const handleAbrirWhatsapp = (row: any) => {
+        const phone = normalizeWhatsappPhone(row.adminCelular);
+        if (!phone) {
+            useAlertStore.getState().alert('La empresa no tiene celular de administrador activo', 'warning');
+            return;
+        }
+        window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
+    };
+
+    // KPI de retención sobre el conjunto cargado (respeta búsqueda/estado del servidor)
+    const kpis = {
+        enRiesgoFuga: empresasTable.filter(estaEnRiesgoFuga).length,
+    };
+
+    const pasaSalud = (e: any) => (saludFiltro === 'EN_RIESGO' ? estaEnRiesgoFuga(e) : true);
+    const toggleSalud = () => setSaludFiltro((prev) => (prev === 'EN_RIESGO' ? '' : 'EN_RIESGO'));
+
+    const pasaVencimiento = (e: any) => {
+        if (!filtroPorVencer) return true;
+        const full = empresas?.find((emp: any) => emp.id === e.id);
+        if (!full?.fechaExpiracion) return false;
+        const dias = getDiasRestantes(full.fechaExpiracion);
+        return dias >= 0 && dias <= 7;
+    };
+
+    const empresasTableFiltradas = empresasTable.filter((e: any) => pasaVencimiento(e) && pasaSalud(e));
+
+    return { exportando, exportarEmpresas, empresas, empresasTable: empresasTableFiltradas, kpis, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, saludFiltro, setSaludFiltro, toggleSalud, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp, handleAbrirWhatsapp, seguimientoEmpresa, openSeguimiento, closeSeguimiento, onGestionActualizada };
 };

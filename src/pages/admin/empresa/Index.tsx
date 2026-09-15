@@ -3,6 +3,7 @@ import { useEmpresaIndexViewModel } from '@/features/admin/empresa/useEmpresaInd
 import { Icon } from '@iconify/react/dist/iconify.js';
 import EmpresaFormModal from '@/components/Empresa/EmpresaFormModal';
 import EmpresaDrawer from '@/components/Empresa/EmpresaDrawer';
+import SeguimientoModal from '@/components/Empresa/SeguimientoModal';
 import ModalConfirm from '@/components/ModalConfirm';
 import TableSkeleton from '@/components/Skeletons/table';
 import TableActionMenu from '@/components/TableActionMenu';
@@ -37,6 +38,22 @@ function estadoPill(estado?: string) {
   if (e === 'ACTIVO') return { label: 'Activo', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
   return { label: 'Inactivo', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20' };
 }
+
+// Salud de la empresa según actividad de facturación (calculada en backend: días sin vender)
+const SALUD_STYLES: Record<'sana' | 'riesgo' | 'critico', { pill: string; dot: string; label: string }> = {
+  sana: { pill: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', dot: 'bg-emerald-500', label: 'Activa' },
+  riesgo: { pill: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', dot: 'bg-amber-500', label: 'En riesgo' },
+  critico: { pill: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400', dot: 'bg-rose-500', label: 'Fuga probable' },
+};
+
+// Estado de gestión postventa (bitácora de seguimiento)
+const GESTION_META: Record<string, { label: string; cls: string; dot: string }> = {
+  POR_CONTACTAR: { label: 'Por contactar', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' },
+  CONTACTADA: { label: 'Contactada', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', dot: 'bg-blue-500' },
+  EN_NEGOCIACION: { label: 'En negociación', cls: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', dot: 'bg-amber-500' },
+  RECUPERADA: { label: 'Recuperada', cls: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', dot: 'bg-emerald-500' },
+  PERDIDA: { label: 'Perdida', cls: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400', dot: 'bg-rose-500' },
+};
 
 // Color del texto "Vence en"
 function venceClass(texto?: string) {
@@ -153,6 +170,25 @@ const EmpresasIndex = () => {
         </div>
       </div>
 
+      {/* KPI de retención — clic para filtrar. Cruza la actividad de facturación de cada empresa. */}
+      <div className="mb-5">
+        <button
+          type="button"
+          onClick={vm.toggleSalud}
+          title="Empresas activas que dejaron de facturar (amarillo ≥7 días, rojo ≥14). Llámalas antes de que no renueven."
+          className={`flex w-full sm:w-auto sm:min-w-[280px] items-center gap-3 p-4 rounded-3xl border bg-white dark:bg-[#111827] text-left shadow-[0_2px_20px_rgba(15,23,42,0.05)] transition-all active:scale-[0.98] ${vm.saludFiltro === 'EN_RIESGO' ? 'border-rose-400 ring-2 ring-rose-300/50' : 'border-transparent hover:border-rose-200 dark:hover:border-rose-900/40'}`}
+        >
+          <div className="h-11 w-11 rounded-2xl bg-rose-50 dark:bg-rose-900/20 grid place-items-center shrink-0">
+            <Icon icon="solar:heart-pulse-bold-duotone" className="text-2xl text-rose-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none">{vm.kpis?.enRiesgoFuga ?? 0}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">En riesgo de fuga</p>
+          </div>
+          {vm.saludFiltro === 'EN_RIESGO' && <Icon icon="solar:close-circle-bold" className="ml-auto text-slate-400 text-lg" />}
+        </button>
+      </div>
+
       {/* Card contenedora */}
       <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
         {/* Toolbar */}
@@ -211,7 +247,7 @@ const EmpresasIndex = () => {
 
         {/* Tabla */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          <table className="w-full text-left border-collapse min-w-[1160px]">
             <thead>
               <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                 <th className="py-3 pl-5 pr-3">Empresa</th>
@@ -222,6 +258,7 @@ const EmpresasIndex = () => {
                 <th className="py-3 px-3">Comprobantes</th>
                 <th className="py-3 px-3">Vence en</th>
                 <th className="py-3 px-3">Estado</th>
+                <th className="py-3 px-3">Salud</th>
                 <th className="py-3 px-3 pr-5 text-right">Acciones</th>
               </tr>
             </thead>
@@ -229,14 +266,14 @@ const EmpresasIndex = () => {
               {vm.loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-50 dark:border-slate-800">
-                    <td colSpan={9} className="py-3.5 px-5">
+                    <td colSpan={10} className="py-3.5 px-5">
                       <div className="h-6 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     </td>
                   </tr>
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center">
+                  <td colSpan={10} className="py-16 text-center">
                     <Icon icon="solar:buildings-3-linear" className="text-5xl text-slate-200 dark:text-slate-700 mx-auto mb-2" />
                     <p className="text-slate-500 dark:text-gray-400 text-sm font-medium">No se encontraron empresas</p>
                     <p className="text-slate-400 text-xs mt-1">{vm.searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no tienes empresas registradas'}</p>
@@ -251,6 +288,9 @@ const EmpresasIndex = () => {
                 const razon = row['Razon Social'] || row.nombreComercial || 'Empresa';
                 const amb = ambientePill(row['Ambiente']);
                 const est = estadoPill(row.estado);
+                const salud = SALUD_STYLES[(row.saludEstado as 'sana' | 'riesgo' | 'critico')] ?? SALUD_STYLES.sana;
+                const enRiesgo = (row.saludEstado === 'riesgo' || row.saludEstado === 'critico') && row.estado === 'ACTIVO';
+                const gestion = row.estadoGestion ? GESTION_META[row.estadoGestion as string] : null;
                 return (
                   <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
                     <td className="py-3 pl-5 pr-3">
@@ -303,6 +343,41 @@ const EmpresasIndex = () => {
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${est.bg} ${est.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${est.dot}`} /> {est.label}
                       </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col leading-tight gap-0.5">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${salud.pill}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${salud.dot}`} /> {salud.label}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{row.ultimaVentaTexto}</span>
+                          {gestion && (
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold w-fit ${gestion.cls}`}>
+                              <span className={`w-1 h-1 rounded-full ${gestion.dot}`} />{gestion.label}
+                            </span>
+                          )}
+                        </div>
+                        {enRiesgo && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); vm.handleAbrirWhatsapp(row); }}
+                              title="Escribir por WhatsApp a este cliente"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 transition-colors"
+                            >
+                              <Icon icon="ic:baseline-whatsapp" width={16} height={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); vm.openSeguimiento(row); }}
+                              title="Bitácora de seguimiento / gestión"
+                              className="btn-accent-soft inline-flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
+                            >
+                              <Icon icon="solar:clipboard-list-bold" width={16} height={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3 pr-5 text-right">
                       <button
@@ -368,6 +443,7 @@ const EmpresasIndex = () => {
       />
       <EmpresaFormModal open={vm.openEmpresaModal} mode={vm.empresaModalMode} empresaId={vm.empresaEditingId} onClose={() => vm.setOpenEmpresaModal(false)} onSaved={vm.refreshEmpresas} />
       <EmpresaDrawer empresa={vm.drawerEmpresa} onClose={() => vm.setDrawerEmpresa(null)} />
+      <SeguimientoModal empresa={vm.seguimientoEmpresa} onClose={vm.closeSeguimiento} onGestionActualizada={vm.onGestionActualizada} />
       <TableActionMenu
         isOpen={Boolean(menuAnchor)}
         anchorEl={menuAnchor}
@@ -380,6 +456,10 @@ const EmpresasIndex = () => {
               <Icon icon="solar:eye-bold-duotone" width={16} height={16} />
               <span>Ver detalles</span>
             </button>
+            <button type="button" onClick={() => runMenuAction(vm.openSeguimiento)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700">
+              <Icon icon="solar:clipboard-list-bold-duotone" width={16} height={16} />
+              <span>Seguimiento / Bitácora</span>
+            </button>
             <button type="button" onClick={() => runMenuAction(vm.handleEdit)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700">
               <Icon icon="material-symbols:edit" width={16} height={16} />
               <span>Editar</span>
@@ -387,6 +467,12 @@ const EmpresasIndex = () => {
             {selectedMenuRow.estado === 'ACTIVO' && (
               <>
                 <div className="border-t border-slate-100 my-1" />
+                <button type="button" onClick={() => runMenuAction(vm.handleAbrirWhatsapp)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-green-700 hover:bg-green-50">
+                  <Icon icon="ic:baseline-whatsapp" width={16} height={16} />
+                  <span>Escribir por WhatsApp</span>
+                </button>
+                <div className="border-t border-slate-100 my-1" />
+                <p className="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Recordatorio de renovación</p>
                 <button type="button" onClick={() => runMenuAction(vm.handleEnviarRecordatorioEmail)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50">
                   <Icon icon="solar:letter-bold-duotone" width={16} height={16} />
                   <span>Recordar por correo</span>
