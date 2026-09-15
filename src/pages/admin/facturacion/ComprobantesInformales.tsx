@@ -112,6 +112,9 @@ const ComprobantesInformales = () => {
     const canFilterBySede = (auth?.rol === 'ADMIN_SISTEMA' || auth?.rol === 'ADMIN_EMPRESA') && Boolean(sedeActiva?.esPrincipal);
     const effectiveSedeId = canFilterBySede ? selectedSedeId : (sedeActiva?.id ?? null);
     const canFilterByUsuario = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
+    // Anular/eliminar: admin siempre puede; un vendedor solo si se le activó
+    // el permiso fino "puedeAnularComprobantes" (backend igual lo revalida).
+    const canAnularOEliminar = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA' || Boolean((auth as any)?.puedeAnularComprobantes);
 
 
     useEffect(() => {
@@ -937,21 +940,23 @@ const ComprobantesInformales = () => {
                                     <span>Ver despacho</span>
                                 </button>
                             )}
-                            <>
-                                <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
-                                {row.estadoEnvioSunat !== 'ANULADO' && (
-                                    <button type="button" onClick={() => { handleAnular(row); handleCloseMenu(); }}
+                            {canAnularOEliminar && (
+                                <>
+                                    <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                                    {row.estadoEnvioSunat !== 'ANULADO' && (
+                                        <button type="button" onClick={() => { handleAnular(row); handleCloseMenu(); }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                                            <Icon icon="mdi:cancel" width={16} height={16} />
+                                            <span>Anular</span>
+                                        </button>
+                                    )}
+                                    <button type="button" onClick={() => { handleEliminar(row); handleCloseMenu(); }}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
-                                        <Icon icon="mdi:cancel" width={16} height={16} />
-                                        <span>Anular</span>
+                                        <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} />
+                                        <span>Eliminar</span>
                                     </button>
-                                )}
-                                <button type="button" onClick={() => { handleEliminar(row); handleCloseMenu(); }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20">
-                                    <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} />
-                                    <span>Eliminar</span>
-                                </button>
-                            </>
+                                </>
+                            )}
                             {/* Editar cualquier comprobante informal editable (NV, TICKET, NP, OT, RH, CP).
                                 Reutiliza el mismo flujo de edición in-place de la Nota de Venta. */}
                             {['NV', 'TICKET', 'NP', 'OT', 'RH', 'CP'].includes(String(item?.tipoDoc)) && row.estadoEnvioSunat !== 'ANULADO' && (

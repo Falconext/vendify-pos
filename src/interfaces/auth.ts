@@ -34,6 +34,9 @@ export interface IUser {
     subModulos?: { id: number; codigo: string; nombre: string; moduloId: number }[]
     sistemaNegocio?: string | null
     sistemaProducto?: string | null
+    // Permiso opt-in: el admin lo ACTIVA para dar una capacidad
+    // (anular/eliminar comprobantes), no para restringir.
+    puedeAnularComprobantes?: boolean
 }
 
 export interface IResponse {

@@ -49,6 +49,7 @@ export interface IUsuario {
   comisionGlobal?: number;
   comisionGlobalFija?: number;
   comisionGlobalVenta?: number;
+  puedeAnularComprobantes?: boolean;
 }
 
 export interface IFormUsuario {
@@ -64,6 +65,7 @@ export interface IFormUsuario {
   comisionGlobal?: number;
   comisionGlobalFija?: number;
   comisionGlobalVenta?: number;
+  puedeAnularComprobantes?: boolean;
 }
 
 export interface IUsersState {

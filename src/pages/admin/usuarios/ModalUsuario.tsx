@@ -23,6 +23,9 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
   const { modulos, getAllModulos } = useModulosStore();
   const { auth } = useAuthStore();
   const productoEmpresa = (auth?.empresa?.producto || 'facturacion') as 'facturacion' | 'hotel' | 'restaurante';
+  // Solo un admin puede otorgar/quitar "anular/eliminar comprobantes" (el
+  // backend ignora el campo si lo manda un no-admin, igual que con '*').
+  const actorEsAdmin = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
 
   const [formData, setFormData] = useState<IFormUsuario>({
     nombre: '',
@@ -33,6 +36,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
     permisos: [],
     sedeIds: [],
     subModuloIds: [],
+    puedeAnularComprobantes: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,6 +66,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         comisionGlobal: user.comisionGlobal || undefined,
         comisionGlobalFija: user.comisionGlobalFija || undefined,
         comisionGlobalVenta: user.comisionGlobalVenta || undefined,
+        puedeAnularComprobantes: user.puedeAnularComprobantes ?? false,
       });
     } else {
       setFormData({
@@ -76,6 +81,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         comisionGlobal: undefined,
         comisionGlobalFija: undefined,
         comisionGlobalVenta: undefined,
+        puedeAnularComprobantes: false,
       });
     }
     setErrors({});
@@ -148,6 +154,17 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
       };
     });
   };
+
+  const handlePermisoAvanzadoToggle = (key: keyof IFormUsuario) => {
+    setFormData(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // "puedeAnularComprobantes" es una CAPACIDAD que el admin otorga (por
+  // defecto apagada = sigue sin poder anular/eliminar, igual que hoy — solo
+  // el administrador puede).
+  const PERMISOS_AVANZADOS: { key: keyof IFormUsuario; icon: string; label: string; descripcion: string; soloAdmin?: boolean }[] = [
+    { key: 'puedeAnularComprobantes', icon: 'solar:shield-check-bold-duotone', label: 'Permitir anular/eliminar comprobantes', descripcion: 'Por defecto solo el administrador puede anular o eliminar una venta/nota de venta. Activa esto para que este usuario también pueda.', soloAdmin: true },
+  ];
 
   const handleSedeToggle = (sedeId: number) => {
     setFormData(prev => {
@@ -376,6 +393,48 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
               })}
             </div>
           )}
+        </div>
+
+        {/* Permisos Avanzados */}
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Icon icon="solar:shield-keyhole-bold-duotone" width={20} height={20} className="text-amber-500" />
+            Permisos Avanzados
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {PERMISOS_AVANZADOS.map(({ key, icon, label, descripcion, soloAdmin }) => {
+              const activo = !!formData[key];
+              const bloqueado = Boolean(soloAdmin) && !actorEsAdmin;
+              return (
+                <label
+                  key={key}
+                  onClick={() => { if (!bloqueado) handlePermisoAvanzadoToggle(key); }}
+                  title={bloqueado ? 'Solo el administrador de la empresa puede otorgar o quitar este permiso.' : undefined}
+                  className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${
+                    bloqueado ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                  } ${
+                    activo
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                      : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0A0D14] hover:border-amber-200 dark:hover:border-amber-800'
+                  }`}
+                >
+                  <div className={`w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${activo ? 'border-amber-500 bg-amber-500' : 'border-gray-300'}`}>
+                    {activo && <Icon icon="mdi:check" className="text-white" width={14} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Icon icon={icon} className={activo ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-600'} width={16} />
+                      <span className="font-medium text-sm text-gray-900 dark:text-white">{label}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{descripcion}</p>
+                    {bloqueado && (
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 font-medium">Solo el administrador de la empresa puede otorgar o quitar este permiso.</p>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         {/* Permisos de Módulos */}
