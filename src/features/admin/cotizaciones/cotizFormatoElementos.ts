@@ -65,10 +65,44 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, esTexto: true, placeholder: 'Dejar vacío para usar el mensaje por defecto', defaultSize: 10, min: 7, max: 16, grupo: 'Pie' },
 ];
 
+/**
+ * Formatos que pueden tener un tamaño PROPIO (desvinculado del general):
+ * A4 es el tamaño general; A5 y Ticket lo siguen salvo que la empresa lo
+ * desvincule para ese elemento en Configurar formato.
+ */
+export type FormatoOverride = 'a5' | 'ticket';
+export type FormatoImpresionKey = 'A4' | 'A5' | 'TICKET';
+
+export const OVERRIDE_POR_FORMATO: Record<FormatoImpresionKey, FormatoOverride | null> = {
+  A4: null,
+  A5: 'a5',
+  TICKET: 'ticket',
+};
+
 export type CotizConfig = Record<
   string,
-  { visible?: boolean; size?: number; texto?: string }
+  {
+    visible?: boolean;
+    size?: number;
+    texto?: string;
+    /** Tamaño propio en A5 (px). Ausente = sigue al general. */
+    a5?: { size?: number };
+    /** Tamaño propio en ticket (px reales del ticket). Ausente = general escalado. */
+    ticket?: { size?: number };
+  }
 >;
+
+/** Tamaño propio guardado para un formato, o undefined si sigue al general. */
+export function sizeOverride(
+  config: CotizConfig | undefined | null,
+  key: string,
+  formato: FormatoImpresionKey,
+): number | undefined {
+  const ov = OVERRIDE_POR_FORMATO[formato];
+  if (!ov) return undefined;
+  const n = Number((config || {})[key]?.[ov]?.size);
+  return n > 0 ? n : undefined;
+}
 
 /** Campos de empresa que guardan el formato de factura/boleta (usan defaults fiscales). */
 export const FORMATO_KEYS_FISCALES = ['facturaFormatoConfig', 'boletaFormatoConfig'] as const;
@@ -77,14 +111,16 @@ export const FORMATO_KEYS_FISCALES = ['facturaFormatoConfig', 'boletaFormatoConf
  * Lee visibilidad, tamaño y texto propio de un elemento con sus valores por defecto.
  * `fiscal` = true para factura/boleta (aplica defaultSizeFiscal cuando existe).
  */
-export function elemCfg(config: CotizConfig | undefined | null, key: string, fiscal = false) {
+export function elemCfg(config: CotizConfig | undefined | null, key: string, fiscal = false, formato?: FormatoImpresionKey) {
   const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
   const c = (config || {})[key] || {};
   const defaultSize = (fiscal ? def?.defaultSizeFiscal : undefined) ?? def?.defaultSize ?? 12;
+  // A5 con tamaño propio: manda sobre el general.
+  const propioA5 = formato === 'A5' ? sizeOverride(config, key, 'A5') : undefined;
   return {
     // Si no hay valor guardado, se usa defaultVisible del elemento (default: true).
     visible: c.visible !== undefined ? c.visible : (def?.defaultVisible ?? true),
-    size: c.size ?? defaultSize,
+    size: propioA5 ?? c.size ?? defaultSize,
     // Vacío = usar el texto por defecto que arma cada plantilla.
     texto: String(c.texto ?? '').trim(),
   };

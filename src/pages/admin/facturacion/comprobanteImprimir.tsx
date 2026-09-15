@@ -91,7 +91,9 @@ const ComprobantePrintPage = ({
         ? (company?.empresa as any)?.notaVentaFormatoConfig
         : (company?.empresa as any)?.cotizFormatoConfig;
     const esFormatoFiscal = usaFormatoFactura || _rc === 'BOLETA';
-    const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal);
+    // A5 puede tener tamaños propios (desvinculados del general de A4). Ver
+    // sizeOverride en cotizFormatoElementos.
+    const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal, size === 'A5' ? 'A5' : undefined);
     const px = (key: string) => `${fc(key).size}px`;
     // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
     // nota de venta, no a los comprobantes fiscales.
@@ -509,7 +511,15 @@ console.log(formValues)
                             })()}
                         </div>
                         <hr className="my-1 border-dashed border-[#222]" />
-                        {fc('gracias').visible && <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>GRACIAS POR SU COMPRA, VUELVA PRONTO !</p>}
+                        {fc('gracias').visible && (() => {
+                            // Ticket: el mismo mensaje configurable que A4/A5 (Configurar formato →
+                            // Mensaje de agradecimiento). Vacío = el texto por defecto de siempre.
+                            const propio = lineasDeTexto(fc('gracias').texto);
+                            if (propio.length) return propio.map((l, i) => (
+                                <p key={i} className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>{l.toUpperCase()}</p>
+                            ));
+                            return <p className={`${size === 'TICKET' ? 'text-[15px]' : 'text-xs'} text-center`}>GRACIAS POR SU COMPRA, VUELVA PRONTO !</p>;
+                        })()}
                         {fc('gracias').visible && <hr className="my-1 border-dashed border-[#222]" />}
                     </div>
                 ) : (

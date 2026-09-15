@@ -165,7 +165,10 @@ export default function ModalConfigCotizacion({
                         </div>
                         {el.esTexto && cur.visible && (
                           <textarea
-                            value={cur.texto}
+                            // Valor crudo, no el de elemCfg (que hace trim): con el
+                            // recortado, cada espacio o Enter al final desaparecía en el
+                            // mismo keystroke y no se podía escribir la frase de corrido.
+                            value={config[el.key]?.texto ?? ''}
                             onChange={(e) => setTexto(el.key, e.target.value)}
                             placeholder={el.placeholder}
                             rows={2}
