@@ -49,6 +49,8 @@ export interface IUsuario {
   comisionGlobal?: number;
   comisionGlobalFija?: number;
   comisionGlobalVenta?: number;
+  // Sede por defecto al loguear (Usuario.sedeId reutilizado).
+  sedeId?: number | null;
   puedeAnularComprobantes?: boolean;
 }
 
@@ -61,6 +63,7 @@ export interface IFormUsuario {
   password?: string;
   permisos: string[];
   sedeIds?: number[];
+  sedeDefaultId?: number;
   subModuloIds?: number[];
   comisionGlobal?: number;
   comisionGlobalFija?: number;

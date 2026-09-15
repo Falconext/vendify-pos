@@ -62,6 +62,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         password: '',
         permisos: user.rol === 'ADMIN_EMPRESA' ? ['*'] : (user.permisos || []),
         sedeIds: (user.sedes || []).map(s => s.id),
+        sedeDefaultId: user.sedeId ?? undefined,
         subModuloIds: (user.subModulos || []).map(s => s.id),
         comisionGlobal: user.comisionGlobal || undefined,
         comisionGlobalFija: user.comisionGlobalFija || undefined,
@@ -77,6 +78,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         password: '',
         permisos: [],
         sedeIds: [],
+        sedeDefaultId: undefined,
         subModuloIds: [],
         comisionGlobal: undefined,
         comisionGlobalFija: undefined,
@@ -169,12 +171,22 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
   const handleSedeToggle = (sedeId: number) => {
     setFormData(prev => {
       const sedeIds = prev.sedeIds || [];
-      const nuevos = sedeIds.includes(sedeId)
+      const desmarcando = sedeIds.includes(sedeId);
+      const nuevos = desmarcando
         ? sedeIds.filter(id => id !== sedeId)
         : [...sedeIds, sedeId];
-      return { ...prev, sedeIds: nuevos };
+      return {
+        ...prev,
+        sedeIds: nuevos,
+        // Si se desmarca la sede que era la predeterminada, se limpia.
+        sedeDefaultId: desmarcando && prev.sedeDefaultId === sedeId ? undefined : prev.sedeDefaultId,
+      };
     });
     if (errors.sedeIds) setErrors(prev => ({ ...prev, sedeIds: '' }));
+  };
+
+  const handleSedeDefaultChange = (sedeId: number) => {
+    setFormData(prev => ({ ...prev, sedeDefaultId: sedeId }));
   };
 
   const toggleModuloExpanded = (codigo: string) => {
@@ -388,10 +400,28 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
                       </div>
                       {(sede as any).codigo && <p className="text-xs text-gray-400 ml-6">Código: {(sede as any).codigo}</p>}
                     </div>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleSedeDefaultChange(sede.id); }}
+                        title="Usar como sede predeterminada al loguear"
+                        className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                          formData.sedeDefaultId === sede.id
+                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                            : 'text-gray-300 dark:text-gray-600 hover:text-amber-500'
+                        }`}
+                      >
+                        <Icon icon={formData.sedeDefaultId === sede.id ? "solar:star-bold" : "solar:star-linear"} width={14} />
+                        Predeterminada
+                      </button>
+                    )}
                   </label>
                 );
               })}
             </div>
+          )}
+          {(formData.sedeIds || []).length > 1 && !formData.sedeDefaultId && (
+            <p className="text-xs text-gray-400 mt-2">Sin sede predeterminada, el usuario elegirá su sede al iniciar sesión.</p>
           )}
         </div>
 
