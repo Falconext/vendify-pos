@@ -121,6 +121,10 @@ export default function ModalConfigCotizacion({
         mtoImpVenta: 753.9,
       };
     }
+    // Nota de venta: sin detracción (no aplica a informales) y con serie NV01.
+    if (rc === 'NOTA DE VENTA') {
+      return { ...SAMPLE_INVOICE, serie: 'NV01', tipoDetraccion: undefined, montoDetraccion: 0 };
+    }
     return SAMPLE_INVOICE;
   }, [previewReceipt]);
 
@@ -283,7 +287,7 @@ export default function ModalConfigCotizacion({
                   company={previewCompany}
                   formValues={previewInvoice}
                   size={previewFmt}
-                  serie="COT1"
+                  serie={previewInvoice.serie}
                   correlative="1"
                   productsInvoice={SAMPLE_PRODUCTS}
                   total={SAMPLE_INVOICE.mtoImpVenta.toFixed(2)}

@@ -265,7 +265,7 @@ console.log(formValues)
         >
             <div
                 ref={componentRef || localComponentRef}
-                className={`bg-[#fff] py-0 text-sm ${size === 'TICKET' ? 'px-4 pt-3 pb-2' : 'px-5 pt-5 pb-10'}`}
+                className={`bg-[#fff] text-[#111] py-0 text-sm ${size === 'TICKET' ? 'px-4 pt-3 pb-2' : 'px-5 pt-5 pb-10'}`}
                 style={{
                     width: size === 'TICKET' ? '80mm' : (size === 'A5' ? '148mm' : '210mm'),
                     margin: '0 auto',
