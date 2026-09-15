@@ -5,35 +5,21 @@ import { get } from '@/utils/fetch';
 import { useAuthStore } from '@/zustand/auth';
 import { MetodosPagoResponse } from './MetodosPagoModel';
 import { MetodosPagoReportPDF } from './MetodosPagoReportPDF';
+import { usePeriodo } from '../shared/usePeriodo';
 
 interface State {
-    mesActual: number;
-    anioActual: number;
-    fechaInicio: string;
-    fechaFin: string;
-    usarRango: boolean;
     data: MetodosPagoResponse | null;
     isLoading: boolean;
     isGeneratingPDF: boolean;
     expandedMethod: string | null;
 }
 
-const today = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-const monthStart = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
-
 export function useMetodosPagoViewModel(sedeId?: number | null) {
-    const now = new Date();
     const { auth } = useAuthStore();
+    // Día · Mes · Rango, igual que en las demás pestañas. El backend ya acepta
+    // fechaInicio/fechaFin además de mes/anio, así que el día es un rango de un día.
+    const periodo = usePeriodo('mes');
     const [state, setState] = useState<State>({
-        mesActual: now.getMonth() + 1,
-        anioActual: now.getFullYear(),
-        fechaInicio: monthStart(now),
-        fechaFin: today(),
-        usarRango: false,
         data: null,
         isLoading: false,
         isGeneratingPDF: false,
@@ -47,35 +33,19 @@ export function useMetodosPagoViewModel(sedeId?: number | null) {
     const fetchData = useCallback(async () => {
         setState(prev => ({ ...prev, isLoading: true }));
         try {
-            const params = new URLSearchParams();
-            if (state.usarRango) {
-                params.set('fechaInicio', state.fechaInicio);
-                params.set('fechaFin', state.fechaFin);
-            } else {
-                params.set('mes', String(state.mesActual));
-                params.set('anio', String(state.anioActual));
-            }
+            const params = periodo.queryParams();
             if (sedeId) params.set('sedeId', String(sedeId));
             const resp = await get<MetodosPagoResponse>(`analisis-financiero/metodos-pago?${params}`);
             if (resp.data) setState(prev => ({ ...prev, data: resp.data! }));
         } finally {
             setState(prev => ({ ...prev, isLoading: false }));
         }
-    }, [state.usarRango, state.fechaInicio, state.fechaFin, state.mesActual, state.anioActual, sedeId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [periodo.key, sedeId]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
-    const navegarMes = useCallback((delta: -1 | 1) => {
-        setState(prev => {
-            let mes = prev.mesActual + delta;
-            let anio = prev.anioActual;
-            if (mes < 1) { mes = 12; anio -= 1; }
-            else if (mes > 12) { mes = 1; anio += 1; }
-            return { ...prev, mesActual: mes, anioActual: anio };
-        });
-    }, []);
 
     const handleExportPDF = useCallback(async () => {
         if (!state.data) return;
@@ -98,20 +68,12 @@ export function useMetodosPagoViewModel(sedeId?: number | null) {
         }
     }, [state.data, empresa]);
 
-    const isCurrentOrFuture =
-        state.anioActual > now.getFullYear() ||
-        (state.anioActual === now.getFullYear() && state.mesActual >= now.getMonth() + 1);
-
     return {
         ...state,
-        isCurrentOrFuture,
+        periodo,
         empresa,
-        navegarMes,
         refreshData: fetchData,
         handleExportPDF,
-        setFechaInicio: (fechaInicio: string) => setState(prev => ({ ...prev, fechaInicio })),
-        setFechaFin: (fechaFin: string) => setState(prev => ({ ...prev, fechaFin })),
-        setUsarRango: (usarRango: boolean) => setState(prev => ({ ...prev, usarRango })),
         toggleMethod: (metodo: string) => setState(prev => ({ ...prev, expandedMethod: prev.expandedMethod === metodo ? null : metodo })),
     };
 }

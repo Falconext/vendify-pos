@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useConciliacionViewModel, type FiltroEstado } from './useConciliacionViewModel';
+import { PeriodoSelector } from '../shared/PeriodoSelector';
 import { COLUMNAS_BANCO, origenLabel } from './ConciliacionModel';
 import { KpiMini, RadialGauge } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
@@ -107,22 +108,11 @@ export default function ConciliacionView() {
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-gray-400">Desde (opcional)</label>
-            <input
-              type="date"
-              value={vm.fechaInicio}
-              onChange={(e) => vm.setFechaInicio(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-gray-400">Hasta (opcional)</label>
-            <input
-              type="date"
-              value={vm.fechaFin}
-              onChange={(e) => vm.setFechaFin(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
-            />
+            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-gray-400">Período a conciliar · {vm.periodo.label}</label>
+            {/* Día · Mes · Rango, el mismo selector que en las demás pestañas. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <PeriodoSelector vm={vm.periodo} />
+            </div>
           </div>
           <div className="ml-auto">
             <button
@@ -137,7 +127,7 @@ export default function ConciliacionView() {
           </div>
         </div>
         <p className="mt-2 text-xs text-slate-400 dark:text-gray-500">
-          El rango de fechas acota los pagos del sistema a comparar. Sin rango, se comparan todos los pagos con número de operación.
+          Solo se comparan los pagos del sistema con número de operación emitidos en el período elegido (día, mes o rango).
         </p>
       </div>
 

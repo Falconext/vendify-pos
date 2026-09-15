@@ -11,13 +11,13 @@ import {
     XAxis,
 } from 'recharts';
 import {
-    MESES_FULL,
     MetodoPagoGrupo,
     formatSoles,
     methodColor,
     methodIcon,
 } from './MetodosPagoModel';
 import { useMetodosPagoViewModel } from './useMetodosPagoViewModel';
+import { PeriodoSelector } from '../shared/PeriodoSelector';
 import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
@@ -150,39 +150,21 @@ export default function MetodosPagoView({ sedeId }: { sedeId?: number | null } =
                 <div className="min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
                         <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Métodos de pago</h1>
-                        {!vm.usarRango && vm.isCurrentOrFuture && (
-                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: ACCENT }}>En curso</span>
+                        {((vm.periodo.periodo === 'mes' && vm.periodo.isCurrentOrFuture) || (vm.periodo.periodo === 'dia' && vm.periodo.esHoy)) && (
+                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: ACCENT }}>
+                                {vm.periodo.periodo === 'dia' ? 'Hoy' : 'En curso'}
+                            </span>
                         )}
                     </div>
                     <p className="text-sm text-slate-400 mt-0.5">
-                        {vm.usarRango ? `${formatDate(vm.fechaInicio)} - ${formatDate(vm.fechaFin)}` : `${MESES_FULL[vm.mesActual - 1]} ${vm.anioActual}`}
+                        {vm.periodo.label}
                         {' · '}pagos de ventas conciliados por canal
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5">
-                    <button
-                        onClick={() => vm.setUsarRango(!vm.usarRango)}
-                        className={`h-9 px-3.5 rounded-xl text-sm font-semibold border transition-colors flex items-center gap-1.5 ${vm.usarRango ? 'text-white border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                        style={vm.usarRango ? { background: ACCENT } : undefined}
-                    >
-                        <Icon icon="solar:calendar-linear" /> {vm.usarRango ? 'Rango de fechas' : 'Mes completo'}
-                    </button>
-                    {vm.usarRango ? (
-                        <>
-                            <input type="date" value={vm.fechaInicio} onChange={(e) => vm.setFechaInicio(e.target.value)} className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)]" />
-                            <input type="date" value={vm.fechaFin} onChange={(e) => vm.setFechaFin(e.target.value)} className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[var(--accent)]" />
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={() => vm.navegarMes(-1)} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                <Icon icon="solar:alt-arrow-left-linear" />
-                            </button>
-                            <button onClick={() => vm.navegarMes(1)} disabled={vm.isCurrentOrFuture} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30">
-                                <Icon icon="solar:alt-arrow-right-linear" />
-                            </button>
-                        </>
-                    )}
+                    {/* Día · Mes · Rango, el mismo selector que en las demás pestañas. */}
+                    <PeriodoSelector vm={vm.periodo} />
                     <button onClick={vm.refreshData} className="h-9 px-3.5 rounded-xl border-2 text-sm font-bold flex items-center gap-1.5 transition-colors"
                         style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
                         <Icon icon="solar:refresh-linear" className={vm.isLoading ? 'animate-spin' : ''} /> Actualizar

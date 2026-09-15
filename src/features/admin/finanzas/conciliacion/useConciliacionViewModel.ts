@@ -4,6 +4,7 @@ import useAlertStore from '@/zustand/alert';
 import { useAuthStore } from '@/zustand/auth';
 import * as api from '@/utils/api/finanzas';
 import { ConciliacionReportPDF } from './ConciliacionReportPDF';
+import { usePeriodo } from '../shared/usePeriodo';
 import type {
   IResultadoConciliacion,
   IPlantillaExcel,
@@ -24,8 +25,11 @@ export function useConciliacionViewModel() {
   const alertStore = useAlertStore();
   const { auth } = useAuthStore();
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  // Día · Mes · Rango, el mismo selector que en las demás pestañas: el rango
+  // resultante es el que se manda a conciliar (antes eran dos fechas sueltas
+  // opcionales). Por defecto, el mes en curso.
+  const periodo = usePeriodo('mes');
+  const { fechaInicio, fechaFin } = periodo.rango;
   const [resultado, setResultado] = useState<IResultadoConciliacion | null>(
     null,
   );
@@ -213,8 +217,12 @@ export function useConciliacionViewModel() {
         const det = res.data;
         setResultado(det.resultado as IResultadoConciliacion);
         setObservaciones(det.observaciones || '');
-        setFechaInicio(det.fechaInicio || '');
-        setFechaFin(det.fechaFin || '');
+        // La conciliación guardada trae su propio rango: se refleja en el selector.
+        if (det.fechaInicio && det.fechaFin) {
+          periodo.setPeriodo('rango');
+          periodo.setFechaInicio(det.fechaInicio);
+          periodo.setFechaFin(det.fechaFin);
+        }
         setGuardadaActivaId(det.id);
         setFiltro('TODOS');
         alertStore.alert('Conciliación cargada', 'success');
@@ -254,10 +262,9 @@ export function useConciliacionViewModel() {
   return {
     archivo,
     setArchivo,
+    periodo,
     fechaInicio,
-    setFechaInicio,
     fechaFin,
-    setFechaFin,
     resultado,
     cargando,
     generandoPdf,

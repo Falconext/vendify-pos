@@ -9,7 +9,7 @@ import {
     Tooltip,
     XAxis,
 } from 'recharts';
-import { Calendar } from '@/components/Date';
+import { PeriodoSelector, PeriodoTitulo } from './shared/PeriodoSelector';
 import Select from '@/components/Select';
 import { useFinanceDashboardViewModel } from './useFinanceDashboardViewModel';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
@@ -157,6 +157,7 @@ export default function FinanceDashboardView() {
                     <div>
                         <h2 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Flujo de Caja</h2>
                         <p className="mt-1 text-sm text-slate-400 dark:text-gray-400">Ingresos, egresos y conciliación del periodo.</p>
+                        <PeriodoTitulo vm={vm.periodo} className="!text-base mt-1 !font-semibold text-gray-600 dark:text-gray-300" />
                     </div>
 
                     <button
@@ -196,25 +197,12 @@ export default function FinanceDashboardView() {
                             />
                         </div>
                     )}
-                    <div className="w-full md:min-w-[170px] md:flex-1 md:basis-[180px]">
-                        <Calendar
-                            text="Fecha Inicio"
-                            name="fechaInicio"
-                            value={moment(vm.fechaInicio).format('DD/MM/YYYY')}
-                            onChange={vm.handleDateChange}
-                            className="admin-date-filter"
-                            portal
-                        />
-                    </div>
-                    <div className="w-full md:min-w-[170px] md:flex-1 md:basis-[180px]">
-                        <Calendar
-                            text="Fecha Fin"
-                            name="fechaFin"
-                            value={moment(vm.fechaFin).format('DD/MM/YYYY')}
-                            onChange={vm.handleDateChange}
-                            className="admin-date-filter"
-                            portal
-                        />
+                    {/* Día · Mes · Rango, el mismo selector que en las demás pestañas de Análisis Financiero. */}
+                    <div className="w-full md:w-auto">
+                        <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mb-1">Período</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <PeriodoSelector vm={vm.periodo} />
+                        </div>
                     </div>
                     <div className="flex gap-3 md:ml-auto">
                         <button

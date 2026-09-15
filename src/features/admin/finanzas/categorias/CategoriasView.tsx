@@ -18,6 +18,7 @@ import {
     CAT_COLORS,
 } from './CategoriasModel';
 import { useCategoriasViewModel } from './useCategoriasViewModel';
+import { PeriodoSelector, PeriodoTitulo } from '../shared/PeriodoSelector';
 import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
@@ -79,7 +80,7 @@ function KpiRow({ data }: { data: CategoriasResponse }) {
     }[] = [
         { label: 'Ingresos totales', value: formatSoles(data.ingresoTotal), sub: 'ventas del período', mini: 'line' },
         { label: 'Ganancia total', value: formatSoles(data.gananciaTotal), sub: `margen ${formatPct(data.margenPromedio)}`, mini: 'donut' },
-        { label: 'Categorías activas', value: String(data.totalCategorias), sub: 'con ventas este mes', mini: 'bars' },
+        { label: 'Categorías activas', value: String(data.totalCategorias), sub: 'con ventas en el período', mini: 'bars' },
         { label: 'Mejor categoría', value: data.mejorCategoria ?? '—', sub: 'mayor ganancia', mini: 'wave' },
     ];
 
@@ -326,14 +327,13 @@ function CategoriaRow({
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyState({ mes, anio }: { mes: number; anio: number }) {
-    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Jul','Ago','Sep','Oct','Nov','Dic'];
+function EmptyState({ label }: { label: string }) {
     return (
         <div className={`flex flex-col items-center justify-center py-20 text-center ${CARD}`}>
             <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
                 <Icon icon="solar:tag-linear" className="text-3xl text-slate-300 dark:text-slate-600" />
             </div>
-            <p className="font-bold text-slate-700 dark:text-gray-200">Sin ventas en {MESES[mes - 1]} {anio}</p>
+            <p className="font-bold text-slate-700 dark:text-gray-200">Sin ventas en {label}</p>
             <p className="text-sm text-slate-400 mt-1">No hay comprobantes registrados en este período.</p>
         </div>
     );
@@ -341,56 +341,43 @@ function EmptyState({ mes, anio }: { mes: number; anio: number }) {
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 
-const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
 export default function CategoriasView({ sedeId }: { sedeId?: number | null } = {}) {
     const vm = useCategoriasViewModel(sedeId);
-    const { data, isLoading, mesActual, anioActual, expandedCat, isCurrentOrFuture } = vm;
+    const { data, isLoading, expandedCat } = vm;
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
 
     return (
         <div className="space-y-5 font-jakarta">
-            {/* Period navigator */}
-            <div className="flex items-center justify-between">
+            {/* Period navigator: Día · Mes · Rango, el mismo selector que en las demás pestañas. */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                     <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Período</p>
-                    <h2 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center">
-                        {MESES_FULL[mesActual - 1]} {anioActual}
-                        {isCurrentOrFuture && (
-                            <span className="ml-2.5 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ background: ACCENT }}>
-                                En curso
-                            </span>
-                        )}
-                    </h2>
+                    <PeriodoTitulo vm={vm.periodo} className="!text-[22px] !font-extrabold !text-slate-800 dark:!text-white tracking-tight" />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <PeriodoSelector vm={vm.periodo} />
+                    <button
+                        onClick={vm.refreshData}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl text-white hover:brightness-105 transition-all"
+                        style={{ background: ACCENT }}
+                        title="Actualizar"
+                    >
+                        <Icon icon="solar:refresh-bold" />
+                    </button>
                     <button
                         onClick={vm.handleExportPDF}
                         disabled={vm.isGeneratingPDF || !data}
-                        className="h-9 px-4 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+                        className="h-10 px-4 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
                     >
                         <Icon icon={vm.isGeneratingPDF ? 'line-md:loading-twotone-loop' : 'solar:file-download-linear'} />
                         PDF
-                    </button>
-                    <button
-                        onClick={() => vm.navegarMes(-1)}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                        <Icon icon="solar:alt-arrow-left-linear" />
-                    </button>
-                    <button
-                        onClick={() => vm.navegarMes(1)}
-                        disabled={isCurrentOrFuture}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-30"
-                    >
-                        <Icon icon="solar:alt-arrow-right-linear" />
                     </button>
                 </div>
             </div>
 
             {isLoading ? <Skeleton /> : !data || data.categorias.length === 0 ? (
-                <EmptyState mes={mesActual} anio={anioActual} />
+                <EmptyState label={vm.periodo.label} />
             ) : (
                 <>
                     {/* KPI unified row */}

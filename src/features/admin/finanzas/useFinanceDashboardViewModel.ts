@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import moment from 'moment';
+import { usePeriodo } from './shared/usePeriodo';
 import { useFinanzasStore } from '@/zustand/finanzas';
 import { useAuthStore } from '@/zustand/auth';
 import { useSedesStore } from '@/zustand/sedes';
@@ -41,12 +41,11 @@ export function useFinanceDashboardViewModel() {
             .map((u: any) => ({ id: u.id, value: u.nombre }))
     ];
 
-    const [fechaInicio, setFechaInicio] = useState<string>(
-        moment(new Date(new Date().getFullYear(), new Date().getMonth(), 1)).format('YYYY-MM-DD')
-    );
-    const [fechaFin, setFechaFin] = useState<string>(
-        moment(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)).format('YYYY-MM-DD')
-    );
+    // Día · Mes · Rango, el mismo selector que en las demás pestañas. El
+    // endpoint finanzas/resumen solo entiende fechas, así que el mes se manda
+    // como 1º→último día y el día como un rango de un día.
+    const periodo = usePeriodo('mes');
+    const { fechaInicio, fechaFin } = periodo.rango;
 
     useEffect(() => {
         if (isAdmin && esPrincipal) listarSedes();
@@ -72,17 +71,6 @@ export function useFinanceDashboardViewModel() {
             };
         });
     }, [chartData]);
-
-    const handleDateChange = (date: string, name: string) => {
-        if (!moment(date, 'DD/MM/YYYY', true).isValid()) return;
-
-        const formattedDate = moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD');
-        if (name === "fechaInicio") {
-            setFechaInicio(formattedDate);
-        } else if (name === "fechaFin") {
-            setFechaFin(formattedDate);
-        }
-    };
 
     const refreshData = () => {
         if (fechaInicio && fechaFin) {
@@ -126,6 +114,7 @@ export function useFinanceDashboardViewModel() {
 
     return {
         // State
+        periodo,
         fechaInicio,
         fechaFin,
         isLoading,
@@ -146,7 +135,6 @@ export function useFinanceDashboardViewModel() {
         handleSelectUsuario: (id: any) => setSelectedUsuarioId(id === 0 ? null : Number(id)),
 
         // Handlers
-        handleDateChange,
         refreshData,
         handleExportPDF,
         isGeneratingPDF,
