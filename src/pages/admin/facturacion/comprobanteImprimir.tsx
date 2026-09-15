@@ -4,6 +4,7 @@ import { useReactToPrint } from 'react-to-print';
 import { BRAND } from '@/lib/branding';
 import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
+import { descripcionParaImpresion } from '@/utils/descripcion-vehiculo';
 import { useQrSunat } from '@/utils/qrSunat';
 
 // Factor para pasar de precio (con IGV) a valor (sin IGV) en una línea. Se saca de
@@ -365,7 +366,7 @@ console.log(formValues)
                                 <div key={i} className="flex">
                                     <span className="basis-[16%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>{item?.cantidad || 0}</span>
                                     <span className="basis-[44%] shrink-0 text-left" style={{ fontSize: tpx('productos') }}>
-                                        {item?.descripcion?.toUpperCase() || ''}
+                                        <span style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase() || ''}</span>
                                         {item?.lotes && item.lotes.length > 0 && (
                                             <div className="flex flex-col mt-0.5">
                                                 {item.lotes.map((l: any, idx: number) => (
@@ -723,7 +724,7 @@ console.log(formValues)
                                                     </div>
                                                 )}
                                                 {/* <div className="w-[10%] text-center border-r border-gray-300 py-1">{item?.codigo || '-'}</div> */}
-                                                <div className="flex-1 text-left border-r border-gray-300 px-2 py-1">{item?.descripcion?.toUpperCase()}</div>
+                                                <div className="flex-1 text-left border-r border-gray-300 px-2 py-1" style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase()}</div>
                                                 {/* <div className="w-[10%] text-right border-r border-gray-300 px-1 py-1">{round2(pUnit / 1.18).toFixed(2)}</div> */}
                                                 {/* <div className="w-[8%] text-right border-r border-gray-300 px-1 py-1">{round2(pUnit - (pUnit / 1.18)).toFixed(2)}</div> */}
                                                 <div className="w-[9%] text-center border-r border-gray-300 py-1">{monedaSimbolo}</div>
@@ -1125,7 +1126,7 @@ console.log(formValues)
                                                     </div>
                                                 )}
                                                 <div className="flex-1 text-left border-r border-gray-300 px-2 py-1">
-                                                    <div>{item?.descripcion?.toUpperCase()}</div>
+                                                    <div style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase()}</div>
                                                     {item?.lotes && item.lotes.length > 0 && (
                                                         <div className="flex flex-col mt-0.5">
                                                             {item.lotes.map((l: any, idx: number) => (

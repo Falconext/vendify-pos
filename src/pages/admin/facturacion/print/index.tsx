@@ -186,6 +186,7 @@ const PrintPDF = ({
             borderTopWidth: 0,
             padding: 3,
             textAlign: 'left',
+            lineHeight: 1.5,
             flex: 7,
         },
         bold: {

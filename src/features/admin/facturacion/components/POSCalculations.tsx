@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCuentasBancariasStore } from "@/zustand/cuentasBancarias";
 import EmitidoContent from "@/pages/admin/facturacion/modalResponseInvoice/EmitidoContent";
+import { descripcionParaImpresion } from "@/utils/descripcion-vehiculo";
 import type { PaymentLine } from "../useFacturacionViewModel";
 import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 
@@ -650,7 +651,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                             <div key={i} className="flex">
                                                 <span className="w-6 text-center">{p.cantidad}</span>
                                                 <span className="w-7 text-center uppercase">{(p.unidad || p.unidadMedida || 'NIU').toString().toUpperCase().slice(0, 3)}</span>
-                                                <span className="flex-1 px-1 uppercase break-words">{p.descripcion || p.nombre || 'Producto'}</span>
+                                                <span className="flex-1 px-1 uppercase break-words" style={{ whiteSpace: 'pre-line' }}>{descripcionParaImpresion(p.descripcion || p.nombre || 'Producto', p.atributosTecnicos)}</span>
                                                 <span className="w-10 text-right">{Number(p.precioUnitario ?? p.mtoPrecioUnitario ?? 0).toFixed(2)}</span>
                                                 <span className="w-12 text-right">{Number(p.total ?? 0).toFixed(2)}</span>
                                             </div>

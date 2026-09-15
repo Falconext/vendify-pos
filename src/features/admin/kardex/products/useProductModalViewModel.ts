@@ -143,7 +143,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     farmacia: features.gestionLotes && esFarmaceutico,
     fraccionamiento: features.permiteFraccionamiento,
     ofertas: features.gestionOfertas,
-    fichaComputo: features.fichaTecnicaComputo,
+    // Ficha técnica: cómputo o vehículo (motos). La plantilla de campos la
+    // resuelve el backend según el rubro (/productos/ficha-tecnica/plantilla).
+    fichaComputo: features.fichaTecnicaComputo || features.fichaTecnicaVehiculo,
     seriesGarantia: features.controlSeriesGarantia,
     ecommerce: tieneTienda,
     descripcionRica: tieneDescripcionRica,
