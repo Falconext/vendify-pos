@@ -152,6 +152,32 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
                     </div>
                 </div>
 
+                {/* Foto de la factura/boleta (evidencia leída por IA) */}
+                {!isLoading && localCompra?.fotoUrl && (
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                            <Icon icon="solar:camera-bold-duotone" className="text-accent-brand" />
+                            Foto del Comprobante
+                        </h3>
+                        <a
+                            href={localCompra.fotoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group block w-fit rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        >
+                            <img
+                                src={localCompra.fotoUrl}
+                                alt="Foto de la factura o boleta de la compra"
+                                className="max-h-80 w-auto object-contain bg-gray-50 dark:bg-slate-900"
+                            />
+                            <div className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold text-accent-brand bg-white dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-800">
+                                <Icon icon="solar:maximize-square-bold-duotone" width={14} />
+                                Ver en tamaño completo
+                            </div>
+                        </a>
+                    </div>
+                )}
+
                 {/* Footer Totals */}
                 <div className="flex justify-end pt-2">
                     <div className="w-full md:w-72 space-y-3 p-5 rounded-2xl border border-gray-100 dark:border-transparent bg-gray-50/30 dark:bg-slate-900/20 shadow-sm">

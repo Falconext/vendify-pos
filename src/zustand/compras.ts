@@ -20,6 +20,8 @@ export interface ICompra {
     detalles?: any[];
     cuotas?: any | string;
     saldo?: number;
+    /** Foto de la factura/boleta (S3) leída por IA o adjuntada como evidencia. */
+    fotoUrl?: string | null;
 }
 
 export interface IComprasState {
