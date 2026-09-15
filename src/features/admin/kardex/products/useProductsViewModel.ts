@@ -2,11 +2,12 @@ import { useState, useEffect, useRef, ChangeEvent, useMemo, useCallback } from '
 import { useDebounce } from '@/hooks/useDebounce';
 import { useProductsStore } from '@/zustand/products';
 import { useBrandsStore } from '@/zustand/brands';
+import { useCategoriesStore } from '@/zustand/categories';
 import { useAuthStore } from '@/zustand/auth';
 import { useSedesStore } from '@/zustand/sedes';
 import useAlertStore from '@/zustand/alert';
 import apiClient from '@/utils/apiClient';
-import { get } from '@/utils/fetch';
+import { get, patch } from '@/utils/fetch';
 import { hasPlanFeature, type IUserPermissions } from '@/utils/permissions';
 import { useRubroFeatures } from '@/utils/rubro-features';
 import { IProductsViewModelState, initialProductForm, IFormProduct, IProduct, buildEditFormValues } from './ProductsModel';
@@ -37,6 +38,8 @@ export const useProductsViewModel = () => {
     const { auth, sedeActiva } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
     const { brands, getAllBrands } = useBrandsStore();
+    // Categorías para el cambio rápido desde la tabla (badge de categoría).
+    const { categories, getAllCategories } = useCategoriesStore();
 
     const isAdmin = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
     const esPrincipal = !sedeActiva || sedeActiva.esPrincipal === true;
@@ -191,6 +194,12 @@ export const useProductsViewModel = () => {
     const vistaStorageKey = `productos:vista:${auth?.empresaId || 'default'}`;
 
     // Effects
+
+    // Categorías de la empresa: alimentan el selector inline de la tabla.
+    useEffect(() => {
+        if (auth?.empresaId) getAllCategories({});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId]);
 
     // Load Design/Vista Preference
     useEffect(() => {
@@ -639,6 +648,34 @@ export const useProductsViewModel = () => {
         setState(prev => ({ ...prev, formValues: data, isOpenModalConfirm: true }));
     };
 
+    /**
+     * Cambio rápido de categoría desde la tabla (badge de la columna Categoría):
+     * PATCH puntual y actualización local inmediata, sin abrir el modal.
+     */
+    const cambiarCategoria = async (productoId: number, categoriaId: number | null): Promise<boolean> => {
+        try {
+            const resp: any = await patch(`productos/${productoId}/categoria`, { categoriaId });
+            if (resp?.code === 1 || resp?.success) {
+                const nueva = resp?.data?.categoria ?? null;
+                setProducts(prev => prev.map(p =>
+                    p.id === productoId
+                        ? ({ ...p, categoriaId: nueva?.id ?? null, categoria: nueva } as IProduct)
+                        : p
+                ));
+                useAlertStore.getState().alert(
+                    nueva ? `Categoría "${nueva.nombre}" asignada` : 'Producto sin categoría',
+                    'success',
+                );
+                return true;
+            }
+            useAlertStore.getState().alert(resp?.error || resp?.message || 'No se pudo cambiar la categoría', 'error');
+            return false;
+        } catch (e: any) {
+            useAlertStore.getState().alert(e?.message || 'No se pudo cambiar la categoría', 'error');
+            return false;
+        }
+    };
+
     const confirmToggleroduct = async () => {
         const productoId = Number(state.formValues?.productoId);
         // Determine the new state from local products (not from Zustand store which may be stale)
@@ -756,6 +793,9 @@ export const useProductsViewModel = () => {
         isCodigoBarrasEnabled,
         safeVisibleColumns,
         stockSort,
+        // Cambio rápido de categoría desde la tabla
+        categories,
+        cambiarCategoria,
         actions,
         // Sede filtering
         isAdmin,

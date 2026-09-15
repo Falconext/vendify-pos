@@ -7,6 +7,7 @@ import ModalProduct from '@/pages/admin/kardex/modal-productos';
 import ModalCategories from '@/pages/admin/kardex/modal-categorias';
 import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
+import CategoriaInlineSelect from './components/CategoriaInlineSelect';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
 import CardRestaurante from '@/components/productos/CardRestaurante';
@@ -210,13 +211,16 @@ export default function ProductsView() {
                 'Categoria': (() => {
                     const nombre = item?.categoria?.nombre || 'Sin categoría';
                     const c = getCatColor(nombre);
+                    // Editable en la propia tabla: clic en el badge → elegir y guardar.
                     return (
-                        <span
-                            style={{ backgroundColor: c.bg, color: c.text }}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap uppercase"
-                        >
-                            {nombre}
-                        </span>
+                        <CategoriaInlineSelect
+                            productoId={Number(item.id)}
+                            categoriaId={item?.categoria?.id ?? item?.categoriaId ?? null}
+                            nombre={nombre}
+                            color={c}
+                            categories={vm.categories}
+                            onChange={vm.cambiarCategoria}
+                        />
                     );
                 })(),
                 'Marca': ((item as any)?.marca?.nombre || 'Sin marca').toUpperCase(),
