@@ -141,14 +141,14 @@ const Comprobantes = () => {
         handleCloseMenu();
         const corr = String(row.correlativo || '').padStart(8, '0');
         setPdfName(`${row.serie}-${corr}.pdf`);
-        setPdfUrl(row.s3PdfUrl || '');
-        setPdfLoading(!row.s3PdfUrl);
+        // Siempre se regenera (force) para reflejar el formato/plantilla vigente:
+        // el PDF cacheado puede quedar desactualizado al cambiar "Configurar formato".
+        setPdfUrl('');
+        setPdfLoading(true);
         setIsOpenModalPdf(true);
 
-        if (row.s3PdfUrl) return;
-
         try {
-            const res: any = await post(`comprobante/${row.id}/generar-pdf`, {});
+            const res: any = await post(`comprobante/${row.id}/generar-pdf?force=true`, {});
             if (res?.error) {
                 useAlertStore.getState().alert(res.error, 'error');
                 return;
