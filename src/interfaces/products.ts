@@ -49,6 +49,8 @@ export type IProduct = {
     precioUnitarioSede?: number | null
     precioOfertaSede?: number | null
   } | null
+  /** false = existe en la empresa pero NO está asignado a la sede consultada. */
+  disponibleEnSede?: boolean
   estado: string
   creadoEn: string
   empresaId: number
@@ -130,6 +132,8 @@ export type IFormProduct = {
   precioUnitarioSede?: number | null,
   precioOfertaSede?: number | null,
   ubicacionSede?: string | null,
+  /** Sedes (ids) donde el producto queda disponible. */
+  sedesDisponibles?: number[],
   codigo: string,
   unidadMedidaId: number
   costoPromedio?: number

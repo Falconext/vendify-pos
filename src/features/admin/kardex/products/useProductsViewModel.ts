@@ -174,8 +174,14 @@ export const useProductsViewModel = () => {
         soloStockBajo: (() => {
             const searchParams = new URLSearchParams(window.location.search);
             return searchParams.get('soloStockBajo') === 'true';
-        })()
+        })(),
+        incluirOcultos: false,
+        isOpenModalAsignarSedes: false,
     });
+
+    // Asignación de productos a sedes: solo tiene sentido con 2+ sedes reales.
+    const tieneVariasSedes = (sedes?.length ?? 0) > 1;
+    const catalogoPorSede = Boolean((auth as any)?.empresa?.catalogoPorSede);
 
     const debounce = useDebounce(state.searchClient, 600);
     const [products, setProducts] = useState<IProduct[]>([]);
@@ -275,10 +281,12 @@ export const useProductsViewModel = () => {
         } catch (_) { }
     }, [state.visibleColumns, columnsStorageKey, fallbackVisibleColumns]);
 
-    // Cargar sedes solo en sede principal
+    // Sedes: el admin de la principal las usa para el filtro; todos las
+    // necesitan para saber si hay 2+ sedes (acciones "Asignar/Quitar de sede").
     useEffect(() => {
-        if (isAdmin && esPrincipal) listarSedes();
-    }, [isAdmin, esPrincipal]);
+        listarSedes();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchProductsList = useCallback(async () => {
         if (!auth?.empresaId) {
@@ -298,6 +306,7 @@ export const useProductsViewModel = () => {
             if (state.marcaIdFilter) params.marcaId = String(state.marcaIdFilter);
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
             if (state.soloStockBajo) params.soloStockBajo = 'true';
+            if (effectiveSedeId && state.incluirOcultos) params.incluirOcultos = 'true';
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos?${query}`);
             if (resp?.code === 1) {
@@ -316,7 +325,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -326,7 +335,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchProductsListRef.current();
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchResumenInventario = useCallback(async () => {
         if (!auth?.empresaId) {
@@ -698,6 +707,47 @@ export const useProductsViewModel = () => {
         }
     };
 
+    /**
+     * Asignar / quitar UN producto de la sede seleccionada (menú de acciones).
+     * Quitar falla si tiene stock en la sede: el backend lo devuelve en `omitidos`.
+     * Quitar con stock: se pide confirmación para dejar el stock de la sede en 0
+     * (salida en kardex) y quitar igual — caso "se cargó stock en la sede equivocada".
+     */
+    const [quitarConStock, setQuitarConStock] = useState<{ id: number; descripcion: string; stock: number } | null>(null);
+    const toggleDisponibleEnSede = async (producto: any, ajustarStockACero = false) => {
+        if (!effectiveSedeId) return;
+        const disponible = producto?.disponibleEnSede !== false;
+        const resp: any = await patch('productos/sedes/asignar', {
+            sedeId: effectiveSedeId,
+            productoIds: [Number(producto.id)],
+            disponible: !disponible,
+            ...(ajustarStockACero ? { ajustarStockACero: true } : {}),
+        });
+        if (!resp?.success) {
+            useAlertStore.getState().alert(resp?.error || 'No se pudo actualizar la asignación', 'error');
+            return;
+        }
+        const omitido = (resp?.data?.omitidos ?? [])[0];
+        if (omitido) {
+            setQuitarConStock({ id: Number(producto.id), descripcion: omitido.descripcion, stock: Number(omitido.stock) });
+            return;
+        }
+        useAlertStore.getState().alert(
+            disponible
+                ? `"${producto.descripcion}" ya no aparece en ${selectedSedeName ?? 'esta sede'}${ajustarStockACero ? ' (stock puesto en 0, salida registrada en kardex)' : ''}`
+                : `"${producto.descripcion}" ahora está disponible en ${selectedSedeName ?? 'esta sede'}`,
+            'success',
+        );
+        await fetchProductsList();
+        await fetchResumenInventario();
+    };
+    const confirmarQuitarConStock = async () => {
+        if (!quitarConStock) return;
+        const p = { id: quitarConStock.id, descripcion: quitarConStock.descripcion, disponibleEnSede: true };
+        setQuitarConStock(null);
+        await toggleDisponibleEnSede(p, true);
+    };
+
     const togglePublicarTienda = async (producto: any) => {
         try {
             await apiClient.patch(`productos/${producto.id}/publicar-tienda`, {
@@ -751,6 +801,11 @@ export const useProductsViewModel = () => {
         handleToggleClientState,
         confirmToggleroduct,
         togglePublicarTienda,
+        toggleDisponibleEnSede,
+        confirmarQuitarConStock,
+        setQuitarConStock,
+        setIncluirOcultos: (v: boolean) => setState(prev => ({ ...prev, incluirOcultos: v, currentPage: 1 })),
+        setIsOpenModalAsignarSedes: (v: boolean) => setState(prev => ({ ...prev, isOpenModalAsignarSedes: v })),
         toggleStockSort,
         exportProducts: () => exportProductsAction(debounce, effectiveSedeId),
         refreshProducts: async () => {
@@ -803,7 +858,11 @@ export const useProductsViewModel = () => {
         effectiveSedeId,
         selectedSedeName,
         sedesOptions,
+        sedes,
         handleSelectSede,
+        tieneVariasSedes,
+        catalogoPorSede,
+        quitarConStock,
         tieneTienda,
         // Computed
         indexOfFirstItem: (state.currentPage - 1) * state.itemsPerPage,

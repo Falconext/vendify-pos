@@ -41,6 +41,9 @@ export interface IProductsViewModelState {
     vistaActual: 'cards' | 'tabla' | 'lista';
     marcaIdFilter: number | undefined;
     soloStockBajo: boolean;
+    /** Ver también los productos NO asignados a la sede seleccionada. */
+    incluirOcultos: boolean;
+    isOpenModalAsignarSedes: boolean;
 }
 
 export const initialProductForm: IFormProduct = {

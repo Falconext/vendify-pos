@@ -8,6 +8,7 @@ import ModalCategories from '@/pages/admin/kardex/modal-categorias';
 import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
 import CategoriaInlineSelect from './components/CategoriaInlineSelect';
+import ModalAsignarSedes from './components/ModalAsignarSedes';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
 import CardRestaurante from '@/components/productos/CardRestaurante';
@@ -92,6 +93,8 @@ export default function ProductsView() {
 
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
+    // Filtros activos (para el contador del botón Filtro).
+    const filtrosActivos = (vm.soloStockBajo ? 1 : 0) + (vm.incluirOcultos ? 1 : 0);
     const [isOpenModalPreviewCatalogo, setIsOpenModalPreviewCatalogo] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const filterMenuRef = useRef<HTMLDivElement>(null);
@@ -206,6 +209,11 @@ export default function ProductsView() {
                         {item?.codigoBarras && (
                             <span className="text-[10px] text-violet-400 dark:text-violet-400 mt-0.5 font-mono tracking-wide">{item.codigoBarras}</span>
                         )}
+                        {(item as any)?.disponibleEnSede === false && (
+                            <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-gray-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:text-gray-300" title="No está asignado a esta sede: no aparece en su inventario ni en su POS">
+                                <Icon icon="mdi:eye-off-outline" width={11} /> No asignado a {vm.selectedSedeName ?? 'esta sede'}
+                            </span>
+                        )}
                     </div>
                 ),
                 'Categoria': (() => {
@@ -272,14 +280,14 @@ export default function ProductsView() {
                 })(),
                 'Sede': (() => {
                     const cfg = (item as any).sedeStockConfig;
-                    if (!cfg) return '-';
-                    if (cfg.visibleEnSede === false) {
+                    if ((item as any).disponibleEnSede === false || cfg?.visibleEnSede === false) {
                         return (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-slate-700 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                                <Icon icon="mdi:eye-off-outline" width={12} /> Oculto
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-slate-700 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400" title="No está asignado a esta sede: no aparece en su inventario ni en su POS">
+                                <Icon icon="mdi:eye-off-outline" width={12} /> No asignado
                             </span>
                         );
                     }
+                    if (!cfg) return '-';
                     if (cfg.vendibleEnSede === false) {
                         return (
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
@@ -584,11 +592,11 @@ export default function ProductsView() {
                                 <button
                                     type="button"
                                     onClick={() => setShowFilterMenu((v) => !v)}
-                                    className={`h-10 rounded-xl border px-3.5 text-sm font-semibold flex items-center gap-1.5 transition-colors ${vm.soloStockBajo ? 'border-transparent text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
-                                    style={vm.soloStockBajo ? { background: ACCENT } : undefined}
+                                    className={`h-10 rounded-xl border px-3.5 text-sm font-semibold flex items-center gap-1.5 transition-colors ${filtrosActivos > 0 ? 'border-transparent text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+                                    style={filtrosActivos > 0 ? { background: ACCENT } : undefined}
                                 >
                                     <Icon icon="solar:filter-linear" /> Filtro
-                                    {vm.soloStockBajo && <span className="ml-0.5 h-4 min-w-4 px-1 grid place-items-center rounded-full bg-white/25 text-[10px] font-bold">1</span>}
+                                    {filtrosActivos > 0 && <span className="ml-0.5 h-4 min-w-4 px-1 grid place-items-center rounded-full bg-white/25 text-[10px] font-bold">{filtrosActivos}</span>}
                                     <Icon icon={showFilterMenu ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-xs opacity-70" />
                                 </button>
                                 {showFilterMenu && (
@@ -612,6 +620,21 @@ export default function ProductsView() {
                                                 </button>
                                             );
                                         })}
+                                        {vm.tieneVariasSedes && vm.effectiveSedeId && (
+                                            <>
+                                                <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Sede</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { actions.setIncluirOcultos(!vm.incluirOcultos); setShowFilterMenu(false); }}
+                                                    title="Muestra también los productos que existen en la empresa pero no están asignados a esta sede"
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${vm.incluirOcultos ? 'bg-slate-50 text-slate-800 dark:bg-slate-700/60 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
+                                                >
+                                                    <Icon icon="mdi:eye-off-outline" className="text-base text-slate-400 dark:text-gray-400" />
+                                                    <span className="flex-1 text-left">Ver no asignados</span>
+                                                    {vm.incluirOcultos && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -693,6 +716,11 @@ export default function ProductsView() {
                                 <button type="button" onClick={() => setIsOpenModalPreviewCatalogo(true)} className={TOOLBAR_BTN}>
                                     <Icon icon="solar:shop-bold" style={{ color: ACCENT }} /> Catálogo PDF
                                 </button>
+                                {vm.tieneVariasSedes && (
+                                    <button type="button" onClick={() => actions.setIsOpenModalAsignarSedes(true)} className={TOOLBAR_BTN} title="Asignar o quitar varios productos de una sede">
+                                        <Icon icon="solar:shop-2-bold-duotone" style={{ color: ACCENT }} /> Asignar a sede
+                                    </button>
+                                )}
                                 {/* Botón "Autocompletar" oculto a pedido del usuario. */}
                             </div>
                         </div>
@@ -795,6 +823,12 @@ export default function ProductsView() {
                                             <span>{(rowBase as any).publicarEnTienda ? 'Quitar de tienda' : 'Publicar en tienda'}</span>
                                         </button>
                                     )}
+                                    {vm.tieneVariasSedes && vm.effectiveSedeId && (
+                                        <button type="button" onClick={() => { void actions.toggleDisponibleEnSede(rowBase); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                            <Icon icon={(rowBase as any).disponibleEnSede === false ? 'mdi:eye-plus-outline' : 'mdi:eye-off-outline'} width={16} height={16} className={(rowBase as any).disponibleEnSede === false ? 'text-emerald-500 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'} />
+                                            <span>{(rowBase as any).disponibleEnSede === false ? `Asignar a ${vm.selectedSedeName ?? 'esta sede'}` : `Quitar de ${vm.selectedSedeName ?? 'esta sede'}`}</span>
+                                        </button>
+                                    )}
                                     <button type="button" onClick={() => { actions.handleOpenDelete({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-t border-gray-100 dark:border-white/10">
                                         <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} /> <span>Eliminar</span>
                                     </button>
@@ -830,8 +864,33 @@ export default function ProductsView() {
                 setIsOpenModal={actions.setIsOpenModalDelete}
                 confirmSubmit={actions.confirmDeleteProduct}
                 title={vm.labels.eliminar}
-                information={vm.labels.eliminarInfo}
+                information={vm.tieneVariasSedes
+                    ? `${vm.labels.eliminarInfo} Se eliminará de TODAS las sedes. Si solo quieres que deje de aparecer en una sede, usa "Quitar de esta sede" en el menú de acciones.`
+                    : vm.labels.eliminarInfo}
             />
+
+            {/* Quitar de la sede un producto que aún tiene stock: confirmar poner stock en 0 */}
+            <ModalConfirm
+                isOpenModal={!!vm.quitarConStock}
+                setIsOpenModal={(v: boolean) => { if (!v) actions.setQuitarConStock(null); }}
+                confirmSubmit={actions.confirmarQuitarConStock}
+                confirmText="Quitar y poner stock en 0"
+                title={`Este producto tiene stock en ${vm.selectedSedeName ?? 'esta sede'}`}
+                information={vm.quitarConStock
+                    ? `"${vm.quitarConStock.descripcion}" tiene ${vm.quitarConStock.stock} unidades en ${vm.selectedSedeName ?? 'esta sede'}. Si el stock realmente está en otra sede, usa Traslado. Si ese stock no existe aquí (se cargó por error), puedes quitarlo ahora: se registrará una SALIDA en el kardex por ${vm.quitarConStock.stock} unidades y el producto dejará de aparecer en ${vm.selectedSedeName ?? 'esta sede'}.`
+                    : ''}
+            />
+
+            {vm.tieneVariasSedes && (
+                <ModalAsignarSedes
+                    isOpen={vm.isOpenModalAsignarSedes}
+                    onClose={() => actions.setIsOpenModalAsignarSedes(false)}
+                    sedes={vm.sedes}
+                    defaultSedeId={vm.effectiveSedeId}
+                    catalogoPorSede={vm.catalogoPorSede}
+                    onChanged={() => { void actions.refreshProducts(); }}
+                />
+            )}
 
             <ModalPreviewCatalogo 
                 isOpen={isOpenModalPreviewCatalogo} 

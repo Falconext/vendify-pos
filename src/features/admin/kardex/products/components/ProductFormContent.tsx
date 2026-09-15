@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
 import Button from "@/components/Button";
+import ModalConfirm from "@/components/ModalConfirm";
 import { ProductImageUploader } from "./ProductImageUploader";
 import { ProductWholesalePricing } from "./ProductWholesalePricing";
 import { ProductBasicForm } from "./ProductBasicForm";
@@ -104,6 +105,19 @@ export const ProductFormContent: React.FC<{ vm: any; onCancel?: () => void; forc
                     )}
                 </Button>
             </div>
+
+            {/* Ya existe con ese código/barras pero no está en esta sede: asignar en vez de duplicar */}
+            <ModalConfirm
+                isOpenModal={!!vm.existingPrompt}
+                setIsOpenModal={(v: boolean) => { if (!v) vm.setExistingPrompt(null); }}
+                confirmSubmit={vm.confirmarAsignarExistente}
+                confirmText={`Asignar a ${vm.sedeActiva?.nombre ?? 'esta sede'}`}
+                confirmLoading={vm.asignandoExistente}
+                title="Este producto ya existe en tu empresa"
+                information={vm.existingPrompt
+                    ? `"${vm.existingPrompt.descripcion}" (código ${vm.existingPrompt.codigo}) ya está registrado y disponible en: ${vm.existingPrompt.sedes.filter((s: any) => s.disponible).map((s: any) => `${s.nombre} (${s.stock} und)`).join(', ') || 'ninguna sede'}. En vez de crear un duplicado, puedes asignarlo a ${vm.sedeActiva?.nombre ?? 'esta sede'}${Number(vm.formValues?.stock || 0) > 0 ? ` con ${Number(vm.formValues?.stock)} unidades de stock inicial` : ''}.`
+                    : ''}
+            />
 
             {/* Nested Drawers */}
             <ModalMedicamento

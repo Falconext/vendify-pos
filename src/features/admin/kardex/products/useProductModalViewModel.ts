@@ -10,6 +10,7 @@ import { useModificadoresStore } from "@/zustand/modificadores";
 import { esRubroFabricacion, useRubroFeatures } from "@/utils/rubro-features";
 import { hasPlanFeature, hasSubPermission, type IUserPermissions } from "@/utils/permissions";
 import apiClient from "@/utils/apiClient";
+import { get } from "@/utils/fetch";
 import {
   IPropsProducts,
   TipoAjusteStock,
@@ -123,6 +124,12 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const tienePlanMultiplesSedes = hasPlanFeature(userPermissions, "tieneMultiplesSedes");
   const tieneMultiplesSedes =
     tienePlanMultiplesSedes && (sedesEmpresa?.length ?? 0) > 1;
+  // "Disponible en" (asignación del producto a sedes) depende de que la
+  // empresa tenga 2+ sedes reales, no del feature del plan.
+  const tieneVariasSedes = (sedesEmpresa?.length ?? 0) > 1;
+  // Modo de catálogo de la empresa: por sede → un producto nuevo solo queda
+  // disponible en la sede activa; compartido → en todas.
+  const catalogoPorSede = Boolean((auth as any)?.empresa?.catalogoPorSede);
   const tieneAutoGenerarImagen = hasPlanFeature(userPermissions, "tieneAutoGenerarImagen");
   const tieneLocalizacion = hasPlanFeature(userPermissions, "tieneLocalizacion");
 
@@ -210,6 +217,157 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   // --- Form State ---
   const [loading, setLoading] = useState(false);
 
+  // --- Disponibilidad por sede ("Disponible en") ---
+  type SedeProducto = {
+    sedeId: number;
+    nombre: string;
+    esPrincipal: boolean;
+    disponible: boolean;
+    stock: number;
+  };
+  const [sedesProducto, setSedesProducto] = useState<SedeProducto[]>([]);
+  // null = aún no inicializado (no se envía al backend).
+  const [sedesDisponibles, setSedesDisponibles] = useState<number[] | null>(null);
+  // Producto ya existente (mismo código/barras) que NO está en la sede activa:
+  // en vez de un error de duplicado se ofrece asignarlo a esta sede.
+  const [existingPrompt, setExistingPrompt] = useState<{
+    id: number;
+    codigo: string;
+    descripcion: string;
+    sedes: SedeProducto[];
+  } | null>(null);
+  const [asignandoExistente, setAsignandoExistente] = useState(false);
+
+  useEffect(() => {
+    if (!isOpenModal || !tieneVariasSedes) {
+      setSedesProducto([]);
+      setSedesDisponibles(null);
+      return;
+    }
+    let cancelled = false;
+    const productoId = Number(formValues?.productoId || 0);
+    if (isEdit && productoId > 0) {
+      get(`productos/${productoId}/sedes`).then((resp: any) => {
+        if (cancelled || !Array.isArray(resp?.data)) return;
+        const rows: SedeProducto[] = resp.data.map((s: any) => ({
+          sedeId: Number(s.sedeId),
+          nombre: s.nombre,
+          esPrincipal: Boolean(s.esPrincipal),
+          disponible: s.disponible !== false,
+          stock: Number(s.stock || 0),
+        }));
+        setSedesProducto(rows);
+        setSedesDisponibles(rows.filter((r) => r.disponible).map((r) => r.sedeId));
+      });
+    } else {
+      const activaId = Number(sedeActiva?.id || 0);
+      const rows: SedeProducto[] = (sedesEmpresa || [])
+        .filter((s: any) => s.activo !== false)
+        .map((s: any) => ({
+          sedeId: Number(s.id),
+          nombre: s.nombre,
+          esPrincipal: Boolean(s.esPrincipal),
+          disponible: catalogoPorSede ? Number(s.id) === activaId : true,
+          stock: 0,
+        }));
+      // Por sede sin sede activa conocida → todas (mismo fallback que el backend).
+      if (catalogoPorSede && !rows.some((r) => r.disponible)) rows.forEach((r) => (r.disponible = true));
+      setSedesProducto(rows);
+      setSedesDisponibles(rows.filter((r) => r.disponible).map((r) => r.sedeId));
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpenModal, isEdit, formValues?.productoId, tieneVariasSedes, sedesEmpresa?.length]);
+
+  const toggleSedeDisponible = (sedeId: number) => {
+    if (!Array.isArray(sedesDisponibles)) return;
+    const sede = sedesProducto.find((s) => s.sedeId === sedeId);
+    const marcado = sedesDisponibles.includes(sedeId);
+    if (marcado) {
+      if (sede && sede.stock > 0) {
+        useAlertStore
+          .getState()
+          .alert(`No puedes quitar el producto de ${sede.nombre}: aún tiene ${sede.stock} en stock. Traslada o ajusta el stock primero.`, "warning");
+        return;
+      }
+      if (sedesDisponibles.length === 1) {
+        useAlertStore.getState().alert("El producto debe estar disponible en al menos una sede.", "warning");
+        return;
+      }
+      setSedesDisponibles(sedesDisponibles.filter((id) => id !== sedeId));
+    } else {
+      setSedesDisponibles([...sedesDisponibles, sedeId]);
+    }
+  };
+
+  /**
+   * Antes de crear: si ya existe un producto con ese código/barras y NO está
+   * en la sede activa, se ofrece asignarlo (con el stock del formulario) en
+   * lugar de fallar por duplicado. Devuelve true si se interceptó el envío.
+   */
+  const verificarProductoExistente = async (): Promise<boolean> => {
+    if (isEdit || !tieneVariasSedes) return false;
+    const codigo = String(formValues?.codigo || "").trim();
+    const codigoBarras = String((formValues as any)?.codigoBarras || "").trim();
+    if (!codigo && !codigoBarras) return false;
+    const qs = new URLSearchParams();
+    if (codigo) qs.set("codigo", codigo);
+    if (codigoBarras) qs.set("codigoBarras", codigoBarras);
+    if (sedeActiva?.id) qs.set("sedeId", String(sedeActiva.id));
+    const resp: any = await get(`productos/verificar-codigo?${qs.toString()}`);
+    const data = resp?.data;
+    if (!data?.existe || !data?.producto) return false;
+    if (data.producto.disponibleEnSede === false) {
+      setExistingPrompt({
+        id: Number(data.producto.id),
+        codigo: data.producto.codigo,
+        descripcion: data.producto.descripcion,
+        sedes: (data.producto.sedes || []).map((s: any) => ({
+          sedeId: Number(s.sedeId),
+          nombre: s.nombre,
+          esPrincipal: Boolean(s.esPrincipal),
+          disponible: s.disponible !== false,
+          stock: Number(s.stock || 0),
+        })),
+      });
+      return true;
+    }
+    useAlertStore
+      .getState()
+      .alert(`Ya existe "${data.producto.descripcion}" (código ${data.producto.codigo}) en esta sede. Edítalo desde el inventario.`, "error");
+    return true;
+  };
+
+  const confirmarAsignarExistente = async () => {
+    if (!existingPrompt || !sedeActiva?.id || asignandoExistente) return;
+    setAsignandoExistente(true);
+    try {
+      const stock = Number(formValues?.stock || 0);
+      await apiClient.post(
+        `/productos/${existingPrompt.id}/sedes/${sedeActiva.id}/asignar`,
+        { stock: stock > 0 ? stock : undefined },
+      );
+      // No se inyecta el producto en la lista local (traería el stock global):
+      // `success` hace que el listado se recargue con el stock de la sede.
+      useAlertStore.setState({ success: false });
+      useAlertStore.setState({ success: true });
+      useAlertStore
+        .getState()
+        .alert(`"${existingPrompt.descripcion}" ahora está disponible en ${sedeActiva.nombre}${stock > 0 ? ` con ${stock} en stock` : ""}.`, "success");
+      setExistingPrompt(null);
+      setFormValues(initialForm);
+      closeModal();
+    } catch (error: any) {
+      useAlertStore
+        .getState()
+        .alert(error?.response?.data?.message || error?.message || "No se pudo asignar el producto a la sede", "error");
+    } finally {
+      setAsignandoExistente(false);
+    }
+  };
+
   const sedePolicyPayload = () => {
     const precioUnitarioSede = (formValues as any)?.precioUnitarioSede;
     const precioOfertaSede = (formValues as any)?.precioOfertaSede;
@@ -231,6 +389,11 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
       ubicacionSede: formValues?.ubicacionSede || null,
     };
     if (sedeActiva?.id) payload.sedeId = sedeActiva.id;
+    // "Disponible en": lista explícita de sedes (manda sobre visibleEnSede).
+    if (tieneVariasSedes && Array.isArray(sedesDisponibles) && sedesDisponibles.length > 0) {
+      payload.sedesDisponibles = sedesDisponibles;
+      if (sedeActiva?.id) payload.visibleEnSede = sedesDisponibles.includes(Number(sedeActiva.id));
+    }
     return payload;
   };
   const [technicalTemplate, setTechnicalTemplate] = useState<any | null>(null);
@@ -513,9 +676,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   }, [productCode]);
 
   // Asegura tener la lista real de sedes para decidir si mostrar la sección
-  // "Disponibilidad por sede" (solo si la empresa tiene 2+ sedes).
+  // "Disponible en" (solo si la empresa tiene 2+ sedes).
   useEffect(() => {
-    if (isOpenModal && tienePlanMultiplesSedes && (sedesEmpresa?.length ?? 0) === 0) {
+    if (isOpenModal && (sedesEmpresa?.length ?? 0) === 0) {
       listarSedes();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1212,6 +1375,11 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     setLoading(true);
 
     try {
+      if (await verificarProductoExistente()) {
+        setLoading(false);
+        return;
+      }
+
       let stockFinal = Number(formValues?.stock);
       if (isEdit && tipoAjusteStock !== "ninguno") {
         switch (tipoAjusteStock) {
@@ -1873,6 +2041,16 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     features,
     productSections,
     labels,
+    // Disponibilidad por sede
+    tieneVariasSedes,
+    catalogoPorSede,
+    sedesProducto,
+    sedesDisponibles,
+    toggleSedeDisponible,
+    existingPrompt,
+    setExistingPrompt,
+    asignandoExistente,
+    confirmarAsignarExistente,
     tieneGestionProvisiones,
     tieneTienda,
     tieneGestionLotes,

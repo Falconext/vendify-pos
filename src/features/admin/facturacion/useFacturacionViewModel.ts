@@ -1664,7 +1664,17 @@ export const useFacturacionViewModel = () => {
             const queryParams = sedeActiva?.id ? `?sedeId=${sedeActiva.id}` : '';
             const resp: any = await get(`productos/barcode/${encodeURIComponent(trimmed)}${queryParams}`);
             const producto = resp?.data ?? resp;
-            if (producto?.id) {
+            if (producto?.id && producto?.disponibleEnSede === false) {
+                // Existe en la empresa pero NO está asignado a esta sede: no se
+                // vende desde aquí (catálogo por sede). Se asigna desde Inventario.
+                useAlertStore.getState().alert(
+                    `"${producto.descripcion}" no está asignado a ${sedeActiva?.nombre ?? 'esta sede'}. Asígnalo desde Inventario → Asignar a sede para venderlo aquí.`,
+                    'warning',
+                );
+                setBarcodeInput('');
+                setBarcodeError(true);
+                setTimeout(() => setBarcodeError(false), 2000);
+            } else if (producto?.id) {
                 handleProductClick(producto);
                 setBarcodeInput('');
             } else {

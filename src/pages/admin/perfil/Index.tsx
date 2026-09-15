@@ -579,6 +579,32 @@ export default function PerfilIndex() {
                                         {vm.savingCobranzaCampoConfig && <p className="text-xs text-emerald-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                {/* ── Sedes y catálogo ── */}
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                        <Icon icon="solar:shop-2-bold-duotone" width={14} />
+                                        Sedes y catálogo
+                                    </p>
+                                </div>
+                                <label className="flex items-start gap-3 p-3 rounded-lg border border-violet-100 dark:border-violet-900/30 bg-violet-50/40 dark:bg-violet-900/10 cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).catalogoPorSede)}
+                                        disabled={vm.savingControlFlag === 'catalogoPorSede'}
+                                        onChange={(e) => vm.handleControlFlagToggle('catalogoPorSede', e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-violet-600 dark:text-violet-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-violet-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Catálogo independiente por sede</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Desactivado: cada producto nuevo queda disponible en todas tus sedes (catálogo compartido).
+                                            Activado: un producto creado o importado desde una sede existe <span className="font-semibold">solo en esa sede</span>; no aparece en el inventario ni en el POS de las otras hasta que lo asignes
+                                            (en la ficha del producto, con "Asignar a sede" en Inventario, o automáticamente al trasladarle stock).
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-1">No cambia los productos que ya tienes: solo define cómo se crean los nuevos y qué sedes nuevas heredan el catálogo.</p>
+                                        {vm.savingControlFlag === 'catalogoPorSede' && <p className="text-xs text-violet-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:shield-check-bold-duotone" width={14} />
