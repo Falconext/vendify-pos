@@ -1,4 +1,4 @@
-import { AreaChart } from '@tremor/react';
+import { MonoAreaChart, monoSeries } from '@/components/charts/mono';
 import { Icon } from '@iconify/react';
 import { EvolucionPoint, formatCurrency, getMesLabel } from '../RentabilidadModel';
 
@@ -7,10 +7,7 @@ interface EvolucionChartProps {
 }
 
 export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
-    // Determine if last point is negative to color Ganancia Neta series
-    const lastPoint = evolucion[evolucion.length - 1];
-    const lastNeta = lastPoint?.gananciaNeta ?? 0;
-    const netaColor = lastNeta >= 0 ? 'emerald' : 'rose';
+    const SERIES = monoSeries();
 
     const chartData = evolucion.map(p => ({
         mes: `${getMesLabel(p.mes)} ${String(p.anio).slice(-2)}`,
@@ -37,12 +34,9 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
 
                 {/* Legend */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <LegendDot color="bg-indigo-500" label="Ventas Netas" />
-                    <LegendDot color="bg-blue-500" label="Ganancia Bruta" />
-                    <LegendDot
-                        color={lastNeta >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}
-                        label="Ganancia Neta"
-                    />
+                    <LegendDot color={SERIES[0]} label="Ventas Netas" />
+                    <LegendDot color={SERIES[1]} label="Ganancia Bruta" />
+                    <LegendDot color={SERIES[2]} label="Ganancia Neta" />
                 </div>
             </div>
 
@@ -53,18 +47,13 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">Sin datos de evolución disponibles</p>
                 </div>
             ) : (
-                <AreaChart
-                    className="h-64 mt-2"
+                <MonoAreaChart
                     data={chartData}
                     index="mes"
                     categories={['Ventas Netas', 'Ganancia Bruta', 'Ganancia Neta']}
-                    colors={['indigo', 'blue', netaColor]}
-                    curveType="monotone"
-                    showLegend={false}
-                    showGridLines={false}
-                    showAnimation
-                    yAxisWidth={72}
+                    colors={SERIES}
                     valueFormatter={valueFormatter}
+                    height={300}
                 />
             )}
         </div>
@@ -74,7 +63,7 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
 function LegendDot({ color, label }: { color: string; label: string }) {
     return (
         <span className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-            <span className={`w-2 h-2 rounded-full ${color} flex-shrink-0`} />
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
             {label}
         </span>
     );

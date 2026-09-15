@@ -4,16 +4,7 @@ import { useAuthStore } from '@/zustand/auth'
 import { useDashboardStore, type IDashboardState } from '@/zustand/dashboard'
 import { Icon } from '@iconify/react'
 import moment from 'moment'
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-} from 'recharts'
+import { MonoBarChart, MonoDonutChart, tint } from '@/components/charts/mono'
 import { get } from '@/utils/fetch'
 import { useDebounce } from '@/hooks/useDebounce'
 import { WelcomeModal, TourSpotlight, useWelcomeTour } from '@/components/WelcomeTour'
@@ -252,22 +243,6 @@ const KpiMini = ({ type, accent, data }: { type: 'bars' | 'line' | 'donut' | 'wa
   )
 }
 
-// Tooltip oscuro estilo mockup para el gráfico de barras.
-const DarkTooltip =
-  (fmt: (v: number) => string) =>
-  ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null
-    return (
-      <div className="rounded-xl bg-slate-900 text-white px-3.5 py-2.5 shadow-xl">
-        <p className="text-[11px] font-semibold text-slate-300 mb-1">{moment(label).format('DD MMM YYYY')}</p>
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-xs text-slate-400">Ventas</span>
-          <span className="text-sm font-bold">{fmt(payload[0].value)}</span>
-        </div>
-      </div>
-    )
-  }
-
 export default function AdminIndex() {
   const navigate = useNavigate()
   const { auth, sedeActiva } = useAuthStore()
@@ -277,6 +252,8 @@ export default function AdminIndex() {
   const isDarkMode = useThemeStore((s) => s.isDarkMode)
   const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF'
   const mutedBar = isDarkMode ? '#1e293b' : '#eef1f6'
+  // Segmentos de la dona: tintes del acento elegido en Personalización (set mono).
+  const DONUT_COLORS = useMemo(() => [ACCENT, tint(ACCENT, 0.3), tint(ACCENT, 0.55), tint(ACCENT, 0.8), '#CBD5E1'], [ACCENT])
 
   const rubroUI = useMemo(() => resolveRubroUI(auth?.empresa?.rubro?.nombre), [auth?.empresa?.rubro?.nombre])
 
@@ -607,17 +584,15 @@ export default function AdminIndex() {
           </div>
           <div className="h-64">
             {chartVentas.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartVentas} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="26%">
-                  <XAxis dataKey="date" tickFormatter={(l) => moment(l).format('DD')} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={12} />
-                  <Tooltip cursor={{ fill: 'transparent' }} content={DarkTooltip(formatMoney)} />
-                  <Bar dataKey="total" radius={[999, 999, 999, 999]} maxBarSize={22}>
-                    {chartVentas.map((d, i) => (
-                      <Cell key={i} fill={ventasMax > 0 && d.total >= ventasMax ? ACCENT : mutedBar} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <MonoBarChart
+                data={chartVentas.map((d) => ({ ...d, color: ventasMax > 0 && d.total >= ventasMax ? ACCENT : mutedBar }))}
+                index="date"
+                categories={['total']}
+                colors={[ACCENT]}
+                valueFormatter={(v: number) => formatMoney(v)}
+                xTickFormatter={(l) => moment(l).format('DD')}
+                height={256}
+              />
             ) : (
               <div className="flex h-full flex-col items-center justify-center text-slate-300 dark:text-slate-600">
                 <Icon icon="solar:chart-2-linear" className="text-5xl mb-2" />
@@ -639,27 +614,25 @@ export default function AdminIndex() {
           <p className="mb-2 text-xs text-slate-400 dark:text-gray-400">Canales del periodo</p>
           <div className="relative mx-auto h-36 w-36">
             {chartCanales.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={chartCanales} dataKey="value" nameKey="name" innerRadius={48} outerRadius={68} paddingAngle={2} stroke="none">
-                    {chartCanales.map((_, i) => <Cell key={i} fill={SERIES[i % SERIES.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(_v: any, n: any, item: any) => [`${(item?.payload?.percentage ?? 0).toFixed(0)}%`, n]} contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#e5e7eb' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <MonoDonutChart
+                data={chartCanales}
+                category="value"
+                index="name"
+                colors={DONUT_COLORS}
+                valueFormatter={(v: number) => `${formatMoney(v)} · ${canalTotal > 0 ? ((v / canalTotal) * 100).toFixed(0) : 0}%`}
+                centerValue={<span className="text-base">{formatShort(canalTotal)}</span>}
+                centerLabel="total"
+                height={144}
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-center text-sm text-slate-300 dark:text-slate-600">Sin datos</div>
             )}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-base font-extrabold text-slate-800 dark:text-white">{formatShort(canalTotal)}</span>
-              <span className="text-[10px] font-medium text-slate-400 dark:text-gray-400">total</span>
-            </div>
           </div>
           <div className="mt-4 space-y-2">
             {chartCanales.map((c, i) => (
               <div key={c.name} className="flex items-center justify-between gap-2 text-sm">
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SERIES[i % SERIES.length] }} />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
                   <span className="truncate font-medium text-slate-600 dark:text-gray-300">{c.name}</span>
                 </span>
                 <span className="shrink-0 font-bold text-slate-500 dark:text-gray-400">{formatMoney(c.value)}</span>

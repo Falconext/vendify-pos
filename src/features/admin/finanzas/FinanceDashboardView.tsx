@@ -2,13 +2,7 @@ import { Icon } from '@iconify/react';
 import moment from 'moment';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Bar,
-    BarChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-} from 'recharts';
+import { MonoBarChart, NEUTRAL } from '@/components/charts/mono';
 import { PeriodoSelector, PeriodoTitulo } from './shared/PeriodoSelector';
 import Select from '@/components/Select';
 import { useFinanceDashboardViewModel } from './useFinanceDashboardViewModel';
@@ -81,29 +75,6 @@ const KpiMini = ({ type, accent, data }: { type: 'bars' | 'line' | 'donut' | 'wa
         </svg>
     );
 };
-
-// Tooltip oscuro estilo mockup para el gráfico de barras de flujo de caja.
-const DarkTooltip =
-    (fmt: (v: number) => string) =>
-    ({ active, payload, label }: any) => {
-        if (!active || !payload?.length) return null;
-        return (
-            <div className="rounded-xl bg-slate-900 text-white px-3.5 py-2.5 shadow-xl">
-                <p className="text-[11px] font-semibold text-slate-300 mb-1.5">{moment(label).format('DD MMM YYYY')}</p>
-                <div className="space-y-1">
-                    {payload.map((p: any) => (
-                        <div key={p.dataKey} className="flex items-center justify-between gap-6">
-                            <span className="flex items-center gap-1.5 text-xs text-slate-400">
-                                <span className="h-2 w-2 rounded-full" style={{ background: p.color || p.fill }} />
-                                {p.name}
-                            </span>
-                            <span className="text-sm font-bold">{fmt(p.value)}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -316,20 +287,21 @@ export default function FinanceDashboardView() {
                                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: ACCENT }} /> Ingresos
                                     </span>
                                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-gray-400 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Egresos
+                                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: NEUTRAL }} /> Egresos
                                     </span>
                                 </div>
                             </div>
                             <div className="h-64">
                                 {hasChart ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={vm.formattedChartData} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="26%">
-                                            <XAxis dataKey="date" tickFormatter={(l) => moment(l).format('DD')} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={12} />
-                                            <Tooltip cursor={{ fill: 'transparent' }} content={DarkTooltip(vm.valueFormatter)} />
-                                            <Bar dataKey="Ingresos" name="Ingresos" fill={ACCENT} radius={[999, 999, 999, 999]} maxBarSize={16} />
-                                            <Bar dataKey="Egresos" name="Egresos" fill="#f43f5e" radius={[999, 999, 999, 999]} maxBarSize={16} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                    <MonoBarChart
+                                        data={vm.formattedChartData}
+                                        index="date"
+                                        categories={['Ingresos', 'Egresos']}
+                                        colors={[ACCENT, NEUTRAL]}
+                                        valueFormatter={vm.valueFormatter}
+                                        xTickFormatter={(l) => moment(l).format('DD')}
+                                        height={256}
+                                    />
                                 ) : (
                                     <div className="flex h-full flex-col items-center justify-center text-slate-300 dark:text-slate-600">
                                         <Icon icon="solar:chart-2-linear" className="text-5xl mb-2" />

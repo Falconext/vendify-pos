@@ -1,10 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
-} from 'recharts';
-import {
     useSistemaFinanzasViewModel,
     CATEGORIAS_GASTO,
     CATEGORIAS_INGRESO,
@@ -12,6 +8,7 @@ import {
 import { Calendar } from '@/components/Date';
 import Select from '@/components/Select';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+import { MonoAreaChart, MonoBarChart, MonoDonutChart, NEUTRAL, tint, fmtInt } from '@/components/charts/mono';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -71,23 +68,6 @@ function KpiCard({
                     {pct(Math.abs(trend))} {trendLabel}
                 </div>
             )}
-        </div>
-    );
-}
-
-// ── Tooltip personalizado ─────────────────────────────────────────────────────
-
-function CustomTooltip({ active, payload, label }: any) {
-    if (!active || !payload?.length) return null;
-    return (
-        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl p-3 text-[13px] font-inter min-w-[160px]">
-            <p className="font-bold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
-            {payload.map((p: any) => (
-                <div key={p.name} className="flex items-center justify-between gap-4">
-                    <span style={{ color: p.color }} className="font-semibold">{p.name}</span>
-                    <span className="font-bold text-slate-800 dark:text-white">{fmt(p.value)}</span>
-                </div>
-            ))}
         </div>
     );
 }
@@ -320,7 +300,8 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
     }
 
     const pieData = (d.distribucionPlanes ?? []).map((p: any) => ({ name: p.nombre, value: p.count }));
-    const COLORS = ['#7551FF', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+    // Segmentos de la dona: tintes del acento del panel (set mono).
+    const COLORS = [ACCENT, tint(ACCENT, 0.3), tint(ACCENT, 0.55), tint(ACCENT, 0.8), '#CBD5E1'];
 
     const gananciaPositiva = d.gananciaNetaMes >= 0;
 
@@ -413,27 +394,18 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                             ))}
                         </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                        <AreaChart data={vm.tendencia} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                            <defs>
-                                <linearGradient id="gIng" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={ACCENT} stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="gGas" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.2} />
-                                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `S/${(v / 1000).toFixed(0)}k`} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend wrapperStyle={{ fontSize: 12 }} />
-                            <Area type="monotone" dataKey="ingresos" name="Ingresos" stroke={ACCENT} strokeWidth={2.5} fill="url(#gIng)" />
-                            <Area type="monotone" dataKey="gastos" name="Gastos" stroke="#EF4444" strokeWidth={2} strokeDasharray="4 3" fill="url(#gGas)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="flex items-center gap-4 mb-3">
+                        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} /><span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Ingresos</span></span>
+                        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: NEUTRAL }} /><span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Gastos</span></span>
+                    </div>
+                    <MonoAreaChart
+                        data={vm.tendencia}
+                        index="mes"
+                        categories={['ingresos', 'gastos']}
+                        colors={[ACCENT, NEUTRAL]}
+                        valueFormatter={(v) => fmt(v)}
+                        height={240}
+                    />
                 </div>
 
                 {/* Pie distribución planes */}
@@ -441,16 +413,16 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
                     <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Clientes por plan</h3>
                     {pieData.length > 0 ? (
                         <>
-                            <ResponsiveContainer width="100%" height={160}>
-                                <PieChart>
-                                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={3} dataKey="value">
-                                        {pieData.map((_: any, i: number) => (
-                                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(v: number) => [`${v} empresas`, '']} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <MonoDonutChart
+                                data={pieData}
+                                category="value"
+                                index="name"
+                                colors={COLORS}
+                                height={172}
+                                centerLabel="Clientes"
+                                centerValue={fmtInt(pieData.reduce((s: number, p: any) => s + Number(p.value || 0), 0))}
+                                valueFormatter={(v) => `${fmtInt(v)} empresas`}
+                            />
                             <div className="space-y-1.5 mt-2">
                                 {pieData.map((p: any, i: number) => (
                                     <div key={p.name} className="flex items-center gap-2">
@@ -470,19 +442,15 @@ function TabDashboard({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewMode
             {/* Ganancia neta mensual bar */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Ganancia neta mensual</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={vm.tendencia} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                        <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `S/${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="ganancia" name="Ganancia" radius={[6, 6, 0, 0]}>
-                            {vm.tendencia.map((entry: any, i: number) => (
-                                <Cell key={i} fill={entry.ganancia >= 0 ? '#10B981' : '#EF4444'} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+                <MonoBarChart
+                    data={vm.tendencia.map((e: any) => ({ ...e, color: Number(e.ganancia) >= 0 ? ACCENT : '#F43F5E' }))}
+                    index="mes"
+                    categories={['ganancia']}
+                    colors={[ACCENT]}
+                    orientation="columns"
+                    valueFormatter={(v) => fmt(v)}
+                    height={220}
+                />
             </div>
         </div>
     );
@@ -851,17 +819,19 @@ function TabClientes({ vm }: { vm: ReturnType<typeof useSistemaFinanzasViewModel
                         ))}
                     </div>
                 </div>
-                <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={vm.tendencia} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                        <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                        <Tooltip />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="nuevosClientes" name="Nuevas empresas" fill="#10B981" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="bajasClientes" name="Bajas" fill="#EF4444" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
+                <div className="flex items-center gap-4 mb-3">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: ACCENT }} /><span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Nuevas empresas</span></span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: NEUTRAL }} /><span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Bajas</span></span>
+                </div>
+                <MonoBarChart
+                    data={vm.tendencia}
+                    index="mes"
+                    categories={['nuevosClientes', 'bajasClientes']}
+                    colors={[ACCENT, NEUTRAL]}
+                    orientation="columns"
+                    valueFormatter={(v) => fmtInt(v)}
+                    height={220}
+                />
             </div>
         </div>
     );

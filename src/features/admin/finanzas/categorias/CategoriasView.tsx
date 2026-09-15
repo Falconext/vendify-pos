@@ -1,14 +1,5 @@
 import { Icon } from '@iconify/react';
-import {
-    Bar,
-    BarChart,
-    Cell,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-} from 'recharts';
+import { MonoBarChart, MonoDonutChart, NEUTRAL } from '@/components/charts/mono';
 import {
     CategoriaRentabilidad,
     CategoriasResponse,
@@ -19,7 +10,7 @@ import {
 } from './CategoriasModel';
 import { useCategoriasViewModel } from './useCategoriasViewModel';
 import { PeriodoSelector, PeriodoTitulo } from '../shared/PeriodoSelector';
-import { KpiMini, DarkTooltip } from '../shared/dashboardWidgets';
+import { KpiMini } from '../shared/dashboardWidgets';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
 
 // Estilo de tarjeta unificado (mismo lenguaje visual del Dashboard principal)
@@ -131,21 +122,18 @@ function GananciaDonut({ data }: { data: CategoriasResponse }) {
             <p className="mb-2 text-xs text-slate-400 dark:text-gray-400">Reparto de la utilidad del período</p>
             <div className="relative mx-auto h-36 w-36">
                 {totalGanancia > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={48} outerRadius={68} paddingAngle={2} stroke="none">
-                                {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                            </Pie>
-                            <Tooltip formatter={(v: any, n: any) => [formatSoles(Number(v)), n]} contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#e5e7eb' }} />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    <MonoDonutChart
+                        data={donutData}
+                        category="value"
+                        index="name"
+                        valueFormatter={(v) => formatSoles(Number(v))}
+                        centerValue={<span className="text-base">{formatSolesShort(totalGanancia)}</span>}
+                        centerLabel="ganancia"
+                        height={144}
+                    />
                 ) : (
                     <div className="flex h-full items-center justify-center text-center text-sm text-slate-300 dark:text-slate-600">Sin datos</div>
                 )}
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-base font-extrabold text-slate-800 dark:text-white">{formatSolesShort(totalGanancia)}</span>
-                    <span className="text-[10px] font-medium text-slate-400 dark:text-gray-400">ganancia</span>
-                </div>
             </div>
             <div className="mt-4 space-y-2 max-h-52 overflow-y-auto pr-1">
                 {cats.map((c, i) => {
@@ -166,12 +154,12 @@ function GananciaDonut({ data }: { data: CategoriasResponse }) {
     );
 }
 
-// ─── Bar chart: ingresos vs ganancia (recharts + DarkTooltip) ──────────────────
+// ─── Bar chart: ingresos vs ganancia (mono charts) ────────────────────────────
 
 function GananciasChart({ data }: { data: CategoriasResponse }) {
     const sidebarColor = useThemeStore((s) => s.sidebarColor);
     const ACCENT = SIDEBAR_COLOR_HEX[sidebarColor] ?? '#7551FF';
-    const GAIN = '#1baf7a';
+    const GAIN = NEUTRAL;
 
     const chartData = data.categorias.slice(0, 10).map((c) => ({
         name: c.nombre.length > 16 ? c.nombre.slice(0, 14) + '…' : c.nombre,
@@ -199,14 +187,14 @@ function GananciasChart({ data }: { data: CategoriasResponse }) {
                 </div>
             </div>
             <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="24%">
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={0} angle={-18} textAnchor="end" height={48} />
-                        <Tooltip cursor={{ fill: 'transparent' }} content={DarkTooltip(formatSoles, (l) => String(l ?? ''))} />
-                        <Bar dataKey="Ingresos" name="Ingresos" fill={ACCENT} radius={[999, 999, 999, 999]} maxBarSize={18} />
-                        <Bar dataKey="Ganancia" name="Ganancia" fill={GAIN} radius={[999, 999, 999, 999]} maxBarSize={18} />
-                    </BarChart>
-                </ResponsiveContainer>
+                <MonoBarChart
+                    data={chartData}
+                    index="name"
+                    categories={['Ingresos', 'Ganancia']}
+                    colors={[ACCENT, GAIN]}
+                    valueFormatter={formatSoles}
+                    height={256}
+                />
             </div>
         </div>
     );
