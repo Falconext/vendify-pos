@@ -623,10 +623,27 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
                 <textarea
                     rows={2}
                     value={vm.formValues?.observaciones || ''}
-                    onChange={(e) => vm.setFormValues({ ...vm.formValues, observaciones: e.target.value })}
+                    onChange={(e) => vm.setObservacionesVenta(e.target.value)}
                     placeholder="Notas adicionales que aparecerán en el ticket..."
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400 resize-none transition-colors"
                 />
+                {vm.recuerdaObservaciones && (
+                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-400 dark:text-slate-500">
+                        <span className="flex items-center gap-1">
+                            <Icon icon="solar:check-circle-bold" width={11} className="text-emerald-500" />
+                            Se guarda solo y se propone en la próxima venta
+                        </span>
+                        {vm.formValues?.observaciones ? (
+                            <button
+                                type="button"
+                                onClick={vm.limpiarObservacionesVenta}
+                                className="font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                            >
+                                Limpiar
+                            </button>
+                        ) : null}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useState, useMemo, useRef } from "react";
+import { guardarObservacionesRecordadas, leerObservacionesRecordadas } from '@/utils/observacionesVenta';
 import { IInvoicesState, useInvoiceStore } from "@/zustand/invoices";
 import { IExtentionsState, useExtentionsStore } from "@/zustand/extentions";
 import { IClientsState, useClientsStore } from "@/zustand/clients";
@@ -1799,6 +1800,33 @@ export const useFacturacionViewModel = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth?.empresa?.cotizTerminosDefault, auth?.empresa?.cotizObservacionesDefault, isQuotationRoute, isEditMode]);
 
+    // Observaciones de la venta con autoguardado (por empresa, en el navegador): al
+    // abrir una venta nueva se propone lo último que el usuario escribió, y cada
+    // edición suya en el campo se recuerda para la siguiente. Solo se guarda lo que
+    // tipea el usuario: los textos que agrega el sistema (guía relacionada, pedido
+    // de tienda, conversión de cotización) no se recuerdan. La cotización tiene su
+    // propio predeterminado (cotizObservacionesDefault) y no entra acá.
+    const empresaIdObs = auth?.empresa?.id;
+    // Texto por defecto de la empresa (Perfil → Configuración): aplica en todas
+    // las cajas y sedes cuando el navegador no tiene uno propio recordado.
+    const obsVentaDefaultEmpresa = String((auth as any)?.empresa?.ventaObservacionesDefault || '').trim();
+    const obsVentaInicial = () => leerObservacionesRecordadas(empresaIdObs) || obsVentaDefaultEmpresa;
+    const obsVentaPrefilledRef = useRef(false);
+    useEffect(() => {
+        if (isQuotationRoute || isEditMode || !empresaIdObs || obsVentaPrefilledRef.current) return;
+        obsVentaPrefilledRef.current = true;
+        if (formValues.observaciones) return;
+        const recordadas = obsVentaInicial();
+        if (recordadas) setFormValues(prev => ({ ...prev, observaciones: recordadas }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isQuotationRoute, isEditMode, empresaIdObs]);
+    const recuerdaObservaciones = !isQuotationRoute && !isEditMode;
+    const setObservacionesVenta = (texto: string) => {
+        setFormValues(prev => ({ ...prev, observaciones: texto }));
+        if (recuerdaObservaciones) guardarObservacionesRecordadas(empresaIdObs, texto);
+    };
+    const limpiarObservacionesVenta = () => setObservacionesVenta('');
+
     const handleSaveQuotationConfig = (config: QuotationConfig) => {
         setIncludeProductImages(config.includeProductImages);
         setQuotationDiscount(config.quotationDiscount);
@@ -2644,7 +2672,10 @@ export const useFacturacionViewModel = () => {
             comprobante: formValues?.comprobante,
             tipoDoc: formValues.tipoDoc,
             vuelto: 0,
-            tipoOperacionId: ventaInterna ? ventaInterna.id : initFormValues.tipoOperacionId
+            tipoOperacionId: ventaInterna ? ventaInterna.id : initFormValues.tipoOperacionId,
+            // La siguiente venta arranca con las observaciones recordadas (autoguardado)
+            // o, si no hay, con el texto por defecto de la empresa.
+            observaciones: recuerdaObservaciones ? obsVentaInicial() : '',
         });
         setPay(0);
         setChange(0);
@@ -2817,6 +2848,9 @@ export const useFacturacionViewModel = () => {
         handleSaveDetraccion,
         handleSaveRetencion,
         handleSaveQuotationConfig,
+        setObservacionesVenta,
+        limpiarObservacionesVenta,
+        recuerdaObservaciones,
         getDocumentInvoice,
         getInvoiceBySerieCorrelative,
 

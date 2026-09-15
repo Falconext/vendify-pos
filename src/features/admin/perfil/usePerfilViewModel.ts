@@ -261,6 +261,31 @@ export const usePerfilViewModel = () => {
         }
     };
 
+    // Observaciones por defecto de la venta (texto fijo del ticket para todas las cajas).
+    const [ventaObsDefault, setVentaObsDefault] = useState('');
+    const [savingVentaObs, setSavingVentaObs] = useState(false);
+    useEffect(() => {
+        setVentaObsDefault(String((perfil?.empresa as any)?.ventaObservacionesDefault || ''));
+    }, [(perfil?.empresa as any)?.ventaObservacionesDefault]); // eslint-disable-line react-hooks/exhaustive-deps
+    const ventaObsDirty = ventaObsDefault.trim() !== String((perfil?.empresa as any)?.ventaObservacionesDefault || '').trim();
+    const handleVentaObsSave = async () => {
+        if (savingVentaObs || !ventaObsDirty) return;
+        const valor = ventaObsDefault.trim();
+        try {
+            setSavingVentaObs(true);
+            await useEmpresasStore.getState().actualizarMiEmpresa({ ventaObservacionesDefault: valor } as any);
+            setPerfil((prev: any) => (prev ? { ...prev, empresa: { ...prev.empresa, ventaObservacionesDefault: valor || null } } : prev));
+            useAuthStore.setState(state => ({
+                auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, ventaObservacionesDefault: valor || null } } : state.auth,
+            }));
+            useAlertStore.getState().alert(valor ? 'Las observaciones saldrán en todas las ventas nuevas' : 'Observaciones por defecto eliminadas', 'success');
+        } catch (error: any) {
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'No se pudo guardar', 'error');
+        } finally {
+            setSavingVentaObs(false);
+        }
+    };
+
     const [savingTicketLogoSize, setSavingTicketLogoSize] = useState(false);
     const logoSizeRef = useRef(false);
 
@@ -583,5 +608,5 @@ export const usePerfilViewModel = () => {
         }
     };
 
-    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingImpresionConfig, handleImpresionConfig, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
+    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingImpresionConfig, handleImpresionConfig, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, ventaObsDefault, setVentaObsDefault, ventaObsDirty, savingVentaObs, handleVentaObsSave, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
 };
