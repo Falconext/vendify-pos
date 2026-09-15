@@ -23,6 +23,7 @@ import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
 import ModalHistorialPagos from '@/pages/admin/facturacion/ModalHistorialPagos';
 import ModalDetalleCuenta from '@/pages/admin/facturacion/ModalDetalleCuenta';
 import TableActionMenu from '@/components/TableActionMenu';
+import AutoScrollTable from '@/components/Autoscrolltable';
 import ModalConfirm from '@/components/ModalConfirm';
 import { useUsersStore } from '@/zustand/users';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
@@ -1030,7 +1031,7 @@ export default function PanelVentasView() {
 
             {/* Tabla */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none dark:border dark:border-slate-800 overflow-hidden">
-                <div className="overflow-x-auto">
+                <AutoScrollTable>
                     <table className="w-full text-sm border-collapse">
                         <thead>
                             <tr className="text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
@@ -1268,7 +1269,7 @@ export default function PanelVentasView() {
                             )}
                         </tbody>
                     </table>
-                </div>
+                </AutoScrollTable>
                 {filasVisibles.length > PAGE_SIZE && (
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-800 text-xs">
                         <span className="text-slate-500 dark:text-slate-400">
