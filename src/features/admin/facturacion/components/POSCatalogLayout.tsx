@@ -49,18 +49,45 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
         setAnticipoForm({ tipoDoc: '01', serie: '', numero: '', monto: '', fecha: '' });
     };
 
-    // Atajo "/" para enfocar la búsqueda (estilo POS), salvo si ya se escribe en un campo.
+    // Atajos de teclado estilo POS:
+    //  - "/"          → buscar productos (solo si no se está escribiendo en un campo).
+    //  - Ctrl/⌘ + B   → buscar productos (desde cualquier lado; selecciona lo escrito).
+    //  - Ctrl/⌘ + V   → código de barras (desde cualquier campo, incluida la
+    //                   búsqueda). Solo se respeta el pegado normal dentro de un
+    //                   textarea (observaciones), donde pegar texto sí es lo usual.
+    //                   Si había algo en el portapapeles, cae en el escáner.
     useEffect(() => {
+        const enfocar = (ref: React.RefObject<HTMLInputElement | null>) => {
+            const input = ref.current;
+            if (!input) return;
+            input.focus();
+            input.select();
+        };
         const onKey = (e: KeyboardEvent) => {
-            if (e.key !== '/') return;
             const el = document.activeElement as HTMLElement | null;
             const tag = el?.tagName;
-            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
-            e.preventDefault();
-            searchRef.current?.focus();
+            const escribiendo = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!el?.isContentEditable;
+            const mod = e.ctrlKey || e.metaKey;
+
+            if (mod && !e.shiftKey && !e.altKey && (e.key === 'b' || e.key === 'B')) {
+                e.preventDefault();
+                enfocar(searchRef);
+                return;
+            }
+            if (mod && !e.shiftKey && !e.altKey && (e.key === 'v' || e.key === 'V')) {
+                if (tag === 'TEXTAREA' || el?.isContentEditable) return; // pegar normal ahí
+                enfocar(vm.barcodeRef);
+                return; // sin preventDefault: si hay texto en el portapapeles se pega en el escáner
+            }
+            if (e.key === '/' && !mod) {
+                if (escribiendo) return;
+                e.preventDefault();
+                searchRef.current?.focus();
+            }
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const getProvisionInfo = (item: any) => {
@@ -156,7 +183,7 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                         <input
                             ref={searchRef}
                             type="text"
-                            placeholder="Buscar productos...  ( / )"
+                            placeholder="Buscar productos...  ( / · Ctrl+B )"
                             className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-violet-500/20 text-gray-700 dark:text-gray-200 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium"
                             value={vm.searchTerm}
                             onChange={(e) => vm.setSearchTerm(e.target.value)}
@@ -186,6 +213,7 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                 {/* Barcode scanner — auto-adds to cart on Enter */}
                 <BarcodeScannerInput
                     className="mb-4"
+                    placeholder="Escanear código de barras...  ( Ctrl+V )"
                     inputRef={vm.barcodeRef}
                     value={vm.barcodeInput}
                     onChange={(e) => vm.setBarcodeInput(e.target.value)}

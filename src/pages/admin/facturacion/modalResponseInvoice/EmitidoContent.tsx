@@ -20,6 +20,7 @@ export interface IEmitidoContentProps {
     formValues?: any
     observation?: string
     isPendiente?: boolean
+    pendienteMensaje?: string | null
     isUpdate?: boolean
     hasDespacho?: boolean
 }
@@ -28,7 +29,7 @@ export interface IEmitidoContentProps {
  * Contenido del comprobante emitido (éxito / procesando) SIN el wrapper de modal.
  * Se reutiliza dentro del modal "Continuar pago" para la transición inline.
  */
-const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, closeModal, handleOpenNewTab, formValues, isPendiente, isUpdate, hasDespacho }: IEmitidoContentProps) => {
+const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, closeModal, handleOpenNewTab, formValues, isPendiente, pendienteMensaje, isUpdate, hasDespacho }: IEmitidoContentProps) => {
     const { resetInvoice, resetProductInvoice }: IInvoicesState = useInvoiceStore();
     const navigate = useNavigate();
     const { isDarkMode } = useThemeStore();
@@ -99,7 +100,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                             {isPendiente ? (
                                 <>
                                     Comprobante <strong>registrado correctamente</strong>.<br />
-                                    <span className="text-amber-500 font-medium text-xs">SUNAT no disponible — se confirmará automáticamente.</span>
+                                    <span className="text-amber-500 font-medium text-xs">{pendienteMensaje?.replace(/^comprobante registrado correctamente\.?\s*/i, '') || 'SUNAT no disponible — se confirmará automáticamente.'}</span>
                                 </>
                             ) : (
                                 <>
@@ -120,7 +121,7 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                         </span>
                     </div>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                        {isPendiente ? 'Se confirmará en tu historial pronto.' : 'Disponible en tu historial de comprobantes.'}
+                        {isPendiente ? 'Revisa el estado en tu historial de comprobantes.' : 'Disponible en tu historial de comprobantes.'}
                     </p>
                 </div>
 

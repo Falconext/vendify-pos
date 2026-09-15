@@ -270,6 +270,7 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
                 return {
                     success: true,
                     pendiente: isPendiente,
+                    mensajePendiente: isPendiente ? (resp.data?.message ?? resp.message ?? null) : null,
                     serie: resp.data?.serie ?? null,
                     correlativo: resp.data?.correlativo ?? null,
                     id: resp.data?.comprobanteId ?? null,

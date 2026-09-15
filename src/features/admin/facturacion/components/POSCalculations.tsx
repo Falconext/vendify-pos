@@ -710,6 +710,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                             formValues={{ ...vm.formValues, mtoImpVenta: vm.totalAdjusted }}
                             observation={vm.formValues?.observaciones}
                             isPendiente={vm.isComprobantePendiente}
+                            pendienteMensaje={vm.pendienteMensaje}
                             isUpdate={vm.isEditMode}
                             hasDespacho={vm.despachoCreado}
                             handleOpenNewTab={handleOpenNewTab}
