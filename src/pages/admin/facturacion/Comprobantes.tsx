@@ -12,6 +12,7 @@ import PrintPDF from "./print";
 import { pdf } from "@react-pdf/renderer";
 import { numberToWords } from "@/utils/numberToLetters";
 import { useAuthStore } from "@/zustand/auth";
+import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 import QRCode from 'qrcode'
 import { Calendar } from "@/components/Date";
 import Select from "@/components/Select";
@@ -580,7 +581,8 @@ const Comprobantes = () => {
         setSearchClient(e.target.value)
     }
 
-    const [printSize, setPrintSize] = useState('TICKET');
+    // Preselecciona el formato configurado por la empresa (Perfil → Configuración).
+    const [printSize, setPrintSize] = useState(() => getFormatoImpresionDefault(auth?.empresa));
     const [dimensions, setDimensions] = useState(() => {
         switch (printSize) {
             case 'TICKET': return { width: 80, height: 330 };

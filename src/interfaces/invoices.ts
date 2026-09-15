@@ -100,6 +100,10 @@ export type IInvoices = {
 
 
 export interface IFormInvoice {
+    // Solo presentes al reimprimir o cuando la emisión ya los devolvió; los usa
+    // el QR de SUNAT del comprobante impreso.
+    fechaEmision?: string | null;
+    s3PdfUrl?: string | null;
   sedeId?: number
   comprobante: string
   tipoDoc: string

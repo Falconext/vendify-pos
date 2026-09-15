@@ -4,6 +4,7 @@ import { useReactToPrint } from 'react-to-print';
 import { BRAND } from '@/lib/branding';
 import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
+import { useQrSunat } from '@/utils/qrSunat';
 
 // Factor para pasar de precio (con IGV) a valor (sin IGV) en una línea. Se saca de
 // la propia línea cuando ya está persistida, así respeta la afectación real de cada
@@ -95,6 +96,8 @@ const ComprobantePrintPage = ({
     // sizeOverride en cotizFormatoElementos.
     const fc = (key: string) => elemCfg(formatoConfig, key, esFormatoFiscal, size === 'A5' ? 'A5' : undefined);
     const px = (key: string) => `${fc(key).size}px`;
+    // Perfil → Configuración → "Mostrar la marca del sistema": pie de marca en todos los formatos.
+    const mostrarMarcaSistema = (company?.empresa as any)?.mostrarMarcaSistema !== false;
     // Ticket: tamaño configurado escalado a la base del ticket (ver ticketPx).
     const tpx = (key: string, base?: number) => `${ticketPx(formatoConfig, key, esFormatoFiscal, base)}px`;
     // Modo "precios unitarios sin IGV" — solo aplica al diseño de cotización /
@@ -164,6 +167,23 @@ console.log(formValues)
     const mtoIcbper = parseAmount(formValues?.icbper ?? formValues?.mtoIcbper, 0);
     const mtoIgv = parseAmount(formValues?.mtoIGV, netTotalFallback - (netTotalFallback / 1.18));
     const mtoImpVenta = parseAmount(formValues?.mtoImpVenta, netTotalFallback);
+
+    // QR de SUNAT al pie (opt-in por empresa en Perfil → Configuración). Apunta
+    // al PDF del comprobante si ya existe; si no, lleva la cadena normativa.
+    // Devuelve '' cuando está apagado o el documento no es electrónico.
+    const qrSunat = useQrSunat(
+        {
+            tipoDoc: formValues?.tipoDoc,
+            serie: formValues?.serie,
+            correlativo: formValues?.correlativo,
+            mtoIGV: mtoIgv,
+            mtoImpVenta,
+            fechaEmision: formValues?.fechaEmision,
+            s3PdfUrl: formValues?.s3PdfUrl,
+        },
+        company?.empresa,
+        selectedClient,
+    );
     // Porcentaje de descuento (respecto al bruto), para mostrarlo junto al monto en soles
     const descuentoPct = totalDescuentos > 0 && totalPrices > 0
         ? Math.round((totalDescuentos / totalPrices) * 1000) / 10
@@ -497,6 +517,7 @@ console.log(formValues)
                         <hr className="my-1 border-dashed border-[#222]" />
                         {formValues?.ordenCompraCliente && <p style={{ fontSize: tpx('observaciones') }}><span className="">N° ORDEN DE COMPRA : </span>{String(formValues.ordenCompraCliente).toUpperCase()}</p>}
                         {fc('observaciones').visible && <p style={{ fontSize: tpx('observaciones') }}><span className="">OBSERVACIONES : </span>{observation?.toUpperCase() || ''}</p>}
+                        {mostrarMarcaSistema && (
                         <div className="uppercase">
                             {(() => {
                                 const reseller = company?.empresa?.reseller;
@@ -513,6 +534,16 @@ console.log(formValues)
                                 );
                             })()}
                         </div>
+                        )}
+                        {qrSunat && (
+                            <>
+                                <hr className="my-1 border-dashed border-[#222]" />
+                                <div className="text-center">
+                                    <img src={qrSunat} alt="QR SUNAT" className="mx-auto" style={{ width: '26mm', height: '26mm' }} />
+                                    <p className="text-[11px]">Escanea para ver tu comprobante en línea</p>
+                                </div>
+                            </>
+                        )}
                         <hr className="my-1 border-dashed border-[#222]" />
                         {fc('gracias').visible && (() => {
                             // Ticket: el mismo mensaje configurable que A4/A5 (Configurar formato →
@@ -883,6 +914,7 @@ console.log(formValues)
                                             USUARIO: {formValues?.vendedor || 'ADMIN'} {moment().format('DD/MM/YYYY HH:mm')}
                                         </div>
 
+                                        {mostrarMarcaSistema && (
                                         <div className="text-right text-[10px] text-gray-500">
                                             {(() => {
                                                 const reseller = company?.empresa?.reseller;
@@ -896,6 +928,7 @@ console.log(formValues)
                                                 );
                                             })()}
                                         </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1245,6 +1278,13 @@ console.log(formValues)
                                     );
                                 })()}
 
+                                {qrSunat && (
+                                    <div className="mt-6 text-center">
+                                        <img src={qrSunat} alt="QR SUNAT" className="mx-auto" style={{ width: 110, height: 110 }} />
+                                        <p className="text-[9px] text-gray-500 mt-1">Escanea para ver tu comprobante en línea</p>
+                                    </div>
+                                )}
+
                                 <div className="mt-8 text-center text-[10px]">
                                     {fc('gracias').visible && (<>
                                     <div className="font-bold mb-1" style={{ fontSize: px('gracias') }}>
@@ -1258,6 +1298,7 @@ console.log(formValues)
                                             USUARIO: {formValues?.vendedor || 'ADMIN'} {moment().format('DD/MM/YYYY HH:mm')}
                                         </div>
 
+                                        {mostrarMarcaSistema && (
                                         <div className="text-right text-[10px] text-gray-500">
                                             {(() => {
                                                 const reseller = company?.empresa?.reseller;
@@ -1271,6 +1312,7 @@ console.log(formValues)
                                                 );
                                             })()}
                                         </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

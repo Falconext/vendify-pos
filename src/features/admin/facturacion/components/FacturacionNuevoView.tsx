@@ -203,6 +203,10 @@ export const FacturacionNuevoView = () => {
         : [];
     const printFormValues = {
         ...vm.formValues,
+        // El QR de SUNAT necesita la fecha real de emisión y, si ya existe, la
+        // URL del PDF (para que el QR abra el comprobante en línea).
+        fechaEmision: vm.formValues?.fechaEmision ?? vm.dataReceipt?.fechaEmision ?? vm.fechaEmisionManual,
+        s3PdfUrl: vm.dataReceipt?.s3PdfUrl ?? vm.formValues?.s3PdfUrl ?? null,
         formaPagoTipo: isCreditSale ? 'Credito' : 'Contado',
         fechaVencimientoCredito: vm.fechaVencimientoCredito,
         cuotas: printCuotas,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@iconify/react";
 import ModalEnviarWhatsApp from "@/pages/admin/facturacion/ModalEnviarWhatsApp";
 import { useThemeStore } from "@/zustand/theme";
+import { FORMATOS_IMPRESION_INFO, getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 
 export interface IEmitidoContentProps {
     serie: string
@@ -33,6 +34,9 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
     const { resetInvoice, resetProductInvoice }: IInvoicesState = useInvoiceStore();
     const navigate = useNavigate();
     const { isDarkMode } = useThemeStore();
+    // Formato configurado en Perfil → Configuración: se resalta como el que el
+    // negocio imprime siempre, para no tener que elegirlo en cada venta.
+    const formatoDefault = getFormatoImpresionDefault(auth?.empresa);
     const [showEnviar, setShowEnviar] = useState(false);
     const [tabEnviar, setTabEnviar] = useState<'whatsapp' | 'email'>('whatsapp');
 
@@ -156,25 +160,37 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                             Formato de impresión
                         </p>
                         <div className="grid grid-cols-3 gap-2">
-                            {[
-                                { size: 'A4',     icon: 'solar:document-bold-duotone',     label: 'A4',     sub: '210×297mm' },
-                                { size: 'A5',     icon: 'solar:file-bold-duotone',          label: 'A5',     sub: '148×210mm' },
-                                { size: 'TICKET', icon: 'solar:receipt-bold-duotone',       label: 'Ticket', sub: '80mm' },
-                            ].map(({ size, icon, label, sub }) => (
-                                <button
-                                    key={size}
-                                    onClick={() => handleOpenNewTab(size)}
-                                    className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all active:scale-95 ${
-                                        isDarkMode
-                                            ? 'border-slate-700 bg-slate-800/50 hover:bg-slate-700 text-slate-200'
-                                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'
-                                    }`}
-                                >
-                                    <Icon icon={icon} className={`text-xl ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
-                                    <span className="text-xs font-bold">{label}</span>
-                                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{sub}</span>
-                                </button>
-                            ))}
+                            {FORMATOS_IMPRESION_INFO.map(({ value, icon, label, sub }) => {
+                                const esDefault = value === formatoDefault;
+                                return (
+                                    <button
+                                        key={value}
+                                        onClick={() => handleOpenNewTab(value)}
+                                        title={esDefault ? 'Formato configurado en Perfil → Configuración' : undefined}
+                                        className={`flex flex-col items-center gap-1 pt-2 pb-3 px-2 rounded-xl border transition-all active:scale-95 ${
+                                            esDefault
+                                                ? 'border-[var(--accent)] btn-accent-soft'
+                                                : (isDarkMode
+                                                    ? 'border-slate-700 bg-slate-800/50 hover:bg-slate-700 text-slate-200'
+                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700')
+                                        }`}
+                                    >
+                                        {/* El badge va en el flujo (no absoluto) para que no tape el
+                                            nombre del formato; los demás botones reservan su alto
+                                            con un espaciador para que los tres queden alineados. */}
+                                        {esDefault ? (
+                                            <span className="px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wide leading-none btn-accent">
+                                                Por defecto
+                                            </span>
+                                        ) : (
+                                            <span className="h-[13px]" aria-hidden="true" />
+                                        )}
+                                        <Icon icon={icon} className={`text-xl ${esDefault ? '' : (isDarkMode ? 'text-slate-400' : 'text-gray-500')}`} />
+                                        <span className="text-xs font-bold">{label}</span>
+                                        <span className={`text-[10px] ${esDefault ? 'opacity-70' : (isDarkMode ? 'text-slate-500' : 'text-gray-400')}`}>{sub}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <button

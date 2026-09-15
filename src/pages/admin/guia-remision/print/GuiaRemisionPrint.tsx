@@ -244,10 +244,12 @@ const GuiaRemisionPrint = forwardRef<HTMLDivElement, GuiaRemisionPrintProps>(({ 
                         destinatario a la landing. El acceso real es el QR de SUNAT. */}
                     <span>Representación impresa de la GUÍA DE REMISIÓN ELECTRÓNICA REMITENTE. Autorizado mediante resolución N° 054-006-0001490 /SUNAT.</span>
                 </div>
+                {(company as any)?.mostrarMarcaSistema !== false && (
                 <div className="text-center mt-2">
                     <div className="font-bold text-sm">{brandName} ™</div>
                     <div className="text-[9px]">Comprobante emitido a través de {brandWebsite}</div>
                 </div>
+                )}
 
             </div>
         </div>

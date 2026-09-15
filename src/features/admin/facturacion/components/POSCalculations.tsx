@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCuentasBancariasStore } from "@/zustand/cuentasBancarias";
 import EmitidoContent from "@/pages/admin/facturacion/modalResponseInvoice/EmitidoContent";
 import type { PaymentLine } from "../useFacturacionViewModel";
+import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 
@@ -221,6 +222,22 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
         : 'pago';
     const isEmitPhase = vm.IsOpenModalSuccessInvoice;
     const closeEmitido = () => { vm.closeModalResponse?.(); setShowPago(false); };
+
+    // Impresión automática (opt-in por empresa): apenas el comprobante queda
+    // emitido se abre la impresión en el formato configurado, sin que la cajera
+    // tenga que elegirlo. El ref evita repetirla si el componente se re-renderiza
+    // mientras el modal sigue abierto; se rearma al cerrar el modal.
+    const autoImpresionHecha = useRef(false);
+    useEffect(() => {
+        if (emitStep !== 'emitido') {
+            if (emitStep === 'pago') autoImpresionHecha.current = false;
+            return;
+        }
+        if (autoImpresionHecha.current) return;
+        if (vm.auth?.empresa?.imprimirAutomatico !== true) return;
+        autoImpresionHecha.current = true;
+        handleOpenNewTab(getFormatoImpresionDefault(vm.auth?.empresa));
+    }, [emitStep, vm.auth?.empresa?.imprimirAutomatico, handleOpenNewTab, vm.auth?.empresa]);
     const handleModalOverlay = () => {
         if (emitStep === 'pago') setShowPago(false);
         else if (emitStep === 'emitido') closeEmitido();
