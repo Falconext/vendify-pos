@@ -79,7 +79,7 @@ export interface IInvoicesState {
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     verificarSunat: (id: number) => Promise<{ success: boolean, error?: string, estado?: string, conciliado?: boolean }>;
-    reemitirInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
+    reemitirInvoice: (id: number) => Promise<{ success: boolean, status?: string, estadoEnvioSunat?: string, message?: string, error?: string }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
@@ -591,19 +591,28 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
         try {
             const resp: any = await patch(`/comprobante/${id}/reemitir`, {});
             if (resp.code === 1) {
+                // El backend responde con el estado REAL tras el intento (no se asume
+                // "aceptado" por un HTTP 200): ACEPTADO, PENDIENTE (sin CDR aún),
+                // FALLIDO_ENVIO (el scheduler reintenta), RECHAZADO o PENDIENTE_CONCILIACION.
+                const status = String(resp.data?.status || '').toUpperCase();
+                const estadoRaw = String(resp.data?.estadoEnvioSunat || (status === 'ACEPTADO' ? 'EMITIDO' : status)).toUpperCase();
+                const message = resp.data?.message || 'Reemisión procesada.';
                 set(
                     (state) => ({
                         invoices: state.invoices.map((inv: any) =>
                             inv.id === id
-                                ? { ...inv, estadoEnvioSunat: 'EMITIDO', estadoSunatRaw: 'EMITIDO' }
+                                ? { ...inv, estadoEnvioSunat: estadoRaw, estadoSunatRaw: estadoRaw }
                                 : inv,
                         ),
                     }),
                     false,
                     'REEMITIR_COMPROBANTE'
                 );
-                useAlertStore.getState().alert('Comprobante reemitido y aceptado por SUNAT.', 'success');
-                return { success: true };
+                const tipo = status === 'ACEPTADO' ? 'success'
+                    : status === 'PENDIENTE' ? 'warning'
+                        : 'error';
+                useAlertStore.getState().alert(message, tipo);
+                return { success: true, status, estadoEnvioSunat: estadoRaw, message };
             } else {
                 useAlertStore.getState().alert(resp.error || 'Error al reemitir el comprobante', 'error');
                 return { success: false, error: resp.error };

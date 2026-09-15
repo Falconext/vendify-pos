@@ -1208,10 +1208,13 @@ const Comprobantes = () => {
                                         onClick={async () => {
                                             handleCloseMenu();
                                             const res = await reemitirInvoice(rowBase.id);
-                                            if (res?.success) {
+                                            if (res?.success && res.estadoEnvioSunat) {
+                                                // Se pinta el estado REAL que devolvió el backend (antes se
+                                                // asumía "Aceptado" con cualquier 200 y al refrescar volvía a
+                                                // "En procesamiento"). normalizeSunatEstado lo traduce al label.
                                                 setInvoicesList((prev) => prev.map((inv: any) =>
                                                     inv.id === rowBase.id
-                                                        ? { ...inv, estadoEnvioSunat: 'ACEPTADO', estadoSunatRaw: 'EMITIDO' }
+                                                        ? normalizeSunatEstado({ ...inv, estadoEnvioSunat: res.estadoEnvioSunat, sunatCdrResponse: null, qpseCode: null, sunatCode: null })
                                                         : inv
                                                 ));
                                             }
