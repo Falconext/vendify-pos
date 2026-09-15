@@ -187,9 +187,9 @@ describe('formato configurable en factura/boleta A4', () => {
     expect(importe(base).style.fontSize).toBe('16px');
 
     // Configurado: se escala respecto al default del modal (razón social 12 → 24 = doble).
-    const cfg = renderTicket({ razonSocial: { size: 24 }, montoTotal: { size: 21 }, gracias: { size: 5 } });
+    const cfg = renderTicket({ razonSocial: { size: 24 }, montoTotal: { size: 27 }, gracias: { size: 5 } });
     expect(razon(cfg).style.fontSize).toBe('32px');
-    expect(importe(cfg).style.fontSize).toBe('24px'); // default 14 → 21 = ×1.5
+    expect(importe(cfg).style.fontSize).toBe('24px'); // default 18 → 27 = ×1.5
     expect(gracias(cfg).style.fontSize).toBe('8px');  // default 10 → 5 = mitad, con piso de 8px
   });
 });

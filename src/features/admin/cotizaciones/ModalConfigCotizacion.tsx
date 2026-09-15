@@ -4,7 +4,7 @@ import useEmpresasStore from '@/zustand/empresas';
 import { useAuthStore } from '@/zustand/auth';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from '@/pages/admin/facturacion/comprobanteImprimir';
-import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES, ticketPx } from './cotizFormatoElementos';
+import { COTIZ_ELEMENTOS, CotizConfig, elemCfg, FORMATO_KEYS_FISCALES, OVERRIDE_POR_FORMATO, sizeOverride, ticketPx, type FormatoImpresionKey } from './cotizFormatoElementos';
 import { FORMATOS_IMPRESION_INFO, type FormatoImpresion } from '@/utils/formatoImpresion';
 
 // Ancho real de cada formato en px (96dpi) y escala para que quepa en el panel.
@@ -78,6 +78,22 @@ export default function ModalConfigCotizacion({
 
   const setVisible = (key: string, visible: boolean) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], visible } }));
+  // Tamaño propio de un formato (A5/Ticket): "desvincula" ese elemento del
+  // general. Se guarda dentro del mismo elemento (`a5.size` / `ticket.size`).
+  const setSizePropio = (key: string, formato: FormatoImpresionKey, size: number) => {
+    const ov = OVERRIDE_POR_FORMATO[formato];
+    if (!ov) return setSize(key, size);
+    setConfig((prev) => ({ ...prev, [key]: { ...prev[key], [ov]: { ...(prev[key]?.[ov] || {}), size } } }));
+  };
+  // Vuelve a enlazar el elemento con el general (borra el tamaño propio).
+  const quitarSizePropio = (key: string, formato: FormatoImpresionKey) => {
+    const ov = OVERRIDE_POR_FORMATO[formato];
+    if (!ov) return;
+    setConfig((prev) => {
+      const { [ov]: _omit, ...resto } = prev[key] || {};
+      return { ...prev, [key]: resto };
+    });
+  };
   const setTexto = (key: string, texto: string) =>
     setConfig((prev) => ({ ...prev, [key]: { ...prev[key], texto } }));
   const setSize = (key: string, size: number) =>
@@ -172,13 +188,49 @@ export default function ModalConfigCotizacion({
                           <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 dark:text-gray-600"><Icon icon="solar:lock-keyhole-minimalistic-bold" width={14} /></div>
                         )}
                         <span className={`flex-1 text-sm ${cur.visible || el.esModo ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{esFiscal && el.labelFiscal ? el.labelFiscal : el.label}</span>
-                        {!el.esModo && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => setSize(el.key, Math.max(el.min, cur.size - 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
-                          <span className="w-11 text-center text-xs font-mono text-gray-600 dark:text-gray-300" title={previewFmt === 'TICKET' && !el.unit ? `Tamaño en ticket (equivale a ${cur.size}px en A4/A5)` : undefined}>{previewFmt === 'TICKET' && !el.unit ? ticketPx(config, el.key, esFiscal) : cur.size}{el.unit || 'px'}</span>
-                          <button onClick={() => setSize(el.key, Math.min(el.max, cur.size + 1))} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:add-square-bold" width={14} /></button>
-                        </div>
-                        )}
+                        {!el.esModo && (() => {
+                          // A4 = tamaño general. En A5/Ticket, +/− crea un tamaño PROPIO
+                          // para ese formato (desvinculado); el candado lo vuelve a enlazar.
+                          const fmt = previewFmt as FormatoImpresionKey;
+                          const esOverride = fmt === 'A5' || fmt === 'TICKET';
+                          const propio = esOverride ? sizeOverride(config, el.key, fmt) : undefined;
+                          const mostrado = fmt === 'TICKET' && !el.unit
+                            ? ticketPx(config, el.key, esFiscal)
+                            : elemCfg(config, el.key, esFiscal, fmt).size;
+                          // En ticket los límites del elemento están en px de A4: se escalan.
+                          const factorTicket = fmt === 'TICKET' && !el.unit ? mostrado / Math.max(1, elemCfg(config, el.key, esFiscal).size) : 1;
+                          const minF = Math.round(el.min * factorTicket);
+                          const maxF = Math.round(el.max * factorTicket);
+                          const cambiar = (delta: number) => {
+                            const nuevo = Math.min(maxF, Math.max(minF, mostrado + delta));
+                            if (esOverride) setSizePropio(el.key, fmt, nuevo);
+                            else setSize(el.key, nuevo);
+                          };
+                          return (
+                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                              <div className="flex items-center gap-1">
+                                {esOverride && (
+                                  <button
+                                    type="button"
+                                    onClick={() => propio !== undefined && quitarSizePropio(el.key, fmt)}
+                                    title={propio !== undefined ? `Tamaño propio en ${fmt === 'TICKET' ? 'ticket' : 'A5'}. Clic para volver a seguir al general.` : `Sigue al tamaño general (A4). Usa + / − para darle un tamaño propio en ${fmt === 'TICKET' ? 'ticket' : 'A5'}.`}
+                                    className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors ${propio !== undefined ? 'bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300' : 'text-gray-300 dark:text-slate-600 cursor-default'}`}
+                                  >
+                                    <Icon icon={propio !== undefined ? 'solar:link-broken-minimalistic-bold' : 'solar:link-minimalistic-2-linear'} width={14} />
+                                  </button>
+                                )}
+                                <button onClick={() => cambiar(-1)} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:minus-square-bold" width={14} /></button>
+                                <span className={`w-11 text-center text-xs font-mono ${propio !== undefined ? 'text-violet-600 dark:text-violet-300 font-bold' : 'text-gray-600 dark:text-gray-300'}`}>{mostrado}{el.unit || 'px'}</span>
+                                <button onClick={() => cambiar(1)} className="w-6 h-6 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-600"><Icon icon="solar:add-square-bold" width={14} /></button>
+                              </div>
+                              {esOverride && (
+                                <span className={`text-[10px] leading-none ${propio !== undefined ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                  {propio !== undefined ? `propio de ${fmt === 'TICKET' ? 'ticket' : 'A5'}` : `sigue al general (${cur.size}${el.unit || 'px'})`}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         </div>
                         {el.esTexto && cur.visible && (
                           <textarea

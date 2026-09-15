@@ -117,7 +117,8 @@ export function elemCfg(config: CotizConfig | undefined | null, key: string, fis
   const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
   const c = (config || {})[key] || {};
   const defaultSize = (fiscal ? def?.defaultSizeFiscal : undefined) ?? def?.defaultSize ?? 12;
-  // A5 con tamaño propio: manda sobre el general.
+  // A5 con tamaño propio: manda sobre el general. (El ticket se resuelve en
+  // ticketPx porque además escala a la fuente del térmico.)
   const propioA5 = formato === 'A5' ? sizeOverride(config, key, 'A5') : undefined;
   return {
     // Si no hay valor guardado, se usa defaultVisible del elemento (default: true).
@@ -141,7 +142,12 @@ export function elemCfg(config: CotizConfig | undefined | null, key: string, fis
 export function ticketPx(config: CotizConfig | undefined | null, key: string, fiscal = false, base?: number): number {
   const def = COTIZ_ELEMENTOS.find((e) => e.key === key);
   const defaultSize = (fiscal ? def?.defaultSizeFiscal : undefined) ?? def?.defaultSize ?? 12;
-  const b = base ?? def?.ticketBase ?? 16;
+  const tb = def?.ticketBase ?? 16;
+  const b = base ?? tb;
+  // Tamaño propio del ticket (desvinculado del general): se toma tal cual; las
+  // líneas secundarias (`base`) se escalan en la misma proporción.
+  const propio = sizeOverride(config, key, 'TICKET');
+  if (propio) return Math.max(8, Math.round((b * propio) / tb));
   return Math.max(8, Math.round((b * elemCfg(config, key, fiscal).size) / defaultSize));
 }
 
