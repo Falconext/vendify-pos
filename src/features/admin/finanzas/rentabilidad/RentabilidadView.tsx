@@ -225,7 +225,11 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
             value: formatCurrency(pnl?.ventasNetas ?? 0),
             mini: 'line',
             data: ventasSpark,
-            sub: (pnl?.otrosIngresos ?? 0) > 0 ? `+ ${formatCurrency(pnl!.otrosIngresos)} manuales` : 'ventas netas del mes',
+            sub: (pnl?.otrosIngresos ?? 0) > 0
+                ? `+ ${formatCurrency(pnl!.otrosIngresos)} manuales`
+                : (pnl?.igvVentas ?? 0) > 0
+                    ? `sin IGV · ${formatCurrency(pnl!.ventasConIgv ?? 0)} con IGV`
+                    : 'ventas netas del mes',
         },
         {
             label: 'Costo de mercadería',

@@ -6,15 +6,29 @@ export interface OtroIngreso {
     monto: number;
 }
 
+export interface ProductoSinCosto {
+    productoId: number;
+    nombre: string;
+    unidades: number;
+    ingreso: number;
+}
+
 export interface PnlResponse {
     periodo: { mes: number; anio: number; label: string };
+    /** Ventas sin el IGV de Facturas/Boletas (el IGV se paga a SUNAT, no es ganancia). */
     ventasNetas: number;
+    /** Ventas totales cobradas, con IGV. */
+    ventasConIgv?: number;
+    /** IGV de los comprobantes electrónicos del período. */
+    igvVentas?: number;
     costoBaseProductos: number;
     costosFijosProducto: number;
     costoMercaderia: number;
     unidadesVendidas: number;
     lineasProducto: number;
     lineasServicio: number;
+    /** Productos vendidos cuya ficha tiene costo 0 (entran al P&L con costo cero). */
+    productosSinCosto?: ProductoSinCosto[];
     gananciaBruta: number;
     margenBruto: number;
     otrosIngresos: number;

@@ -87,7 +87,10 @@ export default function PnlTable({ pnl }: PnlTableProps) {
     const otrosIngresos = pnl.otrosIngresos ?? 0;
     const otrosIngresosDetalle: OtroIngreso[] = pnl.otrosIngresosDetalle ?? [];
     const ingresosTotales = pnl.ventasNetas + otrosIngresos;
-    const ref = ingresosTotales || 1;
+    const igvVentas = pnl.igvVentas ?? 0;
+    const productosSinCosto = pnl.productosSinCosto ?? [];
+    // La barra se referencia al monto más grande de la tabla (venta con IGV si aplica).
+    const ref = Math.max(ingresosTotales, pnl.ventasConIgv ?? 0) || 1;
 
     return (
         <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent h-full">
@@ -113,10 +116,30 @@ export default function PnlTable({ pnl }: PnlTableProps) {
 
             <Divider />
 
-            {/* Ventas netas */}
+            {/* Ventas: si hubo Facturas/Boletas se muestra el total cobrado y el
+                IGV que se le entrega a SUNAT, para que se entienda de dónde sale
+                la venta neta (sin IGV) con la que se calcula la ganancia. */}
+            {igvVentas > 0 && (
+                <>
+                    <PnlRow
+                        label="Ventas totales (con IGV)"
+                        icon="solar:cart-large-4-bold-duotone"
+                        value={pnl.ventasConIgv ?? pnl.ventasNetas + igvVentas}
+                        reference={ref}
+                        barColor="bg-indigo-300"
+                    />
+                    <PnlRow
+                        label="− IGV de ventas (se paga a SUNAT)"
+                        value={igvVentas}
+                        reference={ref}
+                        indent
+                        barColor="bg-slate-400"
+                    />
+                </>
+            )}
             <PnlRow
-                label="Ventas Netas"
-                icon="solar:cart-large-4-bold-duotone"
+                label={igvVentas > 0 ? 'Ventas Netas (sin IGV)' : 'Ventas Netas'}
+                icon={igvVentas > 0 ? undefined : 'solar:cart-large-4-bold-duotone'}
                 value={pnl.ventasNetas}
                 reference={ref}
                 barColor="bg-indigo-500"
@@ -174,6 +197,41 @@ export default function PnlTable({ pnl }: PnlTableProps) {
                 indent
                 barColor="bg-amber-400"
             />
+
+            {/* Productos vendidos sin costo en su ficha: su línea entró con costo 0,
+                así que la ganancia mostrada está inflada. Aviso para corregirlos. */}
+            {productosSinCosto.length > 0 && (
+                <div className="mx-3 mt-1 mb-1 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5">
+                    <div className="flex items-start gap-2">
+                        <Icon icon="solar:danger-triangle-bold-duotone" className="text-amber-500 text-base mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                                {productosSinCosto.length === 1
+                                    ? '1 producto vendido sin costo registrado'
+                                    : `${productosSinCosto.length} productos vendidos sin costo registrado`}
+                            </p>
+                            <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                                Entran al cálculo con costo S/ 0, así que la ganancia real es menor. Regístrales una compra o un costo en su ficha.
+                            </p>
+                            <ul className="mt-1.5 space-y-0.5">
+                                {productosSinCosto.slice(0, 5).map(p => (
+                                    <li key={p.productoId} className="flex items-center justify-between gap-2 text-[11px] text-amber-800 dark:text-amber-300">
+                                        <span className="truncate">{p.nombre}</span>
+                                        <span className="flex-shrink-0 tabular-nums text-amber-700/80 dark:text-amber-400/80">
+                                            {p.unidades} und · {formatCurrency(p.ingreso)}
+                                        </span>
+                                    </li>
+                                ))}
+                                {productosSinCosto.length > 5 && (
+                                    <li className="text-[11px] text-amber-700/70 dark:text-amber-400/70">
+                                        y {productosSinCosto.length - 5} más…
+                                    </li>
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Divider />
 
