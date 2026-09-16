@@ -36,6 +36,10 @@ const DOC_TYPES = [
     { key: 'OTRO', label: 'Otro', digits: null, hint: 'Sin documento: puedes dejarlo vacío. Para boletas a consumidor final sin RUC/DNI (p. ej. un colegio), hasta S/ 700.' },
 ];
 
+/** Celular peruano válido: 9 dígitos que empiezan en 9 (permite espacios/guiones). */
+export const normalizeCelular = (value: string) => String(value || '').replace(/\D/g, '');
+export const isCelularValido = (value: string) => /^9\d{8}$/.test(normalizeCelular(value));
+
 const normalizeDoc = (tipoDoc: string, value: string) => {
     const raw = String(value || '').trim().toUpperCase();
     if (tipoDoc === 'DNI' || tipoDoc === 'RUC') return raw.replace(/\D/g, '');
@@ -81,6 +85,11 @@ export default function ModalClient({
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const activeTipoDoc = formValues?.tipoDoc || 'DNI';
+    // Alta solo con celular (ventas por WhatsApp): sin nombre pero con celular
+    // válido, el backend lo registra como "WSP <celular>" (o reutiliza el existente).
+    // Solo al crear: al editar, el nombre sigue siendo obligatorio.
+    const celularValido = !isEdit && isCelularValido(formValues?.telefono || '');
+    const soloCelular = !formValues?.nombre?.trim() && celularValido;
     const activeDocType = DOC_TYPES.find(d => d.key === activeTipoDoc) ?? DOC_TYPES[0];
 
     const handleTipoDocChange = (key: string) => {
@@ -90,8 +99,23 @@ export default function ModalClient({
 
     const handleChange = async (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        const updatedFormValues = { ...formValues, [name]: value };
+        const updatedFormValues: any = { ...formValues, [name]: value };
+        // Celular sin nombre ni documento → tipo "Otro" (sin documento) por defecto,
+        // para no exigir DNI/RUC a un cliente de WhatsApp.
+        if (
+            name === 'telefono'
+            && !isEdit
+            && isCelularValido(value)
+            && !formValues?.nombre?.trim()
+            && !String(formValues?.nroDoc || '').trim()
+            && (!formValues?.tipoDoc || formValues?.tipoDoc === 'DNI')
+        ) {
+            updatedFormValues.tipoDoc = 'OTRO';
+        }
         setFormValues(updatedFormValues);
+        if (name === 'nombre' || name === 'telefono') {
+            if (errors?.nombre) setErrors({ ...errors, nombre: '' });
+        }
 
         if (name === 'nroDoc') {
             const clean = normalizeDoc(activeTipoDoc, value);
@@ -138,7 +162,9 @@ export default function ModalClient({
         }
 
         const newErrors: any = {
-            nombre: formValues?.nombre?.trim() ? '' : 'La Razón social o nombre del cliente es obligatorio',
+            nombre: formValues?.nombre?.trim() || celularValido
+                ? ''
+                : 'La Razón social o nombre del cliente es obligatorio (o ingresa un celular válido de 9 dígitos)',
             nroDoc: nroDocError,
         };
         setErrors(newErrors);
@@ -150,7 +176,10 @@ export default function ModalClient({
         const normalizedDoc = normalizeDoc(activeTipoDoc, formValues?.nroDoc || '');
         // "Otro" sin número → placeholder "0" (el backend lo trata como sin documento).
         const finalDoc = activeTipoDoc === 'OTRO' && !normalizedDoc ? '0' : normalizedDoc;
-        const payload = { ...formValues, nroDoc: finalDoc, tipoDoc: activeTipoDoc };
+        const payload = soloCelular
+            // El backend completa el nombre como "WSP <celular>".
+            ? { ...formValues, nombre: '', telefono: normalizeCelular(formValues?.telefono || ''), nroDoc: finalDoc, tipoDoc: activeTipoDoc }
+            : { ...formValues, nroDoc: finalDoc, tipoDoc: activeTipoDoc };
 
         if (Number(formValues?.id) !== 0 && isEdit) {
             editClients(payload);
@@ -238,6 +267,14 @@ export default function ModalClient({
                             </div>
                             <div>
                                 <InputPro autocomplete="off" value={formValues?.nombre} error={errors.nombre} name="nombre" onChange={handleChange} isLabel label="Nombre o Razón social" />
+                                {!isEdit && soloCelular && (
+                                    <p className="mt-1 flex items-start gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                        <span className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-current text-center text-[10px] leading-3">i</span>
+                                        <span>
+                                            Se registrará como <strong>WSP {normalizeCelular(formValues?.telefono || '')}</strong> — puedes ponerle nombre después
+                                        </span>
+                                    </p>
+                                )}
                             </div>
                         </div>
 

@@ -14,6 +14,7 @@ import ModalPaymentUnified from "@/components/ModalPaymentUnified";
 import PaymentReceipt from "@/components/PaymentReceipt";
 import Modal from "@/components/Modal";
 import TableActionMenu from "@/components/TableActionMenu";
+import HeaderMoreMenu from "@/components/HeaderMoreMenu";
 
 import { useCotizacionesViewModel } from "./useCotizacionesViewModel";
 import ModalConfigCotizacion from "./ModalConfigCotizacion";
@@ -134,11 +135,19 @@ export default function CotizacionesView() {
                         <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">Gestiona y convierte tus cotizaciones en facturas</p>
                     </div>
                 </div>
-                <div className="grid w-full grid-cols-1 gap-2.5 sm:w-auto sm:grid-cols-3">
+                <div className="flex w-full items-center gap-2.5 lg:w-auto lg:grid lg:grid-cols-3">
+                    {/* Tablet/móvil (<lg): solo "Nueva Cotización" + menú "Más"; desktop (lg+): todos los botones */}
+                    <HeaderMoreMenu
+                        className="order-last lg:hidden"
+                        items={[
+                            { key: 'formato', label: 'Configurar formato', icon: 'solar:tuning-square-bold-duotone', onClick: () => setConfigFormatoOpen(true) },
+                            { key: 'limpiar', label: 'Limpiar pruebas', icon: 'solar:trash-bin-trash-bold-duotone', tone: 'danger', onClick: () => vm.setIsOpenModalClean(true) },
+                        ]}
+                    />
                     <button
                         type="button"
                         onClick={() => setConfigFormatoOpen(true)}
-                        className="h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+                        className="hidden lg:flex h-11 px-4 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 items-center justify-center gap-1.5 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
                     >
                         <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
                         Configurar formato
@@ -146,7 +155,7 @@ export default function CotizacionesView() {
                     <button
                         type="button"
                         onClick={() => vm.setIsOpenModalClean(true)}
-                        className="h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-600 flex items-center justify-center gap-1.5 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
+                        className="hidden lg:flex h-11 px-4 rounded-2xl border border-rose-200 bg-white text-sm font-bold text-rose-600 items-center justify-center gap-1.5 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
                     >
                         <Icon icon="solar:trash-bin-trash-bold-duotone" className="text-lg" />
                         Limpiar pruebas
@@ -154,7 +163,7 @@ export default function CotizacionesView() {
                     <button
                         type="button"
                         onClick={() => navigate('/administrador/cotizaciones/nuevo')}
-                        className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
+                        className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex min-w-0 flex-1 lg:flex-none items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
                         style={{ background: ACCENT }}
                     >
                         <Icon icon="solar:add-circle-bold" className="text-lg" />

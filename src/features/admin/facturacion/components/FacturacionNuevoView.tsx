@@ -88,13 +88,28 @@ export const FacturacionNuevoView = () => {
                 client?.razonSocial,
             ].filter(Boolean).join(' '));
             const doc = String(client?.nroDoc || '').replace(/\D/g, '');
+            const telefono = String(client?.telefono || '').replace(/\D/g, '');
             return (
                 fullName.includes(query)
                 || doc.includes(compactQuery)
                 || normalizeSearch(client?.nroDoc).includes(query)
+                || (compactQuery.length >= 3 && telefono.includes(compactQuery))
             );
         }).slice(0, 6);
     }, [clienteSearchTerm, vm.clients]);
+    // Celular de 9 dígitos (empieza en 9) sin coincidencias → ofrecer alta rápida
+    // "WSP <celular>" (clientes que compran por WhatsApp).
+    const clienteSearchCelular = useMemo(() => {
+        const compact = clienteSearchTerm.replace(/\D/g, '');
+        const soloDigitos = clienteSearchTerm.replace(/[\s\-().+]/g, '');
+        return /^9\d{8}$/.test(compact) && /^\d+$/.test(soloDigitos) ? compact : '';
+    }, [clienteSearchTerm]);
+    const showCrearClienteCelular = clienteSearchOpen && !!clienteSearchCelular && clienteSearchResults.length === 0;
+    const handleCrearClienteCelular = async () => {
+        if (!clienteSearchCelular || vm.crearClienteCelularLoading) return;
+        const ok = await vm.handleCrearClienteCelular(clienteSearchCelular);
+        if (ok) setClienteSearchOpen(false);
+    };
     useEffect(() => {
         if (!clienteSearchOpen) {
             setClienteSearchTerm(selectedClientLabel);
@@ -128,6 +143,10 @@ export const FacturacionNuevoView = () => {
         const digits = raw.replace(/\D/g, '');
         if (digits.length === 8 || digits.length === 11) {
             await submitClienteDoc();
+            return;
+        }
+        if (showCrearClienteCelular) {
+            await handleCrearClienteCelular();
             return;
         }
         if (clienteSearchResults.length === 1) {
@@ -400,8 +419,30 @@ export const FacturacionNuevoView = () => {
                                         placeholder="DNI, RUC o nombre"
                                         className="w-full bg-transparent text-sm font-extrabold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 dark:text-slate-100"
                                     />
-                                    {clienteSearchOpen && clienteSearchTerm.trim().length >= 3 && clienteSearchResults.length > 0 && (
+                                    {clienteSearchOpen && clienteSearchTerm.trim().length >= 3 && (clienteSearchResults.length > 0 || showCrearClienteCelular) && (
                                         <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                                            {showCrearClienteCelular && (
+                                                <button
+                                                    type="button"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={handleCrearClienteCelular}
+                                                    disabled={vm.crearClienteCelularLoading}
+                                                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-violet-50 disabled:opacity-60 dark:hover:bg-violet-950/30"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-bold text-violet-700 dark:text-violet-300">
+                                                            + Crear cliente con celular {clienteSearchCelular}
+                                                        </p>
+                                                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                                                            Se registrará como WSP {clienteSearchCelular} — puedes ponerle nombre después
+                                                        </p>
+                                                    </div>
+                                                    <Icon
+                                                        icon={vm.crearClienteCelularLoading ? 'svg-spinners:180-ring' : 'solar:user-plus-bold'}
+                                                        className="shrink-0 text-base text-violet-600 dark:text-violet-400"
+                                                    />
+                                                </button>
+                                            )}
                                             {clienteSearchResults.map((client: any) => (
                                                 <button
                                                     key={client.id}
@@ -415,7 +456,8 @@ export const FacturacionNuevoView = () => {
                                                             {client?.nombre || client?.razonSocial || 'Cliente'}
                                                         </p>
                                                         <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                                                            {client?.nroDoc || '-'}
+                                                            {client?.nroDoc && client?.nroDoc !== '0' ? client.nroDoc : '-'}
+                                                            {client?.telefono ? ` · ${client.telefono}` : ''}
                                                         </p>
                                                     </div>
                                                     <span className="shrink-0 text-[10px] font-black uppercase text-violet-600 dark:text-violet-400">

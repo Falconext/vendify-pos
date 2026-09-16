@@ -29,6 +29,7 @@ import ModalPaymentUnified from "@/components/ModalPaymentUnified";
 import PaymentReceipt from "@/components/PaymentReceipt";
 import Modal from "@/components/Modal";
 import TableActionMenu from "@/components/TableActionMenu";
+import HeaderMoreMenu from "@/components/HeaderMoreMenu";
 import { useSedesStore } from "@/zustand/sedes";
 import ModalDetalleComprobante from "./ModalDetalleComprobante";
 import ModalConfigCotizacion from "@/features/admin/cotizaciones/ModalConfigCotizacion";
@@ -702,11 +703,19 @@ const Comprobantes = () => {
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Historial de boletas, facturas y notas de crédito</p>
                 </div>
-                <div className="flex w-full sm:w-auto flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex w-full sm:w-auto items-center gap-2">
+                    {/* Tablet/móvil (<lg): solo "Nuevo comprobante" + menú "Más"; desktop (lg+): todos los botones */}
+                    <HeaderMoreMenu
+                        className="order-last lg:hidden rounded-xl"
+                        items={[
+                            { key: 'factura', label: 'Formato factura', icon: 'solar:tuning-square-bold-duotone', onClick: () => setConfigFormato('FACTURA') },
+                            { key: 'boleta', label: 'Formato boleta', icon: 'solar:tuning-square-bold-duotone', onClick: () => setConfigFormato('BOLETA') },
+                        ]}
+                    />
                     <button
                         type="button"
                         onClick={() => setConfigFormato('FACTURA')}
-                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                        className="hidden lg:inline-flex lg:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
                         title="Configurar el formato de impresión de las facturas"
                     >
                         <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
@@ -715,7 +724,7 @@ const Comprobantes = () => {
                     <button
                         type="button"
                         onClick={() => setConfigFormato('BOLETA')}
-                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                        className="hidden lg:inline-flex lg:w-auto items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
                         title="Configurar el formato de impresión de las boletas"
                     >
                         <Icon icon="solar:tuning-square-bold-duotone" className="text-lg" />
@@ -724,7 +733,7 @@ const Comprobantes = () => {
                     <button
                         type="button"
                         onClick={() => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA' } })}
-                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl btn-accent text-sm font-bold transition-all shadow-lg shadow-black/20 active:scale-95"
+                        className="inline-flex min-w-0 flex-1 lg:flex-none items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl btn-accent text-sm font-bold transition-all shadow-lg shadow-black/20 active:scale-95"
                     >
                         <Icon icon="solar:add-circle-bold" className="text-lg" />
                         Nuevo comprobante

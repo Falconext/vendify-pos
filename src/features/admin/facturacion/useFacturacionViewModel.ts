@@ -19,7 +19,7 @@ import { IFormProduct } from "@/interfaces/products";
 import { formatISO, parse } from 'date-fns';
 import { useDebounce } from "@/hooks/useDebounce";
 import { useNavigate, useLocation } from "react-router-dom";
-import { get, patch } from "@/utils/fetch";
+import { get, patch, post } from "@/utils/fetch";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useThemeStore } from "@/zustand/theme";
 import QRCode from 'qrcode';
@@ -2015,6 +2015,61 @@ export const useFacturacionViewModel = () => {
         }
     };
 
+    // Alta rápida solo con celular (ventas por WhatsApp): el backend lo registra
+    // como "WSP <celular>" (tipo Otro, sin documento) o devuelve el existente con
+    // ese celular; el cliente queda seleccionado en la venta.
+    const [crearClienteCelularLoading, setCrearClienteCelularLoading] = useState(false);
+    const handleCrearClienteCelular = async (celularRaw: string): Promise<boolean> => {
+        const celular = String(celularRaw || '').replace(/\D/g, '');
+        if (!/^9\d{8}$/.test(celular)) {
+            useAlertStore.getState().alert('Ingresa un celular válido de 9 dígitos', 'warning');
+            return false;
+        }
+        if (crearClienteCelularLoading) return false;
+        setCrearClienteCelularLoading(true);
+        try {
+            const payload = {
+                nombre: '',
+                tipoDoc: 'OTRO',
+                // "0" = sin documento (igual que ModalClient).
+                nroDoc: '0',
+                telefono: celular,
+                persona: 'CLIENTE',
+                direccion: '',
+                email: '',
+                ubigeo: '',
+                departamento: '',
+                provincia: '',
+                distrito: '',
+            };
+            const resp: any = await post('clientes', payload);
+            const data = resp?.data && typeof resp.data === 'object' ? resp.data : {};
+            if (!(resp?.code === 1) || !data?.id) {
+                useAlertStore.getState().alert(resp?.message || 'No se pudo crear el cliente', 'error');
+                return false;
+            }
+            const creado = {
+                ...payload,
+                ...data,
+                nombre: data.nombre || `WSP ${celular}`,
+                nroDoc: data.nroDoc ?? '0',
+                tipoDoc: data.tipoDocumento?.codigo === '0' ? 'OTRO' : payload.tipoDoc,
+            };
+            useClientsStore.setState((state) => ({
+                clients: [creado, ...(state.clients || []).filter((c: any) => c.id !== creado.id)],
+            }));
+            handleClienteCreado(creado);
+            useAlertStore.getState().alert(`Cliente ${creado.nombre} creado`, 'success');
+            return true;
+        } catch (error: any) {
+            const msg = error?.response?.data?.message || error?.message || 'No se pudo crear el cliente';
+            useAlertStore.getState().alert(Array.isArray(msg) ? msg.join('. ') : msg, 'error');
+            return false;
+        } finally {
+            setCrearClienteCelularLoading(false);
+        }
+    };
+
     // Al crear un cliente nuevo desde "Configurar venta", queda auto-seleccionado
     // (sin tener que buscarlo). Funciona igual para DNI o RUC.
     const openClientModal = () => {
@@ -2785,6 +2840,7 @@ export const useFacturacionViewModel = () => {
 
         // Modal triggers
         isOpenModalClient, setIsOpenModalClient,
+        handleCrearClienteCelular, crearClienteCelularLoading,
         openClientModal,
         isOpenClientLookupConfirm,
         pendingClientLookup,

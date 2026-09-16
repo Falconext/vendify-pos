@@ -81,7 +81,17 @@ export const useClientsStore = create<IClientsState>()(devtools((set, _get) => (
             const resp: any = await post(`clientes`, sanitizeClientePayload(data));
             if (resp.code === 1 || resp.success === true) {
                 useAlertStore.setState({ success: true, loading: false });
-                const created = { ...data, id: resp.data?.id || resp.id };
+                // Alta solo con celular: el backend completa el nombre ("WSP <celular>")
+                // o devuelve el cliente existente con ese celular; reflejarlo en la UI.
+                const respData = resp.data && typeof resp.data === 'object' ? resp.data : {};
+                const created = {
+                    ...data,
+                    ...(String(data?.nombre || '').trim() ? {} : {
+                        nombre: respData.nombre || `WSP ${String(data?.telefono || '').replace(/\D/g, '')}`,
+                        nroDoc: respData.nroDoc ?? data?.nroDoc,
+                    }),
+                    id: respData.id || resp.id,
+                };
                 set((state) => ({
                     clients: [created, ...state.clients]
                 }), false, "ADD_CLIENTS");
