@@ -135,6 +135,12 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
                                     <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="px-4 py-4">
                                             <div className="font-bold text-gray-800 dark:text-gray-200">{item.descripcion || item.producto?.descripcion}</div>
+                                            {/* Distribución por sede: la línea entró a una sede distinta a la de la cabecera */}
+                                            {item.sede?.nombre && item.sede.id !== localCompra?.sedeId && (
+                                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-800/40 px-1.5 py-0.5 rounded">
+                                                    <Icon icon="solar:shop-bold-duotone" width={10} /> {item.sede.nombre}
+                                                </span>
+                                            )}
                                             {(item.lote || item.fechaVencimiento) && (
                                                 <div className="flex gap-3 mt-1">
                                                     {item.lote && <span className="text-[10px] bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-medium text-gray-500">Lote: {item.lote}</span>}

@@ -166,6 +166,10 @@ export const useComprasViewModel = () => {
         // Modal: Nueva Compra
         openNuevaCompra: () => setState(prev => ({ ...prev, showNuevaCompraModal: true })),
         closeNuevaCompra: () => setState(prev => ({ ...prev, showNuevaCompraModal: false })),
+        openImportar: () => setState(prev => ({ ...prev, showImportarModal: true })),
+        closeImportar: () => setState(prev => ({ ...prev, showImportarModal: false })),
+        // Al importar desde Excel se refresca la lista sin cerrar el modal (muestra el resultado).
+        handleImportarSuccess: () => refresh(),
         handleNuevaCompraSuccess: () => {
             setState(prev => ({ ...prev, showNuevaCompraModal: false }));
         },

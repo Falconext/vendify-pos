@@ -12,6 +12,7 @@ import ModalDetalleCompra from '@/pages/admin/compras/ModalDetalleCompra';
 import ModalRegistrarPagoCompra from '@/pages/admin/compras/ModalRegistrarPagoCompra';
 import ModalHistorialPagosCompra from '@/pages/admin/compras/ModalHistorialPagosCompra';
 import ModalNuevaCompra from '@/pages/admin/compras/ModalNuevaCompra';
+import ModalImportarCompras from '@/pages/admin/compras/ModalImportarCompras';
 import ModalConfirm from '@/components/ModalConfirm';
 import KpiHero from '@/components/ui/KpiHero';
 
@@ -118,6 +119,14 @@ export default function ComprasView() {
                     <h1 className="text-[22px] font-extrabold tracking-tight text-slate-800 dark:text-white">Cuentas por Pagar / Compras</h1>
                     <p className="mt-0.5 text-sm text-slate-400 dark:text-gray-400">Gestión de compras y pagos a proveedores</p>
                 </div>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <button
+                    onClick={actions.openImportar}
+                    className="flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-700 shadow-sm transition-all hover:bg-violet-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-300 sm:w-auto"
+                >
+                    <Icon icon="solar:import-bold-duotone" className="text-lg" />
+                    Importar Excel
+                </button>
                 <button
                     onClick={actions.openNuevaCompra}
                     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition-all hover:brightness-105 sm:w-auto"
@@ -126,6 +135,7 @@ export default function ComprasView() {
                     <Icon icon="solar:cart-plus-bold" className="text-lg" />
                     Nueva Compra
                 </button>
+                </div>
             </div>
 
             {/* Stats — diseño hero del dashboard */}
@@ -343,6 +353,12 @@ export default function ComprasView() {
                 isOpen={vm.showNuevaCompraModal}
                 onClose={actions.closeNuevaCompra}
                 onSuccess={actions.handleNuevaCompraSuccess}
+            />
+
+            <ModalImportarCompras
+                isOpen={vm.showImportarModal}
+                onClose={actions.closeImportar}
+                onSuccess={actions.handleImportarSuccess}
             />
 
             <ModalNuevaCompra

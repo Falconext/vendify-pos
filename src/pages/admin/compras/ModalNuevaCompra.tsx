@@ -7,6 +7,7 @@ import Select from "@/components/Select";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import useAlertStore from "@/zustand/alert";
 import { useAuthStore } from "@/zustand/auth";
+import { useSedesStore } from "@/zustand/sedes";
 import { useComprasStore } from "@/zustand/compras";
 import { useCuentasBancariasStore } from "@/zustand/cuentasBancarias";
 import { useClientsStore } from "@/zustand/clients";
@@ -41,6 +42,11 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const { getAllProducts, products, resetProducts } = useProductsStore();
     const { alert } = useAlertStore();
     const { auth, sedeActiva } = useAuthStore();
+    // Distribución por sede: lista de sedes de la empresa; la cabecera de la
+    // compra entra a la sede activa de la sesión (vendify no tiene selector).
+    const { sedes, listarSedes } = useSedesStore();
+    const sedeDestinoId: number = Number(sedeActiva?.id || 0);
+    useEffect(() => { if (isOpen) listarSedes(); }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
     const rubroNombre = (auth as any)?.empresa?.rubro?.nombre;
     const esRubroFarmaceutico = usaLotesFarmaciaRubro(rubroNombre);
     const tieneGestionLotes = hasPlanFeature(auth as any, 'tieneGestionLotes') || esRubroFarmaceutico;
@@ -83,6 +89,10 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     });
 
     const [items, setItems] = useState<any[]>([]);
+    // Distribución por sede: índice de la línea cuyo panel "Distribuir" está
+    // abierto y las cantidades por sede que se están repartiendo.
+    const [distribuyendoIdx, setDistribuyendoIdx] = useState<number | null>(null);
+    const [distribucion, setDistribucion] = useState<Record<number, number | ''>>({});
     // true = los precios ingresados YA incluyen IGV (ej: ticket de caja, proveedor informal)
     // false = los precios son NETOS sin IGV (default: factura formal de proveedor)
     const [incluyeIgv, setIncluyeIgv] = useState(false);
@@ -306,6 +316,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                         : Math.round(conv[i].neto * 10000) / 10000,
                     lote: det.lote || '',
                     fechaVencimiento: det.fechaVencimiento ? moment(det.fechaVencimiento).format('YYYY-MM-DD') : '',
+                    // Distribución por sede: la línea recuerda a qué sede entró.
+                    sedeId: det.sedeId ? Number(det.sedeId) : undefined,
                     numerosSerie: Array.isArray(det.seriesGarantias) ? det.seriesGarantias.map((s: any) => s.numeroSerie) : undefined,
                     garantiaMeses: Array.isArray(det.seriesGarantias) && det.seriesGarantias[0]?.garantiaMeses != null ? Number(det.seriesGarantias[0].garantiaMeses) : undefined,
                 })));
@@ -802,6 +814,54 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         const newItems = [...items];
         newItems.splice(index, 1);
         setItems(newItems);
+        setDistribuyendoIdx(null);
+    };
+
+    // ── Distribución por sede ────────────────────────────────────────────────
+    // Una línea puede repartirse entre sedes: se convierte en N líneas (una por
+    // sede con cantidad > 0) del mismo producto/costo, cada una con su `sedeId`.
+    // El backend registra el ingreso de kardex en la sede de cada línea; la
+    // compra (factura, proveedor, total) sigue siendo una sola.
+    const sedesActivas: any[] = (sedes || []).filter((s: any) => s.activo !== false);
+    const multiSede = sedesActivas.length > 1;
+    const nombreSede = (id?: number) => {
+        const s = sedesActivas.find((x: any) => x.id === Number(id));
+        return s ? s.nombre : '';
+    };
+    const abrirDistribucion = (idx: number) => {
+        const it: any = items[idx];
+        const inicial: Record<number, number | ''> = {};
+        sedesActivas.forEach((s: any) => { inicial[s.id] = ''; });
+        // Por defecto todo en la sede actual de la línea (o la de la cabecera).
+        const actual = Number(it?.sedeId || sedeDestinoId || sedesActivas[0]?.id);
+        if (actual) inicial[actual] = Number(it?.cantidad) || 0;
+        setDistribucion(inicial);
+        setDistribuyendoIdx(idx);
+    };
+    const totalDistribuido = Object.values(distribucion).reduce<number>((a, v) => a + (Number(v) || 0), 0);
+    const aplicarDistribucion = () => {
+        if (distribuyendoIdx == null) return;
+        const it: any = items[distribuyendoIdx];
+        const cantidad = Number(it?.cantidad) || 0;
+        if (Math.abs(totalDistribuido - cantidad) > 0.0001) {
+            alert(`La distribución suma ${totalDistribuido} y la línea tiene ${cantidad}. Deben coincidir.`, 'error');
+            return;
+        }
+        const partes = sedesActivas
+            .map((s: any) => ({ sedeId: s.id, cantidad: Number(distribucion[s.id]) || 0 }))
+            .filter(p => p.cantidad > 0);
+        if (!partes.length) return;
+        const { numerosSerie, ...base } = it;
+        const nuevas = partes.map((p, i) => ({
+            ...base,
+            cantidad: p.cantidad,
+            sedeId: p.sedeId,
+            // Las series/IMEI no se pueden repartir automáticamente: quedan en la primera línea.
+            numerosSerie: i === 0 ? numerosSerie : undefined,
+            _scanKey: i === 0 ? base._scanKey : undefined,
+        }));
+        setItems(prev => [...prev.slice(0, distribuyendoIdx), ...nuevas, ...prev.slice(distribuyendoIdx + 1)]);
+        setDistribuyendoIdx(null);
     };
 
     // Totals — cuando incluyeIgv, el precio ingresado ya trae el IGV embebido
@@ -912,6 +972,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 codigoXml: i._codigoXml || undefined,
                 numerosSerie: (i.numerosSerie && i.numerosSerie.length) ? i.numerosSerie : undefined,
                 garantiaMeses: i.garantiaMeses || undefined,
+                // Distribución por sede (vacío = sede destino de la cabecera).
+                sedeId: i.sedeId ? Number(i.sedeId) : undefined,
             })),
             formaPago: payment.condicionPago,
             montoPagadoInicial: payment.condicionPago === 'CONTADO' ? total : Number(payment.montoPagadoInicial),
@@ -1441,6 +1503,67 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                         />
                                                     </div>
                                                 </div>
+                                                {multiSede && (
+                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${item.sedeId && Number(item.sedeId) !== sedeDestinoId ? 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-800/40' : 'text-gray-500 bg-gray-50 border-gray-200 dark:text-gray-400 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                                            <Icon icon="solar:shop-bold-duotone" width={11} />
+                                                            {nombreSede(item.sedeId || sedeDestinoId) || 'Sede destino'}
+                                                        </span>
+                                                        <select
+                                                            value={item.sedeId || sedeDestinoId || ''}
+                                                            onChange={e => updateItem(idx, 'sedeId', e.target.value ? Number(e.target.value) : undefined)}
+                                                            className="text-[11px] rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-gray-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                                                            title="Sede a la que entra esta línea"
+                                                        >
+                                                            {sedesActivas.map((s: any) => (
+                                                                <option key={s.id} value={s.id}>{s.nombre}</option>
+                                                            ))}
+                                                        </select>
+                                                        {distribuyendoIdx !== idx && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => abrirDistribucion(idx)}
+                                                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-300"
+                                                                title="Repartir esta cantidad entre varias sedes"
+                                                            >
+                                                                <Icon icon="solar:routing-2-bold" width={12} />
+                                                                Distribuir
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {multiSede && distribuyendoIdx === idx && (
+                                                    <div className="mt-2 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-900/10">
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                                                                <Icon icon="solar:routing-2-bold" width={12} />
+                                                                Distribuir {item.cantidad} und. entre sedes
+                                                            </span>
+                                                            <span className={`text-[10px] font-semibold ${Math.abs(totalDistribuido - (Number(item.cantidad) || 0)) < 0.0001 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                                                {totalDistribuido} / {item.cantidad}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                            {sedesActivas.map((s: any) => (
+                                                                <label key={s.id} className="flex items-center gap-2 text-[11px] text-gray-700 dark:text-gray-200">
+                                                                    <span className="flex-1 truncate">{s.nombre}</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        min={0}
+                                                                        step="any"
+                                                                        value={distribucion[s.id] ?? ''}
+                                                                        onChange={e => setDistribucion(prev => ({ ...prev, [s.id]: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                                                        className="w-16 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-center text-xs text-gray-700 focus:border-blue-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200"
+                                                                    />
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                        <div className="mt-2 flex justify-end gap-2">
+                                                            <button type="button" onClick={() => setDistribuyendoIdx(null)} className="text-[11px] font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">Cancelar</button>
+                                                            <button type="button" onClick={aplicarDistribucion} className="text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md px-2.5 py-1">Aplicar</button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {itemRequiereSeries(item) && (() => {
                                                     const series: string[] = (item.numerosSerie || []).filter((s: string) => String(s).trim());
                                                     const completo = series.length === Number(item.cantidad);
