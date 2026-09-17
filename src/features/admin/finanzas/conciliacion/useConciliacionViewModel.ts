@@ -146,6 +146,7 @@ export function useConciliacionViewModel() {
       const res = await api.exportarConciliacionExcel(
         resultado,
         observaciones.trim() || undefined,
+        { desde: fechaInicio || undefined, hasta: fechaFin || undefined },
       );
       if (res.success && res.data) {
         const { nombreArchivo, base64 } = res.data as IPlantillaExcel;

@@ -607,8 +607,12 @@ export const useProductsViewModel = () => {
         const file = event.target.files?.[0];
         if (!file) return;
         const allowedTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
-        if (!allowedTypes.includes(file.type)) {
+        // En celular/tablet (archivo bajado de WhatsApp, Drive…) el navegador a veces
+        // no reporta el MIME (vacío u octet-stream): se valida también por extensión.
+        const extOk = /\.(xlsx|xls)$/i.test(file.name);
+        if (!allowedTypes.includes(file.type) && !extOk) {
             useAlertStore.getState().alert("Use archivo .xlsx o .xls válido", "error");
+            if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
         // El stock del Excel se aplica a un almacén concreto: exigir sede elegida.

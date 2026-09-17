@@ -26,10 +26,12 @@ export const importarConciliacion = (
 export const exportarConciliacionExcel = (
   resultado: IResultadoConciliacion,
   observaciones?: string,
+  rango?: { desde?: string; hasta?: string },
 ) =>
   post<IPlantillaExcel>(`${BASE}/conciliacion/exportar-excel`, {
     resultado,
     observaciones,
+    rango,
   });
 
 // ── Historial de conciliaciones guardadas ──────────────────────────────────

@@ -663,18 +663,21 @@ export default function ProductsView() {
                                         <Icon icon={showOptionsDropdown ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} className="text-slate-400 dark:text-slate-500" width={14} />
                                     </button>
 
+                                    {/* El input vive FUERA del menú desplegable: si estuviera dentro,
+                                        al cerrarse el menú se desmontaría antes de que el usuario
+                                        elija el archivo y el onChange nunca llegaría. */}
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        ref={vm.fileInputRef}
+                                        onChange={(e) => {
+                                            actions.handleImportExcel(e);
+                                            setShowOptionsDropdown(false);
+                                        }}
+                                        className="hidden"
+                                    />
                                     {showOptionsDropdown && (
                                         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-none z-50 overflow-hidden py-1.5 font-inter">
-                                            <input
-                                                type="file"
-                                                accept=".xlsx, .xls"
-                                                ref={vm.fileInputRef}
-                                                onChange={(e) => {
-                                                    actions.handleImportExcel(e);
-                                                    setShowOptionsDropdown(false);
-                                                }}
-                                                className="hidden"
-                                            />
                                             <button
                                                 onClick={() => { actions.exportProducts(); setShowOptionsDropdown(false); }}
                                                 className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
@@ -683,7 +686,7 @@ export default function ProductsView() {
                                                 Exportar Productos
                                             </button>
                                             <button
-                                                onClick={() => { vm.fileInputRef.current?.click(); }}
+                                                onClick={() => { setShowOptionsDropdown(false); vm.fileInputRef.current?.click(); }}
                                                 className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
                                             >
                                                 <Icon icon="solar:import-bold" className="mr-2 text-blue-500" width={18} />

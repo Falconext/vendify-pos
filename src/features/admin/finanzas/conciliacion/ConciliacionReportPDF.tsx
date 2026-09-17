@@ -33,13 +33,17 @@ const styles = StyleSheet.create({
     pend: { color: '#d97706', fontWeight: 'bold' },
     diff: { color: '#e11d48', fontWeight: 'bold' },
     // Movimientos del banco
-    cFecha: { width: '11%' },
-    cOp: { width: '14%' },
-    cDesc: { width: '25%' },
-    cMonto: { width: '12%', textAlign: 'right', paddingRight: 8 },
-    cEstado: { width: '12%', paddingLeft: 4 },
-    cDoc: { width: '14%' },
-    cDif: { width: '12%', textAlign: 'right' },
+    // Mismas columnas que la pantalla: Doc. sistema lleva debajo el origen y
+    // la contraparte (p. ej. "Gasto · AMAZON") y se agrega Monto sistema.
+    cFecha: { width: '9%' },
+    cOp: { width: '11%' },
+    cDesc: { width: '20%' },
+    cMonto: { width: '11%', textAlign: 'right', paddingRight: 8 },
+    cEstado: { width: '10%', paddingLeft: 4 },
+    cDoc: { width: '20%' },
+    cDocSub: { fontSize: 6, color: '#6b7280', marginTop: 1 },
+    cMontoSis: { width: '10%', textAlign: 'right', paddingRight: 8 },
+    cDif: { width: '9%', textAlign: 'right' },
     // Pendientes de sistema
     pOrigen: { width: '10%' },
     pDoc: { width: '16%' },
@@ -129,6 +133,7 @@ export function ConciliacionReportPDF({
                     <Text style={[styles.th, styles.cMonto]}>Monto banco</Text>
                     <Text style={[styles.th, styles.cEstado]}>Estado</Text>
                     <Text style={[styles.th, styles.cDoc]}>Doc. sistema</Text>
+                    <Text style={[styles.th, styles.cMontoSis]}>Monto sistema</Text>
                     <Text style={[styles.th, styles.cDif]}>Diferencia</Text>
                 </View>
                 {data.movimientos.map((m, idx) => (
@@ -140,7 +145,15 @@ export function ConciliacionReportPDF({
                         <Text style={[styles.cell, styles.cEstado, m.estado === 'CONCILIADO' ? styles.ok : styles.pend]}>
                             {m.estado === 'CONCILIADO' ? 'Conciliado' : 'Pendiente'}
                         </Text>
-                        <Text style={[styles.cell, styles.cDoc]}>{m.match ? m.match.documento : '-'}</Text>
+                        <View style={styles.cDoc}>
+                            <Text style={styles.cell}>{m.match ? m.match.documento : '-'}</Text>
+                            {m.match && (
+                                <Text style={styles.cDocSub}>
+                                    {origenLabel(m.match.origen)} · {m.match.contraparte}
+                                </Text>
+                            )}
+                        </View>
+                        <Text style={[styles.cell, styles.cMontoSis]}>{m.match ? fmt(m.match.monto) : '-'}</Text>
                         <Text style={[styles.cell, styles.cDif, m.match && Math.abs(m.match.diferenciaMonto) > 0.01 ? styles.diff : {}]}>
                             {m.match ? fmt(m.match.diferenciaMonto) : '-'}
                         </Text>
