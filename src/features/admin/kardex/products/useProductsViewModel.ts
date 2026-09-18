@@ -171,6 +171,8 @@ export const useProductsViewModel = () => {
         showColumnFilter: false,
         vistaActual: isRestaurante ? 'cards' : 'tabla',
         marcaIdFilter: undefined,
+        categoriaIdFilter: undefined,
+        localizacionFilter: undefined,
         soloStockBajo: (() => {
             const searchParams = new URLSearchParams(window.location.search);
             return searchParams.get('soloStockBajo') === 'true';
@@ -184,6 +186,21 @@ export const useProductsViewModel = () => {
     const catalogoPorSede = Boolean((auth as any)?.empresa?.catalogoPorSede);
 
     const debounce = useDebounce(state.searchClient, 600);
+
+    // Localizaciones (estante/zona) existentes en la empresa, para el filtro.
+    const [localizaciones, setLocalizaciones] = useState<string[]>([]);
+    const fetchLocalizaciones = useCallback(async () => {
+        if (!auth?.empresaId) return;
+        try {
+            const resp: any = await get('productos/localizaciones');
+            setLocalizaciones(resp?.code === 1 && Array.isArray(resp.data) ? resp.data : []);
+        } catch (_e) {
+            setLocalizaciones([]);
+        }
+    }, [auth?.empresaId]);
+    useEffect(() => {
+        fetchLocalizaciones();
+    }, [fetchLocalizaciones, productMutationVersion]);
     const [products, setProducts] = useState<IProduct[]>([]);
     const [totalProducts, setTotalProducts] = useState(0);
     const [productsLoaded, setProductsLoaded] = useState(false);
@@ -304,6 +321,8 @@ export const useProductsViewModel = () => {
                 search: debounce || '',
             };
             if (state.marcaIdFilter) params.marcaId = String(state.marcaIdFilter);
+            if (state.categoriaIdFilter) params.categoriaId = String(state.categoriaIdFilter);
+            if (state.localizacionFilter) params.localizacion = state.localizacionFilter;
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
             if (state.soloStockBajo) params.soloStockBajo = 'true';
             if (effectiveSedeId && state.incluirOcultos) params.incluirOcultos = 'true';
@@ -325,7 +344,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -335,7 +354,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchProductsListRef.current();
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchResumenInventario = useCallback(async () => {
         if (!auth?.empresaId) {
@@ -346,6 +365,8 @@ export const useProductsViewModel = () => {
         try {
             const params: Record<string, string> = { search: debounce || '' };
             if (state.marcaIdFilter) params.marcaId = String(state.marcaIdFilter);
+            if (state.categoriaIdFilter) params.categoriaId = String(state.categoriaIdFilter);
+            if (state.localizacionFilter) params.localizacion = state.localizacionFilter;
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos/resumen?${query}`);
@@ -361,7 +382,7 @@ export const useProductsViewModel = () => {
         } finally {
             setResumenLoading(false);
         }
-    }, [auth?.empresaId, state.marcaIdFilter, debounce, effectiveSedeId]);
+    }, [auth?.empresaId, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId]);
 
     const fetchResumenInventarioRef = useRef(fetchResumenInventario);
     fetchResumenInventarioRef.current = fetchResumenInventario;
@@ -369,7 +390,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchResumenInventarioRef.current();
-    }, [auth?.empresaId, state.marcaIdFilter, debounce, effectiveSedeId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Sincroniza actualizaciones optimistas desde Zustand (editar/crear sin recargar página).
     useEffect(() => {
@@ -423,7 +444,13 @@ export const useProductsViewModel = () => {
         const matchesBrand =
             !state.marcaIdFilter ||
             Number(lastUpsertedProduct.marca?.id) === Number(state.marcaIdFilter);
-        const canInsert = state.currentPage === 1 && matchesSearch && matchesBrand;
+        const matchesCategory =
+            !state.categoriaIdFilter ||
+            Number(lastUpsertedProduct.categoria?.id ?? lastUpsertedProduct.categoriaId) === Number(state.categoriaIdFilter);
+        const matchesLocation =
+            !state.localizacionFilter ||
+            String(lastUpsertedProduct.localizacion ?? '').trim().toUpperCase() === state.localizacionFilter.toUpperCase();
+        const canInsert = state.currentPage === 1 && matchesSearch && matchesBrand && matchesCategory && matchesLocation;
         const alreadyVisible = products.some(product => product.id === lastUpsertedProduct.id);
 
         setProducts(previousProducts => {
@@ -809,6 +836,29 @@ export const useProductsViewModel = () => {
         confirmarQuitarConStock,
         setQuitarConStock,
         setIncluirOcultos: (v: boolean) => setState(prev => ({ ...prev, incluirOcultos: v, currentPage: 1 })),
+        setCategoriaFilter: (id: number | undefined) => setState(prev => ({
+            ...prev,
+            categoriaIdFilter: prev.categoriaIdFilter === id ? undefined : id,
+            currentPage: 1,
+        })),
+        setLocalizacionFilter: (loc: string | undefined) => setState(prev => ({
+            ...prev,
+            localizacionFilter: prev.localizacionFilter === loc ? undefined : loc,
+            currentPage: 1,
+        })),
+        clearFilters: () => {
+            setState(prev => ({
+                ...prev,
+                categoriaIdFilter: undefined,
+                localizacionFilter: undefined,
+                soloStockBajo: false,
+                incluirOcultos: false,
+                currentPage: 1,
+            }));
+            const url = new URL(window.location.href);
+            url.searchParams.delete('soloStockBajo');
+            window.history.replaceState({}, '', url);
+        },
         setIsOpenModalAsignarSedes: (v: boolean) => setState(prev => ({ ...prev, isOpenModalAsignarSedes: v })),
         toggleStockSort,
         exportProducts: () => exportProductsAction(debounce, effectiveSedeId),
@@ -852,8 +902,9 @@ export const useProductsViewModel = () => {
         isCodigoBarrasEnabled,
         safeVisibleColumns,
         stockSort,
-        // Cambio rápido de categoría desde la tabla
+        // Cambio rápido de categoría desde la tabla + filtro por categoría
         categories,
+        localizaciones,
         cambiarCategoria,
         actions,
         // Sede filtering

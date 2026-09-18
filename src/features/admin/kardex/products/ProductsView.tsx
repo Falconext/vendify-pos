@@ -94,7 +94,25 @@ export default function ProductsView() {
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     // Filtros activos (para el contador del botón Filtro).
-    const filtrosActivos = (vm.soloStockBajo ? 1 : 0) + (vm.incluirOcultos ? 1 : 0);
+    const filtrosActivos =
+        (vm.soloStockBajo ? 1 : 0) +
+        (vm.incluirOcultos ? 1 : 0) +
+        (vm.categoriaIdFilter ? 1 : 0) +
+        (vm.localizacionFilter ? 1 : 0);
+    // Buscadores internos del panel de filtros (categoría / localización).
+    const [categoriaQuery, setCategoriaQuery] = useState('');
+    const [localizacionQuery, setLocalizacionQuery] = useState('');
+    const categoriaActiva = vm.categories.find((c: any) => Number(c.id) === Number(vm.categoriaIdFilter));
+    const categoriasFiltradas = vm.categories.filter((c: any) =>
+        !categoriaQuery.trim() || c.nombre?.toLowerCase().includes(categoriaQuery.trim().toLowerCase()),
+    );
+    const localizacionesFiltradas = vm.localizaciones.filter((l: string) =>
+        !localizacionQuery.trim() || l.toLowerCase().includes(localizacionQuery.trim().toLowerCase()),
+    );
+    const FILTER_ROW = 'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors';
+    const FILTER_ROW_ACTIVE = 'bg-slate-50 text-slate-800 dark:bg-slate-700/60 dark:text-white';
+    const FILTER_ROW_IDLE = 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700';
+    const FILTER_SEARCH = 'mx-1.5 mb-1 h-8 w-[calc(100%-12px)] rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-700 dark:bg-slate-900 dark:text-white';
     const [isOpenModalPreviewCatalogo, setIsOpenModalPreviewCatalogo] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const filterMenuRef = useRef<HTMLDivElement>(null);
@@ -600,7 +618,7 @@ export default function ProductsView() {
                                     <Icon icon={showFilterMenu ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-xs opacity-70" />
                                 </button>
                                 {showFilterMenu && (
-                                    <div className="absolute left-0 z-50 mt-2 w-56 rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5">
+                                    <div className="absolute left-0 z-50 mt-2 w-[19rem] rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5 max-h-[70vh] overflow-y-auto">
                                         <p className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Stock</p>
                                         {[
                                             { key: false, label: 'Todos los productos', icon: 'solar:widget-2-linear' },
@@ -611,8 +629,8 @@ export default function ProductsView() {
                                                 <button
                                                     key={String(opt.key)}
                                                     type="button"
-                                                    onClick={() => { actions.setSoloStockBajo(opt.key); setShowFilterMenu(false); }}
-                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${active ? 'bg-slate-50 text-slate-800 dark:bg-slate-700/60 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
+                                                    onClick={() => actions.setSoloStockBajo(opt.key)}
+                                                    className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
                                                 >
                                                     <Icon icon={opt.icon} className="text-base text-slate-400 dark:text-gray-400" />
                                                     <span className="flex-1 text-left">{opt.label}</span>
@@ -625,13 +643,109 @@ export default function ProductsView() {
                                                 <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Sede</p>
                                                 <button
                                                     type="button"
-                                                    onClick={() => { actions.setIncluirOcultos(!vm.incluirOcultos); setShowFilterMenu(false); }}
+                                                    onClick={() => actions.setIncluirOcultos(!vm.incluirOcultos)}
                                                     title="Muestra también los productos que existen en la empresa pero no están asignados a esta sede"
-                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${vm.incluirOcultos ? 'bg-slate-50 text-slate-800 dark:bg-slate-700/60 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-slate-700'}`}
+                                                    className={`${FILTER_ROW} ${vm.incluirOcultos ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
                                                 >
                                                     <Icon icon="mdi:eye-off-outline" className="text-base text-slate-400 dark:text-gray-400" />
                                                     <span className="flex-1 text-left">Ver no asignados</span>
                                                     {vm.incluirOcultos && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {/* Categoría: se combina con la búsqueda por nombre / código / barras */}
+                                        <div className="mt-1.5 border-t border-slate-100 dark:border-slate-700" />
+                                        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Categoría</p>
+                                            {vm.categoriaIdFilter && (
+                                                <button type="button" onClick={() => actions.setCategoriaFilter(undefined)} className="text-[11px] font-semibold hover:underline" style={{ color: ACCENT }}>Todas</button>
+                                            )}
+                                        </div>
+                                        {vm.categories.length > 6 && (
+                                            <input
+                                                value={categoriaQuery}
+                                                onChange={(e) => setCategoriaQuery(e.target.value)}
+                                                placeholder="Buscar categoría…"
+                                                className={FILTER_SEARCH}
+                                            />
+                                        )}
+                                        <div className="max-h-44 overflow-y-auto">
+                                            {vm.categories.length === 0 && (
+                                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-gray-500">Aún no tienes categorías. Créalas desde el botón "Categorías".</p>
+                                            )}
+                                            {categoriasFiltradas.length === 0 && vm.categories.length > 0 && (
+                                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-gray-500">Sin coincidencias.</p>
+                                            )}
+                                            {categoriasFiltradas.map((cat: any) => {
+                                                const active = Number(cat.id) === Number(vm.categoriaIdFilter);
+                                                return (
+                                                    <button
+                                                        key={cat.id}
+                                                        type="button"
+                                                        onClick={() => actions.setCategoriaFilter(cat.id)}
+                                                        className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
+                                                    >
+                                                        <Icon icon="solar:tag-linear" className="text-base text-slate-400 dark:text-gray-400" />
+                                                        <span className="flex-1 truncate text-left">{cat.nombre}</span>
+                                                        {typeof cat._count?.productos === 'number' && (
+                                                            <span className="text-[11px] tabular-nums text-slate-400 dark:text-gray-500">{cat._count.productos}</span>
+                                                        )}
+                                                        {active && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Localización física (estante / zona) */}
+                                        <div className="mt-1.5 border-t border-slate-100 dark:border-slate-700" />
+                                        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Localización</p>
+                                            {vm.localizacionFilter && (
+                                                <button type="button" onClick={() => actions.setLocalizacionFilter(undefined)} className="text-[11px] font-semibold hover:underline" style={{ color: ACCENT }}>Todas</button>
+                                            )}
+                                        </div>
+                                        {vm.localizaciones.length > 6 && (
+                                            <input
+                                                value={localizacionQuery}
+                                                onChange={(e) => setLocalizacionQuery(e.target.value)}
+                                                placeholder="Buscar estante o zona…"
+                                                className={FILTER_SEARCH}
+                                            />
+                                        )}
+                                        <div className="max-h-44 overflow-y-auto">
+                                            {vm.localizaciones.length === 0 && (
+                                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-gray-500">Ningún producto tiene localización todavía. Asígnala al editar el producto (campo "Localización").</p>
+                                            )}
+                                            {localizacionesFiltradas.length === 0 && vm.localizaciones.length > 0 && (
+                                                <p className="px-3 py-2 text-xs text-slate-400 dark:text-gray-500">Sin coincidencias.</p>
+                                            )}
+                                            {localizacionesFiltradas.map((loc: string) => {
+                                                const active = vm.localizacionFilter === loc;
+                                                return (
+                                                    <button
+                                                        key={loc}
+                                                        type="button"
+                                                        onClick={() => actions.setLocalizacionFilter(loc)}
+                                                        className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
+                                                    >
+                                                        <Icon icon="solar:map-point-linear" className="text-base text-slate-400 dark:text-gray-400" />
+                                                        <span className="flex-1 truncate text-left">{loc}</span>
+                                                        {active && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {filtrosActivos > 0 && (
+                                            <>
+                                                <div className="mt-1.5 border-t border-slate-100 dark:border-slate-700" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { actions.clearFilters(); setShowFilterMenu(false); }}
+                                                    className="mt-1 w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+                                                >
+                                                    <Icon icon="solar:eraser-linear" /> Limpiar filtros ({filtrosActivos})
                                                 </button>
                                             </>
                                         )}
@@ -752,6 +866,44 @@ export default function ProductsView() {
                                 </div>
                             )}
                         </div>
+                        {/* Fila 3: chips de filtros activos (categoría / localización) — se quitan con un clic */}
+                        {(vm.categoriaIdFilter || vm.localizacionFilter) && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Filtrando por</span>
+                                {vm.categoriaIdFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => actions.setCategoriaFilter(undefined)}
+                                        title="Quitar filtro de categoría"
+                                        className="group inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors"
+                                        style={{ borderColor: ACCENT, color: ACCENT, background: 'color-mix(in srgb, var(--accent) 8%, transparent)' }}
+                                    >
+                                        <Icon icon="solar:tag-linear" />
+                                        {categoriaActiva?.nombre ?? 'Categoría'}
+                                        <Icon icon="solar:close-circle-bold" className="opacity-60 group-hover:opacity-100" />
+                                    </button>
+                                )}
+                                {vm.localizacionFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => actions.setLocalizacionFilter(undefined)}
+                                        title="Quitar filtro de localización"
+                                        className="group inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors"
+                                        style={{ borderColor: ACCENT, color: ACCENT, background: 'color-mix(in srgb, var(--accent) 8%, transparent)' }}
+                                    >
+                                        <Icon icon="solar:map-point-linear" />
+                                        {vm.localizacionFilter}
+                                        <Icon icon="solar:close-circle-bold" className="opacity-60 group-hover:opacity-100" />
+                                    </button>
+                                )}
+                                {vm.searchClient.trim() && (
+                                    <span className="text-xs text-slate-400 dark:text-gray-500">+ búsqueda "{vm.searchClient.trim()}"</span>
+                                )}
+                                {vm.productsLoaded && (
+                                    <span className="ml-auto text-xs tabular-nums text-slate-500 dark:text-gray-400">{vm.totalProducts} resultado{vm.totalProducts === 1 ? '' : 's'}</span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="p-3 sm:p-0">

@@ -40,6 +40,10 @@ export interface IProductsViewModelState {
     showColumnFilter: boolean;
     vistaActual: 'cards' | 'tabla' | 'lista';
     marcaIdFilter: number | undefined;
+    /** Filtro por categoría (id) — se combina con la búsqueda por nombre/código/barras. */
+    categoriaIdFilter: number | undefined;
+    /** Filtro por localización física (estante/zona), tal como está guardada en el producto. */
+    localizacionFilter: string | undefined;
     soloStockBajo: boolean;
     /** Ver también los productos NO asignados a la sede seleccionada. */
     incluirOcultos: boolean;
