@@ -258,30 +258,34 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
             useAlertStore.setState({ loading: true });
             const resp: any = await post(`guia-remision/${id}/enviar-sunat`, {});
 
-            // El backend devuelve { code: 1, message, data: { success: true ... } }
-            // 'post' retorna el body. Si es éxito, resp.data.success es true.
-            const isSuccess = resp?.data?.success || resp?.success;
+            // El backend devuelve { code: 1, message, data: { success, guia, message } }.
+            // OJO: 'post' marca success: true en cualquier HTTP 200, así que el
+            // resultado real (aceptada / rechazada por SUNAT) es data.success.
+            const payload: any = resp?.data ?? resp;
+            const isSuccess = typeof payload?.success === 'boolean' ? payload.success : !!resp?.success;
+            const guiaData = payload?.guia;
+            const message = payload?.message || resp?.error;
 
-            if (isSuccess) {
-                const guiaData = resp?.data?.guia || resp?.guia;
+            useAlertStore.setState({ loading: false });
 
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert(resp?.data?.message || resp?.message || 'Guía enviada a SUNAT exitosamente', 'success');
-
-                // Actualizar el estado de la guía en la lista con TODOS los datos nuevos (URL pdf, estado, etc)
+            // La guía vuelve actualizada en ambos casos (EMITIDO, PENDIENTE o
+            // RECHAZADO): reflejar su estado en la lista sin recargar.
+            if (guiaData) {
                 set((state) => ({
                     guiasRemision: state.guiasRemision.map((guia: any) =>
                         guia.id === id ? { ...guia, ...guiaData } : guia
                     ),
                     guiaRemisionActual: guiaData
                 }), false, 'ENVIAR_SUNAT');
-
-                return { success: true };
-            } else {
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert(resp?.message || 'Error al enviar a SUNAT', 'error');
-                return { success: false, error: resp?.message || 'Error al enviar a SUNAT' };
             }
+
+            if (isSuccess) {
+                useAlertStore.getState().alert(message || 'Guía enviada a SUNAT exitosamente', 'success');
+                return { success: true };
+            }
+
+            useAlertStore.getState().alert(message || 'Error al enviar a SUNAT', 'error');
+            return { success: false, error: message || 'Error al enviar a SUNAT' };
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al enviar a SUNAT', 'error');
