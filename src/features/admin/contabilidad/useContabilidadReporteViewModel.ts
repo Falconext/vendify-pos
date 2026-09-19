@@ -188,7 +188,13 @@ export const useReporteComprasViewModel = () => {
 
     const reports = reportCompras?.map((item: any) => {
         const moneda = item?.moneda || 'PEN';
-        const simbol = moneda === 'USD' ? '$' : 'S/';
+        // El backend ya manda los importes EN SOLES (factura en US$ × TC de la
+        // compra); el valor del documento en dólares se muestra en la columna moneda.
+        const simbol = 'S/';
+        const tc = Number(item?.tipoCambio) || 1;
+        const monedaLabel = moneda === 'USD'
+            ? `US$ ${fmt(item?.totalDoc ?? item?.total)} · TC ${tc.toFixed(3)}`
+            : 'PEN';
         return {
             sede: item?.sede?.nombre || '-',
             comprobante: item?.tipoDoc || '-',
@@ -197,7 +203,7 @@ export const useReporteComprasViewModel = () => {
             ruc: item?.proveedor?.nroDoc || '-',
             proveedor: item?.proveedor?.nombre || '-',
             fecha: moment(item?.fechaEmision).utcOffset(-5 * 60).format('DD/MM/YYYY'),
-            moneda,
+            moneda: monedaLabel,
             estadoPago: estadoPagoLabel[item?.estadoPago] || item?.estadoPago || '-',
             gravadas: `${simbol} ${fmt(item?.subtotal)}`,
             igv: `${simbol} ${fmt(item?.igv)}`,

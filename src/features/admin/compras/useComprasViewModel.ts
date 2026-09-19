@@ -11,8 +11,14 @@ import {
     IComprasViewModelState,
 } from './ComprasModel';
 
+/** Símbolo según la moneda del documento de compra. */
+const simboloMoneda = (moneda?: string | null) => (String(moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/');
+/** Factor para llevar una compra a soles (USD × su tipo de cambio). */
+const factorASoles = (c: { moneda?: string | null; tipoCambio?: any }) =>
+    String(c.moneda || 'PEN').toUpperCase() === 'USD' && Number(c.tipoCambio) > 0 ? Number(c.tipoCambio) : 1;
+
 export const useComprasViewModel = () => {
-    const { listarCompras, compras, totalCompras, anularCompra, aprobarCompra, rechazarCompra } = useComprasStore();
+    const { listarCompras, compras, totalCompras, anularCompra, aprobarCompra, rechazarCompra, saldoPendienteSoles, comprasConSaldo } = useComprasStore();
     const [state, setState] = useState<IComprasViewModelState>(INITIAL_COMPRAS_STATE);
 
     const debounce = useDebounce(state.filters.search, 600);
@@ -116,8 +122,9 @@ export const useComprasViewModel = () => {
             'Fecha': moment(item.fechaEmision).format('DD/MM/YYYY'),
             'Proveedor': item.proveedor?.nombre || item.proveedor?.nroDoc || 'Sin nombre',
             'Comprobante': `${item.serie}-${item.numero}`,
-            'Total': `S/ ${Number(item.total).toFixed(2)}`,
-            'Saldo': `S/ ${saldoNormalizado.toFixed(2)}`,
+            // Los montos van en la moneda del documento (US$ si la factura es en dólares).
+            'Total': `${simboloMoneda(item.moneda)} ${Number(item.total).toFixed(2)}`,
+            'Saldo': `${simboloMoneda(item.moneda)} ${saldoNormalizado.toFixed(2)}`,
             'Días Venc.': diasVencidos > 0 ? diasVencidos : 0,
             'Estado': item.estado,
             'Pago': renderEstadoBadge(item, estadoPagoNormalizado),
@@ -125,8 +132,13 @@ export const useComprasViewModel = () => {
         };
     });
 
-    // Stats derived from current page
-    const totalPorPagar = compras?.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.saldo || 0)), 0) || 0;
+    // Stats derived from current page. El saldo por pagar se muestra en soles:
+    // las compras en dólares se convierten con el TC con el que se registraron.
+    // Si el backend ya mandó el saldo del filtro completo se usa ese; si no
+    // (respuesta antigua), se suma la página convertida a soles.
+    const totalPorPagarPagina = compras?.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.saldo || 0)) * factorASoles(item), 0) || 0;
+    const totalPorPagar = saldoPendienteSoles > 0 || comprasConSaldo > 0 ? saldoPendienteSoles : totalPorPagarPagina;
+    const totalPorPagarEsGlobal = saldoPendienteSoles > 0 || comprasConSaldo > 0;
     const totalVencidos = compras?.filter((item: any) => calcularDiasVencidos(item.fechaVencimiento, item.fechaEmision) > 0).length || 0;
 
     // Actions
@@ -160,6 +172,8 @@ export const useComprasViewModel = () => {
             setState(prev => ({ ...prev, showPaymentModal: false, selectedCompra: null }));
             refresh();
         },
+        // Refresca el listado sin cerrar el modal abierto (p. ej. tras anular un abono).
+        refreshList: () => refresh(),
         // Modal: Historial
         openHistorial: (compra: ICompra) => setState(prev => ({ ...prev, selectedCompra: compra, showHistorialModal: true })),
         closeHistorial: () => setState(prev => ({ ...prev, showHistorialModal: false, selectedCompra: null })),
@@ -211,6 +225,8 @@ export const useComprasViewModel = () => {
         totalCompras,
         tableData,
         totalPorPagar,
+        totalPorPagarEsGlobal,
+        comprasConSaldo,
         totalVencidos,
         debounce,
         indexOfLastItem,

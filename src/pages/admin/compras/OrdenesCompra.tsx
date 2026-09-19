@@ -11,13 +11,22 @@ import TableSkeleton from '@/components/Skeletons/table';
 import InputPro from '@/components/InputPro';
 import Select from '@/components/Select';
 import { Calendar } from '@/components/Date';
+import { tipoCambioService } from '@/services/tipoCambio.service';
 
 interface DetalleOC {
     productoId?: number;
     descripcion: string;
     cantidad: number;
     precioUnitario: number;
+    /** false = producto exonerado/inafecto: la línea no lleva IGV. */
+    gravado?: boolean;
 }
+
+/** Afectación IGV (Catálogo 07): solo 10-17 gravado; 20/30/40 sin IGV. Sin dato → gravado. */
+const esGravadoAfectacion = (tipoAfectacionIGV: unknown) => {
+    const cod = String(tipoAfectacionIGV ?? '10').trim();
+    return cod === '' || cod.startsWith('1');
+};
 
 interface OrdenCompra {
     id: number;
@@ -406,6 +415,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
             descripcion: d.descripcion,
             cantidad: Number(d.cantidad),
             precioUnitario: Number(d.precioUnitario),
+            gravado: d.producto ? esGravadoAfectacion(d.producto.tipoAfectacionIGV) : true,
         })),
     );
 
@@ -444,6 +454,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
             descripcion: p.descripcion,
             cantidad: 1,
             precioUnitario: Number(p.costoPromedio ?? 0) || 0,
+            gravado: esGravadoAfectacion(p.tipoAfectacionIGV),
         }]);
         setProdQuery('');
         setProdOpts([]);
@@ -463,10 +474,13 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
         setDetalles((prev) => prev.map((d, j) => (j === i ? { ...d, [campo]: Number(valor) || 0 } : d)));
     };
 
-    const sumaItems = useMemo(() => detalles.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0), [detalles]);
-    // Con IGV incluido, el total es la suma tal cual y el IGV se extrae de ella
-    const subtotal = aplicaIgv && igvIncluido ? sumaItems / 1.18 : sumaItems;
-    const igv = aplicaIgv ? (igvIncluido ? sumaItems - subtotal : subtotal * 0.18) : 0;
+    // Con IGV incluido, el total es la suma tal cual y el IGV se extrae de ella.
+    // Las líneas de productos exonerados/inafectos nunca llevan IGV (misma
+    // regla que el backend al guardar y al recibir la orden como compra).
+    const sumaGravada = useMemo(() => detalles.reduce((s, d) => s + (d.gravado === false ? 0 : d.cantidad * d.precioUnitario), 0), [detalles]);
+    const sumaNoGravada = useMemo(() => detalles.reduce((s, d) => s + (d.gravado === false ? d.cantidad * d.precioUnitario : 0), 0), [detalles]);
+    const subtotal = (aplicaIgv && igvIncluido ? sumaGravada / 1.18 : sumaGravada) + sumaNoGravada;
+    const igv = aplicaIgv ? (igvIncluido ? sumaGravada - sumaGravada / 1.18 : sumaGravada * 0.18) : 0;
     const mon = moneda === 'USD' ? 'US$' : 'S/';
 
     const guardar = async (estadoFinal: 'BORRADOR' | 'EMITIDA') => {
@@ -636,6 +650,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                                         <td className="py-2 pr-2 font-semibold text-gray-800 dark:text-gray-100">
                                             {d.descripcion}
                                             {!d.productoId && <span className="ml-2 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">libre</span>}
+                                            {d.gravado === false && aplicaIgv && <span title="Producto exonerado/inafecto: no lleva IGV" className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">sin IGV</span>}
                                         </td>
                                         <td className="py-2 pr-2">
                                             <input type="number" min="0.001" value={d.cantidad} onChange={(e) => actualizarDetalle(i, 'cantidad', e.target.value)} className={`${inputCls} !py-1.5`} />
@@ -710,9 +725,23 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
     const [formaPago, setFormaPago] = useState('CONTADO');
     const [fechaVencimiento, setFechaVencimiento] = useState('');
     const [guardando, setGuardando] = useState(false);
+    // Orden en dólares: la compra se registra con el TC de la factura recibida
+    // (sugerido: TC venta SUNAT de la fecha de emisión), no con el de la orden.
+    const esUSD = orden.moneda === 'USD';
+    const [tipoCambio, setTipoCambio] = useState<string>('');
+    const [tcInfo, setTcInfo] = useState<string>('');
+    useEffect(() => {
+        if (!esUSD) return;
+        let vivo = true;
+        tipoCambioService.consultar(fechaEmision || undefined)
+            .then((tc) => { if (vivo && tc?.venta) { setTipoCambio(String(tc.venta)); setTcInfo(`TC venta SUNAT del ${moment(tc.fecha).format('DD/MM/YYYY')}: ${tc.venta.toFixed(3)}.`); } })
+            .catch(() => { if (vivo) setTcInfo('No se pudo obtener el TC de SUNAT: ingresa el de la factura.'); });
+        return () => { vivo = false; };
+    }, [esUSD, fechaEmision]);
 
     const recibir = async () => {
         if (!serie.trim() || !numero.trim()) { alert('Ingresa la serie y número del documento del proveedor', 'warning'); return; }
+        if (esUSD && !(Number(tipoCambio) > 0)) { alert('Ingresa el tipo de cambio (S/ por US$) de la factura recibida', 'warning'); return; }
         setGuardando(true);
         try {
             const resp: any = await post(`compras/ordenes/${orden.id}/recibir`, {
@@ -721,6 +750,7 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
                 numero: numero.trim(),
                 fechaEmision,
                 formaPago,
+                tipoCambio: esUSD ? Number(tipoCambio) : undefined,
                 fechaVencimiento: formaPago === 'CREDITO' && fechaVencimiento ? fechaVencimiento : undefined,
             });
             if (resp.success) {
@@ -772,6 +802,12 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
                     <div>
                         <InputPro name="numero" label="Número *" isLabel value={numero} onChange={(e: any) => setNumero(e.target.value)} />
                     </div>
+                    {esUSD && (
+                        <div>
+                            <InputPro name="tipoCambio" type="number" step="0.0001" label="Tipo de cambio (S/ por US$) *" isLabel value={tipoCambio} onChange={(e: any) => setTipoCambio(e.target.value)} />
+                            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{tcInfo || 'Consultando TC de SUNAT…'} La compra queda en US$ y el costo entra al inventario en soles a este TC.</p>
+                        </div>
+                    )}
                     <div>
                         <Select
                             name="formaPago"

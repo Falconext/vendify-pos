@@ -8,6 +8,10 @@ export interface MovimientoKardex {
     gananciaUnidad?: number;
     stockActual: number;
     precioUnitario?: number;
+    /** Moneda del precio del producto ('USD' → precioUnitario ya viene en soles al TC del día). */
+    precioMoneda?: 'PEN' | 'USD';
+    precioMonedaProducto?: number;
+    tipoCambioDia?: number;
     costoUnitario?: any;
     valorTotal?: number;
     observacion?: string;

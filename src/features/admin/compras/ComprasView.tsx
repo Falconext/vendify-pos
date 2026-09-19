@@ -21,6 +21,8 @@ const ACCENT = 'var(--accent, #7551FF)';
 export default function ComprasView() {
     const vm = useComprasViewModel();
     const { actions, tableData, totalCompras, totalPorPagar, totalVencidos } = vm;
+    const totalPorPagarEsGlobal = (vm as any).totalPorPagarEsGlobal as boolean;
+    const comprasConSaldo = Number((vm as any).comprasConSaldo || 0);
     const { auth } = useAuthStore();
     const { sedes, listarSedes } = useSedesStore();
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -143,7 +145,8 @@ export default function ComprasView() {
                 className="mb-5"
                 cards={[
                     { label: 'Facturas (Vista)', value: String(totalCompras || 0), mini: 'line' },
-                    { label: 'Saldo por Pagar', value: `S/ ${totalPorPagar.toFixed(2)}`, detail: '(Página actual)', mini: 'wave' },
+                    // El saldo va en soles (las compras en US$ se convierten con su TC).
+                    { label: 'Saldo por Pagar', value: `S/ ${totalPorPagar.toFixed(2)}`, detail: totalPorPagarEsGlobal ? `${comprasConSaldo} compra(s) con saldo · en soles` : '(Página actual)', mini: 'wave' },
                     { label: 'Vencidos (+1 día)', value: String(totalVencidos), mini: 'bars' },
                 ]}
             />
@@ -347,6 +350,7 @@ export default function ComprasView() {
                 isOpen={!!vm.showHistorialModal}
                 compra={vm.selectedCompra}
                 onClose={actions.closeHistorial}
+                onChange={actions.refreshList}
             />
 
             <ModalNuevaCompra

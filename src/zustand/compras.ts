@@ -14,6 +14,8 @@ export interface ICompra {
         nroDoc: string;
     };
     moneda: string;
+    /** S/ por US$ con el que se registró la compra (1 si es en soles). */
+    tipoCambio?: number | string | null;
     total: number;
     estado: string;
     estadoPago: string;
@@ -36,7 +38,11 @@ export interface IComprasState {
     rechazarCompra: (id: number) => Promise<boolean>;
     obtenerCompra: (id: number) => Promise<void>;
     registrarPagoCompra: (compraId: number, data: any) => Promise<any>;
+    anularPagoCompra: (compraId: number, pagoId: number) => Promise<any>;
     getHistorialPagos: (compraId: number) => Promise<any>;
+    /** Saldo por pagar del filtro completo, en soles (lo manda el backend). */
+    saldoPendienteSoles: number;
+    comprasConSaldo: number;
     loading?: boolean;
 }
 
@@ -44,6 +50,8 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
     compras: [],
     totalCompras: 0,
     compraDetalle: null,
+    saldoPendienteSoles: 0,
+    comprasConSaldo: 0,
 
     listarCompras: async (params: any) => {
         try {
@@ -58,7 +66,9 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
             if (resp.data && Array.isArray(resp.data.data)) {
                 set({
                     compras: resp.data.data,
-                    totalCompras: resp.data.total
+                    totalCompras: resp.data.total,
+                    saldoPendienteSoles: Number(resp.data.saldoPendienteSoles) || 0,
+                    comprasConSaldo: Number(resp.data.comprasConSaldo) || 0,
                 });
             } else if (Array.isArray(resp.data)) {
                 set({
@@ -271,6 +281,24 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
         }
     },
 
+    anularPagoCompra: async (compraId: number, pagoId: number) => {
+        useAlertStore.setState({ loading: true });
+        try {
+            const resp: any = await del(`compras/${compraId}/pagos/${pagoId}`);
+            const result = resp.data || resp;
+            useAlertStore.setState({ loading: false });
+            if (result?.success) {
+                useAlertStore.getState().alert(result.message || 'Abono anulado', 'success');
+                return result;
+            }
+            useAlertStore.getState().alert(result?.message || 'No se pudo anular el abono', 'error');
+            return null;
+        } catch (error: any) {
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert(error?.response?.data?.message || 'No se pudo anular el abono', 'error');
+            return null;
+        }
+    },
     getHistorialPagos: async (compraId: number) => {
         // useAlertStore.setState({ loading: true }); // Optional, modal handles its own loading usually
         try {
@@ -279,7 +307,16 @@ export const useComprasStore = create<IComprasState>()(devtools((set) => ({
             // resp.data contains { success, data (pagos array), totalPagado }
             const result = resp.data || resp;
             if (result.success || Array.isArray(result.data)) {
-                return { success: true, pagos: Array.isArray(result.data) ? result.data : [], totalPagado: result.totalPagado || 0 };
+                return {
+                    success: true,
+                    pagos: Array.isArray(result.data) ? result.data : [],
+                    totalPagado: result.totalPagado || 0,
+                    // Compras en dólares: totales también en soles y diferencia de cambio acumulada.
+                    moneda: result.moneda || 'PEN',
+                    tipoCambioCompra: Number(result.tipoCambioCompra) || 1,
+                    totalPagadoSoles: Number(result.totalPagadoSoles) || 0,
+                    diferenciaCambioTotal: Number(result.diferenciaCambioTotal) || 0,
+                };
             }
             return { success: false, pagos: [] };
         } catch (error) {

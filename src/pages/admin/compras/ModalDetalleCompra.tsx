@@ -38,8 +38,19 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
 
     // Safety check for calculations
     const total = localCompra ? Number(localCompra.total) : 0;
-    const subtotal = total / 1.18;
-    const igv = total - subtotal;
+    // Desglose tal como se grabó: las líneas de productos exonerados/inafectos
+    // no llevan IGV, así que no se puede derivar el neto como total ÷ 1.18.
+    const igv = localCompra?.igv != null ? Number(localCompra.igv) : total - total / 1.18;
+    const detalles: any[] = (localCompra as any)?.detalles ?? [];
+    const opNoGravada = detalles.reduce(
+        (acc: number, d: any) => acc + (Number(d.igv ?? 0) > 0 ? 0 : Number(d.subtotal ?? 0)),
+        0,
+    );
+    const subtotal = Math.max(0, total - igv - opNoGravada);
+    // Moneda del documento: los montos se muestran tal como se registraron.
+    const esUSD = String(localCompra?.moneda || 'PEN').toUpperCase() === 'USD';
+    const simbolo = esUSD ? '$' : 'S/';
+    const tipoCambio = Number((localCompra as any)?.tipoCambio) || 0;
 
     const SkeletonBlock = ({ className = "" }) => (
         <div className={`animate-pulse bg-gray-200 dark:bg-slate-800 rounded-lg ${className}`}></div>
@@ -77,6 +88,7 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
                             <InputPro label="Serie" name="serie" value={localCompra?.serie} disabled isLabel />
                             <InputPro label="Número" name="numero" value={localCompra?.numero} disabled isLabel />
                             <InputPro label="Fecha Emisión" name="fechaEmision" value={moment(localCompra?.fechaEmision).format('DD/MM/YYYY')} disabled isLabel />
+                            <InputPro label="Moneda" name="moneda" value={esUSD ? `US$ Dólares · TC ${tipoCambio ? tipoCambio.toFixed(3) : '-'}` : 'S/ Soles'} disabled isLabel />
                             <InputPro
                                 label="Fecha Vencimiento"
                                 name="fechaVencimiento"
@@ -149,8 +161,8 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
                                             )}
                                         </td>
                                         <td className="px-4 py-4 text-center font-medium text-gray-600 dark:text-gray-400">{item.cantidad}</td>
-                                        <td className="px-4 py-4 text-right font-medium text-gray-600 dark:text-gray-400">S/ {Number(item.precioUnitario).toFixed(2)}</td>
-                                        <td className="px-4 py-4 text-right font-black text-gray-900 dark:text-white">S/ {Number(item.total || (item.cantidad * item.precioUnitario)).toFixed(2)}</td>
+                                        <td className="px-4 py-4 text-right font-medium text-gray-600 dark:text-gray-400">{simbolo} {Number(item.precioUnitario).toFixed(2)}</td>
+                                        <td className="px-4 py-4 text-right font-black text-gray-900 dark:text-white">{simbolo} {Number(item.total || (item.cantidad * item.precioUnitario)).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -197,16 +209,28 @@ const ModalDetalleCompra = ({ isOpen, onClose, compraId }: Props) => {
                             <>
                                 <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     <span>Op. Gravada</span>
-                                    <span className="text-gray-700 dark:text-gray-200">S/ {subtotal.toFixed(2)}</span>
+                                    <span className="text-gray-700 dark:text-gray-200">{simbolo} {subtotal.toFixed(2)}</span>
                                 </div>
+                                {opNoGravada > 0 && (
+                                    <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        <span>Op. Exonerada / Inafecta</span>
+                                        <span className="text-gray-700 dark:text-gray-200">{simbolo} {opNoGravada.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     <span>IGV (18%)</span>
-                                    <span className="text-gray-700 dark:text-gray-200">S/ {igv.toFixed(2)}</span>
+                                    <span className="text-gray-700 dark:text-gray-200">{simbolo} {igv.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-xl font-black text-gray-900 dark:text-white border-t border-gray-200 dark:border-slate-700 pt-3 mt-3">
                                     <span className="text-sm uppercase tracking-tighter self-center">Total Final</span>
-                                    <span className="text-violet-600 dark:text-violet-400">S/ {total.toFixed(2)}</span>
+                                    <span className="text-violet-600 dark:text-violet-400">{simbolo} {total.toFixed(2)}</span>
                                 </div>
+                                {esUSD && tipoCambio > 0 && (
+                                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <span>Equivale a (TC {tipoCambio.toFixed(3)})</span>
+                                        <span>S/ {(total * tipoCambio).toFixed(2)}</span>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>

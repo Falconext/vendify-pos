@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { tipoCambioService } from '@/services/tipoCambio.service';
 import { BarcodeScannerInput } from '@/components/BarcodeScannerInput';
 import { Icon } from '@iconify/react';
 import Select from '@/components/Select';
@@ -46,6 +47,15 @@ function InventarioKpiCard({ icon, label, value, sub }: {
 
 export default function ProductsView() {
     const navigate = useNavigate();
+    // TC venta SUNAT del día, para convertir a soles el precio de los productos
+    // en dólares (el costo siempre está en soles). Se pide una vez por vista.
+    const [tcHoy, setTcHoy] = useState<number | null>(null);
+    useEffect(() => {
+        let vivo = true;
+        tipoCambioService.consultar().then((tc) => { if (vivo && Number(tc?.venta) > 0) setTcHoy(Number(tc.venta)); }).catch(() => {});
+        return () => { vivo = false; };
+    }, []);
+
     const vm = useProductsViewModel();
     const { actions } = vm;
     const { alert } = useAlertStore();
@@ -189,12 +199,17 @@ export default function ProductsView() {
             const formatMoney = (value: number) => value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const costo = Number(item?.costoUnitario > 0 ? item?.costoUnitario : item?.costoPromedio || 0);
             const precio = Number(item?.precioUnitario || 0);
-            const simbolo = String(itemAny?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
+            const esUsd = String(itemAny?.moneda || 'PEN').toUpperCase() === 'USD';
+            // El PRECIO va en la moneda del producto; el COSTO siempre en soles
+            // (costo histórico del kardex). Para comparar, el precio en US$ se
+            // lleva a soles con el TC del día.
+            const simbolo = esUsd ? '$' : 'S/';
+            const precioSoles = esUsd ? precio * (tcHoy || 0) : precio;
             const stock = Number(item?.stock || 0);
             const esServicio = String(itemAny?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
             const valorInventario = stock * costo;
-            const margen = precio > 0 && costo > 0 ? ((precio - costo) / precio * 100) : 0;
-            const gananciaUnidad = precio - costo;
+            const margen = precioSoles > 0 && costo > 0 ? ((precioSoles - costo) / precioSoles * 100) : 0;
+            const gananciaUnidad = precioSoles - costo;
             const imageSrc = (item as any)?.imagenUrlDisplay || (item as any)?.imagenUrl;
 
             const allData: any = {
@@ -255,10 +270,10 @@ export default function ProductsView() {
                 marcaId: (item as any)?.marca?.id || (item as any)?.marcaId || null,
                 marcaNombre: (item as any)?.marca?.nombre || "",
                 'Precio Venta': `${simbolo} ${precio.toFixed(2)}`,
-                'Costo': costo > 0 ? `${simbolo} ${costo.toFixed(2)}` : '-',
-                'Valor Inventario': esServicio ? '-' : valorInventario > 0 ? `${simbolo} ${formatMoney(valorInventario)}` : '-',
-                'Margen': margen > 0 ? `${margen.toFixed(1)}%` : '-',
-                'Ganancia/Unidad': gananciaUnidad > 0 ? `${simbolo} ${gananciaUnidad.toFixed(2)}` : '-',
+                'Costo': costo > 0 ? (esUsd && tcHoy ? `S/ ${costo.toFixed(2)} (≈ $ ${(costo / tcHoy).toFixed(2)})` : `S/ ${costo.toFixed(2)}`) : '-',
+                'Valor Inventario': esServicio ? '-' : valorInventario > 0 ? `S/ ${formatMoney(valorInventario)}` : '-',
+                'Margen': margen > 0 ? `${margen.toFixed(1)}%` : (esUsd && !tcHoy && costo > 0 ? 'sin TC' : '-'),
+                'Ganancia/Unidad': gananciaUnidad > 0 ? `S/ ${gananciaUnidad.toFixed(2)}` : '-',
                 'Stock': (
                     <span
                         style={{
@@ -503,7 +518,8 @@ export default function ProductsView() {
                                 </div>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Costo</p>
-                                    <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}</p>
+                                    {/* El costo siempre está en soles; en productos US$ se muestra el equivalente al TC del día */}
+                                    <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">S/ {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' && tcHoy ? ` (≈ $ ${(Number(item?.costoUnitario || item?.costoPromedio || 0) / tcHoy).toFixed(2)})` : ''}</p>
                                 </div>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Marca</p>

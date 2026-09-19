@@ -3,19 +3,40 @@ import { Icon } from '@iconify/react';
 import moment from 'moment';
 import { useComprasStore } from '@/zustand/compras';
 import Modal from '@/components/Modal';
+import ModalConfirm from '@/components/ModalConfirm';
 
 interface ModalHistorialPagosCompraProps {
     isOpen: boolean;
     compra: any; // ICompra
     onClose: () => void;
+    /** Se llama tras anular un abono para refrescar el listado (saldo/estado). */
+    onChange?: () => void;
 }
 
-const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPagosCompraProps) => {
-    const { getHistorialPagos } = useComprasStore();
+const ModalHistorialPagosCompra = ({ isOpen, compra, onClose, onChange }: ModalHistorialPagosCompraProps) => {
+    const { getHistorialPagos, anularPagoCompra } = useComprasStore();
     const [pagos, setPagos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalPagado, setTotalPagado] = useState(0);
+    const [resumenUsd, setResumenUsd] = useState<{ totalPagadoSoles: number; diferenciaCambioTotal: number } | null>(null);
     const [localCompra, setLocalCompra] = useState<any>(null);
+    // Compra en dólares: montos en US$ y, por abono, su valor en soles y la diferencia de cambio.
+    const esUSD = String(localCompra?.moneda || 'PEN').toUpperCase() === 'USD';
+    const simbolo = esUSD ? '$' : 'S/';
+    const tcCompra = Number(localCompra?.tipoCambio) || 0;
+    const [pagoAAnular, setPagoAAnular] = useState<any>(null);
+    const [recarga, setRecarga] = useState(0);
+    const compraAnulada = String(localCompra?.estado || '').toUpperCase() === 'ANULADO';
+    const confirmarAnularPago = async () => {
+        if (!pagoAAnular || !localCompra?.id) return;
+        const r = await anularPagoCompra(localCompra.id, pagoAAnular.id);
+        setPagoAAnular(null);
+        if (r) {
+            setLocalCompra((c: any) => c ? { ...c, saldo: r.nuevoSaldo, estadoPago: r.nuevoEstado } : c);
+            setRecarga((n) => n + 1);
+            onChange?.();
+        }
+    };
 
     // Sync local state to preserve data during closing animation
     useEffect(() => {
@@ -37,6 +58,7 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
 
                     const total = result.totalPagado ?? pagosList.reduce((sum: number, p: any) => sum + Number(p.monto), 0);
                     setTotalPagado(total);
+                    setResumenUsd(result.totalPagadoSoles != null ? { totalPagadoSoles: Number(result.totalPagadoSoles) || 0, diferenciaCambioTotal: Number(result.diferenciaCambioTotal) || 0 } : null);
                 }
             } catch (error) {
                 console.error('Error fetching pagos:', error);
@@ -48,7 +70,7 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
         if (isOpen && localCompra?.id) {
             fetchPagos();
         }
-    }, [isOpen, localCompra?.id, getHistorialPagos]);
+    }, [isOpen, localCompra?.id, getHistorialPagos, recarga]);
 
     const totalCompra = Number(localCompra?.total || 0);
     const saldoPendiente = Number(localCompra?.saldo || 0);
@@ -76,12 +98,12 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
                         </div>
                         <div>
                             <p className="text-gray-500 dark:text-gray-400 text-xs mb-1 uppercase tracking-wider">Total</p>
-                            <p className="font-bold text-gray-900 dark:text-white">S/ {totalCompra.toFixed(2)}</p>
+                            <p className="font-bold text-gray-900 dark:text-white">{simbolo} {totalCompra.toFixed(2)}</p>
                         </div>
                         <div>
                             <p className="text-gray-500 dark:text-gray-400 text-xs mb-1 uppercase tracking-wider">Saldo</p>
                             <p className={`font-extrabold ${saldoPendiente > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                S/ {saldoPendiente.toFixed(2)}
+                                {simbolo} {saldoPendiente.toFixed(2)}
                             </p>
                         </div>
                     </div>
@@ -92,20 +114,33 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-transparent rounded-xl p-3 text-center shadow-sm">
                             <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Total Compra</p>
-                            <p className="text-lg font-extrabold text-gray-900 dark:text-white">S/ {totalCompra.toFixed(2)}</p>
+                            <p className="text-lg font-extrabold text-gray-900 dark:text-white">{simbolo} {totalCompra.toFixed(2)}</p>
                         </div>
                         <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-transparent rounded-xl p-3 text-center shadow-sm">
                             <p className="text-[10px] text-emerald-600 uppercase font-bold mb-1">Total Pagado</p>
-                            <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">S/ {totalPagado.toFixed(2)}</p>
+                            <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{simbolo} {totalPagado.toFixed(2)}</p>
                         </div>
                         <div className={`bg-white dark:bg-slate-800 border border-gray-100 dark:border-transparent rounded-xl p-3 text-center shadow-sm`}>
                             <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Saldo Final</p>
                             <p className={`text-lg font-extrabold ${saldoPendiente > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
-                                S/ {saldoPendiente.toFixed(2)}
+                                {simbolo} {saldoPendiente.toFixed(2)}
                             </p>
                         </div>
                     </div>
                 </div>
+
+                {esUSD && resumenUsd && (
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-800 text-xs text-gray-600 dark:text-gray-300 flex flex-wrap gap-x-6 gap-y-1">
+                        <span>Compra registrada al TC <strong>{tcCompra.toFixed(3)}</strong></span>
+                        <span>Pagado en soles: <strong>S/ {resumenUsd.totalPagadoSoles.toFixed(2)}</strong></span>
+                        <span>
+                            Diferencia de cambio acumulada:{' '}
+                            <strong className={resumenUsd.diferenciaCambioTotal > 0.004 ? 'text-rose-600' : resumenUsd.diferenciaCambioTotal < -0.004 ? 'text-emerald-600' : ''}>
+                                {resumenUsd.diferenciaCambioTotal > 0.004 ? `pérdida S/ ${resumenUsd.diferenciaCambioTotal.toFixed(2)}` : resumenUsd.diferenciaCambioTotal < -0.004 ? `ganancia S/ ${Math.abs(resumenUsd.diferenciaCambioTotal).toFixed(2)}` : 'S/ 0.00'}
+                            </strong>
+                        </span>
+                    </div>
+                )}
 
                 {/* Lista de Pagos */}
                 <div className="flex-1 overflow-auto p-4 min-h-[300px]">
@@ -143,10 +178,30 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-black text-gray-900 dark:text-white">S/ {Number(pago.monto).toFixed(2)}</p>
+                                            <p className="text-lg font-black text-gray-900 dark:text-white">{simbolo} {Number(pago.monto).toFixed(2)}</p>
+                                            {esUSD && (
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                    TC {Number(pago.tipoCambio || tcCompra).toFixed(3)} · S/ {Number(pago.montoSoles ?? Number(pago.monto) * (Number(pago.tipoCambio) || tcCompra)).toFixed(2)}
+                                                    {Math.abs(Number(pago.diferenciaCambio || 0)) > 0.004 && (
+                                                        <span className={Number(pago.diferenciaCambio) > 0 ? ' text-rose-500' : ' text-emerald-600'}>
+                                                            {' '}· dif. cambio {Number(pago.diferenciaCambio) > 0 ? 'pérdida' : 'ganancia'} S/ {Math.abs(Number(pago.diferenciaCambio)).toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            )}
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20 uppercase tracking-tighter">
-                                                {pago.medioPago}
+                                                {(pago.metodoPago || pago.medioPago)}
                                             </span>
+                                            {!compraAnulada && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPagoAAnular(pago)}
+                                                    className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-rose-500 hover:text-rose-700 transition-colors"
+                                                    title="Anular este abono: devuelve el monto al saldo de la compra"
+                                                >
+                                                    <Icon icon="solar:trash-bin-trash-bold" width={12} /> Anular
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     {(pago.referencia || pago.observacion) && (
@@ -181,6 +236,14 @@ const ModalHistorialPagosCompra = ({ isOpen, compra, onClose }: ModalHistorialPa
                     </button>
                 </div>
             </div>
+            <ModalConfirm
+                isOpenModal={!!pagoAAnular}
+                setIsOpenModal={(v: boolean) => { if (!v) setPagoAAnular(null); }}
+                title="Anular abono"
+                information={pagoAAnular ? `Se anulará el abono de ${simbolo} ${Number(pagoAAnular.monto).toFixed(2)} (${pagoAAnular.metodoPago || pagoAAnular.medioPago || '-'}). El saldo de la compra se restablece${String(pagoAAnular.metodoPago || pagoAAnular.medioPago).toUpperCase() === 'EFECTIVO' ? ' y el egreso de caja queda anulado' : ''}.` : ''}
+                confirmText="Anular abono"
+                confirmSubmit={confirmarAnularPago}
+            />
         </Modal>
     );
 };

@@ -19,6 +19,7 @@ import apiClient from "@/utils/apiClient";
 import ModalConfirm from "@/components/ModalConfirm";
 import { usaLotesFarmaciaRubro } from "@/utils/rubro-features";
 import { hasPlanFeature } from "@/utils/permissions";
+import { tipoCambioService } from "@/services/tipoCambio.service";
 
 const PROV_DOC_TYPES = [
     { key: 'RUC', label: 'RUC', digits: 11 },
@@ -33,6 +34,18 @@ interface ModalNuevaCompraProps {
     // Si viene una compra (con id), el modal opera en modo EDICIÓN.
     compra?: any;
 }
+
+/**
+ * Afectación IGV del producto (Catálogo 07): solo los códigos 10-17 son
+ * gravados; exonerados (20), inafectos (30) y exportación (40) se compran sin
+ * IGV (medicinas de farmacia, agro…). Sin dato → gravado.
+ */
+const esGravadoAfectacion = (tipoAfectacionIGV: unknown) => {
+    const cod = String(tipoAfectacionIGV ?? '10').trim();
+    return cod === '' || cod.startsWith('1');
+};
+/** Una línea es gravada salvo que se haya marcado `_gravado: false` al elegir el producto. */
+const esGravadoItem = (item: any) => item?._gravado !== false;
 
 const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaCompraProps) => {
     const isEdit = !!compra?.id;
@@ -67,6 +80,31 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         proveedorId: 0,
         observaciones: ''
     });
+    // Compra en dólares: el TC se sugiere desde SUNAT (TC venta de la fecha de
+    // emisión) y el usuario puede corregirlo con el que figura en la factura.
+    // Los montos del documento quedan en US$; al kardex el costo entra en soles.
+    const esUSD = header.moneda === 'USD';
+    const simbolo = esUSD ? '$' : 'S/';
+    const [tcInfo, setTcInfo] = useState<{ fecha: string; venta: number } | null>(null);
+    const [tcCargando, setTcCargando] = useState(false);
+    const [tcManual, setTcManual] = useState(false);
+    // true mientras el TC mostrado es el que se guardó con la compra (edición).
+    const [tcGuardado, setTcGuardado] = useState(false);
+    useEffect(() => {
+        if (!esUSD || tcManual) return;
+        let vivo = true;
+        setTcCargando(true);
+        tipoCambioService.consultar(header.fechaEmision || undefined)
+            .then((tc) => {
+                if (!vivo || !tc?.venta) return;
+                setTcInfo({ fecha: tc.fecha, venta: tc.venta });
+                setHeader((h) => ({ ...h, tipoCambio: tc.venta }));
+            })
+            .catch(() => { if (vivo) setTcInfo(null); })
+            .finally(() => { if (vivo) setTcCargando(false); });
+        return () => { vivo = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [esUSD, header.fechaEmision, tcManual]);
 
     const [payment, setPayment] = useState({
         condicionPago: 'CONTADO',
@@ -159,6 +197,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         prevIncluyeIgv.current = incluyeIgv;
         const factor = incluyeIgv ? 1.18 : 1 / 1.18;
         setItems(prev => prev.map((it: any) => {
+            // Exonerado/inafecto: su precio no lleva IGV, no se convierte.
+            if (!esGravadoItem(it)) return it;
             const raw = Number(it.precioUnitario || 0) * factor;
             // Snap a 2 decimales cuando el residuo es solo ruido de precisión
             // (ej. 5.999946 → 6.00); si la fracción es real (5.0847) se conservan
@@ -213,6 +253,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 proveedorId: 0,
                 observaciones: ''
             });
+            setTcManual(false);
+            setTcGuardado(false);
+            setTcInfo(null);
             setPayment({
                 condicionPago: 'CONTADO',
                 montoPagadoInicial: 0,
@@ -260,6 +303,10 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     proveedorId: Number(d.proveedorId || 0),
                     observaciones: d.observaciones || '',
                 });
+                // Al editar se respeta el TC con el que se registró la compra
+                // (no se pisa con el de SUNAT): es el TC histórico del documento.
+                setTcManual(String(d.moneda || 'PEN') === 'USD');
+                setTcGuardado(String(d.moneda || 'PEN') === 'USD');
                 const provLabel = `${d.proveedor?.nroDoc || ''} - ${d.proveedor?.nombre || ''}`.trim();
                 if (d.proveedorId) {
                     setSupplierOptions([{ id: Number(d.proveedorId), value: provLabel }]);
@@ -297,21 +344,30 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 const dets = (d.detalles || []);
                 const conv = dets.map((det: any) => {
                     const neto = Number(det.precioUnitario) || 0;
+                    // Exonerado/inafecto: la línea va sin IGV; su precio se
+                    // muestra tal cual y no decide el modo con/sin IGV. Manda la
+                    // afectación actual del producto (así una compra antigua
+                    // grabada con IGV sobre un exonerado se corrige al guardar).
+                    const gravado = det.producto
+                        ? esGravadoAfectacion(det.producto.tipoAfectacionIGV)
+                        : Number(det.igv) > 0 || Number(det.subtotal) === 0;
                     const conIgv = neto * 1.18;
                     const r2 = Math.round(conIgv * 100) / 100;
-                    return { neto, conIgvLimpio: Math.abs(conIgv - r2) < 0.001 ? r2 : null };
+                    return { neto, gravado, conIgvLimpio: Math.abs(conIgv - r2) < 0.001 ? r2 : null };
                 });
                 const netoEsLimpio = (n: number) => Math.abs(n - Math.round(n * 100) / 100) < 0.0005;
-                const restaurarConIgv = conv.length > 0
-                    && conv.every((c: any) => c.conIgvLimpio != null)
-                    && conv.some((c: any) => !netoEsLimpio(c.neto));
+                const gravadas = conv.filter((c: any) => c.gravado);
+                const restaurarConIgv = gravadas.length > 0
+                    && gravadas.every((c: any) => c.conIgvLimpio != null)
+                    && gravadas.some((c: any) => !netoEsLimpio(c.neto));
                 setIncluyeIgv(restaurarConIgv);
                 prevIncluyeIgv.current = restaurarConIgv;
                 setItems(dets.map((det: any, i: number) => ({
                     productoId: Number(det.productoId || 0),
                     descripcion: det.descripcion || det.producto?.descripcion || '',
                     cantidad: Number(det.cantidad || 0),
-                    precioUnitario: restaurarConIgv
+                    _gravado: conv[i].gravado,
+                    precioUnitario: restaurarConIgv && conv[i].gravado
                         ? conv[i].conIgvLimpio!
                         : Math.round(conv[i].neto * 10000) / 10000,
                     lote: det.lote || '',
@@ -396,6 +452,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         let prod: any = products.find(p => p.id === nid);
         let descripcion = prod?.descripcion;
         let costo = prod?.costoUnitario;
+        // Afectación IGV (exonerado/inafecto → la línea va sin IGV).
+        let gravado = esGravadoAfectacion(prod?.tipoAfectacionIGV);
         // Si no es un producto padre, buscar entre las variantes
         if (!prod) {
             for (const p of (products as any[])) {
@@ -405,6 +463,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     const label = etiquetaAtributos(v);
                     descripcion = `${p.descripcion}${label ? ' - ' + label : ''}`;
                     costo = v.costoUnitario ?? p.costoUnitario;
+                    gravado = esGravadoAfectacion(v.tipoAfectacionIGV ?? p.tipoAfectacionIGV);
                     break;
                 }
             }
@@ -416,8 +475,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 ...currentItem,
                 productoId: prod.id,
                 descripcion,
-                precioUnitario: costo || 0
-            });
+                precioUnitario: costo || 0,
+                _gravado: gravado,
+            } as any);
         }
     };
 
@@ -446,7 +506,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 // El bloque de paquete SIEMPRE habla CON IGV (como el empresario ve
                 // la boleta del proveedor); la conversión al modo de la compra
                 // (con/sin IGV) se hace al escribir la línea.
-                const esGravadoScan = String(prod.tipoAfectacionIGV ?? '10') === '10';
+                const esGravadoScan = esGravadoAfectacion(prod.tipoAfectacionIGV);
                 const costoNetoSug = Number(prod.costoUnitario) || 0;
                 const costoConIgvSug = esGravadoScan
                     ? Math.round(costoNetoSug * 1.18 * 100) / 100
@@ -594,6 +654,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 ? {
                     ...item,
                     productoId: prod.id,
+                    _gravado: esGravadoAfectacion((prod as any).tipoAfectacionIGV),
                     _sinVincular: false,
                     _vinculadoManual: true,
                     _productoVinculadoLabel: `${prod.codigo} - ${prod.descripcion}`,
@@ -864,17 +925,20 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         setDistribuyendoIdx(null);
     };
 
-    // Totals — cuando incluyeIgv, el precio ingresado ya trae el IGV embebido
-    const totalConIgvBruto = items.reduce((acc, item) => acc + (item.cantidad * item.precioUnitario), 0);
+    // Totals — cuando incluyeIgv, el precio ingresado ya trae el IGV embebido.
+    // Las líneas de productos exonerados/inafectos no llevan IGV en ningún
+    // modo: su precio es el neto y suman directo al total (misma regla que el
+    // backend, que recalcula por afectación del producto).
+    const brutoGravado = items.reduce((acc, item) => acc + (esGravadoItem(item) ? item.cantidad * item.precioUnitario : 0), 0);
+    const brutoNoGravado = items.reduce((acc, item) => acc + (esGravadoItem(item) ? 0 : item.cantidad * item.precioUnitario), 0);
+    const opNoGravada = parseFloat(brutoNoGravado.toFixed(2));
     const subtotal = incluyeIgv
-        ? parseFloat((totalConIgvBruto / 1.18).toFixed(2))
-        : totalConIgvBruto;
-    const total = incluyeIgv
-        ? parseFloat(totalConIgvBruto.toFixed(2))
-        : parseFloat((subtotal * 1.18).toFixed(2));
+        ? parseFloat((brutoGravado / 1.18).toFixed(2))
+        : parseFloat(brutoGravado.toFixed(2));
     const igv = incluyeIgv
-        ? parseFloat((total - subtotal).toFixed(2))
+        ? parseFloat((parseFloat(brutoGravado.toFixed(2)) - subtotal).toFixed(2))
         : parseFloat((subtotal * 0.18).toFixed(2));
+    const total = parseFloat((subtotal + igv + opNoGravada).toFixed(2));
 
     const guardarCompra = async () => {
         let proveedorId = Number(header.proveedorId || 0);
@@ -955,8 +1019,14 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             }
         }
 
+        if (esUSD && !(Number(header.tipoCambio) > 0)) {
+            alert("Indica el tipo de cambio (S/ por US$) para registrar la compra en dólares.", "error");
+            return;
+        }
+
         const payload = {
             ...header,
+            tipoCambio: esUSD ? Number(header.tipoCambio) : 1,
             proveedorId,
             proveedorNombre: supplierDisplay?.split(' - ').slice(1).join(' - ') || xmlSupplierInfo?.nombre || '',
             proveedorRuc: supplierDisplay?.split(' - ')[0] || xmlSupplierInfo?.ruc || '',
@@ -1158,10 +1228,63 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                     }
                                 }}
                             />
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Moneda</label>
+                                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-slate-800">
+                                    {([['PEN', 'S/ Soles'], ['USD', 'US$ Dólares']] as const).map(([cod, label]) => (
+                                        <button
+                                            key={cod}
+                                            type="button"
+                                            onClick={() => {
+                                                setTcManual(false);
+                                                setTcGuardado(false);
+                                                setHeader((h) => ({ ...h, moneda: cod, tipoCambio: cod === 'PEN' ? 1 : h.tipoCambio }));
+                                            }}
+                                            className={`py-2 rounded-lg text-sm font-bold transition-colors ${header.moneda === cod
+                                                ? 'bg-white dark:bg-slate-700 text-violet-700 dark:text-violet-300 shadow-sm'
+                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <InputPro
+                                    autocomplete="off"
+                                    type="number"
+                                    step="0.0001"
+                                    label="Tipo de cambio (S/ por US$)"
+                                    name="tipoCambio"
+                                    value={esUSD ? String(header.tipoCambio ?? '') : '1'}
+                                    disabled={!esUSD}
+                                    onChange={(e) => { setTcManual(true); setTcGuardado(false); setHeader({ ...header, tipoCambio: e.target.value === '' ? ('' as any) : Number(e.target.value) }); }}
+                                    isLabel
+                                />
+                                {esUSD && (
+                                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                        {tcCargando ? (
+                                            <><Icon icon="svg-spinners:270-ring-with-bg" width={11} /> Consultando TC de SUNAT…</>
+                                        ) : tcManual ? (
+                                            <>{tcGuardado ? 'TC con el que se registró esta compra.' : 'TC ingresado a mano.'} <button type="button" className="text-violet-600 font-semibold" onClick={() => { setTcManual(false); setTcGuardado(false); }}>Usar TC SUNAT</button></>
+                                        ) : tcInfo ? (
+                                            <>TC venta SUNAT del {moment(tcInfo.fecha).format('DD/MM/YYYY')}: {tcInfo.venta.toFixed(3)}. Si la factura trae otro, corrígelo.</>
+                                        ) : (
+                                            <>No se pudo obtener el TC de SUNAT: ingresa el de la factura.</>
+                                        )}
+                                    </p>
+                                )}
+                            </div>
                             <div className="md:col-span-2">
                                 <InputPro autocomplete="off" label="Observaciones" name="observaciones" value={header.observaciones} onChange={(e) => setHeader({ ...header, observaciones: e.target.value })} isLabel />
                             </div>
                         </div>
+                        {esUSD && (
+                            <div className="mt-3 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-200">
+                                <Icon icon="solar:info-circle-bold" width={15} className="mt-px shrink-0" />
+                                <span>Los costos y el total se registran en <strong>dólares</strong> tal como figuran en la factura. Al inventario el costo entra en soles al TC indicado, y así queda fijo para tus reportes.</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Detalle de Productos */}
@@ -1306,7 +1429,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                         <InputPro
                                             autocomplete="off"
                                             type="number"
-                                            label="Costo por paquete (S/) — precio final"
+                                            label={`Costo por paquete (${simbolo}) — precio final`}
                                             name="pkgCosto"
                                             value={pkgCosto}
                                             onChange={(e: any) => {
@@ -1320,9 +1443,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                         <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
                                             = {(Math.max(0, Number(pkgCajas) || 0) * pkg.unidades).toLocaleString('es-PE')} unidades
                                             {Number(pkgCosto) > 0 && (
-                                                <> a S/ {(Number(pkgCosto) / pkg.unidades).toFixed(2)} c/u
+                                                <> a {simbolo} {(Number(pkgCosto) / pkg.unidades).toFixed(2)} c/u
                                                     <span className="ml-2 px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200">
-                                                        Total: S/ {(Math.max(0, Number(pkgCajas) || 0) * Number(pkgCosto)).toFixed(2)}
+                                                        Total: {simbolo} {(Math.max(0, Number(pkgCajas) || 0) * Number(pkgCosto)).toFixed(2)}
                                                     </span>
                                                 </>
                                             )}
@@ -1425,6 +1548,14 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800/30">
                                                             <Icon icon="solar:link-bold" width={10} />
                                                             Vinculado
+                                                        </span>
+                                                    )}
+                                                    {!esGravadoItem(item) && (
+                                                        <span
+                                                            title="Producto exonerado/inafecto: esta línea no lleva IGV"
+                                                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-700 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-300 px-1.5 py-0.5 rounded border border-teal-100 dark:border-teal-800/30"
+                                                        >
+                                                            Sin IGV
                                                         </span>
                                                     )}
                                                 </div>
@@ -1613,7 +1744,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                             </td>
                                             <td className="px-3 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <span className="text-xs text-gray-400">S/</span>
+                                                    <span className="text-xs text-gray-400">{simbolo}</span>
                                                     <input
                                                         type="number"
                                                         min={0}
@@ -1624,7 +1755,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                                     />
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-3 text-right font-semibold text-gray-800 dark:text-white">S/ {Number((Number(item.cantidad) || 0) * (Number(item.precioUnitario) || 0)).toFixed(2)}</td>
+                                            <td className="px-3 py-3 text-right font-semibold text-gray-800 dark:text-white">{simbolo} {Number((Number(item.cantidad) || 0) * (Number(item.precioUnitario) || 0)).toFixed(2)}</td>
                                             <td className="px-3 py-3 text-center">
                                                 <button type="button" onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                                     <Icon icon="solar:trash-bin-trash-bold" width={16} />
@@ -1663,16 +1794,28 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                     <span>Op. Gravada</span>
-                                    <span>S/ {subtotal.toFixed(2)}</span>
+                                    <span>{simbolo} {subtotal.toFixed(2)}</span>
                                 </div>
+                                {opNoGravada > 0 && (
+                                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                        <span>Op. Exonerada / Inafecta</span>
+                                        <span>{simbolo} {opNoGravada.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                     <span>IGV (18%)</span>
-                                    <span>S/ {igv.toFixed(2)}</span>
+                                    <span>{simbolo} {igv.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white border-t border-gray-200 dark:border-slate-700 pt-2">
                                     <span>Total a Pagar</span>
-                                    <span>S/ {total.toFixed(2)}</span>
+                                    <span>{simbolo} {total.toFixed(2)}</span>
                                 </div>
+                                {esUSD && Number(header.tipoCambio) > 0 && (
+                                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <span>Equivale a (TC {Number(header.tipoCambio).toFixed(3)})</span>
+                                        <span>S/ {(total * Number(header.tipoCambio)).toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1807,7 +1950,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                             </div>
                                         ))}
                                         <div className="text-xs text-right text-gray-500 dark:text-gray-400 font-medium">
-                                            Total Cuotas: S/ {cuotas.reduce((acc, c) => acc + (Number(c.monto) || 0), 0).toFixed(2)}
+                                            Total Cuotas: {simbolo} {cuotas.reduce((acc, c) => acc + (Number(c.monto) || 0), 0).toFixed(2)}
                                         </div>
                                         {Math.abs(total - cuotas.reduce((acc, c) => acc + (Number(c.monto) || 0), 0)) > 0.01 && (
                                             <div className="text-xs text-red-500 dark:text-red-400 font-bold text-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border dark:border-red-900/30">

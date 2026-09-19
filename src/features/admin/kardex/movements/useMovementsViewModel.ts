@@ -215,7 +215,11 @@ export const useMovementsViewModel = () => {
         stockAnterior: fmtDec(item.stockAnterior),
         stockActual: fmtDec(item.stockActual),
         costoUnitario: formatCurrency(costoUnitarioNumber),
-        precioUnitario: formatCurrency(precioUnitarioNumber),
+        // Producto en US$: el precio se muestra en su moneda y su equivalente en soles
+        // (que es con el que se calcula la ganancia contra el costo en soles).
+        precioUnitario: item.precioMoneda === 'USD'
+            ? `$ ${Number(item.precioMonedaProducto ?? 0).toFixed(2)}${precioUnitarioNumber > 0 ? ` (${formatCurrency(precioUnitarioNumber)})` : ' (sin TC)'}`
+            : formatCurrency(precioUnitarioNumber),
         gananciaUnidad: formatCurrency(gananciaUnidadNumber),
         _original: item
     }}) || [];

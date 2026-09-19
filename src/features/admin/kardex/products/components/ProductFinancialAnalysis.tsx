@@ -1,20 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useProductModalViewModel } from '../useProductModalViewModel';
+import { tipoCambioService } from '@/services/tipoCambio.service';
 
 type ViewProps = ReturnType<typeof useProductModalViewModel>;
 
 export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const { isRestaurante, isFarmacia, formValues, isEdit, tipoAjusteStock, cantidadAjuste, stockOriginal } = vm;
+    const esUsd = (formValues as any)?.moneda === 'USD';
+    // Precio en US$ → se compara en soles con el TC venta SUNAT del día
+    // (el costo del producto siempre está en soles).
+    const [tcHoy, setTcHoy] = useState<number | null>(null);
+    useEffect(() => {
+        if (!esUsd) return;
+        let vivo = true;
+        tipoCambioService.consultar().then((tc) => { if (vivo && Number(tc?.venta) > 0) setTcHoy(Number(tc.venta)); }).catch(() => {});
+        return () => { vivo = false; };
+    }, [esUsd]);
 
     if (isRestaurante || isFarmacia) {
         return null;
     }
 
-    const precioUnitario = Number(formValues?.precioUnitario || 0);
+    const precioMoneda = Number(formValues?.precioUnitario || 0);
+    const precioUnitario = esUsd ? precioMoneda * (tcHoy || 0) : precioMoneda;
     const costoUnitario = Number(formValues?.costoUnitario || 0);
-    // Símbolo según la moneda del producto (soles o dólares).
-    const simbolo = (formValues as any)?.moneda === 'USD' ? '$' : 'S/';
+    // Todo el análisis va en SOLES (el precio en US$ ya convertido al TC del día).
+    const simbolo = 'S/';
     // El precio de venta se digita CON IGV, pero el IGV no es ganancia (va a
     // SUNAT): la rentabilidad se calcula sobre el valor de venta SIN IGV.
     // Solo los productos gravados (afectación 10) llevan 18%.
@@ -66,6 +78,7 @@ export const ProductFinancialAnalysis: React.FC<{ vm: ViewProps }> = ({ vm }) =>
                             <Icon icon="solar:tag-price-bold" className="text-blue-600 dark:text-blue-400" width={12} />
                         </div>
                         <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{simbolo} {precioUnitario.toFixed(2)}</p>
+                        {esUsd && <p className="text-[10px] text-blue-600 dark:text-blue-300 mt-0.5">$ {precioMoneda.toFixed(2)}{tcHoy ? ` · TC ${tcHoy.toFixed(3)}` : ' · sin TC de hoy'}</p>}
                         <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-1">{esGravado ? 'Precio con IGV' : 'Precio'}</p>
                     </div>
 

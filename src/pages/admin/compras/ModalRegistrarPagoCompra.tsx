@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import { useComprasStore } from '@/zustand/compras';
 import Select from '@/components/Select';
 import Modal from '@/components/Modal';
+import { tipoCambioService } from '@/services/tipoCambio.service';
 
 interface ModalRegistrarPagoCompraProps {
     isOpen: boolean;
@@ -30,16 +31,47 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
     const montoNum = Number(monto) || 0;
     const nuevoSaldo = Math.max(0, saldoActual - montoNum);
 
+    // Compra en dólares: el abono va en US$ (misma moneda que el saldo) y se
+    // valoriza en soles con el TC del día; la diferencia contra el TC con el que
+    // se registró la compra es la diferencia de cambio.
+    const esUSD = String(localCompra?.moneda || 'PEN').toUpperCase() === 'USD';
+    const simbolo = esUSD ? '$' : 'S/';
+    const tcCompra = Number(localCompra?.tipoCambio) || 0;
+    const [tcPago, setTcPago] = useState<string>('');
+    const [tcInfo, setTcInfo] = useState<{ fecha: string; venta: number } | null>(null);
+    const [tcCargando, setTcCargando] = useState(false);
+    useEffect(() => {
+        if (!isOpen || !esUSD) return;
+        let vivo = true;
+        setTcCargando(true);
+        tipoCambioService.consultar()
+            .then((tc) => {
+                if (!vivo || !tc?.venta) return;
+                setTcInfo({ fecha: tc.fecha, venta: tc.venta });
+                setTcPago(String(tc.venta));
+            })
+            .catch(() => { if (vivo) { setTcInfo(null); setTcPago(tcCompra ? String(tcCompra) : ''); } })
+            .finally(() => { if (vivo) setTcCargando(false); });
+        return () => { vivo = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, esUSD]);
+    const tcPagoNum = Number(tcPago) || 0;
+    const montoSoles = esUSD ? montoNum * tcPagoNum : montoNum;
+    const diferenciaCambio = esUSD && tcCompra > 0 && tcPagoNum > 0 ? (tcPagoNum - tcCompra) * montoNum : 0;
+
     const handleSubmit = async () => {
         if (montoNum <= 0) return;
         if (montoNum > saldoActual) return;
         if (!localCompra?.id) return;
+
+        if (esUSD && !(tcPagoNum > 0)) return;
 
         const result = await registrarPagoCompra(localCompra.id, {
             monto: montoNum,
             medioPago,
             observacion: observacion || undefined,
             referencia: referencia || undefined,
+            tipoCambio: esUSD ? tcPagoNum : undefined,
         });
 
         if (result && result.success) {
@@ -71,7 +103,10 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                         </div>
                         <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-transparent shadow-sm">
                             <p className="text-[10px] text-rose-500 font-bold uppercase mb-1">Saldo Pendiente</p>
-                            <p className="text-xl font-black text-rose-600 dark:text-rose-400">S/ {saldoActual.toFixed(2)}</p>
+                            <p className="text-xl font-black text-rose-600 dark:text-rose-400">{simbolo} {saldoActual.toFixed(2)}</p>
+                            {esUSD && tcCompra > 0 && (
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Registrada al TC {tcCompra.toFixed(3)} · ≈ S/ {(saldoActual * tcCompra).toFixed(2)}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -83,7 +118,7 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 tracking-wider">Monto a Abonar</label>
                             <div className="relative group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 border-r border-gray-200 dark:border-slate-700 pr-3 pointer-events-none group-focus-within:border-violet-500 transition-colors">
-                                    <span className="text-gray-400 font-bold">S/</span>
+                                    <span className="text-gray-400 font-bold">{simbolo}</span>
                                 </div>
                                 <input
                                     type="number"
@@ -103,6 +138,34 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                             Pagar Todo
                         </button>
                     </div>
+
+                    {esUSD && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 tracking-wider">TC del pago (S/ por US$)</label>
+                                <input
+                                    type="number"
+                                    step="0.0001"
+                                    value={tcPago}
+                                    onChange={(e) => setTcPago(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none font-bold"
+                                />
+                                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    {tcCargando ? 'Consultando TC de SUNAT…' : tcInfo ? `TC venta SUNAT de hoy: ${tcInfo.venta.toFixed(3)}. Si pagaste a otro TC, corrígelo.` : 'No se pudo obtener el TC de SUNAT: ingresa el TC al que pagaste.'}
+                                </p>
+                            </div>
+                            <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/40 rounded-xl p-3 text-xs text-sky-900 dark:text-sky-200 space-y-1">
+                                <div className="flex justify-between"><span>Sale de tu bolsillo</span><strong>S/ {montoSoles.toFixed(2)}</strong></div>
+                                <div className="flex justify-between">
+                                    <span>Diferencia de cambio</span>
+                                    <strong className={diferenciaCambio > 0.004 ? 'text-rose-600' : diferenciaCambio < -0.004 ? 'text-emerald-600' : ''}>
+                                        {diferenciaCambio > 0.004 ? `pérdida S/ ${diferenciaCambio.toFixed(2)}` : diferenciaCambio < -0.004 ? `ganancia S/ ${Math.abs(diferenciaCambio).toFixed(2)}` : 'S/ 0.00'}
+                                    </strong>
+                                </div>
+                                <p className="text-[10px] text-sky-700/80 dark:text-sky-300/70">Frente al TC {tcCompra.toFixed(3)} con el que se registró la compra.</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <Select
@@ -151,7 +214,7 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                                 <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Saldo Resultante:</span>
                             </div>
                             <span className={`text-xl font-black ${nuevoSaldo > 0 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                                S/ {nuevoSaldo.toFixed(2)}
+                                {simbolo} {nuevoSaldo.toFixed(2)}
                             </span>
                         </div>
                     )}
@@ -167,7 +230,7 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={loading || montoNum <= 0 || montoNum > saldoActual}
+                        disabled={loading || montoNum <= 0 || montoNum > saldoActual || (esUSD && !(tcPagoNum > 0))}
                         className="px-8 py-3 btn-accent rounded-xl transition-all font-bold text-sm shadow-lg shadow-black/20 dark:shadow-none flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
                         {loading ? (
