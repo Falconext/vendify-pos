@@ -337,6 +337,11 @@ interface DespachoItem {
     courier: string;
     tipoEnvio: string;
     agenciaDestino: string;
+    // Reparto propio (chips en la tabla)
+    tipoVentaReparto?: string | null;
+    distrito?: string | null;
+    montoCOD?: number | null;
+    formaPagoCobro?: string | null;
     celularDest: string;
     nroPaquetes: number;
     turnoEnvio: string;
@@ -867,20 +872,56 @@ export default function DespachoView() {
         setFiltroRepartidor(nextRepartidorId ? Number(nextRepartidorId) : undefined);
     }, [location.search]);
 
+    // Reparto propio / motorizado: resumen del día (mismos filtros que el export).
+    const [repartoResumen, setRepartoResumen] = useState<any>(null);
+    const [exportandoReparto, setExportandoReparto] = useState(false);
+
     const cargar = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (fecha) params.set('fecha', fecha);
-            const { data } = await apiClient.get<any>(`/envio-despacho/panel?${params}`);
+            const [{ data }, resumenResp] = await Promise.all([
+                apiClient.get<any>(`/envio-despacho/panel?${params}`),
+                apiClient.get<any>(`/envio-despacho/reparto/resumen?${params}`).catch(() => null),
+            ]);
             const raw = data?.data?.data ?? data?.data ?? [];
             setItems(Array.isArray(raw) ? raw : []);
+            const r = resumenResp?.data?.data ?? resumenResp?.data ?? null;
+            setRepartoResumen(r && typeof r === 'object' && 'totales' in r ? r : null);
         } catch {
             alert('Error al cargar el panel de despacho', 'error');
         } finally {
             setLoading(false);
         }
     }, [fecha, alert]);
+
+    // Descarga el Excel con la plantilla de carga masiva del motorizado (hoja
+    // PEDIDOS) + detalle interno + resumen, para el día del panel.
+    const exportarReparto = useCallback(async () => {
+        if (exportandoReparto) return;
+        setExportandoReparto(true);
+        try {
+            const params = new URLSearchParams();
+            if (fecha) params.set('fecha', fecha);
+            const resp = await apiClient.get(`/envio-despacho/reparto/exportar?${params}`, { responseType: 'blob' });
+            const blob = resp.data as Blob;
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reparto_${fecha}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            const inc = Number(repartoResumen?.incompletos?.length ?? 0);
+            alert(inc > 0 ? `Excel de reparto descargado. ${inc} pedido${inc !== 1 ? 's' : ''} con datos incompletos (ver columna CARGA).` : 'Excel de reparto descargado', inc > 0 ? 'warning' : 'success');
+        } catch {
+            alert('No se pudo exportar el reparto', 'error');
+        } finally {
+            setExportandoReparto(false);
+        }
+    }, [fecha, exportandoReparto, repartoResumen, alert]);
 
     useEffect(() => { cargar(); }, [cargar]);
 
@@ -979,7 +1020,22 @@ export default function DespachoView() {
             'Courier': item.courier && item.courier !== '—'
                 ? <span className={`text-[10px] font-medium px-2 py-1 rounded-lg ${COURIER_COLOR[item.courier] || 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>{COURIER_LABEL[item.courier] || item.courier}</span>
                 : <span className="text-slate-400 text-xs">—</span>,
-            'Agencia destino': <span className="text-xs text-slate-600 dark:text-slate-300">{item.agenciaDestino || '—'}</span>,
+            'Agencia destino': (
+                <div className="text-xs text-slate-600 dark:text-slate-300">
+                    <span>{item.agenciaDestino || '—'}</span>
+                    {item.courier === 'PROPIOS' && (item.distrito || item.tipoVentaReparto) && (
+                        <div className="mt-0.5 flex flex-wrap gap-1">
+                            {item.distrito && <span className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/30 px-1.5 py-0.5 text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-300">{item.distrito}</span>}
+                            {item.tipoVentaReparto && (
+                                <span className="rounded-md bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-200">
+                                    {String(item.tipoVentaReparto).replace(/_/g, ' + ').replace('SOLO + ENTREGA', 'SOLO ENTREGA')}
+                                    {(item.tipoVentaReparto === 'CONTRAENTREGA' || item.tipoVentaReparto === 'CONTRAENTREGA_CAMBIO') && Number(item.montoCOD) > 0 ? ` · S/ ${Number(item.montoCOD).toFixed(2)}` : ''}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ),
             'Celular': (
                 <span className="inline-flex items-center gap-1.5">
                     <span className="text-xs text-slate-600 dark:text-slate-300">{celular || '—'}</span>
@@ -1181,6 +1237,17 @@ export default function DespachoView() {
                         }}
                     />
                     <button
+                        type="button"
+                        onClick={exportarReparto}
+                        disabled={exportandoReparto}
+                        className="relative top-2 h-11 px-3 flex items-center gap-1.5 rounded-2xl bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition-colors text-xs font-black disabled:opacity-60 shrink-0"
+                        title="Descargar Excel del reparto propio (formato de carga masiva del motorizado) para la fecha seleccionada"
+                        data-testid="btn-exportar-reparto"
+                    >
+                        <Icon icon={exportandoReparto ? 'eos-icons:loading' : 'solar:scooter-bold-duotone'} className="text-base" />
+                        <span className="hidden sm:inline">Exportar reparto</span>
+                    </button>
+                    <button
                         onClick={() => navigate('/administrador/despacho/config')}
                         className="relative top-2 h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors shrink-0"
                         title="Configurar notificaciones WhatsApp"
@@ -1219,6 +1286,46 @@ export default function DespachoView() {
                     </div>
                 ))}
             </div>
+
+                {/* Reparto propio / motorizado: resumen del día */}
+            {repartoResumen && Number(repartoResumen.totales?.pedidos ?? 0) > 0 && (
+                <div className="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="reparto-resumen">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
+                            <Icon icon="solar:scooter-bold-duotone" className="text-base" />
+                            Reparto propio · {moment(fecha).format('DD/MM')}
+                        </p>
+                        {Number(repartoResumen.incompletos?.length ?? 0) > 0 && (
+                            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                <Icon icon="solar:danger-triangle-bold" />
+                                {repartoResumen.incompletos.length} con datos incompletos: {repartoResumen.incompletos.slice(0, 3).map((i: any) => i.documento).join(', ')}{repartoResumen.incompletos.length > 3 ? '…' : ''}
+                            </span>
+                        )}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                            { label: 'Pedidos', value: repartoResumen.totales.pedidos },
+                            { label: 'Contraentrega', value: repartoResumen.totales.contraentrega },
+                            { label: 'A cobrar (S/)', value: Number(repartoResumen.totales.montoCobrar).toFixed(2) },
+                            { label: 'Entregados', value: repartoResumen.totales.entregados },
+                        ].map(k => (
+                            <div key={k.label} className="rounded-xl bg-white/80 dark:bg-slate-900/40 px-3 py-2">
+                                <p className="text-lg font-black text-slate-900 dark:text-white leading-tight">{k.value}</p>
+                                <p className="text-[11px] text-slate-500">{k.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                    {Array.isArray(repartoResumen.porDistrito) && repartoResumen.porDistrito.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {repartoResumen.porDistrito.slice(0, 8).map((d: any) => (
+                                <span key={d.nombre} className="rounded-lg bg-white dark:bg-slate-800 border border-fuchsia-100 dark:border-fuchsia-900/40 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                                    {d.nombre} · {d.pedidos}{d.montoCobrar > 0 ? ` · S/ ${Number(d.montoCobrar).toFixed(2)}` : ''}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Cards por repartidor */}
             {hayRepartidores && (

@@ -5,6 +5,7 @@ import Select from "@/components/Select";
 import moment from "moment";
 import apiClient from "@/utils/apiClient";
 import useAlertStore from "@/zustand/alert";
+import { useExtentionsStore } from '@/zustand/extentions';
 import { useRepartidoresStore } from "@/zustand/repartidores";
 import { ShalomAgenciaSelect } from "@/components/ShalomAgenciaSelect";
 import { EstablecimientoCombobox } from "@/components/EstablecimientoCombobox";
@@ -61,6 +62,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     );
 }
 
+/** Opciones del reparto propio: mismas etiquetas que acepta la plantilla del courier. */
+export const TIPOS_VENTA_REPARTO = [
+    { value: 'CONTRAENTREGA', label: 'Contraentrega', hint: 'El motorizado cobra al entregar' },
+    { value: 'SOLO_ENTREGA', label: 'Solo entrega', hint: 'Ya está pagado, no cobra' },
+    { value: 'CAMBIO', label: 'Cambio', hint: 'Entrega y recoge un producto' },
+    { value: 'CONTRAENTREGA_CAMBIO', label: 'Contraentrega + cambio', hint: 'Cobra y recoge' },
+    { value: 'RECOJO', label: 'Recojo', hint: 'Solo recoge en la dirección' },
+];
+export const FORMAS_PAGO_COBRO = [
+    { value: 'EFECTIVO', label: 'Efectivo' },
+    { value: 'YAPE', label: 'Yape' },
+    { value: 'PLIN', label: 'Plin' },
+    { value: 'TRANSFERENCIA', label: 'Transferencia' },
+    { value: 'POS', label: 'POS (tarjeta)' },
+    { value: 'NO_COBRAR', label: 'No cobrar' },
+];
+
 export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { comprobanteId: number; onClose: () => void; onSuccess: () => void }) {
     const [envioData, setEnvioData] = useState<any>({
         transportista: '',
@@ -84,12 +102,24 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
         pagarFlete: 'CLIENTE' as 'CLIENTE' | 'NEGOCIO',
         aplicacionMontoCliente: 'ADELANTO' as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO',
         montoCOD: 0,
+        // Reparto propio / motorizado externo (plantilla de carga masiva del courier)
+        tipoVentaReparto: '',
+        distritoUbigeo: '',
+        distrito: '',
+        coordenadas: '',
+        formaPagoCobro: '',
+        revisarProducto: false,
+        sedeOrigenNombre: '',
     });
     const [esNV, setEsNV] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const { alert } = useAlertStore();
     const { repartidores, fetchRepartidores } = useRepartidoresStore();
+    // Distritos (ubigeo) para el reparto propio: se cargan una sola vez.
+    const { ubigeos, getUbigeos } = useExtentionsStore();
+    const [distritoQuery, setDistritoQuery] = useState('');
+    const [distritoOpen, setDistritoOpen] = useState(false);
 
     useEffect(() => {
         const fetchDespacho = async () => {
@@ -130,6 +160,13 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                         pagarFlete: payload.pagarFlete ?? (adelantoComprobante > 0 ? 'CLIENTE' : 'NEGOCIO'),
                         aplicacionMontoCliente: payload.aplicacionMontoCliente ?? (adelantoComprobante > 0 ? 'ADELANTO' : 'NEGOCIO'),
                         montoCOD: payload.montoCOD ?? 0,
+                        tipoVentaReparto: payload.tipoVentaReparto || '',
+                        distritoUbigeo: payload.distritoUbigeo || '',
+                        distrito: payload.distrito || '',
+                        coordenadas: payload.coordenadas || '',
+                        formaPagoCobro: payload.formaPagoCobro || '',
+                        revisarProducto: !!payload.revisarProducto,
+                        sedeOrigenNombre: payload.sedeOrigenNombre || '',
                     });
                 }
             } catch (error) {
@@ -145,6 +182,23 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
     const set = (field: string, value: any) =>
         setEnvioData((prev: any) => ({ ...prev, [field]: value }));
 
+    useEffect(() => {
+        if (envioData.transportista === 'PROPIOS' && (!ubigeos || ubigeos.length === 0)) void getUbigeos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [envioData.transportista]);
+
+    // Distritos que coinciden con lo tecleado (máx. 12), priorizando Lima/Callao
+    // porque el reparto propio es de última milla.
+    const distritosFiltrados = (() => {
+        const q = distritoQuery.trim().toLowerCase();
+        if (q.length < 2) return [] as any[];
+        const norm = (v: string) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const lista = (ubigeos || []).filter((u: any) => norm(u.distrito).includes(norm(q)));
+        const peso = (u: any) => (norm(u.departamento) === 'lima' || norm(u.departamento) === 'callao' ? 0 : 1);
+        return lista.sort((a: any, b: any) => peso(a) - peso(b) || String(a.distrito).localeCompare(String(b.distrito))).slice(0, 12);
+    })();
+    const cobraEnDestino = envioData.tipoVentaReparto === 'CONTRAENTREGA' || envioData.tipoVentaReparto === 'CONTRAENTREGA_CAMBIO';
+
     const selectedCourier = COURIERS.find(c => c.value === envioData.transportista);
     const esShalom = SHALOM_COURIERS.has(envioData.transportista);
     const esPropio = envioData.transportista === 'PROPIOS';
@@ -152,11 +206,18 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
     const handleConfirmar = async () => {
         setSaving(true);
         try {
+            const opcional = (v: any) => (v === '' || v === null ? undefined : v);
             const payload = {
                 ...envioData,
                 pagarFlete: envioData.aplicacionMontoCliente === 'NEGOCIO' ? 'NEGOCIO' : 'CLIENTE',
                 repartidorId: envioData.repartidorId ? Number(envioData.repartidorId) : undefined,
                 repartidor: envioData.repartidorId ? undefined : envioData.repartidor,
+                // Reparto propio: los selects vacíos rebotan contra @IsIn, se omiten.
+                tipoVentaReparto: opcional(envioData.tipoVentaReparto),
+                formaPagoCobro: opcional(envioData.formaPagoCobro),
+                revisarProducto: !!envioData.revisarProducto,
+                // Solo lectura (viene del comprobante), no es parte del DTO.
+                sedeOrigenNombre: undefined,
             };
             await apiClient.put(`/envio-despacho/comprobante/${comprobanteId}`, payload);
             alert('Despacho actualizado correctamente', 'success');
@@ -332,7 +393,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                             Datos de entrega
                         </p>
                        <div className="mt-4 mb-4">
-                       <Field label="Agencia de destino / Dirección">
+                       <Field label={esPropio ? 'Dirección de entrega' : 'Agencia de destino / Dirección'}>
                             {esShalom && envioData.tipoEnvio === 'AGENCIA' ? (
                                 <ShalomAgenciaSelect
                                     value={envioData.agenciaDestino}
@@ -342,7 +403,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                             ) : (
                                 <input type="text" value={envioData.agenciaDestino}
                                     onChange={e => set('agenciaDestino', e.target.value)}
-                                    placeholder={envioData.tipoEnvio === 'AGENCIA' ? 'Ej: Olva Cusco Centro' : 'Dirección de entrega'}
+                                    placeholder={envioData.tipoEnvio === 'AGENCIA' ? 'Ej: Olva Cusco Centro' : esPropio ? 'Calle, número, referencia (ej: Av. Perú 123, 2do piso, puerta negra)' : 'Dirección de entrega'}
                                     className={inp} />
                             )}
                         </Field>
@@ -369,6 +430,104 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
 
                         </div>
                     </div>
+
+                    {/* SECCIÓN REPARTO PROPIO — lo que pide el motorizado / courier de última milla */}
+                    {esPropio && (
+                        <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/50 p-4 space-y-3 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="seccion-reparto-propio">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
+                                    <Icon icon="solar:scooter-bold-duotone" className="text-base" />
+                                    Reparto propio / motorizado
+                                </p>
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                    Sale de: <span className="text-slate-800 dark:text-white">{envioData.sedeOrigenNombre || envioData.establecimiento || 'sede del comprobante'}</span>
+                                </span>
+                            </div>
+
+                            <Field label="Tipo de venta">
+                                <div className="flex flex-wrap gap-2">
+                                    {TIPOS_VENTA_REPARTO.map(t => (
+                                        <button key={t.value} type="button" title={t.hint}
+                                            onClick={() => {
+                                                set('tipoVentaReparto', t.value);
+                                                const cobra = t.value === 'CONTRAENTREGA' || t.value === 'CONTRAENTREGA_CAMBIO';
+                                                if (!cobra) set('formaPagoCobro', 'NO_COBRAR');
+                                                else if (envioData.formaPagoCobro === 'NO_COBRAR' || !envioData.formaPagoCobro) set('formaPagoCobro', 'EFECTIVO');
+                                            }}
+                                            className={`px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${envioData.tipoVentaReparto === t.value
+                                                ? 'border-fuchsia-500 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-200'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-fuchsia-300'}`}>
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </Field>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <Field label="Distrito de entrega">
+                                    <div className="relative">
+                                        <input type="text"
+                                            value={distritoOpen ? distritoQuery : (envioData.distrito || distritoQuery)}
+                                            onFocus={() => { setDistritoQuery(envioData.distrito || ''); setDistritoOpen(true); }}
+                                            onChange={e => { setDistritoQuery(e.target.value); setDistritoOpen(true); if (!e.target.value) { set('distrito', ''); set('distritoUbigeo', ''); } }}
+                                            onBlur={() => setTimeout(() => setDistritoOpen(false), 150)}
+                                            placeholder="Escribe el distrito (ej: Ate, Comas, Ancón)"
+                                            className={inp} />
+                                        {distritoOpen && distritosFiltrados.length > 0 && (
+                                            <ul className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                                                {distritosFiltrados.map((u: any) => (
+                                                    <li key={u.codigo}>
+                                                        <button type="button"
+                                                            onMouseDown={e => e.preventDefault()}
+                                                            onClick={() => { set('distrito', u.distrito); set('distritoUbigeo', u.codigo); setDistritoQuery(u.distrito); setDistritoOpen(false); }}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-fuchsia-50 dark:hover:bg-slate-700">
+                                                            <span className="font-semibold text-slate-800 dark:text-white">{u.distrito}</span>
+                                                            <span className="ml-2 text-[11px] text-slate-400">{u.provincia?.trim()} · {u.departamento}</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </Field>
+                                <Field label="Coordenadas (opcional)">
+                                    <input type="text" value={envioData.coordenadas}
+                                        onChange={e => set('coordenadas', e.target.value)}
+                                        placeholder="-12.0464, -77.0428 (pegar de Google Maps)" className={inp} />
+                                </Field>
+                            </div>
+
+                            <div className={`grid gap-3 ${cobraEnDestino ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                                {cobraEnDestino && (
+                                    <Field label="Monto a cobrar al entregar (S/)">
+                                        <input type="number" min={0} step={0.01} value={envioData.montoCOD || ''}
+                                            onChange={e => set('montoCOD', Number(e.target.value) || 0)}
+                                            placeholder="0.00 = lo que falta por pagar del comprobante" className={inp} />
+                                    </Field>
+                                )}
+                                <Field label={cobraEnDestino ? 'El cliente paga con' : 'Cobro en destino'}>
+                                    <select value={envioData.formaPagoCobro || (cobraEnDestino ? '' : 'NO_COBRAR')}
+                                        onChange={e => set('formaPagoCobro', e.target.value)}
+                                        disabled={!cobraEnDestino}
+                                        className={inp + (cobraEnDestino ? '' : ' opacity-60')}>
+                                        <option value="">Seleccionar</option>
+                                        {FORMAS_PAGO_COBRO.filter(f => cobraEnDestino ? f.value !== 'NO_COBRAR' : f.value === 'NO_COBRAR').map(f => (
+                                            <option key={f.value} value={f.value}>{f.label}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <label className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+                                <input type="checkbox" className="mt-0.5" checked={!!envioData.revisarProducto}
+                                    onChange={e => set('revisarProducto', e.target.checked)} />
+                                <span>El cliente puede revisar el producto antes de pagar.</span>
+                            </label>
+                            <p className="text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                                Estos datos salen en <b>Exportar reparto</b> del Panel de Despacho con el formato de carga masiva del motorizado (nombre, teléfono, distrito, dirección, fecha, detalle, monto a cobrar, forma de pago).
+                            </p>
+                        </div>
+                    )}
 
                     {/* SECCIÓN 3: Celular + Paquetes + Turno (+ Fecha y N° Orden para no-Shalom) */}
                     <div className="grid grid-cols-3 gap-3">
