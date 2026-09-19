@@ -14,12 +14,22 @@ export interface ProductoSinCosto {
 }
 
 export interface PnlResponse {
-    periodo: { mes: number; anio: number; label: string };
-    /** Ventas sin el IGV de Facturas/Boletas (el IGV se paga a SUNAT, no es ganancia). */
+    periodo: {
+        mes: number;
+        anio: number;
+        label: string;
+        tipo?: 'mes' | 'dia' | 'rango';
+        fechaInicio?: string;
+        fechaFin?: string;
+    };
+    /** Ventas sin IGV (valor de venta) de todos los documentos, incluidas notas de venta. */
     ventasNetas: number;
     /** Ventas totales cobradas, con IGV. */
     ventasConIgv?: number;
-    /** IGV de los comprobantes electrónicos del período. */
+    /** Criterio del IGV configurado por la empresa (Configuración → Análisis financiero). */
+    criterioIgv?: 'ELECTRONICOS' | 'TODOS' | 'NINGUNO';
+    criterioIgvLabel?: string;
+    /** IGV incluido en las ventas del período. */
     igvVentas?: number;
     costoBaseProductos: number;
     costosFijosProducto: number;
@@ -142,10 +152,10 @@ export function esFinanciamiento(tipo: string): boolean {
 }
 
 export interface GastoFormData {
-    /** null / undefined = gasto de toda la empresa (no se carga a una sede). */
-    sedeId?: number | null;
     mes: number;
     anio: number;
+    /** null / undefined = gasto de toda la empresa (no se carga a una sede). */
+    sedeId?: number | null;
     fecha?: string;
     recurrenteDiario?: boolean;
     fechaInicio?: string;

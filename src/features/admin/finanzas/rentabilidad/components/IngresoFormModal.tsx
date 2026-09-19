@@ -81,7 +81,7 @@ export default function IngresoFormModal({ isOpen, mesActual, anioActual, ingres
     return (
         <div className="fixed top-[-30px] inset-0 z-[999999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-            <div className="relative z-10 w-full max-w-md bg-white dark:bg-[#111827] rounded-3xl shadow-2xl border border-gray-100/50 dark:border-transparent overflow-hidden">
+            <div className="relative z-10 w-full max-w-md bg-white dark:bg-[#111827] rounded-3xl shadow-2xl border border-gray-100/50 dark:border-slate-800 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">

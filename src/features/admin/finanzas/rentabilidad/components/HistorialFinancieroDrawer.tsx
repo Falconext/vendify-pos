@@ -80,12 +80,12 @@ export default function HistorialFinancieroDrawer({
         <>
             {/* Overlay */}
             <div
-                className="fixed inset-0 z-[9999999] bg-black/30 backdrop-blur-[2px]"
+                className="fixed top-[-30px] inset-0 z-[9999999] bg-black/30 backdrop-blur-[2px]"
                 onClick={onClose}
             />
 
             {/* Drawer */}
-            <div className="fixed right-0 top-0 bottom-0 z-[9999999] w-full max-w-[420px] bg-white dark:bg-[#0F1219] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed right-0 top-[-30px] bottom-0 z-[9999999] w-full max-w-[420px] bg-white dark:bg-[#0F1219] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
 
                 {/* Header */}
                 <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
@@ -163,7 +163,7 @@ export default function HistorialFinancieroDrawer({
                             <p className="text-center text-sm text-gray-500 py-10">No hay gastos en este rango</p>
                         ) : (
                             gastos.map(gasto => (
-                                <div key={gasto.id} className="group flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-transparent hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-colors">
+                                <div key={gasto.id} className="group flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-colors">
                                     <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                                         <Icon icon={getCategoriaIcon(gasto.categoria)} className="text-base text-amber-500 dark:text-amber-400" />
                                     </div>
@@ -199,7 +199,7 @@ export default function HistorialFinancieroDrawer({
                             <p className="text-center text-sm text-gray-500 py-10">No hay ingresos en este rango</p>
                         ) : (
                             ingresos.map(ingreso => (
-                                <div key={ingreso.id} className="group flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-transparent hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-colors">
+                                <div key={ingreso.id} className="group flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700/50 hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-colors">
                                     <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                                         <Icon icon="solar:arrow-down-bold-duotone" className="text-base text-emerald-500 dark:text-emerald-400" />
                                     </div>

@@ -191,7 +191,7 @@ export default function GastoFormModal({
     const selectedCategoria = CATEGORIAS_FIJAS.find(c => c.key === form.categoria);
 
     return (
-        <div className="fixed top-[-30px] inset-0 z-[999999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 top-[-30px] z-[999999] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50  "
@@ -199,7 +199,7 @@ export default function GastoFormModal({
             />
 
             {/* Modal */}
-            <div className="relative z-10 w-full max-w-md max-h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-[#111827] rounded-3xl shadow-2xl border border-gray-100/50 dark:border-transparent overflow-hidden">
+            <div className="relative z-10 w-full max-w-md max-h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-[#111827] rounded-3xl shadow-2xl border border-gray-100/50 dark:border-slate-800 overflow-hidden">
                 {/* Header */}
                 <div className="shrink-0 flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
@@ -599,7 +599,7 @@ export default function GastoFormModal({
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="flex-1 py-2.5 rounded-xl btn-accent disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-black/20"
+                            className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 dark:shadow-indigo-900/20"
                         >
                             {isSaving ? (
                                 <>

@@ -777,6 +777,40 @@ export default function PerfilIndex() {
                                     </div>
                                 </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                        <Icon icon="solar:chart-2-bold-duotone" width={14} />
+                                        Análisis financiero · Tratamiento del IGV en las ventas
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Define qué IGV se descuenta de tus ventas para calcular las ventas netas y la ganancia en Rentabilidad, Productos, Categorías y Evolución. Cada negocio lleva su criterio; se aplica a todos los meses.</p>
+                                    <div className="space-y-2">
+                                        {([
+                                            ['ELECTRONICOS', 'Descontar el IGV solo de facturas, boletas y notas de crédito/débito', 'Recomendado. Las notas de venta y tickets cuentan íntegros, porque ese IGV no se declara ni se paga.'],
+                                            ['TODOS', 'Descontar el IGV de todos los documentos, incluidas notas de venta', 'Para negocios que trabajan con valor de venta = total ÷ 1.18 en todo lo que venden.'],
+                                            ['NINGUNO', 'No descontar IGV (ventas brutas)', 'La ganancia se calcula sobre lo cobrado, sin separar el IGV.'],
+                                        ] as const).map(([valor, titulo, detalle]) => {
+                                            const actual = String((perfil.empresa as any).criterioIgvVentas || 'ELECTRONICOS');
+                                            return (
+                                                <label key={valor} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${actual === valor ? 'border-violet-300 bg-violet-50/60 dark:border-violet-700 dark:bg-violet-900/20' : 'border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/40'}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="criterioIgvVentas"
+                                                        value={valor}
+                                                        checked={actual === valor}
+                                                        disabled={vm.savingCriterioIgv}
+                                                        onChange={() => vm.handleCriterioIgvChange(valor)}
+                                                        className="mt-1 w-4 h-4 text-violet-600 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-violet-500"
+                                                    />
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{titulo}</p>
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{detalle}</p>
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
+                                        {vm.savingCriterioIgv && <p className="text-xs text-violet-600 dark:text-violet-400">Guardando configuración...</p>}
+                                    </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                         <Icon icon="solar:document-text-bold-duotone" width={14} />
                                         Formato de Cotización

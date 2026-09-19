@@ -1,6 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { CategoriasResponse, formatPct, formatSoles } from './CategoriasModel';
-import { BRAND } from '@/lib/branding';
 
 Font.register({
     family: 'Roboto',
@@ -21,6 +20,7 @@ const styles = StyleSheet.create({
     kpi: { flex: 1, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 4, padding: 9 },
     kpiLabel: { fontSize: 7, color: '#6b7280', marginBottom: 4 },
     kpiValue: { fontSize: 12, fontWeight: 'bold' },
+    kpiSub: { fontSize: 7, color: '#6b7280', marginTop: 3 },
     section: { fontSize: 9, fontWeight: 'bold', marginTop: 10, marginBottom: 6, textTransform: 'uppercase' },
     tableHeader: { flexDirection: 'row', backgroundColor: '#111827', paddingVertical: 5, paddingHorizontal: 6 },
     th: { color: '#fff', fontSize: 7, fontWeight: 'bold' },
@@ -60,8 +60,9 @@ export function CategoriasReportPDF({
 
                 <View style={styles.kpiRow}>
                     <View style={styles.kpi}>
-                        <Text style={styles.kpiLabel}>INGRESOS</Text>
-                        <Text style={styles.kpiValue}>{formatSoles(data.ingresoTotal)}</Text>
+                        <Text style={styles.kpiLabel}>VENTAS</Text>
+                        <Text style={styles.kpiValue}>{formatSoles(data.ventasConIgv ?? data.ingresoTotal)}</Text>
+                        <Text style={styles.kpiSub}>sin IGV {formatSoles(data.ingresoTotal)}</Text>
                     </View>
                     <View style={styles.kpi}>
                         <Text style={styles.kpiLabel}>GANANCIA</Text>
@@ -80,7 +81,7 @@ export function CategoriasReportPDF({
                 <Text style={styles.section}>Resumen por categoría</Text>
                 <View style={styles.tableHeader}>
                     <Text style={[styles.th, styles.cName]}>Categoría</Text>
-                    <Text style={[styles.th, styles.cNum]}>Ingresos</Text>
+                    <Text style={[styles.th, styles.cNum]}>Ingresos s/IGV</Text>
                     <Text style={[styles.th, styles.cNum]}>Ganancia</Text>
                     <Text style={[styles.th, styles.cNum]}>Margen</Text>
                     <Text style={[styles.th, styles.cNum]}>Uds</Text>
@@ -99,7 +100,7 @@ export function CategoriasReportPDF({
                 <View style={styles.tableHeader}>
                     <Text style={[styles.th, styles.cName]}>Producto</Text>
                     <Text style={[styles.th, styles.cName]}>Categoría</Text>
-                    <Text style={[styles.th, styles.cNum]}>Ingreso</Text>
+                    <Text style={[styles.th, styles.cNum]}>Ingreso s/IGV</Text>
                     <Text style={[styles.th, styles.cNum]}>Ganancia</Text>
                     <Text style={[styles.th, styles.cNum]}>Margen</Text>
                 </View>
@@ -114,7 +115,7 @@ export function CategoriasReportPDF({
                 ))}
 
                 <View style={styles.footer} fixed>
-                    <Text style={styles.footerText}>{BRAND.name} · Finanzas</Text>
+                    <Text style={styles.footerText}>Falconext · Finanzas</Text>
                     <Text style={styles.footerText}>Reporte de categorías</Text>
                 </View>
             </Page>

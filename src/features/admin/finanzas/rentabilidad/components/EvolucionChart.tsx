@@ -1,4 +1,4 @@
-import { MonoAreaChart, monoSeries } from '@/components/charts/mono';
+import { MonoAreaChart, MONO_SERIES } from '@/components/charts/mono';
 import { Icon } from '@iconify/react';
 import { EvolucionPoint, formatCurrency, getMesLabel } from '../RentabilidadModel';
 
@@ -7,8 +7,6 @@ interface EvolucionChartProps {
 }
 
 export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
-    const SERIES = monoSeries();
-
     const chartData = evolucion.map(p => ({
         mes: `${getMesLabel(p.mes)} ${String(p.anio).slice(-2)}`,
         'Ventas Netas': p.ventasNetas,
@@ -19,7 +17,7 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
     const valueFormatter = (v: number) => formatCurrency(v);
 
     return (
-        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-slate-800">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
@@ -34,9 +32,9 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
 
                 {/* Legend */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <LegendDot color={SERIES[0]} label="Ventas Netas" />
-                    <LegendDot color={SERIES[1]} label="Ganancia Bruta" />
-                    <LegendDot color={SERIES[2]} label="Ganancia Neta" />
+                    <LegendDot color={MONO_SERIES[0]} label="Ventas Netas" />
+                    <LegendDot color={MONO_SERIES[1]} label="Ganancia Bruta" />
+                    <LegendDot color={MONO_SERIES[2]} label="Ganancia Neta" />
                 </div>
             </div>
 
@@ -51,7 +49,6 @@ export default function EvolucionChart({ evolucion }: EvolucionChartProps) {
                     data={chartData}
                     index="mes"
                     categories={['Ventas Netas', 'Ganancia Bruta', 'Ganancia Neta']}
-                    colors={SERIES}
                     valueFormatter={valueFormatter}
                     height={300}
                 />

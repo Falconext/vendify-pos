@@ -198,6 +198,27 @@ export const usePerfilViewModel = () => {
         }
     };
 
+    // Criterio del IGV en el Análisis Financiero (por empresa): mismo patrón
+    // optimista que los flags de control.
+    const [savingCriterioIgv, setSavingCriterioIgv] = useState(false);
+    const handleCriterioIgvChange = async (valor: 'ELECTRONICOS' | 'TODOS' | 'NINGUNO') => {
+        if (savingCriterioIgv) return;
+        if (String((perfil?.empresa as any)?.criterioIgvVentas || 'ELECTRONICOS') === valor) return;
+        try {
+            setSavingCriterioIgv(true);
+            await useEmpresasStore.getState().actualizarMiEmpresa({ criterioIgvVentas: valor } as any);
+            setPerfil(prev => (prev ? { ...prev, empresa: { ...prev.empresa, criterioIgvVentas: valor } } : prev));
+            useAuthStore.setState(state => ({
+                auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, criterioIgvVentas: valor } } : state.auth,
+            }));
+            useAlertStore.getState().alert('Criterio del IGV actualizado: el Análisis Financiero ya se calcula con esta regla', 'success');
+        } catch (error: any) {
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'No se pudo actualizar la configuración', 'error');
+        } finally {
+            setSavingCriterioIgv(false);
+        }
+    };
+
     const handleFefoPriceToggle = async (enabled: boolean) => {
         if (savingFefoPriceConfig || fefoToggleInFlight.current) return;
         if (Boolean(perfil?.empresa?.usarPrecioLoteFefo) === enabled) return;
@@ -608,5 +629,7 @@ export const usePerfilViewModel = () => {
         }
     };
 
-    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingImpresionConfig, handleImpresionConfig, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, ventaObsDefault, setVentaObsDefault, ventaObsDirty, savingVentaObs, handleVentaObsSave, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
+    return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingImpresionConfig, handleImpresionConfig, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle,
+        savingCriterioIgv,
+        handleCriterioIgvChange, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, ventaObsDefault, setVentaObsDefault, ventaObsDirty, savingVentaObs, handleVentaObsSave, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
 };

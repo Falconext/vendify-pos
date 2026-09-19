@@ -10,7 +10,7 @@ interface IngresosPanelProps {
 
 export default function IngresosPanel({ ingresos, onAgregar, onEditar, onEliminar }: IngresosPanelProps) {
     return (
-        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent max-h-[360px] flex flex-col">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-slate-800 max-h-[360px] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">

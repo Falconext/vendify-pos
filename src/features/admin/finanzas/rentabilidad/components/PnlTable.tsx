@@ -93,7 +93,7 @@ export default function PnlTable({ pnl }: PnlTableProps) {
     const ref = Math.max(ingresosTotales, pnl.ventasConIgv ?? 0) || 1;
 
     return (
-        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent h-full">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-slate-800 h-full">
             {/* Header */}
             <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -129,13 +129,20 @@ export default function PnlTable({ pnl }: PnlTableProps) {
                         barColor="bg-indigo-300"
                     />
                     <PnlRow
-                        label="− IGV de ventas (se paga a SUNAT)"
+                        label={pnl.criterioIgv === 'TODOS'
+                            ? '− IGV incluido en las ventas (todos los documentos)'
+                            : '− IGV de facturas, boletas y notas de crédito/débito'}
                         value={igvVentas}
                         reference={ref}
                         indent
                         barColor="bg-slate-400"
                     />
                 </>
+            )}
+            {pnl.criterioIgvLabel && (
+                <p className="px-1 pb-1 text-[11px] text-gray-400 dark:text-gray-500">
+                    Criterio: {pnl.criterioIgvLabel}. Se cambia en Configuración → Análisis financiero.
+                </p>
             )}
             <PnlRow
                 label={igvVentas > 0 ? 'Ventas Netas (sin IGV)' : 'Ventas Netas'}

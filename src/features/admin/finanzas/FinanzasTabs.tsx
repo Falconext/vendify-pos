@@ -8,10 +8,12 @@ import RentabilidadView from './rentabilidad/RentabilidadView';
 import FinanceDashboardView from './FinanceDashboardView';
 import ComisionesView from './comisiones/ComisionesView';
 import CategoriasView from './categorias/CategoriasView';
+import ProductosView from './productos/ProductosView';
 import MetodosPagoView from './metodos-pago/MetodosPagoView';
 import ConciliacionView from './conciliacion/ConciliacionView';
+import ClientesView from './clientes/ClientesView';
 
-type TabId = 'rentabilidad' | 'flujo' | 'comisiones' | 'categorias' | 'metodosPago' | 'conciliacion';
+type TabId = 'rentabilidad' | 'flujo' | 'comisiones' | 'categorias' | 'productos' | 'clientes' | 'metodosPago' | 'conciliacion';
 
 interface Tab {
     id: TabId;
@@ -46,6 +48,18 @@ const TABS: Tab[] = [
         description: 'Ganancia por categoría de producto',
     },
     {
+        id: 'productos',
+        label: 'Productos',
+        icon: 'solar:box-bold-duotone',
+        description: 'Ventas por producto y acumulado por día',
+    },
+    {
+        id: 'clientes',
+        label: 'Clientes y envíos',
+        icon: 'solar:map-point-wave-bold-duotone',
+        description: 'Ciudades que más compran, ranking de clientes, cliente más fiel y repartidores',
+    },
+    {
         id: 'metodosPago',
         label: 'Métodos de pago',
         icon: 'solar:card-2-bold-duotone',
@@ -70,15 +84,15 @@ export default function FinanzasTabs() {
     const vm = useRentabilidadViewModel(sede.sedeId);
 
     return (
-        <div className="min-h-full -m-5 w-[calc(100%+40px)] overflow-x-hidden bg-[#F8F9FB] font-jakarta dark:bg-[#0A0D14]">
+        <div className="min-h-screen overflow-x-hidden bg-[#F8F9FB] dark:bg-[#0A0D14]">
             {/* ── Header + Tab bar area ── */}
-            <div className="px-5 pt-5">
+            <div className="px-3 pt-5 sm:px-6 sm:pt-6">
                 {/* Page Header */}
                 <div className="mb-5 sm:mb-6">
                     <div className="mb-1 flex min-w-0 items-center gap-2 text-sm font-medium text-gray-400">
                         <span>Finanzas</span>
                         <Icon icon="solar:alt-arrow-right-linear" className="shrink-0" />
-                        <span className="truncate text-[var(--accent)]">
+                        <span className="truncate text-indigo-600 dark:text-indigo-400">
                             {TABS.find(t => t.id === activeTab)?.label}
                         </span>
                     </div>
@@ -113,15 +127,14 @@ export default function FinanzasTabs() {
 
                 {/* Tab Switcher */}
                 <div className="mb-6 max-w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    <div className="inline-flex min-w-max items-center gap-1.5 rounded-2xl border border-gray-100/50 bg-white p-1.5 shadow-sm dark:border-transparent dark:bg-[#111827] sm:gap-2">
+                    <div className="inline-flex min-w-max items-center gap-1.5 rounded-2xl border border-gray-100/50 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-[#111827] sm:gap-2">
                         {TABS.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                style={activeTab === tab.id ? { background: 'var(--accent)', boxShadow: '0 4px 14px -4px var(--accent-soft)' } : undefined}
                                 className={`flex min-w-[92px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all sm:min-w-0 sm:flex-row sm:gap-2 sm:px-5 sm:text-sm ${
                                     activeTab === tab.id
-                                        ? 'text-white shadow-sm'
+                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30'
                                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200'
                                 }`}
                             >
@@ -135,16 +148,28 @@ export default function FinanzasTabs() {
 
             {/* ── Tab Content ── */}
             {activeTab === 'rentabilidad' && (
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-6 sm:px-6">
                     <RentabilidadView
-                        sedesOptions={sede.sedesOptions.filter((o) => o.id > 0)}
-                        sedeIdActual={sede.sedeId}
                         mesActual={vm.mesActual}
                         anioActual={vm.anioActual}
+                        periodo={vm.periodo}
+                        dia={vm.dia}
+                        fechaInicio={vm.fechaInicio}
+                        fechaFin={vm.fechaFin}
+                        esHoy={vm.esHoy}
+                        hoy={vm.hoy}
+                        navegarDia={vm.navegarDia}
+                        setPeriodo={vm.setPeriodo}
+                        setDia={vm.setDia}
+                        setFechaInicio={vm.setFechaInicio}
+                        setFechaFin={vm.setFechaFin}
+                        sedesOptions={sede.sedesOptions.filter((o) => o.id > 0)}
+                        sedeIdActual={sede.sedeId}
                         pnl={vm.pnl}
                         evolucion={vm.evolucion}
                         gastos={vm.gastos}
                         ingresos={vm.ingresos}
+                        valorInventario={vm.valorInventario}
                         isLoading={vm.isLoading}
                         isModalOpen={vm.isModalOpen}
                         gastoEditando={vm.gastoEditando}
@@ -170,32 +195,43 @@ export default function FinanzasTabs() {
                 </div>
             )}
 
+            {/* Flujo tab: FinanceDashboardView owns its own full-page container */}
             {activeTab === 'flujo' && (
-                <div className="px-5 pb-5">
-                    <FinanceDashboardView />
-                </div>
+                <FinanceDashboardView />
             )}
 
             {activeTab === 'comisiones' && (
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-6 sm:px-6">
                     <ComisionesView />
                 </div>
             )}
 
             {activeTab === 'categorias' && (
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-6 sm:px-6">
                     <CategoriasView sedeId={sede.sedeId} />
                 </div>
             )}
 
+            {activeTab === 'productos' && (
+                <div className="px-3 pb-6 sm:px-6">
+                    <ProductosView sedeId={sede.sedeId} />
+                </div>
+            )}
+
+            {activeTab === 'clientes' && (
+                <div className="px-3 pb-6 sm:px-6">
+                    <ClientesView sedeId={sede.sedeId} />
+                </div>
+            )}
+
             {activeTab === 'metodosPago' && (
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-6 sm:px-6">
                     <MetodosPagoView sedeId={sede.sedeId} />
                 </div>
             )}
 
             {activeTab === 'conciliacion' && (
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-6 sm:px-6">
                     <ConciliacionView />
                 </div>
             )}

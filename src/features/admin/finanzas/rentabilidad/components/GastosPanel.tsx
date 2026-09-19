@@ -34,7 +34,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
     const totalCaja = deCaja.reduce((sum, g) => sum + gastoEnSoles(g), 0);
 
     return (
-        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-transparent max-h-[360px] flex flex-col">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 shadow-sm border border-gray-100/50 dark:border-slate-800 max-h-[360px] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                 </div>
                 <button
                     onClick={onAgregar}
-                    className="flex items-center gap-1.5 btn-accent text-xs font-semibold px-3 py-2 rounded-xl transition-colors shadow-sm shadow-black/20"
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors shadow-sm shadow-indigo-200 dark:shadow-indigo-900/20"
                 >
                     <Icon icon="solar:add-circle-bold" className="text-base" />
                     Agregar gasto

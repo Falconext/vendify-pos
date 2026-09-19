@@ -5,12 +5,14 @@ export interface ProductoCategoria {
     margen: number;
     unidadesVendidas: number;
     ingresoTotal: number;
+    ventasConIgv?: number;
     gananciaTotal: number;
 }
 
 export interface CategoriaRentabilidad {
     nombre: string;
     ingresoTotal: number;
+    ventasConIgv?: number;
     gananciaTotal: number;
     margenPromedio: number;
     unidadesVendidas: number;
@@ -21,6 +23,7 @@ export interface CategoriaRentabilidad {
 export interface CategoriasResponse {
     periodo: { mes: number; anio: number; label: string };
     ingresoTotal: number;
+    ventasConIgv?: number;
     gananciaTotal: number;
     margenPromedio: number;
     totalCategorias: number;
