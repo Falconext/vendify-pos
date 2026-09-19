@@ -1305,9 +1305,13 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                 {/* ── Simulador de Rentabilidad Diaria ── */}
                                 {(() => {
                                     const esGravado = !['20', '30', '40'].includes((formValues as any).tipoAfectacionIGV ?? '10');
-                                    const precio = Number(formValues?.precioUnitario) || 0;
-                                    const precioNeto = esGravado ? precio / 1.18 : precio;
-                                    const costo = Number((formValues as any)?.costoUnitario) || 0;
+                                    // Misma base que el "Resumen de Margen": precio y costo CON IGV (lo que
+                                    // el empresario cobra y paga). Antes se les quitaba el IGV a ambos pero
+                                    // no al envío/comisión, y la ganancia salía menor a la esperada
+                                    // (35 − 17 − 3.5 debe dar 14.50, no 11.75).
+                                    const precioNeto = Number(formValues?.precioUnitario) || 0;
+                                    const costoSinIgv = Number((formValues as any)?.costoUnitario) || 0;
+                                    const costo = esGravado ? parseFloat((costoSinIgv * 1.18).toFixed(2)) : costoSinIgv;
                                     const costoFijo = Number((formValues as any)?.costoFijo) || 0;
                                     const comision = Number((formValues as any)?.comisionPorVenta) || 0;
 
@@ -1384,8 +1388,8 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                         <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mb-3">Desglose por unidad vendida</p>
                                                         <div className="space-y-1.5 text-sm">
                                                             {[
-                                                                { label: 'Precio de venta (neto)', val: precioNeto, color: 'text-gray-700 dark:text-gray-200', sign: '' },
-                                                                { label: 'Costo del producto', val: -costo, color: 'text-red-500', sign: '−' },
+                                                                { label: 'Precio de venta (con IGV)', val: precioNeto, color: 'text-gray-700 dark:text-gray-200', sign: '' },
+                                                                { label: 'Costo del producto (con IGV)', val: -costo, color: 'text-red-500', sign: '−' },
                                                                 ...(costoFijo > 0 ? [{ label: 'Regalo / envío', val: -costoFijo, color: 'text-red-500', sign: '−' }] : []),
                                                                 ...(comision > 0 ? [{ label: 'Comisión vendedor', val: -comision, color: 'text-red-500', sign: '−' }] : []),
                                                             ].map((r, i) => (
