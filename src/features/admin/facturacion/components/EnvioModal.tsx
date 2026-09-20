@@ -7,6 +7,8 @@ import { useRepartidoresStore } from "@/zustand/repartidores";
 import useAlertStore from "@/zustand/alert";
 import { ShalomAgenciaSelect } from "@/components/ShalomAgenciaSelect";
 import { EstablecimientoCombobox } from "@/components/EstablecimientoCombobox";
+import { useExtentionsStore } from "@/zustand/extentions";
+import { TIPOS_VENTA_REPARTO, FORMAS_PAGO_COBRO, cobraEnDestinoReparto, esNombreGenericoCliente, filtrarDistritos } from "@/pages/admin/despacho/repartoPropio";
 
 export const COURIERS = [
     { value: 'SHALOM_PRO', label: 'Shalom PRO' },
@@ -94,6 +96,38 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
     const selectedCourier = COURIERS.find(c => c.value === envioData.transportista);
     const esShalom = SHALOM_COURIERS.has(envioData.transportista);
     const esPropio = envioData.transportista === 'PROPIOS';
+
+    // Reparto propio / motorizado: distrito con buscador de ubigeos y cobro en destino.
+    const { ubigeos, getUbigeos } = useExtentionsStore();
+    const [distritoQuery, setDistritoQuery] = useState('');
+    const [distritoOpen, setDistritoOpen] = useState(false);
+    useEffect(() => {
+        if (esPropio && (!ubigeos || ubigeos.length === 0)) void getUbigeos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [esPropio]);
+    const distritosFiltrados = filtrarDistritos(ubigeos, distritoQuery);
+    const cobraEnDestino = cobraEnDestinoReparto(envioData.tipoVentaReparto);
+    // Lo que quedará pendiente de pago al emitir: si la venta va a crédito, el
+    // motorizado cobra en la puerta; si ya se paga en caja, solo entrega.
+    const saldoVenta = vm.formValues?.medioPago === 'Crédito' ? Number(vm.totalCredito || 0) : 0;
+    const nombreCliente = String(vm.selectedClient?.nombre || '');
+    const clienteGenerico = esNombreGenericoCliente(nombreCliente);
+    const elegirCourier = (value: string) => {
+        set('transportista', value);
+        if (value !== 'PROPIOS') return;
+        // El motorizado entrega en la puerta: reparto propio = a domicilio salvo que el usuario cambie.
+        if (envioData.tipoEnvio !== 'DOMICILIO') set('tipoEnvio', 'DOMICILIO');
+        // Tipo de venta por defecto según lo que quede por cobrar.
+        if (!envioData.tipoVentaReparto) {
+            if (saldoVenta > 0.009) {
+                set('tipoVentaReparto', 'CONTRAENTREGA');
+                if (!envioData.formaPagoCobro || envioData.formaPagoCobro === 'NO_COBRAR') set('formaPagoCobro', 'EFECTIVO');
+            } else {
+                set('tipoVentaReparto', 'SOLO_ENTREGA');
+                set('formaPagoCobro', 'NO_COBRAR');
+            }
+        }
+    };
     const inputClass = (field: keyof EnvioValidationErrors) => `${inp} ${errors[field] ? invalidInp : ''}`;
     const esInformal = Boolean(vm.esInformal);
     const opcionesMontoCliente = esInformal
@@ -176,7 +210,7 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                     {/* Courier chips */}
                     <div className="mt-4 flex flex-wrap gap-2">
                         {COURIERS.map(c => (
-                            <button key={c.value} type="button" onClick={() => set('transportista', c.value)}
+                            <button key={c.value} type="button" onClick={() => elegirCourier(c.value)}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${errors.transportista ? 'ring-2 ring-red-300/70' : ''} ${envioData.transportista === c.value
                                         ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-900/20'
                                         : 'bg-white/15 text-white/80 hover:bg-white/25'
@@ -306,7 +340,130 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                         </div>
                     )}
 
-                    {/* SECCIÓN 2: Tipo envío + Agencia destino */}
+                    {/* SECCIÓN REPARTO PROPIO — lo que pide el motorizado / courier de última milla */}
+                    {esPropio && (
+                        <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/50 p-4 space-y-3 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="seccion-reparto-propio">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
+                                    <Icon icon="solar:scooter-bold-duotone" className="text-base" />
+                                    Reparto propio / motorizado
+                                </p>
+                                {saldoVenta > 0.009 ? (
+                                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                        Queda por cobrar: <span className="text-slate-800 dark:text-white">S/ {saldoVenta.toFixed(2)}</span>
+                                    </span>
+                                ) : null}
+                            </div>
+
+                            <Field label="Tipo de venta">
+                                <div className="flex flex-wrap gap-2">
+                                    {TIPOS_VENTA_REPARTO.map(t => (
+                                        <button key={t.value} type="button" title={t.hint}
+                                            onClick={() => {
+                                                set('tipoVentaReparto', t.value);
+                                                const cobra = cobraEnDestinoReparto(t.value);
+                                                if (!cobra) set('formaPagoCobro', 'NO_COBRAR');
+                                                else if (envioData.formaPagoCobro === 'NO_COBRAR' || !envioData.formaPagoCobro) set('formaPagoCobro', 'EFECTIVO');
+                                            }}
+                                            className={`px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${envioData.tipoVentaReparto === t.value
+                                                ? 'border-fuchsia-500 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-200'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-fuchsia-300'}`}>
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </Field>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-3">
+                                <Field label="Dirección de entrega" required error={errors.agenciaDestino}>
+                                    <input type="text" value={envioData.agenciaDestino}
+                                        onChange={e => set('agenciaDestino', e.target.value)}
+                                        placeholder="Calle, número, referencia (ej: Av. Perú 123, 2do piso, puerta negra)"
+                                        className={inputClass('agenciaDestino')} />
+                                </Field>
+                                <Field label="Tipo de envío" required error={errors.tipoEnvio}>
+                                    <select value={envioData.tipoEnvio} onChange={e => set('tipoEnvio', e.target.value)} className={inputClass('tipoEnvio')}>
+                                        <option value="DOMICILIO">A domicilio</option>
+                                        <option value="AGENCIA">Para agencia</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <Field label="Nombre de quien recibe">
+                                <input type="text" value={envioData.nombreDestinatario}
+                                    onChange={e => set('nombreDestinatario', e.target.value)}
+                                    placeholder={clienteGenerico && /^WSP\s/i.test(nombreCliente) ? 'El cliente se registró solo con WhatsApp: escribe el nombre para el motorizado' : clienteGenerico ? 'Venta a "Clientes varios": escribe el nombre de quien recibe' : nombreCliente ? `Si queda vacío se usa el cliente: ${nombreCliente}` : 'Nombre y apellido de quien recibe el pedido'}
+                                    className={inp} />
+                            </Field>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <Field label="Distrito de entrega">
+                                    <div className="relative">
+                                        <input type="text"
+                                            value={distritoOpen ? distritoQuery : (envioData.distrito || distritoQuery)}
+                                            onFocus={() => { setDistritoQuery(envioData.distrito || ''); setDistritoOpen(true); }}
+                                            onChange={e => { setDistritoQuery(e.target.value); setDistritoOpen(true); if (!e.target.value) { set('distrito', ''); set('distritoUbigeo', ''); } }}
+                                            onBlur={() => setTimeout(() => setDistritoOpen(false), 150)}
+                                            placeholder="Escribe el distrito (ej: Ate, Comas, Ancón)"
+                                            className={inp} />
+                                        {distritoOpen && distritosFiltrados.length > 0 && (
+                                            <ul className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                                                {distritosFiltrados.map((u: any) => (
+                                                    <li key={u.codigo}>
+                                                        <button type="button"
+                                                            onMouseDown={e => e.preventDefault()}
+                                                            onClick={() => { set('distrito', u.distrito); set('distritoUbigeo', u.codigo); setDistritoQuery(u.distrito); setDistritoOpen(false); }}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-fuchsia-50 dark:hover:bg-slate-700">
+                                                            <span className="font-semibold text-slate-800 dark:text-white">{u.distrito}</span>
+                                                            <span className="ml-2 text-[11px] text-slate-400">{u.provincia?.trim()} · {u.departamento}</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </Field>
+                                <Field label="Coordenadas (opcional)">
+                                    <input type="text" value={envioData.coordenadas}
+                                        onChange={e => set('coordenadas', e.target.value)}
+                                        placeholder="-12.0464, -77.0428 (pegar de Google Maps)" className={inp} />
+                                </Field>
+                            </div>
+
+                            <div className={`grid gap-3 ${cobraEnDestino ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                                {cobraEnDestino && (
+                                    <Field label="Monto a cobrar al entregar (S/)">
+                                        <input type="number" min={0} step={0.01} value={envioData.montoCOD || ''}
+                                            onChange={e => set('montoCOD', Number(e.target.value) || 0)}
+                                            placeholder={saldoVenta > 0.009 ? `0.00 = lo que falta por pagar (S/ ${saldoVenta.toFixed(2)})` : '0.00 = lo que falta por pagar del comprobante'} className={inp} />
+                                    </Field>
+                                )}
+                                <Field label={cobraEnDestino ? 'El cliente paga con' : 'Cobro en destino'}>
+                                    <select value={envioData.formaPagoCobro || (cobraEnDestino ? '' : 'NO_COBRAR')}
+                                        onChange={e => set('formaPagoCobro', e.target.value)}
+                                        disabled={!cobraEnDestino}
+                                        className={inp + (cobraEnDestino ? '' : ' opacity-60')}>
+                                        <option value="">Seleccionar</option>
+                                        {FORMAS_PAGO_COBRO.filter(f => cobraEnDestino ? f.value !== 'NO_COBRAR' : f.value === 'NO_COBRAR').map(f => (
+                                            <option key={f.value} value={f.value}>{f.label}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <label className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+                                <input type="checkbox" className="mt-0.5" checked={!!envioData.revisarProducto}
+                                    onChange={e => set('revisarProducto', e.target.checked)} />
+                                <span>El cliente puede revisar el producto antes de pagar.</span>
+                            </label>
+                            <p className="text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                                Estos datos salen en el botón <b>Reparto</b> del Panel de Ventas con el formato de carga masiva del motorizado (nombre, teléfono, distrito, dirección, fecha, detalle, monto a cobrar, forma de pago).
+                            </p>
+                        </div>
+                    )}
+
+                    {/* SECCIÓN 2: Tipo envío + Agencia destino (el reparto propio los lleva en su propia sección) */}
+                    {!esPropio && (
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                             <Icon icon="solar:map-point-bold-duotone" className="text-indigo-400" />
@@ -351,6 +508,7 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
 
                         </div>
                     </div>
+                    )}
 
                     {/* SECCIÓN 3: Celular + Paquetes + Turno (+ Fecha y N° Orden para no-Shalom) */}
                     <div className="grid grid-cols-3 gap-3">

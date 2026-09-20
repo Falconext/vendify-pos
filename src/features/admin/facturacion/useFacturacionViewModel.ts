@@ -63,6 +63,13 @@ type EnvioDespachoFormData = {
     dniDestinatario?: string;
     contenidoPaquete?: string;
     montoCOD?: number;
+    // Reparto propio / motorizado (plantilla de carga masiva del courier de última milla)
+    tipoVentaReparto?: string;
+    distritoUbigeo?: string;
+    distrito?: string;
+    coordenadas?: string;
+    formaPagoCobro?: string;
+    revisarProducto?: boolean;
 };
 
 export type PaymentLine = {
@@ -177,6 +184,13 @@ const buildEnvioDespachoPayload = (data: EnvioDespachoFormData) => {
         pagarFlete: data.aplicacionMontoCliente === 'NEGOCIO' ? 'NEGOCIO' : 'CLIENTE',
         aplicacionMontoCliente: data.aplicacionMontoCliente ?? ((Number(data.costoEnvio) > 0 && data.pagarFlete === 'CLIENTE') ? 'ITEM_ENVIO' : 'NEGOCIO'),
         ...(Number(data.montoCOD) > 0 ? { montoCOD: Number(data.montoCOD) } : {}),
+        // Reparto propio: los selects vacíos no se mandan (el DTO valida @IsIn).
+        ...(cleanText(data.tipoVentaReparto) ? { tipoVentaReparto: cleanText(data.tipoVentaReparto) } : {}),
+        ...(cleanText(data.formaPagoCobro) ? { formaPagoCobro: cleanText(data.formaPagoCobro) } : {}),
+        distrito: cleanText(data.distrito),
+        distritoUbigeo: cleanText(data.distritoUbigeo),
+        coordenadas: cleanText(data.coordenadas),
+        revisarProducto: Boolean(data.revisarProducto),
     };
 };
 
@@ -420,6 +434,13 @@ export const useFacturacionViewModel = () => {
         dniDestinatario: '',
         contenidoPaquete: '',
         montoCOD: 0,
+        // Reparto propio / motorizado
+        tipoVentaReparto: '',
+        distritoUbigeo: '',
+        distrito: '',
+        coordenadas: '',
+        formaPagoCobro: '',
+        revisarProducto: false,
     });
     const [correlative, setCorrelative] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);

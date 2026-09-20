@@ -122,8 +122,8 @@ describe('Editar Despacho · Reparto propio', () => {
     it('elegir Reparto propio pasa el tipo de envío a domicilio y muestra "Nombre de quien recibe"', async () => {
         await abrir();
         // el despacho venía "Para agencia" (tipoEnvio AGENCIA) → al pulsar el chip se vuelve domicilio
-        fireEvent.click(screen.getByText('Para agencia'));
         fireEvent.click(screen.getByText('Shalom PRO'));
+        fireEvent.click(screen.getByText('Para agencia'));
         fireEvent.click(screen.getByText('Reparto propio'));
         expect(screen.getByText('Dirección de entrega')).toBeInTheDocument();
         const nombre = screen.getByPlaceholderText('Nombre y apellido de quien recibe el pedido') as HTMLInputElement;
@@ -143,6 +143,22 @@ describe('Editar Despacho · Reparto propio', () => {
         await screen.findByTestId('seccion-reparto-propio');
         const nombre = screen.getByPlaceholderText('Venta a "Clientes varios": escribe el nombre de quien recibe') as HTMLInputElement;
         expect(nombre.value).toBe('');
+    });
+
+    it('al elegir Reparto propio preselecciona Contraentrega si la venta tiene saldo, y Solo entrega si está pagada', async () => {
+        // venta con saldo 35 (mock por defecto) y despacho sin tipo → CONTRAENTREGA + EFECTIVO
+        getMock.mockImplementationOnce((url: string) => Promise.resolve({ data: { data: { transportista: 'SHALOM_PRO', tipoEnvio: 'AGENCIA', agenciaDestino: '', celularDest: '957039998', nroPaquetes: 1, montoCOD: 0, costoEnvio: 0, sedeOrigenNombre: 'Sede Principal' } } }));
+        render(<EditarDespachoModal comprobanteId={125} onClose={() => {}} onSuccess={() => {}} />);
+        await screen.findByText('Reparto propio');
+        await waitFor(() => expect(getMock).toHaveBeenCalledWith('/comprobante/125'));
+        fireEvent.click(screen.getByText('Reparto propio'));
+        expect(screen.getByText('Monto a cobrar al entregar (S/)')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('Guardar cambios'));
+        await waitFor(() => expect(putMock).toHaveBeenCalled());
+        const body = (putMock.mock.calls[0] as any)[1];
+        expect(body.tipoVentaReparto).toBe('CONTRAENTREGA');
+        expect(body.formaPagoCobro).toBe('EFECTIVO');
+        expect(body.tipoEnvio).toBe('DOMICILIO');
     });
 
     it('carga los ubigeos una sola vez al entrar en Reparto propio', async () => {
