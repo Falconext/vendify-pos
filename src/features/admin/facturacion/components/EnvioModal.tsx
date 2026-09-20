@@ -605,17 +605,20 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                             <Icon icon="solar:wallet-money-bold-duotone" className="text-indigo-400" />
-                            Monto cobrado al cliente
+                            {esPropio ? 'Adelanto ya pagado antes del envío' : 'Monto cobrado al cliente'}
                         </p>
+                        {esPropio && (
+                            <p className="-mt-1 mb-2 text-[11px] leading-4 text-slate-500 dark:text-slate-400">Solo lo que el cliente <b>ya pagó</b> (Yape, transferencia…) antes de salir el pedido. Lo que cobra el motorizado en la puerta va arriba, en <b>Monto a cobrar al entregar</b>.</p>
+                        )}
                         <div className={`grid gap-3 ${Number(envioData.costoEnvio) > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                            <Field label="Monto cobrado / adelanto (S/)">
+                            <Field label={esPropio ? 'Adelanto ya pagado (S/)' : 'Monto cobrado / adelanto (S/)'}>
                                 <input
                                     type="number"
                                     min={0}
                                     step={0.01}
                                     value={envioData.costoEnvio ?? 0}
                                     onChange={e => set('costoEnvio', Number(e.target.value) || 0)}
-                                    placeholder="0.00 — dejar en 0 si no aplica"
+                                    placeholder={esPropio ? '0 si el cliente paga todo al motorizado' : '0.00 — dejar en 0 si no aplica'}
                                     className={inp}
                                 />
                             </Field>
