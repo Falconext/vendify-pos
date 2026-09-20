@@ -136,6 +136,15 @@ describe('Editar Despacho · Reparto propio', () => {
         expect(body.nombreDestinatario).toBe('ROSA QUISPE');
     });
 
+    it('cliente "CLIENTES VARIOS": no precarga el nombre de quien recibe y lo pide', async () => {
+        getMock.mockImplementationOnce((url: string) => Promise.resolve({ data: { data: { transportista: 'PROPIOS', tipoEnvio: 'DOMICILIO', agenciaDestino: 'x', celularDest: '957039998', nroPaquetes: 1, montoCOD: 0, costoEnvio: 0, sedeOrigenNombre: 'Sede Principal' } } }))
+            .mockImplementationOnce(() => Promise.resolve({ data: { data: { tipoDoc: 'NV', adelanto: 0, cliente: { id: 9, nombre: 'CLIENTES VARIOS', nroDoc: '10000000', telefono: '' }, usuario: { nombre: 'V' } } } }));
+        render(<EditarDespachoModal comprobanteId={124} onClose={() => {}} onSuccess={() => {}} />);
+        await screen.findByTestId('seccion-reparto-propio');
+        const nombre = screen.getByPlaceholderText('Venta a "Clientes varios": escribe el nombre de quien recibe') as HTMLInputElement;
+        expect(nombre.value).toBe('');
+    });
+
     it('carga los ubigeos una sola vez al entrar en Reparto propio', async () => {
         await abrir();
         expect(getUbigeos).not.toHaveBeenCalled(); // el mock ya trae ubigeos

@@ -318,6 +318,11 @@ export function usePanelVentasViewModel() {
 
     const exportarReparto = useCallback(async () => {
         if (exportandoReparto) return;
+        // Sin pedidos de reparto propio en el rango no hay nada que mandar al motorizado.
+        if (!repartoResumen || Number(repartoResumen.totales?.pedidos ?? 0) === 0) {
+            alert('No hay pedidos de reparto propio en el rango y sede seleccionados', 'warning');
+            return;
+        }
         setExportandoReparto(true);
         try {
             const { params, hasta } = paramsReparto();

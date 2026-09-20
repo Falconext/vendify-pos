@@ -859,6 +859,7 @@ export default function PanelVentasView() {
                         <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
                             <Icon icon="solar:scooter-bold-duotone" className="text-base" />
                             Reparto propio · {moment(vm.fecha).format('DD/MM')}{vm.fechaFin && vm.fechaFin > vm.fecha ? ` – ${moment(vm.fechaFin).format('DD/MM')}` : ''}
+                            <span className="ml-1 font-semibold normal-case tracking-normal text-fuchsia-500/80 dark:text-fuchsia-300/70">(por fecha de entrega)</span>
                         </p>
                         {Number(vm.repartoResumen.incompletos?.length ?? 0) > 0 && (
                             <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">

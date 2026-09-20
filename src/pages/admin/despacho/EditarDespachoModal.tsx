@@ -119,6 +119,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
     const { repartidores, fetchRepartidores } = useRepartidoresStore();
     // Distritos (ubigeo) para el reparto propio: se cargan una sola vez.
     const { ubigeos, getUbigeos } = useExtentionsStore();
+    const [clienteNombreFicha, setClienteNombreFicha] = useState('');
     const [distritoQuery, setDistritoQuery] = useState('');
     const [distritoOpen, setDistritoOpen] = useState(false);
 
@@ -138,6 +139,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                 const FORMALES = ['01', '03', '07', '08'];
                 setEsNV(!FORMALES.includes(tipoComp) || tipoComp === '');
                 const adelantoComprobante = Number(comprobantePayload?.adelanto ?? 0);
+                setClienteNombreFicha(String(comprobantePayload?.cliente?.nombre ?? '').trim());
                 if (payload) {
                     setEnvioData({
                         transportista: payload.transportista || '',
@@ -162,7 +164,8 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                         aplicacionMontoCliente: payload.aplicacionMontoCliente ?? (adelantoComprobante > 0 ? 'ADELANTO' : 'NEGOCIO'),
                         montoCOD: payload.montoCOD ?? 0,
                         // Nombre de quien recibe: el guardado o, si la ficha del cliente es real (no "WSP 9…"), el del cliente.
-                        nombreDestinatario: payload.nombreDestinatario || (/^WSP\s/i.test(String(comprobantePayload?.cliente?.nombre ?? '')) ? '' : String(comprobantePayload?.cliente?.nombre ?? '').trim()),
+                        // "WSP 9…" y "CLIENTES VARIOS" (genérico del POS) no sirven como nombre de quien recibe.
+                        nombreDestinatario: payload.nombreDestinatario || (/^WSP\s|^CLIENTES?\s+VARIOS$/i.test(String(comprobantePayload?.cliente?.nombre ?? '').trim()) ? '' : String(comprobantePayload?.cliente?.nombre ?? '').trim()),
                         tipoVentaReparto: payload.tipoVentaReparto || '',
                         distritoUbigeo: payload.distritoUbigeo || '',
                         distrito: payload.distrito || '',
@@ -473,7 +476,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                             <Field label="Nombre de quien recibe">
                                 <input type="text" value={envioData.nombreDestinatario}
                                     onChange={e => set('nombreDestinatario', e.target.value)}
-                                    placeholder="Nombre y apellido de quien recibe el pedido"
+                                    placeholder={/^CLIENTES?\s+VARIOS$/i.test(String(clienteNombreFicha)) ? 'Venta a "Clientes varios": escribe el nombre de quien recibe' : /^WSP\s/i.test(String(clienteNombreFicha)) ? 'El cliente se registró solo con WhatsApp: escribe el nombre para el motorizado' : 'Nombre y apellido de quien recibe el pedido'}
                                     className={inp} />
                             </Field>
 
