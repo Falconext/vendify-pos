@@ -853,7 +853,7 @@ export default function PanelVentasView() {
             />
 
             {/* Reparto propio / motorizado: resumen del rango (solo si hay despachos propios) */}
-            {vm.repartoResumen && Number(vm.repartoResumen.totales?.pedidos ?? 0) > 0 && (
+            {vm.repartoResumen && (Number(vm.repartoResumen.totales?.pedidos ?? 0) > 0 || (vm.repartoResumen.otrasFechas?.length ?? 0) > 0) && (
                 <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="reparto-resumen">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
@@ -889,6 +889,20 @@ export default function PanelVentasView() {
                                 </span>
                             ))}
                         </div>
+                    )}
+                    {Array.isArray(vm.repartoResumen.otrasFechas) && vm.repartoResumen.otrasFechas.length > 0 && (
+                        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300" data-testid="reparto-otras-fechas">
+                            <Icon icon="solar:calendar-mark-bold-duotone" className="text-fuchsia-500" />
+                            Por entregar otro día (no salen en este Excel):
+                            {vm.repartoResumen.otrasFechas.map((o: any) => (
+                                <button key={o.fecha} type="button"
+                                    onClick={() => { vm.setFecha(o.fecha); vm.setFechaFin(''); }}
+                                    title="Ver ese día"
+                                    className="rounded-lg border border-fuchsia-200 bg-white px-2 py-0.5 font-bold text-fuchsia-700 hover:bg-fuchsia-100 dark:border-fuchsia-900/40 dark:bg-slate-800 dark:text-fuchsia-300">
+                                    {moment(o.fecha).format('DD/MM')} · {o.pedidos}
+                                </button>
+                            ))}
+                        </p>
                     )}
                 </div>
             )}
