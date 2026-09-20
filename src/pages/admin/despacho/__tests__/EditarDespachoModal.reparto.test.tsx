@@ -119,6 +119,23 @@ describe('Editar Despacho · Reparto propio', () => {
         expect(body.fechaEstimada).toBe('2026-09-21'); // mediodía UTC se lee como 21 en Lima
     });
 
+    it('elegir Reparto propio pasa el tipo de envío a domicilio y muestra "Nombre de quien recibe"', async () => {
+        await abrir();
+        // el despacho venía "Para agencia" (tipoEnvio AGENCIA) → al pulsar el chip se vuelve domicilio
+        fireEvent.click(screen.getByText('Para agencia'));
+        fireEvent.click(screen.getByText('Shalom PRO'));
+        fireEvent.click(screen.getByText('Reparto propio'));
+        expect(screen.getByText('Dirección de entrega')).toBeInTheDocument();
+        const nombre = screen.getByPlaceholderText('Nombre y apellido de quien recibe el pedido') as HTMLInputElement;
+        expect(nombre.value).toBe('ROSA QA'); // precargado desde la ficha real del cliente
+        fireEvent.change(nombre, { target: { value: 'ROSA QUISPE' } });
+        fireEvent.click(screen.getByText('Guardar cambios'));
+        await waitFor(() => expect(putMock).toHaveBeenCalled());
+        const body = (putMock.mock.calls[0] as any)[1];
+        expect(body.tipoEnvio).toBe('DOMICILIO');
+        expect(body.nombreDestinatario).toBe('ROSA QUISPE');
+    });
+
     it('carga los ubigeos una sola vez al entrar en Reparto propio', async () => {
         await abrir();
         expect(getUbigeos).not.toHaveBeenCalled(); // el mock ya trae ubigeos

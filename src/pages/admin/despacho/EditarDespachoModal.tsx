@@ -103,6 +103,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
         aplicacionMontoCliente: 'ADELANTO' as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO',
         montoCOD: 0,
         // Reparto propio / motorizado externo (plantilla de carga masiva del courier)
+        nombreDestinatario: '',
         tipoVentaReparto: '',
         distritoUbigeo: '',
         distrito: '',
@@ -160,6 +161,8 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                         pagarFlete: payload.pagarFlete ?? (adelantoComprobante > 0 ? 'CLIENTE' : 'NEGOCIO'),
                         aplicacionMontoCliente: payload.aplicacionMontoCliente ?? (adelantoComprobante > 0 ? 'ADELANTO' : 'NEGOCIO'),
                         montoCOD: payload.montoCOD ?? 0,
+                        // Nombre de quien recibe: el guardado o, si la ficha del cliente es real (no "WSP 9…"), el del cliente.
+                        nombreDestinatario: payload.nombreDestinatario || (/^WSP\s/i.test(String(comprobantePayload?.cliente?.nombre ?? '')) ? '' : String(comprobantePayload?.cliente?.nombre ?? '').trim()),
                         tipoVentaReparto: payload.tipoVentaReparto || '',
                         distritoUbigeo: payload.distritoUbigeo || '',
                         distrito: payload.distrito || '',
@@ -257,7 +260,11 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                     {/* Courier chips */}
                     <div className="mt-4 flex flex-wrap gap-2">
                         {COURIERS.map(c => (
-                            <button key={c.value} type="button" onClick={() => set('transportista', c.value)}
+                            <button key={c.value} type="button" onClick={() => {
+                                set('transportista', c.value);
+                                // El motorizado entrega en la puerta: reparto propio = a domicilio salvo que el usuario cambie.
+                                if (c.value === 'PROPIOS' && envioData.tipoEnvio !== 'DOMICILIO') set('tipoEnvio', 'DOMICILIO');
+                            }}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${envioData.transportista === c.value
                                         ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-900/20'
                                         : 'bg-white/15 text-white/80 hover:bg-white/25'
@@ -461,6 +468,13 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                                         </button>
                                     ))}
                                 </div>
+                            </Field>
+
+                            <Field label="Nombre de quien recibe">
+                                <input type="text" value={envioData.nombreDestinatario}
+                                    onChange={e => set('nombreDestinatario', e.target.value)}
+                                    placeholder="Nombre y apellido de quien recibe el pedido"
+                                    className={inp} />
                             </Field>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
