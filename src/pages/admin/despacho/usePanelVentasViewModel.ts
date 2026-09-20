@@ -284,10 +284,66 @@ export function usePanelVentasViewModel() {
         }
     }, [fecha, fechaFin, sedeActiva?.id, esPrincipalAdmin, sedeVista, filtroUsuarioId, canFilterByUsuario, alert]);
 
+    // ── Reparto propio / motorizado: resumen del rango (misma sede/fechas del
+    // panel) y descarga del Excel con la plantilla de carga masiva del courier.
+    const [repartoResumen, setRepartoResumen] = useState<any>(null);
+    const [exportandoReparto, setExportandoReparto] = useState(false);
+    const paramsReparto = useCallback(() => {
+        const hasta = fechaFin && fechaFin > fecha ? fechaFin : fecha;
+        const params = new URLSearchParams({ fecha });
+        if (hasta !== fecha) params.set('fechaFin', hasta);
+        if (esPrincipalAdmin) {
+            if (sedeVista) params.set('sedeId', String(sedeVista));
+        } else if (sedeActiva?.id) {
+            params.set('sedeId', String(sedeActiva.id));
+        }
+        if (filtroRepartidorId) params.set('repartidorId', String(filtroRepartidorId));
+        return { params, hasta };
+    }, [fecha, fechaFin, esPrincipalAdmin, sedeVista, sedeActiva?.id, filtroRepartidorId]);
+
+    useEffect(() => {
+        let vivo = true;
+        const { params } = paramsReparto();
+        apiClient.get<any>(`/envio-despacho/reparto/resumen?${params.toString()}`)
+            .then(({ data }) => {
+                if (!vivo) return;
+                const r = data?.data ?? data ?? null;
+                setRepartoResumen(r && typeof r === 'object' && 'totales' in r ? r : null);
+            })
+            .catch(() => { if (vivo) setRepartoResumen(null); });
+        return () => { vivo = false; };
+    // Se refresca junto con el panel (mismos filtros) y tras guardar un despacho.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [paramsReparto, items]);
+
+    const exportarReparto = useCallback(async () => {
+        if (exportandoReparto) return;
+        setExportandoReparto(true);
+        try {
+            const { params, hasta } = paramsReparto();
+            const resp = await apiClient.get(`/envio-despacho/reparto/exportar?${params.toString()}`, { responseType: 'blob', timeout: 60_000 });
+            const url = window.URL.createObjectURL(new Blob([resp.data as any]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `reparto_${fecha}${hasta !== fecha ? `_a_${hasta}` : ''}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            const inc = Number(repartoResumen?.incompletos?.length ?? 0);
+            alert(inc > 0 ? `Excel de reparto descargado. ${inc} pedido${inc !== 1 ? 's' : ''} con datos incompletos (ver columna CARGA).` : 'Excel de reparto descargado', inc > 0 ? 'warning' : 'success');
+        } catch {
+            alert('No se pudo exportar el reparto', 'error');
+        } finally {
+            setExportandoReparto(false);
+        }
+    }, [exportandoReparto, paramsReparto, fecha, repartoResumen, alert]);
+
     return {
         fecha, setFecha,
         fechaFin, setFechaFin,
         exportando, exportarResumen,
+        repartoResumen, exportandoReparto, exportarReparto,
         items, filtrados,
         loading,
         tab, setTab,

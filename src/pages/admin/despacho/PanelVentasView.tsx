@@ -833,6 +833,17 @@ export default function PanelVentasView() {
                         <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
                         Excel
                     </button>
+                    <button
+                        type="button"
+                        onClick={vm.exportarReparto}
+                        disabled={vm.exportandoReparto}
+                        className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-slate-700 text-fuchsia-600 dark:text-fuchsia-300 text-sm font-semibold hover:bg-fuchsia-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
+                        title="Descargar el Excel del reparto propio (formato de carga masiva del motorizado) para el rango seleccionado"
+                        data-testid="btn-exportar-reparto"
+                    >
+                        <Icon icon={vm.exportandoReparto ? 'svg-spinners:180-ring' : 'solar:scooter-bold-duotone'} className="text-lg" />
+                        Reparto
+                    </button>
                 </div>
             </div>
 
@@ -840,6 +851,46 @@ export default function PanelVentasView() {
                 className="mb-5"
                 cards={kpis.map((k) => ({ label: k.label, value: k.value, detail: k.detail }))}
             />
+
+            {/* Reparto propio / motorizado: resumen del rango (solo si hay despachos propios) */}
+            {vm.repartoResumen && Number(vm.repartoResumen.totales?.pedidos ?? 0) > 0 && (
+                <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="reparto-resumen">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
+                            <Icon icon="solar:scooter-bold-duotone" className="text-base" />
+                            Reparto propio · {moment(vm.fecha).format('DD/MM')}{vm.fechaFin && vm.fechaFin > vm.fecha ? ` – ${moment(vm.fechaFin).format('DD/MM')}` : ''}
+                        </p>
+                        {Number(vm.repartoResumen.incompletos?.length ?? 0) > 0 && (
+                            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                <Icon icon="solar:danger-triangle-bold" />
+                                {vm.repartoResumen.incompletos.length} con datos incompletos: {vm.repartoResumen.incompletos.slice(0, 3).map((i: any) => i.documento).join(', ')}{vm.repartoResumen.incompletos.length > 3 ? '…' : ''}
+                            </span>
+                        )}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                            { label: 'Pedidos', value: vm.repartoResumen.totales.pedidos },
+                            { label: 'Contraentrega', value: vm.repartoResumen.totales.contraentrega },
+                            { label: 'A cobrar (S/)', value: Number(vm.repartoResumen.totales.montoCobrar).toFixed(2) },
+                            { label: 'Entregados', value: vm.repartoResumen.totales.entregados },
+                        ].map((k) => (
+                            <div key={k.label} className="rounded-xl bg-white/80 dark:bg-slate-900/40 px-3 py-2">
+                                <p className="text-lg font-black text-slate-900 dark:text-white leading-tight">{k.value}</p>
+                                <p className="text-[11px] text-slate-500">{k.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                    {Array.isArray(vm.repartoResumen.porDistrito) && vm.repartoResumen.porDistrito.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {vm.repartoResumen.porDistrito.slice(0, 8).map((d: any) => (
+                                <span key={d.nombre} className="rounded-lg bg-white dark:bg-slate-800 border border-fuchsia-100 dark:border-fuchsia-900/40 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                                    {d.nombre} · {d.pedidos}{d.montoCobrar > 0 ? ` · S/ ${Number(d.montoCobrar).toFixed(2)}` : ''}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Tabs + filtros */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap mb-4">

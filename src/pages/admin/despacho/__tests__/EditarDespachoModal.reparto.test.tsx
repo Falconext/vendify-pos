@@ -7,7 +7,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-const putMock = jest.fn(() => Promise.resolve({ data: { code: 1 } }));
+const putMock = jest.fn((_url: string, _body: any) => Promise.resolve({ data: { code: 1 } }));
 const getMock = jest.fn((url: string) => {
     if (url.startsWith('/envio-despacho/comprobante/')) return Promise.resolve({ data: { data: {
         transportista: 'PROPIOS', tipoEnvio: 'DOMICILIO', agenciaDestino: 'predio el porvenir mz b lt 5', celularDest: '957039998',
