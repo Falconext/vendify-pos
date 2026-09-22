@@ -11,6 +11,8 @@ import { POSCalculations } from "./POSCalculations";
 import ModalProduct from "@/pages/admin/inventario/modal-productos";
 import Select from "@/components/Select";
 import ModalClient from "@/features/admin/clients/shared/ModalClient";
+import useAlertStore from "@/zustand/alert";
+import { useClientsStore } from "@/zustand/clients";
 import ModalConfirm from "@/components/ModalConfirm";
 import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
 import ModalEditLineItem from "@/pages/admin/facturacion/ModalEditLineItem";
@@ -31,7 +33,10 @@ export const FacturacionNuevoView = () => {
     const [localPrintSize, setLocalPrintSize] = useState<string>(vm.printSize ?? 'TICKET');
     const [pendingPrint, setPendingPrint] = useState(false);
     const routeState = location.state as any;
-    const shouldAskDocumentType = !vm.isQuotationRoute && !routeState?.fromCreditNote && !routeState?.fromNotaVenta && !routeState?.defaultType;
+    // Con un comprobante inicial fijo configurado por la empresa (Perfil →
+    // Configuración → "Comprobante con el que empieza cada venta") el POS arranca
+    // directo en ese tipo sin preguntar; la cajera lo cambia con "Cambiar".
+    const shouldAskDocumentType = !vm.isQuotationRoute && !routeState?.fromCreditNote && !routeState?.fromNotaVenta && !routeState?.defaultType && !vm.comprobanteInicialConfigurado;
     const [isComprobanteModalOpen, setIsComprobanteModalOpen] = useState(shouldAskDocumentType);
     // Caja obligatoria: hasta que el candado se resuelva (caja abierta, flag
     // apagado o "solo voy a cotizar"), no se muestra el selector de comprobante.
@@ -75,12 +80,11 @@ export const FacturacionNuevoView = () => {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .trim();
-    const clienteSearchResults = useMemo(() => {
-        const query = normalizeSearch(clienteSearchTerm);
+    const filtrarClientes = (items: any[], termino: string) => {
+        const query = normalizeSearch(termino);
         if (query.length < 3) return [];
         const compactQuery = query.replace(/[^a-z0-9]/g, '');
-        const items = Array.isArray(vm.clients) ? vm.clients : [];
-        return items.filter((client: any) => {
+        return (Array.isArray(items) ? items : []).filter((client: any) => {
             const fullName = normalizeSearch([
                 client?.nombre,
                 client?.apellidoPaterno,
@@ -96,7 +100,8 @@ export const FacturacionNuevoView = () => {
                 || (compactQuery.length >= 3 && telefono.includes(compactQuery))
             );
         }).slice(0, 6);
-    }, [clienteSearchTerm, vm.clients]);
+    };
+    const clienteSearchResults = useMemo(() => filtrarClientes(vm.clients, clienteSearchTerm), [clienteSearchTerm, vm.clients]); // eslint-disable-line react-hooks/exhaustive-deps
     // Celular de 9 dígitos (empieza en 9) sin coincidencias → ofrecer alta rápida
     // "WSP <celular>" (clientes que compran por WhatsApp).
     const clienteSearchCelular = useMemo(() => {
@@ -403,7 +408,31 @@ export const FacturacionNuevoView = () => {
                                             }
                                         }}
                                         onBlur={() => {
-                                            window.setTimeout(() => setClienteSearchOpen(false), 120);
+                                            // Si escribió algo, encontró al cliente y se fue sin pulsar ELEGIR,
+                                            // el campo volvía en silencio a "CLIENTES VARIOS" y la venta salía
+                                            // con el cliente genérico (Navilook: cliente registrado con DNI y
+                                            // la nota igual decía CLIENTES VARIOS). Con una sola coincidencia se
+                                            // elige sola; con varias, aviso para que elija.
+                                            window.setTimeout(() => {
+                                                const term = clienteSearchTerm.trim();
+                                                const escribioOtro = term.length >= 3 && normalizeSearch(term) !== normalizeSearch(selectedClientLabel);
+                                                if (!escribioOtro) { setClienteSearchOpen(false); return; }
+                                                const decidir = (items: any[]) => {
+                                                    const res = filtrarClientes(items, term);
+                                                    if (res.length === 1) { handleSelectClienteSuggestion(res[0]); return; }
+                                                    useAlertStore.getState().alert(
+                                                        res.length > 1
+                                                            ? `Hay ${res.length} clientes que coinciden con "${term}": elige uno de la lista. La venta sigue con ${selectedClientLabel}.`
+                                                            : `No encontramos un cliente con "${term}": la venta sigue con ${selectedClientLabel}. Regístralo con el botón de nuevo cliente.`,
+                                                        'warning',
+                                                    );
+                                                    setClienteSearchOpen(false);
+                                                };
+                                                // La lista puede no haber llegado todavía (se pide al escribir):
+                                                // se decide con lo que haya y, si no hay nada, al terminar la búsqueda.
+                                                if (clienteSearchResults.length > 0) decidir(vm.clients);
+                                                else vm.handleGetDataClient(term, () => decidir(useClientsStore.getState().clients));
+                                            }, 120);
                                         }}
                                         onChange={(e) => {
                                             const next = e.target.value;

@@ -181,7 +181,7 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                 <div className="flex gap-2 mb-3">
                     <div className="relative flex-1">
                         <input
-                            ref={searchRef}
+                            ref={(el) => { searchRef.current = el; if (vm.searchInputRef) vm.searchInputRef.current = el; }}
                             type="text"
                             placeholder="Buscar productos...  ( / · Ctrl+B )"
                             className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-violet-500/20 text-gray-700 dark:text-gray-200 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium"

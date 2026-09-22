@@ -4,8 +4,21 @@ import { createPortal } from 'react-dom';
 import { usePagosStore } from '@/zustand/pagos';
 import { useAuthStore } from '@/zustand/auth';
 import { useUsersStore } from '@/zustand/users';
-import Select from '@/components/Select';
+import { useCuentasBancariasStore } from '@/zustand/cuentasBancarias';
 import PaymentReceipt from '@/components/PaymentReceipt';
+
+// Mismo estilo de inputs que "Coordinar envío" (EditarDespachoModal).
+const inp = "w-full h-10 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all placeholder:text-slate-400";
+const lbl = "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5";
+
+// Tiles de medio de pago con los mismos logos que el POS.
+const MEDIOS_PAGO = [
+    { value: 'EFECTIVO', label: 'Efectivo', logo: '/assets/pagos/efectivo.png' },
+    { value: 'YAPE', label: 'Yape', logo: '/assets/pagos/yape.png' },
+    { value: 'PLIN', label: 'Plin', logo: '/assets/pagos/plin.png' },
+    { value: 'TRANSFERENCIA', label: 'Transferencia', logo: '/assets/pagos/transferencia.png' },
+    { value: 'TARJETA', label: 'Tarjeta', logo: '/assets/pagos/tarjeta.png' },
+];
 
 const DIRIGIDO_OPTIONS = [
     { value: 'ADMINISTRADOR', label: 'Administrador' },
@@ -23,8 +36,10 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
     const { auth } = useAuthStore();
     const { registrarPagoComprobante, subirComprobantePago, loading } = usePagosStore();
     const { usuarios, getAllUsers } = useUsersStore();
+    const { cuentas, listar: listarCuentas } = useCuentasBancariasStore();
     const [monto, setMonto] = useState('');
     const [medioPago, setMedioPago] = useState('EFECTIVO');
+    const [cuentaBancariaId, setCuentaBancariaId] = useState<number | null>(null);
     const [observacion, setObservacion] = useState('');
     const [referencia, setReferencia] = useState('');
     const [dirigidoA, setDirigidoA] = useState('');
@@ -52,6 +67,30 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
             setVendedorId(Number(comprobante.vendedorCampoId));
         }
     }, [cobranzaCampo, comprobante?.vendedorCampoId]);
+
+    // Cuenta bancaria de destino: se pide para medios que no son efectivo, así el
+    // pago queda vinculado a un banco y aparece en Caja y Bancos.
+    const medioUpper = medioPago.toUpperCase();
+    const requiereBanco = medioUpper !== 'EFECTIVO';
+    const bancoObligatorio = ['TRANSFERENCIA', 'TARJETA', 'DEPOSITO'].includes(medioUpper);
+    const cuentasActivas = (cuentas || []).filter((c: any) => c.activo);
+    const nombreCuenta = (c: any) =>
+        `${c.banco}${c.alias ? ` · ${c.alias}` : ''} · ${c.numeroCuenta}`;
+
+    useEffect(() => { listarCuentas(); }, [listarCuentas]);
+
+    // Al elegir Yape/Plin, preseleccionar la cuenta vinculada de la empresa (a la
+    // que abonan esos medios); al volver a Efectivo, limpiar la cuenta.
+    useEffect(() => {
+        if (medioUpper === 'EFECTIVO') { setCuentaBancariaId(null); return; }
+        if (medioUpper === 'YAPE' || medioUpper === 'PLIN') {
+            const vinc = cuentasActivas.find(
+                (c: any) => (c.medioPagoVinculado || '').toUpperCase() === medioUpper,
+            );
+            if (vinc) setCuentaBancariaId(vinc.id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [medioUpper, cuentas]);
 
     const handleComprobanteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
@@ -91,6 +130,9 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
         if (montoNum > saldoActual) { setError(`El monto no puede exceder el saldo (S/ ${saldoActual.toFixed(2)})`); return; }
         if (cobranzaCampo && !vendedorId) { setError('Selecciona el vendedor de campo que envió el comprobante'); return; }
         if (cobranzaCampo && !dirigidoA) { setError('Indica a quién fue dirigido el pago'); return; }
+        if (bancoObligatorio && cuentasActivas.length > 0 && !cuentaBancariaId) {
+            setError('Selecciona la cuenta de destino del pago'); return;
+        }
         setError('');
 
         const vendedorNombre = cobranzaCampo ? usuarios.find((u: any) => u.id === vendedorId)?.nombre : undefined;
@@ -98,6 +140,7 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
         const result = await registrarPagoComprobante(comprobante.id, {
             monto: montoNum,
             medioPago,
+            cuentaBancariaId: requiereBanco ? (cuentaBancariaId ?? undefined) : undefined,
             observacion: observacion || undefined,
             referencia: referencia || undefined,
             dirigidoA: cobranzaCampo ? (dirigidoA || undefined) : undefined,
@@ -168,201 +211,252 @@ const ModalRegistrarPago = ({ comprobante, onClose, onSuccess }: ModalRegistrarP
         );
     }
 
-    // Modal de Registro de Pago
+    // Modal de Registro de Pago — mismo lenguaje visual que "Coordinar envío"
+    // (header degradado, inputs `inp`, footer con botón degradado) y tiles de
+    // medio de pago como en el POS.
+    const totalComprobante = Number(comprobante?.mtoImpVenta || 0);
+    const pagadoHasta = Math.max(0, totalComprobante - saldoActual);
+    const pctPagado = totalComprobante > 0 ? Math.min(100, Math.round((pagadoHasta / totalComprobante) * 100)) : 0;
+    const pctDespues = totalComprobante > 0 ? Math.min(100, Math.round(((totalComprobante - nuevoSaldo) / totalComprobante) * 100)) : 0;
+    const numero = `${comprobante?.serie || ''}-${String(comprobante?.correlativo ?? '').padStart(8, '0')}`;
+    const montoInvalido = montoNum > saldoActual;
+    const puedeRegistrar = !loading && !subiendoComprobante && montoNum > 0 && !montoInvalido;
+    const setMontoLimpio = (v: string) => { setMonto(v); setError(''); };
+
     const content = (
-        <div className="fixed inset-0 bg-black/60 top-[-30px] z-[999999] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-xl max-w-lg w-full overflow-y-auto max-h-[92vh] border dark:border-transparent">
+        <div className="fixed inset-0 z-[999999] top-[-30px] flex items-center justify-center p-4 font-jakarta">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
+            <div className="relative w-full max-w-xl bg-white dark:bg-[#111827] rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col" data-testid="modal-registrar-pago">
+
                 {/* Header */}
-                <div className="p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                            <Icon icon="solar:hand-money-bold-duotone" className="text-2xl" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">Registrar Pago</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {comprobante?.serie}-{String(comprobante?.correlativo).padStart(8, '0')}
-                            </p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                        <Icon icon="mdi:close" className="text-xl" />
-                    </button>
-                </div>
-
-                {/* Info del Comprobante */}
-                <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p className="text-gray-500 dark:text-gray-400">Cliente</p>
-                            <p className="font-medium text-gray-900 dark:text-white">{comprobante?.cliente?.nombre || 'Sin cliente'}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 dark:text-gray-400">RUC/DNI</p>
-                            <p className="font-medium text-gray-900 dark:text-white">{comprobante?.cliente?.nroDoc || '-'}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 dark:text-gray-400">Total Comprobante</p>
-                            <p className="font-medium text-gray-900 dark:text-white">S/ {Number(comprobante?.mtoImpVenta || 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 dark:text-gray-400">Saldo Pendiente</p>
-                            <p className="font-bold text-red-600 dark:text-red-400 text-lg">S/ {saldoActual.toFixed(2)}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Form */}
-                <div className="p-5 space-y-4">
-                    <div className="flex gap-2">
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto a Abonar</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">S/</span>
-                                <input
-                                    type="number"
-                                    value={monto}
-                                    onChange={(e) => { setMonto(e.target.value); setError(''); }}
-                                    placeholder="0.00"
-                                    step="0.01"
-                                    max={saldoActual}
-                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                />
+                <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 flex-shrink-0">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                                <Icon icon="solar:hand-money-bold-duotone" className="text-white text-xl" />
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-white font-black text-lg leading-none">Registrar pago</h2>
+                                <p className="text-indigo-200 text-xs mt-1 truncate">
+                                    <span className="font-mono font-bold text-white/90">{numero}</span>
+                                    <span className="mx-1.5 opacity-60">·</span>
+                                    {comprobante?.cliente?.nombre || 'Sin cliente'}
+                                    {comprobante?.cliente?.nroDoc ? <span className="opacity-70"> · {comprobante.cliente.nroDoc}</span> : null}
+                                </p>
                             </div>
                         </div>
-                        <button
-                            onClick={handlePagarTodo}
-                            className="mt-6 px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm font-medium"
-                        >
-                            Pagar Todo
+                        <button type="button" onClick={onClose}
+                            className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors shrink-0">
+                            <Icon icon="solar:close-circle-bold" className="text-lg" />
                         </button>
                     </div>
 
+                    {/* Resumen: total / pagado / saldo + barra de avance */}
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        {[
+                            { k: 'Total', v: totalComprobante, cls: 'text-white' },
+                            { k: 'Pagado', v: pagadoHasta, cls: 'text-emerald-200' },
+                            { k: 'Saldo', v: saldoActual, cls: 'text-amber-200' },
+                        ].map((c) => (
+                            <div key={c.k} className="rounded-2xl bg-white/10 px-3 py-2">
+                                <p className="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">{c.k}</p>
+                                <p className={`text-sm font-black tabular-nums ${c.cls}`}>S/ {c.v.toFixed(2)}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-white/15 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-300 transition-all" style={{ width: `${pctPagado}%` }} />
+                    </div>
+                </div>
+
+                {/* Body */}
+                <div className="overflow-y-auto p-6 space-y-5 flex-1">
+
+                    {/* Monto */}
                     <div>
-                        <Select
-                            error=""
-                            label="Medio de Pago"
-                            name="medioPago"
-                            defaultValue="EFECTIVO"
-                            onChange={(id: any, value: string) => setMedioPago(value)}
-                            options={[
-                                { value: 'EFECTIVO', label: 'Efectivo' },
-                                { value: 'YAPE', label: 'Yape' },
-                                { value: 'PLIN', label: 'Plin' },
-                                { value: 'TRANSFERENCIA', label: 'Transferencia' },
-                                { value: 'TARJETA', label: 'Tarjeta' },
-                            ]}
-                        />
+                        <label className={lbl}>Monto a abonar</label>
+                        <div className={`relative rounded-2xl transition-all ${montoInvalido
+                            ? 'bg-red-50 dark:bg-red-950/20 ring-1 ring-red-200 dark:ring-red-900'
+                            : 'bg-slate-50 dark:bg-slate-800/60 focus-within:bg-indigo-50/50 dark:focus-within:bg-indigo-950/20'}`}>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-400">S/</span>
+                            <input
+                                type="number"
+                                inputMode="decimal"
+                                autoFocus
+                                value={monto}
+                                onChange={(e) => setMontoLimpio(e.target.value)}
+                                placeholder="0.00"
+                                step="0.01"
+                                min={0}
+                                max={saldoActual}
+                                data-testid="input-monto"
+                                className="w-full h-14 pl-12 pr-32 bg-transparent border-0 text-2xl font-black text-slate-900 dark:text-white outline-none focus:outline-none focus:ring-0 focus:border-0 focus:shadow-none placeholder:text-slate-300 dark:placeholder:text-slate-600 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <button type="button" onClick={handlePagarTodo} data-testid="btn-pagar-todo"
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 h-9 px-3 rounded-xl text-xs font-black transition-all ${Math.abs(montoNum - saldoActual) < 0.005
+                                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                                    : 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}>
+                                <Icon icon="solar:check-read-bold" className="inline -mt-0.5 mr-1" />
+                                Pagar todo
+                            </button>
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                            {montoInvalido
+                                ? <span className="text-red-500 font-semibold">El monto supera el saldo pendiente (S/ {saldoActual.toFixed(2)})</span>
+                                : <span className="text-slate-400">Máximo S/ {saldoActual.toFixed(2)}</span>}
+                            {saldoActual > 0 && !montoInvalido && (
+                                <div className="flex gap-1">
+                                    {[0.25, 0.5].map((f) => (
+                                        <button key={f} type="button" onClick={() => setMontoLimpio((saldoActual * f).toFixed(2))}
+                                            className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-900/40 transition-colors">
+                                            {f * 100}%
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
+                    {/* Medio de pago — tiles como en el POS */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Referencia (opcional)</label>
-                        <input
-                            type="text"
-                            value={referencia}
-                            onChange={(e) => setReferencia(e.target.value)}
-                            placeholder="Nro. operación, voucher, etc."
-                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
+                        <label className={lbl}>Medio de pago</label>
+                        <div className="grid grid-cols-5 gap-2">
+                            {MEDIOS_PAGO.map((m) => {
+                                const activo = medioUpper === m.value;
+                                return (
+                                    <button key={m.value} type="button" onClick={() => { setMedioPago(m.value); setError(''); }}
+                                        data-testid={`medio-${m.value.toLowerCase()}`}
+                                        className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 py-3 transition-all active:scale-[0.97] ${activo
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 shadow-md shadow-indigo-500/15'
+                                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-300'}`}>
+                                        <img src={m.logo} alt={m.label} className="w-8 h-8 object-contain" />
+                                        <span className={`text-[11px] font-bold ${activo ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300'}`}>{m.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observación (opcional)</label>
-                        <textarea
-                            value={observacion}
-                            onChange={(e) => setObservacion(e.target.value)}
-                            placeholder="Notas adicionales..."
-                            rows={2}
-                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                        />
+                    {/* Cuenta de destino (medios no efectivo) */}
+                    {requiereBanco && (
+                        <div>
+                            <label className={lbl}>Cuenta de destino{bancoObligatorio ? ' *' : ''}</label>
+                            {cuentasActivas.length > 0 ? (
+                                <div className="relative">
+                                    <Icon icon="solar:card-bold-duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-lg pointer-events-none" />
+                                    <select
+                                        value={cuentaBancariaId ?? ''}
+                                        onChange={(e) => { setCuentaBancariaId(Number(e.target.value) || null); setError(''); }}
+                                        data-testid="select-cuenta"
+                                        className={inp + ' pl-10 pr-9 appearance-none cursor-pointer'}>
+                                        <option value="">{bancoObligatorio ? 'Selecciona la cuenta…' : 'Sin cuenta (opcional)'}</option>
+                                        {cuentasActivas.map((c: any) => <option key={c.id} value={c.id}>{nombreCuenta(c)}</option>)}
+                                    </select>
+                                    <Icon icon="solar:alt-arrow-down-linear" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+                            ) : (
+                                <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2.5 border border-amber-200 dark:border-amber-900/40 flex items-start gap-2">
+                                    <Icon icon="solar:info-circle-bold" className="text-base shrink-0 mt-px" />
+                                    No tienes cuentas bancarias registradas. Agrégalas en Caja y Bancos para que este pago se refleje ahí.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Referencia + Observación */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className={lbl}>Referencia <span className="normal-case font-medium text-slate-400">(opcional)</span></label>
+                            <div className="relative">
+                                <Icon icon="solar:hashtag-square-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base pointer-events-none" />
+                                <input type="text" value={referencia} onChange={(e) => setReferencia(e.target.value)}
+                                    placeholder="N° operación, voucher…" className={inp + ' pl-9'} data-testid="input-referencia" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={lbl}>Observación <span className="normal-case font-medium text-slate-400">(opcional)</span></label>
+                            <input type="text" value={observacion} onChange={(e) => setObservacion(e.target.value)}
+                                placeholder="Notas adicionales" className={inp} data-testid="input-observacion" />
+                        </div>
                     </div>
 
-                    {/* Casuística de cobranza con vendedores de campo (activada por empresa) */}
+                    {/* Cobranza con vendedores de campo (activada por empresa) */}
                     {cobranzaCampo && (
-                        <>
-                            {/* Vendedor de campo que envió el comprobante (obligatorio) */}
-                            <div>
-                                <Select
-                                    error=""
-                                    label="Vendedor de campo * (quién envió el comprobante)"
-                                    name="vendedorId"
-                                    value={usuarios.find((u: any) => u.id === vendedorId)?.nombre || ''}
-                                    onChange={(id: any) => { setVendedorId(Number(id) || null); setError(''); }}
-                                    options={(usuarios || []).map((u: any) => ({ id: u.id, value: u.nombre || u.email || `Usuario ${u.id}` }))}
-                                />
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30 p-4 space-y-4">
+                            <p className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <Icon icon="solar:users-group-rounded-bold-duotone" className="text-indigo-500 text-base" />
+                                Cobranza en campo
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className={lbl}>Vendedor que envió el comprobante *</label>
+                                    <select value={vendedorId ?? ''} onChange={(e) => { setVendedorId(Number(e.target.value) || null); setError(''); }}
+                                        className={inp + ' pr-9 appearance-none cursor-pointer'}>
+                                        <option value="">Selecciona…</option>
+                                        {(usuarios || []).map((u: any) => <option key={u.id} value={u.id}>{u.nombre || u.email || `Usuario ${u.id}`}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={lbl}>¿A quién fue dirigido el pago? *</label>
+                                    <select value={dirigidoA} onChange={(e) => { setDirigidoA(e.target.value); setError(''); }}
+                                        className={inp + ' pr-9 appearance-none cursor-pointer'}>
+                                        <option value="">Selecciona…</option>
+                                        {DIRIGIDO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                    </select>
+                                </div>
                             </div>
-
-                            {/* ¿A quién fue dirigido el pago? (obligatorio) */}
                             <div>
-                                <Select
-                                    error=""
-                                    label="¿A quién fue dirigido el pago? *"
-                                    name="dirigidoA"
-                                    onChange={(id: any) => { setDirigidoA(String(id || '')); setError(''); }}
-                                    options={DIRIGIDO_OPTIONS.map((o) => ({ id: o.value, value: o.label }))}
-                                />
-                            </div>
-
-                            {/* Comprobante del pago (opcional, imagen) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comprobante (opcional)</label>
+                                <label className={lbl}>Comprobante <span className="normal-case font-medium text-slate-400">(opcional)</span></label>
                                 {comprobantePreview ? (
                                     <div className="relative inline-block">
-                                        <img src={comprobantePreview} alt="Comprobante" className="h-28 rounded-lg border border-gray-200 dark:border-slate-700 object-cover" />
+                                        <img src={comprobantePreview} alt="Comprobante" className="h-28 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
                                         <button type="button" onClick={quitarComprobante} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-600">
                                             <Icon icon="mdi:close" className="text-sm" />
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-lg px-4 py-5 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
-                                        <Icon icon="solar:gallery-add-bold-duotone" className="text-2xl text-blue-500" />
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 text-center">Sube la imagen del comprobante que envió el vendedor</span>
+                                    <label className="flex items-center gap-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors">
+                                        <Icon icon="solar:gallery-add-bold-duotone" className="text-2xl text-indigo-500 shrink-0" />
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Sube la imagen del comprobante que envió el vendedor</span>
                                         <input type="file" accept="image/*" onChange={handleComprobanteChange} className="hidden" />
                                     </label>
                                 )}
                             </div>
-                        </>
+                        </div>
                     )}
 
                     {error && (
-                        <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border dark:border-red-900/30">{error}</p>
-                    )}
-
-                    {montoNum > 0 && !error && (
-                        <div className="flex justify-between text-sm px-1">
-                            <span className="text-gray-400 dark:text-gray-500">Saldo después del pago</span>
-                            <span className={`font-bold ${nuevoSaldo > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                S/ {nuevoSaldo.toFixed(2)}
-                            </span>
-                        </div>
+                        <p className="text-xs font-semibold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2.5 border border-red-200 dark:border-red-900/40 flex items-start gap-2" data-testid="error-pago">
+                            <Icon icon="solar:danger-triangle-bold" className="text-base shrink-0 mt-px" />
+                            {error}
+                        </p>
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-5 border-t border-gray-100 dark:border-slate-800 flex gap-3 justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors font-medium"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading || subiendoComprobante || montoNum <= 0 || montoNum > saldoActual}
-                        className="px-5 py-2.5 btn-accent rounded-lg transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading || subiendoComprobante ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Procesando...
-                            </>
-                        ) : (
-                            <>
-                                <Icon icon="solar:check-circle-bold" />
-                                Registrar Pago
-                            </>
-                        )}
-                    </button>
+                {/* Resultado + Footer */}
+                <div className="px-6 pb-6 pt-3 flex-shrink-0 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    {montoNum > 0 && !montoInvalido && (
+                        <div className={`flex items-center justify-between rounded-2xl px-4 py-2.5 text-sm ${nuevoSaldo > 0.005
+                            ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200'
+                            : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200'}`} data-testid="saldo-despues">
+                            <span className="flex items-center gap-2 font-semibold">
+                                <Icon icon={nuevoSaldo > 0.005 ? 'solar:hourglass-bold-duotone' : 'solar:check-circle-bold'} className="text-lg" />
+                                {nuevoSaldo > 0.005 ? 'Quedará pendiente' : 'La venta quedará pagada'}
+                            </span>
+                            <span className="font-black tabular-nums">S/ {nuevoSaldo.toFixed(2)} <span className="text-[11px] font-bold opacity-60">({pctDespues}% pagado)</span></span>
+                        </div>
+                    )}
+                    <div className="flex gap-3">
+                        <button type="button" onClick={onClose} disabled={loading || subiendoComprobante}
+                            className="flex-1 h-11 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="button" onClick={handleSubmit} disabled={!puedeRegistrar} data-testid="btn-registrar"
+                            className="flex-[2] h-11 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm shadow-lg shadow-indigo-500/25 hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+                            <Icon icon={loading || subiendoComprobante ? 'eos-icons:loading' : 'solar:check-circle-bold'} className="text-lg" />
+                            {loading || subiendoComprobante ? 'Procesando…' : `Registrar pago${montoNum > 0 && !montoInvalido ? ` · S/ ${montoNum.toFixed(2)}` : ''}`}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

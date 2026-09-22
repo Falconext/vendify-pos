@@ -51,6 +51,10 @@ const PaymentReceipt = ({
   })();
 
   const empresaRuc = company?.empresa?.ruc || company?.empresa?.nroDoc || '';
+  // Mismo tamaño de logo que el ticket de venta (Perfil → "Tamaño del Logo en
+  // Comprobantes"): antes el recibo lo fijaba en 64px y salía diminuto al imprimir.
+  const logoScale = (Number(company?.empresa?.ticketLogoSize) || 96) / 96;
+  const logoDim = Math.round(70 * logoScale);
 
   const fechaActual = new Date();
   const horaActual = fechaActual.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -59,6 +63,11 @@ const PaymentReceipt = ({
   const printFn = useReactToPrint({
     // @ts-ignore
     contentRef: componentRef,
+    // Nombre sugerido al "Guardar como PDF": N° de recibo + comprobante que paga
+    // (REC-8461_NV01-272). Sin esto el navegador usa el título de la pestaña
+    // ("Krezka") y cada recibo guardado pisa al anterior.
+    documentTitle: [numeroRecibo, `${comprobante?.serie || comprobante?.data?.serie || ''}-${comprobante?.correlativo || comprobante?.data?.correlativo || ''}`]
+      .filter((x) => x && x !== '-').join('_') || undefined,
     pageStyle: `
       @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
       @page { size: 80mm 297mm; margin: 0; }
@@ -108,7 +117,7 @@ const PaymentReceipt = ({
           style={{ fontFamily: 'VT323, Menlo, Monaco, Consolas, "Courier New", monospace', lineHeight: 1.2, letterSpacing: '0.2px' }}
         >
           <div>
-            {logoDataUrl && <img src={logoDataUrl} alt="logo" className="mx-auto w-16 h-16" style={{ filter: 'grayscale(100%)' }} />}
+            {logoDataUrl && <img src={logoDataUrl} alt="logo" className="mx-auto object-contain" style={{ width: logoDim, height: logoDim, filter: 'grayscale(100%)' }} />}
             <h2 className="text-center text-[18px] mt-3">{company?.empresa?.nombreComercial?.toUpperCase()}</h2>
             <p className="text-center text-[18px]">
               RAZON SOCIAL: {company?.empresa?.razonSocial?.toUpperCase()}<br />

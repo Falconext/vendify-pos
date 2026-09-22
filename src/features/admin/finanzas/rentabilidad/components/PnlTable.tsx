@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { PnlResponse, OtroIngreso, formatCurrency, formatPercent, getCategoriaLabel, getCategoriaIcon, TIPOS_INGRESO } from '../RentabilidadModel';
+import { PnlResponse, OtroIngreso, formatCurrency, formatPercent, getCategoriaLabel, getCategoriaIcon, TIPOS_INGRESO, CATEGORIA_COMPRAS } from '../RentabilidadModel';
 
 interface PnlTableProps {
     pnl: PnlResponse;
@@ -85,6 +85,8 @@ function getTipoIngresoLabel(tipo: string): string {
 
 export default function PnlTable({ pnl }: PnlTableProps) {
     const otrosIngresos = pnl.otrosIngresos ?? 0;
+    const comprasConsumo = pnl.gastosPorCategoria.filter((g) => g.categoria === CATEGORIA_COMPRAS);
+    const gastosOperativos = pnl.gastosPorCategoria.filter((g) => g.categoria !== CATEGORIA_COMPRAS);
     const otrosIngresosDetalle: OtroIngreso[] = pnl.otrosIngresosDetalle ?? [];
     const ingresosTotales = pnl.ventasNetas + otrosIngresos;
     const igvVentas = pnl.igvVentas ?? 0;
@@ -254,13 +256,13 @@ export default function PnlTable({ pnl }: PnlTableProps) {
                 barColor="bg-blue-300"
             />
 
-            {/* Gastos por categoría */}
-            {pnl.gastosPorCategoria.length > 0 && (
+            {/* Gastos por categoría (sin las compras de consumo, que van en su bloque) */}
+            {gastosOperativos.length > 0 && (
                 <>
                     <div className="mt-2 mb-1 px-3">
                         <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gastos Operativos</span>
                     </div>
-                    {pnl.gastosPorCategoria.map((g, i) => (
+                    {gastosOperativos.map((g, i) => (
                         <PnlRow
                             key={i}
                             label={g.etiqueta ? `${getCategoriaLabel(g.categoria)} — ${g.etiqueta}` : getCategoriaLabel(g.categoria)}
@@ -269,6 +271,31 @@ export default function PnlTable({ pnl }: PnlTableProps) {
                             reference={ref}
                             indent
                             barColor="bg-amber-400"
+                        />
+                    ))}
+                </>
+            )}
+
+            {/* Compras de consumo propio (Compras marcadas como gasto): netas, sin IGV.
+                Antes no entraban al P&L (Compras = inventario) y la ganancia salía inflada. */}
+            {comprasConsumo.length > 0 && (
+                <>
+                    <div className="mt-3 mb-1 px-3 flex items-baseline justify-between gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Compras de consumo (sin IGV)</span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                            {pnl.comprasConsumoCantidad ?? comprasConsumo.length} compra{(pnl.comprasConsumoCantidad ?? comprasConsumo.length) === 1 ? '' : 's'}
+                            {(pnl.comprasConsumoIgv ?? 0) > 0 && <> · IGV {formatCurrency(pnl.comprasConsumoIgv ?? 0)} es crédito fiscal, no se resta</>}
+                        </span>
+                    </div>
+                    {comprasConsumo.map((g, i) => (
+                        <PnlRow
+                            key={`c-${i}`}
+                            label={g.etiqueta ? `Compra — ${g.etiqueta}` : 'Compra'}
+                            icon={getCategoriaIcon(g.categoria)}
+                            value={g.monto}
+                            reference={ref}
+                            indent
+                            barColor="bg-orange-400"
                         />
                     ))}
                 </>
@@ -289,6 +316,50 @@ export default function PnlTable({ pnl }: PnlTableProps) {
                     : 'bg-rose-500 dark:bg-rose-600 rounded-xl'}
                 barColor={pnl.gananciaNeta >= 0 ? 'bg-emerald-300' : 'bg-rose-300'}
             />
+
+            {/* IGV del mes frente a SUNAT. La ganancia de arriba ya está sin IGV a ambos
+                lados, así que el ahorro por pedir facturas queda "escondido" dentro de ella;
+                este bloque lo hace visible: cuánto cobraste, cuánto crédito juntaste y
+                cuánto pagas (o te queda a favor). */}
+            {pnl.igvSunat && (pnl.igvSunat.cobrado > 0 || pnl.igvSunat.creditoCompras > 0) && (
+                <div className="mt-4 rounded-2xl border border-sky-200 dark:border-sky-900/50 bg-sky-50/60 dark:bg-sky-950/20 p-4" data-testid="pnl-igv-sunat">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                        <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 uppercase tracking-wide flex items-center gap-1.5">
+                            <Icon icon="solar:shield-check-bold-duotone" width={15} />
+                            IGV del mes con SUNAT
+                        </span>
+                        <span className="text-[11px] text-sky-600/80 dark:text-sky-400/80">No afecta la ganancia: es el impuesto</span>
+                    </div>
+                    <div className="space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-3">
+                            <span className="text-gray-600 dark:text-gray-300">IGV cobrado en facturas y boletas</span>
+                            <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(pnl.igvSunat.cobrado)}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                            <span className="text-gray-600 dark:text-gray-300">
+                                – Crédito fiscal de compras con factura
+                                <span className="ml-1 text-[11px] text-gray-400">({pnl.igvSunat.comprasConFactura} factura{pnl.igvSunat.comprasConFactura === 1 ? '' : 's'})</span>
+                            </span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">–{formatCurrency(pnl.igvSunat.creditoCompras)}</span>
+                        </div>
+                        <div className="flex justify-between gap-3 pt-1.5 border-t border-sky-200/70 dark:border-sky-900/50">
+                            <span className="font-bold text-gray-900 dark:text-white">
+                                {pnl.igvSunat.aPagar > 0 ? 'IGV a pagar este mes' : 'IGV a pagar este mes'}
+                            </span>
+                            <span className={`font-black tabular-nums ${pnl.igvSunat.aPagar > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {formatCurrency(pnl.igvSunat.aPagar)}
+                            </span>
+                        </div>
+                    </div>
+                    <p className="mt-2.5 text-xs text-sky-800 dark:text-sky-200 leading-snug">
+                        {pnl.igvSunat.ahorro > 0
+                            ? <>Sin las facturas de compra habrías pagado <b>{formatCurrency(pnl.igvSunat.cobrado)}</b> de IGV; con ellas pagas <b>{formatCurrency(pnl.igvSunat.aPagar)}</b>: te ahorraste <b>{formatCurrency(pnl.igvSunat.ahorro)}</b>.</>
+                            : <>Este mes no registraste compras con factura: pagas todo el IGV que cobraste.</>}
+                        {pnl.igvSunat.saldoAFavor > 0 && <> Te quedan <b>{formatCurrency(pnl.igvSunat.saldoAFavor)}</b> de crédito a favor para el siguiente mes.</>}
+                        {' '}Los gastos con factura (alquiler, servicios) aún no se cuentan aquí.
+                    </p>
+                </div>
+            )}
 
             {/* Empty state for gastos */}
             {pnl.gastosPorCategoria.length === 0 && otrosIngresos === 0 && (

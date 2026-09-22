@@ -176,7 +176,7 @@ export const usePerfilViewModel = () => {
     const [savingControlFlag, setSavingControlFlag] = useState<string | null>(null);
     const controlFlagInFlight = useRef(false);
     const handleControlFlagToggle = async (
-        flag: 'requiereAprobacionGastos' | 'requiereAprobacionCompras' | 'requiereCajaParaEmitir' | 'catalogoPorSede',
+        flag: 'requiereAprobacionGastos' | 'requiereAprobacionCompras' | 'requiereCajaParaEmitir' | 'catalogoPorSede' | 'posMantenerBusqueda' | 'posExigirCpeMedioPago',
         enabled: boolean,
     ) => {
         if (savingControlFlag || controlFlagInFlight.current) return;
@@ -195,6 +195,27 @@ export const usePerfilViewModel = () => {
         } finally {
             controlFlagInFlight.current = false;
             setSavingControlFlag(null);
+        }
+    };
+
+    // POS: comprobante con el que arranca cada venta (por empresa). Mismo patrón
+    // optimista que los flags de control.
+    const [savingPosComprobanteDefault, setSavingPosComprobanteDefault] = useState(false);
+    const handlePosComprobanteDefaultChange = async (valor: 'MANTENER_ULTIMO' | 'NOTA_DE_VENTA' | 'BOLETA' | 'FACTURA') => {
+        if (savingPosComprobanteDefault) return;
+        if (String((perfil?.empresa as any)?.posComprobanteDefault || 'MANTENER_ULTIMO') === valor) return;
+        try {
+            setSavingPosComprobanteDefault(true);
+            await useEmpresasStore.getState().actualizarMiEmpresa({ posComprobanteDefault: valor } as any);
+            setPerfil(prev => (prev ? { ...prev, empresa: { ...prev.empresa, posComprobanteDefault: valor } } : prev));
+            useAuthStore.setState(state => ({
+                auth: state.auth ? { ...state.auth, empresa: { ...(state.auth as any).empresa, posComprobanteDefault: valor } } : state.auth,
+            }));
+            useAlertStore.getState().alert('Configuración actualizada', 'success');
+        } catch (error: any) {
+            useAlertStore.getState().alert(error?.response?.data?.message || error?.message || 'No se pudo actualizar la configuración', 'error');
+        } finally {
+            setSavingPosComprobanteDefault(false);
         }
     };
 
@@ -631,5 +652,6 @@ export const usePerfilViewModel = () => {
 
     return { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword, formatearFecha, formatearFechaSolo, handleLogoChange, handleBarcodeToggle, handleFefoPriceToggle, savingVentaSinStockConfig, handleVentaSinStockToggle, savingImpresionConfig, handleImpresionConfig, savingCobranzaCampoConfig, handleCobranzaCampoToggle, savingControlFlag, handleControlFlagToggle,
         savingCriterioIgv,
+        savingPosComprobanteDefault, handlePosComprobanteDefaultChange,
         handleCriterioIgvChange, savingCotizConfig, handleCotizToggle, handleDirectorTecnicoSave, savingSunatValidez, handleSunatValidezSave, setWhatsAppProvider, updateWhatsAppField, handleWhatsAppConfigSave, obtenerEstadoSuscripcion, obtenerColorEstado, handleTicketLogoSizeChange, savingTicketLogoSize, ventaObsDefault, setVentaObsDefault, ventaObsDirty, savingVentaObs, handleVentaObsSave, shalomForm, savingShalomConfig, shalomConfigDirty, updateShalomField, handleShalomConfigSave, personalForm, savingPersonal, personalDirty, updatePersonalField, handleSavePersonal };
 };

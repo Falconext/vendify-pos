@@ -13,6 +13,8 @@ export interface IEmitidoContentProps {
     auth: any
     client: any
     comprobante: string
+    /** Tipo con el que arranca la SIGUIENTE venta (si la empresa fijó uno distinto al emitido). */
+    siguienteComprobante?: string
     isLoading: boolean
     closeModal: any
     handleOpenNewTab: any
@@ -30,7 +32,7 @@ export interface IEmitidoContentProps {
  * Contenido del comprobante emitido (éxito / procesando) SIN el wrapper de modal.
  * Se reutiliza dentro del modal "Continuar pago" para la transición inline.
  */
-const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, closeModal, handleOpenNewTab, formValues, isPendiente, pendienteMensaje, isUpdate, hasDespacho }: IEmitidoContentProps) => {
+const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, siguienteComprobante, closeModal, handleOpenNewTab, formValues, isPendiente, pendienteMensaje, isUpdate, hasDespacho }: IEmitidoContentProps) => {
     const { resetInvoice, resetProductInvoice }: IInvoicesState = useInvoiceStore();
     const navigate = useNavigate();
     const { isDarkMode } = useThemeStore();
@@ -213,7 +215,10 @@ const EmitidoContent = ({ isLoading, dataReceipt, auth, client, comprobante, clo
                         onClick={() => closeModal()}
                         className={`w-full py-3 rounded-xl text-white text-sm font-semibold transition-colors active:scale-95 ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-900 hover:bg-gray-800'}`}
                     >
-                        Nueva {comprobante?.toLowerCase()}
+                        {/* El botón dice lo que realmente va a pasar: si la empresa fijó un
+                            comprobante inicial (ej. "Siempre Nota de Venta"), la siguiente
+                            venta arranca en ese tipo aunque se acabe de emitir una boleta. */}
+                        Nueva {(siguienteComprobante || comprobante)?.toLowerCase()}
                     </button>
                 </div>
             </div>

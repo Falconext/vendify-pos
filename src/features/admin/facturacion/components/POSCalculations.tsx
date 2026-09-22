@@ -18,6 +18,64 @@ const METODO_LOGOS: Record<string, string> = {
     Tarjeta: '/assets/pagos/tarjeta.png',
 };
 
+/**
+ * Aviso "este pago necesita Boleta o Factura" (Perfil → Configuración →
+ * posExigirCpeMedioPago). Vive en la columna de métodos de pago, con el mismo
+ * lenguaje visual de las tarjetas de método: el cambio es un clic y no se pierde
+ * ni el carrito ni el cobro. Factura solo si el cliente tiene RUC.
+ */
+function CpeRequeridoCard({ vm }: { vm: any }) {
+    const medios: string = vm.cpeRequeridoMedios || 'este medio';
+    const actual: string = String(vm.formValues?.comprobante || 'comprobante interno').toLowerCase();
+    const tieneRuc = String(vm.selectedClient?.nroDoc || '').length === 11;
+    return (
+        <div data-testid="pos-cpe-requerido" className="mt-4 rounded-2xl border border-violet-200 dark:border-violet-800/60 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/30 p-4">
+            <div className="flex items-start gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <Icon icon="solar:document-add-bold" width={20} />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-gray-900 dark:text-white leading-tight">Este pago va con Boleta o Factura</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-snug">
+                        Tu empresa pide comprobante electrónico cuando el cliente paga por <span className="font-bold">{medios}</span>. La {actual} no se puede emitir así: elige uno para continuar o cobra en efectivo.
+                    </p>
+                </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+                <button
+                    type="button"
+                    onClick={() => vm.cambiarComprobanteA('BOLETA')}
+                    className="flex flex-col items-center gap-1 rounded-xl border-2 border-violet-600 bg-violet-600 text-white px-3 py-3 transition-all hover:bg-violet-700 active:scale-[0.98] shadow-md shadow-violet-500/25"
+                >
+                    <Icon icon="solar:bill-list-bold" width={22} />
+                    <span className="text-sm font-extrabold">Boleta</span>
+                    <span className="text-[10px] opacity-80">DNI o sin documento</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => vm.cambiarComprobanteA('FACTURA')}
+                    disabled={vm.esRUS}
+                    title={vm.esRUS ? 'Régimen RUS: solo Boleta' : (!tieneRuc ? 'El cliente elegido no tiene RUC' : undefined)}
+                    className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition-all active:scale-[0.98] ${vm.esRUS
+                        ? 'border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed'
+                        : 'border-violet-200 dark:border-violet-800 bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/30'}`}
+                >
+                    <Icon icon="solar:document-text-bold" width={22} />
+                    <span className="text-sm font-extrabold">Factura</span>
+                    <span className={`text-[10px] ${tieneRuc ? 'opacity-70' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>{tieneRuc ? 'Cliente con RUC' : 'Requiere cliente con RUC'}</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// Línea marcada como operación gratuita (Catálogo 07: 11-16/21/31-37) — el P.U. sigue
+// siendo informativo, pero el importe cobrado es 0. No suma al importe total.
+const esItemGratuitoPreview = (item: any): boolean => {
+    const n = Number(item?.tipoAfectacionIGV ?? item?.tipAfeIgv ?? 10);
+    return (n >= 11 && n <= 16) || n === 21 || (n >= 31 && n <= 37);
+};
+
 export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, printFn: any, handleOpenNewTab: any }) => {
     const total: number = vm.totalAdjusted ?? 0;
     const { cuentas, listar } = useCuentasBancariasStore();
@@ -100,10 +158,18 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
 
     const needsReference = (method?: string) => ['TRANSFERENCIA', 'TARJETA'].includes(String(method || '').toUpperCase());
     const needsBankAccount = (method?: string) => String(method || '').toUpperCase() === 'TRANSFERENCIA';
+    // Últimos 4 DÍGITOS de la cuenta: con formatos con guiones (BCP "191-1234567-0-29")
+    // `slice(-4)` devolvía "0-29" y así salía impreso en el ticket.
+    const ultimos4 = (numero?: string | null) => String(numero ?? '').replace(/\D/g, '').slice(-4);
+    // Etiqueta que va al ticket ("Cuenta: …"): si el negocio le puso alias a la
+    // cuenta, ese alias basta (ya la identifica y suele incluir al titular); sin
+    // alias, banco + terminación para distinguirla.
     const accountLabel = (id?: number | null) => {
         const cuenta = cuentasActivas.find((item) => item.id === Number(id));
         if (!cuenta) return '';
-        return `${cuenta.alias || cuenta.banco} ${cuenta.numeroCuenta?.slice(-4) || ''}`.trim();
+        if (cuenta.alias?.trim()) return cuenta.alias.trim();
+        const fin = ultimos4(cuenta.numeroCuenta);
+        return `${cuenta.banco || ''}${fin ? ` ····${fin}` : ''}`.trim();
     };
     const selectedCuentaId = vm.paymentDetail?.cuentaBancariaId || (needsBankAccount(vm.paymentMethod) ? cuentasActivas[0]?.id : null);
 
@@ -134,7 +200,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         <option value="">Cuenta destino</option>
                         {cuentasActivas.map((cuenta) => (
                             <option key={cuenta.id} value={cuenta.id}>
-                                {(cuenta.alias || cuenta.banco)} {cuenta.numeroCuenta?.slice(-4)}
+                                {(cuenta.alias || cuenta.banco)} ··{ultimos4(cuenta.numeroCuenta)}
                             </option>
                         ))}
                     </select>
@@ -592,6 +658,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                     )}
                 </div>
                                 )}
+                                {vm.cpeRequeridoPorMedioPago && <CpeRequeridoCard vm={vm} />}
                             </div>{/* /IZQUIERDA métodos de pago */}
 
                             {/* DERECHA: preview del comprobante — mismo formato que el ticket impreso */}
@@ -601,6 +668,9 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                         <Icon icon="solar:hand-money-bold-duotone" width={16} />
                                         {creditoMensaje}
                                     </div>
+                                )}
+                                {vm.formValues?.medioPago === 'Crédito' && vm.cpeRequeridoPorMedioPago && (
+                                    <div className="mx-auto mb-3 max-w-[300px]"><CpeRequeridoCard vm={vm} /></div>
                                 )}
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>
                                 <div className="mx-auto w-full max-w-[300px] rounded-xl bg-white text-gray-900 border border-gray-200 shadow-inner p-4 font-mono text-[10px] leading-relaxed">
@@ -699,8 +769,9 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                             </button>
                             <button
                                 onClick={() => vm.addInvoiceReceipt()}
-                                disabled={!isCreditoPreview && vm.isMixedPayment && !splitValid}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${(!isCreditoPreview && vm.isMixedPayment && !splitValid) ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
+                                disabled={vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && vm.isMixedPayment && !splitValid)}
+                                title={vm.cpeRequeridoPorMedioPago ? 'Cambia a Boleta o Factura para emitir' : undefined}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${(vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && vm.isMixedPayment && !splitValid)) ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
                             >
                                 <Icon icon={vm.isEditMode ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
                                 {vm.isEditMode ? 'ACTUALIZAR' : 'EMITIR'}
@@ -718,6 +789,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                         <EmitidoContent
                             isLoading={vm.isLoading}
                             comprobante={vm.formValues?.comprobante}
+                            siguienteComprobante={vm.comprobanteInicialConfigurado?.comprobante}
                             auth={vm.auth}
                             serie={vm.serie}
                             correlative={vm.correlative}

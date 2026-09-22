@@ -36,6 +36,10 @@ import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/c
 import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
 import ModalConfigCotizacion from "@/features/admin/cotizaciones/ModalConfigCotizacion";
 import apiClient from "@/utils/apiClient";
+import { EditarDespachoModal } from "@/pages/admin/despacho/EditarDespachoModal";
+
+// Informales que sí se despachan (las cotizaciones no: se convierten primero).
+const TIPOS_ENVIABLES = new Set(['NV', 'TICKET', 'NP', 'OT', 'RH', 'CP']);
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -116,6 +120,39 @@ const ComprobantesInformales = () => {
     // Anular/eliminar: admin siempre puede; un vendedor solo si se le activó
     // el permiso fino "puedeAnularComprobantes" (backend igual lo revalida).
     const canAnularOEliminar = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA' || Boolean((auth as any)?.puedeAnularComprobantes);
+
+    // Coordinación de envío desde esta lista (antes solo existía en el Panel de
+    // ventas): si la nota no tiene seguimiento se crea aquí mismo y se abre el
+    // modal de despacho para elegir courier/agencia/motorizado y generar la guía.
+    const [editDespachoId, setEditDespachoId] = useState<number | null>(null);
+    const [creandoDespachoId, setCreandoDespachoId] = useState<number | null>(null);
+    const coordinarEnvio = async (item: IInvoices) => {
+        if (!item?.id || creandoDespachoId) return;
+        if (item.envioDespacho?.id) {
+            setEditDespachoId(item.id);
+            return;
+        }
+        setCreandoDespachoId(item.id);
+        try {
+            await apiClient.post(`/envio-despacho/comprobante/${item.id}`, {
+                transportista: 'SHALOM_PRO',
+                tipoEnvio: 'AGENCIA',
+                nroPaquetes: 1,
+            });
+        } catch (e: any) {
+            const msg: string = e?.response?.data?.message || '';
+            // Si ya existía (carrera con otro usuario) se abre igual.
+            if (!/ya tiene un seguimiento/i.test(msg)) {
+                useAlertStore.getState().alert(msg || 'No se pudo crear la coordinación de envío', 'error');
+                setCreandoDespachoId(null);
+                return;
+            }
+        }
+        setCreandoDespachoId(null);
+        // La fila pasa a tener seguimiento: refrescar para que el menú diga "Editar despacho".
+        recargarLista();
+        setEditDespachoId(item.id);
+    };
 
 
     useEffect(() => {
@@ -906,6 +943,14 @@ const ComprobantesInformales = () => {
                 onUpdated={recargarLista}
             />
 
+            {editDespachoId && (
+                <EditarDespachoModal
+                    comprobanteId={editDespachoId}
+                    onClose={() => setEditDespachoId(null)}
+                    onSuccess={() => { setEditDespachoId(null); recargarLista(); }}
+                />
+            )}
+
             {/* ── Dropdown de acciones (TableActionMenu) ── */}
             <TableActionMenu
                 isOpen={Boolean(menuAnchor)}
@@ -944,12 +989,25 @@ const ComprobantesInformales = () => {
                                 <Icon icon="mdi:whatsapp" width={16} height={16} />
                                 <span>Enviar WhatsApp</span>
                             </button>
-                            {row.despachoCompleto && (
-                                <button type="button" onClick={() => { navigate(`/administrador/ventas?fecha=${row.despachoFecha}&comprobanteId=${row.id}`); handleCloseMenu(); }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                                    <Icon icon="solar:delivery-bold-duotone" width={16} height={16} />
-                                    <span>Ver despacho</span>
-                                </button>
+                            {/* Despacho: NV/ticket/etc. sin seguimiento → "Coordinar envío" (crea el
+                                seguimiento y abre el modal); con seguimiento → editarlo aquí mismo y,
+                                si ya está completo, verlo en el Panel de ventas. */}
+                            {TIPOS_ENVIABLES.has(String(item?.tipoDoc)) && row.estadoEnvioSunat !== 'ANULADO' && (
+                                <>
+                                    <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                                    <button type="button" onClick={() => { handleCloseMenu(); void coordinarEnvio(item); }}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium ${item.envioDespacho?.id ? 'text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/30' : 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30'}`}>
+                                        <Icon icon="solar:delivery-bold-duotone" width={16} height={16} />
+                                        <span>{item.envioDespacho?.id ? 'Editar despacho' : 'Coordinar envío'}</span>
+                                    </button>
+                                    {row.despachoCompleto && (
+                                        <button type="button" onClick={() => { navigate(`/administrador/ventas?fecha=${row.despachoFecha}&comprobanteId=${row.id}`); handleCloseMenu(); }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/30">
+                                            <Icon icon="solar:map-point-wave-bold-duotone" width={16} height={16} />
+                                            <span>Ver en Panel de ventas</span>
+                                        </button>
+                                    )}
+                                </>
                             )}
                             {canAnularOEliminar && (
                                 <>

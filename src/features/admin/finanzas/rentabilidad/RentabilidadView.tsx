@@ -419,11 +419,14 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                             iconBg="bg-amber-50 dark:bg-amber-900/20"
                             iconColor="text-amber-600 dark:text-amber-400"
                             sub={pnl
-                                ? (pnl.gastosEmpresa
+                                ? [
+                                    // Compras de consumo propio (netas) ya incluidas en el total.
+                                    (pnl.comprasConsumo ?? 0) > 0 ? `Compras ${formatCurrency(pnl.comprasConsumo ?? 0)}` : null,
+                                    `Publicidad ${formatCurrency(pnl.gastoPublicidad)}`,
                                     // Viendo una sede: los gastos compartidos no se le cargan,
                                     // pero hay que decir cuánto quedó fuera o el número engaña.
-                                    ? `Publicidad ${formatCurrency(pnl.gastoPublicidad)} · ${formatCurrency(pnl.gastosEmpresa)} de empresa no incluidos`
-                                    : `Publicidad ${formatCurrency(pnl.gastoPublicidad)}`)
+                                    pnl.gastosEmpresa ? `${formatCurrency(pnl.gastosEmpresa)} de empresa no incluidos` : null,
+                                ].filter(Boolean).join(' · ')
                                 : 'Sin gastos registrados'}
                             subColor="text-amber-500 dark:text-amber-400"
                         />

@@ -702,6 +702,108 @@ export default function PerfilIndex() {
                                     </div>
                                 </div>
 
+                                {/* Búsqueda del POS al agregar: limpiar (Demenver) o mantener (OWENSOFT). Por empresa. */}
+                                <div className="mt-3 p-3 rounded-lg border border-violet-100 dark:border-violet-900/30 bg-violet-50/40 dark:bg-violet-900/10" data-testid="pos-busqueda-config">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Al agregar un producto desde la búsqueda</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
+                                        Qué hace el buscador del punto de venta cuando la cajera agrega un producto al carrito. Aplica a todas tus cajas y sedes.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {[
+                                            { value: false, titulo: 'Limpiar la búsqueda y mostrar todo el catálogo', detalle: 'Ideal si se teclea un producto por vez: el siguiente se escribe sin borrar el anterior.' },
+                                            { value: true, titulo: 'Mantener la búsqueda para seguir agregando de la misma lista', detalle: 'Ideal si de una búsqueda (ej. "EPSON 544") se agregan varios productos; el texto queda seleccionado y teclear otra cosa lo reemplaza.' },
+                                        ].map((opt) => {
+                                            const activo = Boolean((perfil.empresa as any).posMantenerBusqueda) === opt.value;
+                                            return (
+                                                <label key={String(opt.value)} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${activo ? 'border-violet-400 bg-white dark:bg-slate-900' : 'border-gray-200 dark:border-slate-700 hover:border-violet-300'}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="posMantenerBusqueda"
+                                                        className="mt-0.5 accent-violet-600"
+                                                        checked={activo}
+                                                        disabled={vm.savingControlFlag === 'posMantenerBusqueda'}
+                                                        onChange={() => vm.handleControlFlagToggle('posMantenerBusqueda', opt.value)}
+                                                    />
+                                                    <span>
+                                                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">{opt.titulo}</span>
+                                                        <span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">{opt.detalle}</span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {vm.savingControlFlag === 'posMantenerBusqueda' && <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">Guardando configuración...</p>}
+                                </div>
+
+                                {/* Comprobante con el que arranca cada venta (Demenver: tras una boleta el POS
+                                    se quedaba en boleta y salían boletas que no correspondían). Por empresa. */}
+                                <div className="mt-3 p-3 rounded-lg border border-violet-100 dark:border-violet-900/30 bg-violet-50/40 dark:bg-violet-900/10" data-testid="pos-comprobante-default-config">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Comprobante con el que empieza cada venta</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
+                                        Tipo de comprobante con el que arranca el punto de venta y al que vuelve al terminar cada venta. Con una opción fija, el POS ya no pregunta el tipo al abrirse; la cajera puede cambiarlo para una venta puntual con "Cambiar".
+                                    </p>
+                                    <div className="space-y-2">
+                                        {([
+                                            { value: 'MANTENER_ULTIMO', titulo: 'Mantener el de la venta anterior', detalle: 'Si se emitió una boleta, la siguiente venta también empieza en boleta. Ideal si casi siempre emites el mismo comprobante.' },
+                                            { value: 'NOTA_DE_VENTA', titulo: 'Siempre Nota de Venta', detalle: 'Cada venta empieza en Nota de Venta; si el cliente pide Boleta o Factura se cambia solo para esa venta y luego vuelve a Nota de Venta.' },
+                                            { value: 'BOLETA', titulo: 'Siempre Boleta', detalle: 'Cada venta empieza en Boleta electrónica.' },
+                                            ...(String((perfil.empresa as any).regimenTributario || '').toUpperCase() === 'RUS' ? [] : [{ value: 'FACTURA', titulo: 'Siempre Factura', detalle: 'Cada venta empieza en Factura electrónica.' }]),
+                                        ] as { value: 'MANTENER_ULTIMO' | 'NOTA_DE_VENTA' | 'BOLETA' | 'FACTURA'; titulo: string; detalle: string }[]).map((opt) => {
+                                            const activo = String((perfil.empresa as any).posComprobanteDefault || 'MANTENER_ULTIMO') === opt.value;
+                                            return (
+                                                <label key={opt.value} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${activo ? 'border-violet-400 bg-white dark:bg-slate-900' : 'border-gray-200 dark:border-slate-700 hover:border-violet-300'}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="posComprobanteDefault"
+                                                        className="mt-0.5 accent-violet-600"
+                                                        checked={activo}
+                                                        disabled={vm.savingPosComprobanteDefault}
+                                                        onChange={() => vm.handlePosComprobanteDefaultChange(opt.value)}
+                                                    />
+                                                    <span>
+                                                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">{opt.titulo}</span>
+                                                        <span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">{opt.detalle}</span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {vm.savingPosComprobanteDefault && <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">Guardando configuración...</p>}
+                                </div>
+
+                                {/* Exigir Boleta/Factura cuando el cobro es bancarizado (Yape/Plin/Transferencia/Tarjeta). Opt-in por empresa. */}
+                                <div className="mt-3 p-3 rounded-lg border border-violet-100 dark:border-violet-900/30 bg-violet-50/40 dark:bg-violet-900/10" data-testid="pos-exigir-cpe-config">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Pagos por Yape, Plin, transferencia o tarjeta</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
+                                        Estos pagos quedan registrados en el banco y SUNAT puede cruzarlos con tus comprobantes. Decide si esas ventas pueden salir como Nota de Venta o deben tener Boleta/Factura.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {[
+                                            { value: false, titulo: 'Permitir Nota de Venta', detalle: 'La cajera elige el comprobante sin importar cómo paga el cliente (comportamiento normal).' },
+                                            { value: true, titulo: 'Exigir Boleta o Factura', detalle: 'Si el cliente paga por Yape, Plin, transferencia o tarjeta, el POS no deja cerrar la venta como Nota de Venta: pide cambiar a Boleta o Factura. En efectivo la cajera sigue eligiendo.' },
+                                        ].map((opt) => {
+                                            const activo = Boolean((perfil.empresa as any).posExigirCpeMedioPago) === opt.value;
+                                            return (
+                                                <label key={String(opt.value)} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${activo ? 'border-violet-400 bg-white dark:bg-slate-900' : 'border-gray-200 dark:border-slate-700 hover:border-violet-300'}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="posExigirCpeMedioPago"
+                                                        className="mt-0.5 accent-violet-600"
+                                                        checked={activo}
+                                                        disabled={vm.savingControlFlag === 'posExigirCpeMedioPago'}
+                                                        onChange={() => vm.handleControlFlagToggle('posExigirCpeMedioPago', opt.value)}
+                                                    />
+                                                    <span>
+                                                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">{opt.titulo}</span>
+                                                        <span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">{opt.detalle}</span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {vm.savingControlFlag === 'posExigirCpeMedioPago' && <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">Guardando configuración...</p>}
+                                </div>
+
                                 {/* ── Sedes y catálogo ── */}
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">

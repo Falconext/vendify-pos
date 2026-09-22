@@ -230,6 +230,10 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     // URL en S3 de la foto de la factura/boleta leída por IA. Se guarda con la
     // compra y se muestra como evidencia en el detalle.
     const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+    // Compra de consumo propio (gasolina, útiles, comida, servicios): no es
+    // inventario y entra al Análisis Financiero como gasto del mes, neto de IGV.
+    // null = automático (true cuando ninguna línea es un producto del catálogo).
+    const [esGasto, setEsGasto] = useState<boolean | null>(null);
     const [supplierDisplay, setSupplierDisplay] = useState('');
     const [xmlBanner, setXmlBanner] = useState<{ matched: number; total: number; proveedor: boolean } | null>(null);
     const [xmlSupplierInfo, setXmlSupplierInfo] = useState<{ ruc: string; nombre: string } | null>(null);
@@ -313,6 +317,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                     setSupplierDisplay(provLabel);
                 }
                 setFotoUrl(d.fotoUrl || null);
+                setEsGasto(typeof d.esGasto === 'boolean' ? d.esGasto : null);
                 // Restaurar condición de pago: si la compra tiene cuotas guardadas es
                 // a CRÉDITO; de lo contrario, CONTADO. El método de pago se toma del
                 // primer pago registrado, si existe.
@@ -1024,6 +1029,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             return;
         }
 
+        // Sin marcar a mano, la compra es gasto cuando ninguna línea es un producto del catálogo.
+        const esGastoAuto = items.length > 0 && items.every((i: any) => !i.productoId);
+        const esGastoEfectivo = esGasto === null ? esGastoAuto : esGasto;
         const payload = {
             ...header,
             tipoCambio: esUSD ? Number(header.tipoCambio) : 1,
@@ -1053,6 +1061,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             // Siempre se envía (url o null) para que también se pueda quitar la
             // foto al editar; en edición el estado ya trae la foto existente.
             fotoUrl: fotoUrl || null,
+            esGasto: esGastoEfectivo,
             cuotas: payment.condicionPago === 'CREDITO' ? cuotas : undefined,
             subtotal,
             igv,
@@ -1279,6 +1288,28 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                 <InputPro autocomplete="off" label="Observaciones" name="observaciones" value={header.observaciones} onChange={(e) => setHeader({ ...header, observaciones: e.target.value })} isLabel />
                             </div>
                         </div>
+                        {/* Consumo propio vs inventario: decide si la compra resta en el P&L del mes
+                            o si su costo recién aparece cuando se venden los productos. */}
+                        {(() => {
+                            const auto = items.length > 0 && items.every((i: any) => !i.productoId);
+                            const activo = esGasto === null ? auto : esGasto;
+                            return (
+                                <label data-testid="compra-es-gasto" className={`mt-3 flex items-start gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${activo ? 'border-orange-300 bg-orange-50/60 dark:border-orange-800 dark:bg-orange-900/15' : 'border-gray-200 dark:border-slate-700 hover:border-orange-300'}`}>
+                                    <input type="checkbox" className="mt-0.5 accent-orange-500" checked={activo} onChange={(e) => setEsGasto(e.target.checked)} />
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                                            Compra de consumo propio (gasto, no inventario)
+                                            {esGasto === null && <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">automático</span>}
+                                        </span>
+                                        <span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                            {activo
+                                                ? 'Gasolina, útiles, comida, servicios… Se resta en el Análisis Financiero del mes (neto, sin IGV: ese IGV es tu crédito fiscal).'
+                                                : 'Mercadería para vender: entra al inventario y su costo se descuenta cuando vendas esos productos.'}
+                                        </span>
+                                    </span>
+                                </label>
+                            );
+                        })()}
                         {esUSD && (
                             <div className="mt-3 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-200">
                                 <Icon icon="solar:info-circle-bold" width={15} className="mt-px shrink-0" />
