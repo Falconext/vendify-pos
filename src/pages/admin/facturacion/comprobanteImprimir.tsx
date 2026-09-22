@@ -305,7 +305,7 @@ console.log(formValues)
                         {fc('razonSocial').visible && <p className="text-center font-bold" style={{ fontSize: tpx('razonSocial') }}>{company?.empresa?.razonSocial?.toUpperCase()}</p>}
                         {/* Cada dato del encabezado lleva su propio tamaño configurado (modal "Configurar formato"). */}
                         <p className="text-center" style={{ fontSize: '16px' }}>
-                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <span style={{ fontSize: tpx('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial?.toUpperCase()}<br /></span>}
+                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <span style={{ fontSize: tpx('nombreComercial') }}>{company?.empresa?.nombreComercial?.toUpperCase()}<br /></span>}
                             {fc('direccion').visible && <span style={{ fontSize: tpx('direccion') }}>DIRECCION: {company?.empresa?.direccion?.toUpperCase()}<br /></span>}
                             {fc('direccion').visible && sedeDireccion && <span style={{ fontSize: tpx('direccion') }}>SEDE: {sedeDireccion}<br /></span>}
                             {fc('rubro').visible && company?.empresa?.rubro?.nombre && <span style={{ fontSize: tpx('rubro') }}>RUBRO: {company?.empresa?.rubro?.nombre?.toUpperCase()}<br /></span>}
@@ -530,7 +530,7 @@ console.log(formValues)
                                         <p className={`text-[15px] text-center mt-4`}>
                                             Sistema punto de venta - {brandName}.</p>
                                         <p className={`text-[15px] text-center`}>Desarrollado por {developerName}.</p>
-                                        <p className={`text-[15px] text-center`}>{brandWebsite}.</p>
+                                        {fc('marcaWeb').visible && <p className={`text-[15px] text-center`}>{brandWebsite}.</p>}
                                     </>
                                 );
                             })()}
@@ -571,7 +571,7 @@ console.log(formValues)
                                             {fc('direccion').visible && <div style={{ fontSize: px('direccion') }}>{company?.empresa?.direccion}</div>}
                                             {fc('direccion').visible && sedeDireccion && <div style={{ fontSize: px('direccion') }}>SEDE: {sedeDireccion}</div>}
                                             {fc('rubro').visible && <div style={{ fontSize: px('rubro') }}>{company?.empresa?.rubro?.nombre?.toUpperCase()}</div>}
-                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}</div>}
+                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>{company?.empresa?.nombreComercial}</div>}
                                             {fc('celular').visible && empresaNumero && <div style={{ fontSize: px('celular') }}>CELULAR: {empresaNumero}</div>}
                                             {fc('email').visible && company?.email && <div style={{ fontSize: px('email') }}>EMAIL: {company?.email}</div>}
                                             {fc('web').visible && (company?.empresa as any)?.paginaWeb && <div style={{ fontSize: px('web') }}>WEB: {(company?.empresa as any).paginaWeb}</div>}
@@ -924,7 +924,7 @@ console.log(formValues)
                                                 return (
                                                     <>
                                                         <div className="font-bold italic">{brandName} ™</div>
-                                                        <div>Comprobante emitido a través de {brandWebsite}</div>
+                                                        {fc('marcaWeb').visible && <div>Comprobante emitido a través de {brandWebsite}</div>}
                                                     </>
                                                 );
                                             })()}
@@ -945,7 +945,7 @@ console.log(formValues)
                                             {fc('direccion').visible && <div style={{ fontSize: px('direccion') }}>{company?.empresa?.direccion}</div>}
                                             {fc('direccion').visible && sedeDireccion && <div style={{ fontSize: px('direccion') }}>SEDE: {sedeDireccion}</div>}
                                             {fc('rubro').visible && company?.empresa?.rubro?.nombre && <div style={{ fontSize: px('rubro') }}>{company?.empresa?.rubro?.nombre?.toUpperCase()}</div>}
-                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>NOMBRE COMERCIAL: {company?.empresa?.nombreComercial}</div>}
+                                            {fc('nombreComercial').visible && company?.empresa?.nombreComercial && <div style={{ fontSize: px('nombreComercial') }}>{company?.empresa?.nombreComercial}</div>}
                                             {fc('celular').visible && empresaNumero && <div style={{ fontSize: px('celular') }}>CELULAR: {empresaNumero}</div>}
                                             {fc('email').visible && company?.email && <div style={{ fontSize: px('email') }}>EMAIL: {company?.email}</div>}
                                             {fc('web').visible && (company?.empresa as any)?.paginaWeb && <div style={{ fontSize: px('web') }}>WEB: {(company?.empresa as any).paginaWeb}</div>}
@@ -1308,7 +1308,7 @@ console.log(formValues)
                                                 return (
                                                     <>
                                                         <div className="font-bold italic">{brandName} ™</div>
-                                                        <div>Comprobante emitido a través de {brandWebsite}</div>
+                                                        {fc('marcaWeb').visible && <div>Comprobante emitido a través de {brandWebsite}</div>}
                                                     </>
                                                 );
                                             })()}

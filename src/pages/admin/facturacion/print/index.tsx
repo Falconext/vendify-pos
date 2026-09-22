@@ -358,7 +358,7 @@ const PrintPDF = ({
                                 )}
                                 <Text style={styles.title}>{company?.empresa?.razonSocial}</Text>
                                 <Text style={styles.subtitle}>
-                                    {company?.empresa?.nombreComercial ? `NOMBRE COMERCIAL: ${company?.empresa?.nombreComercial.toUpperCase()}\n` : ''}
+                                    {company?.empresa?.nombreComercial ? `${company?.empresa?.nombreComercial.toUpperCase()}\n` : ''}
                                     DIRECCION: {company?.empresa?.direccion.toUpperCase()}
                                     {'\n'}
                                     {empresaNumero ? `CELULAR: ${empresaNumero}\n` : ''}
@@ -631,7 +631,7 @@ const PrintPDF = ({
                                         {'\n'}
                                         {company?.empresa?.rubro?.nombre?.toUpperCase() || ''}
                                         {'\n'}
-                                        {company?.empresa?.nombreComercial ? `NOMBRE COMERCIAL: ${company?.empresa?.nombreComercial}` : ''}
+                                        {company?.empresa?.nombreComercial ? `${company?.empresa?.nombreComercial}` : ''}
                                         {'\n'}
                                         {empresaNumero ? `CELULAR: ${empresaNumero}\n` : ''}
                                         EMAIL: {company?.email || ''}

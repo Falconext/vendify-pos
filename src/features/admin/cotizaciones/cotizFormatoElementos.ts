@@ -65,6 +65,13 @@ export const COTIZ_ELEMENTOS: ElemDef[] = [
   // texto por defecto ("GRACIAS POR ELEGIR <empresa> PARA CUBRIR SUS
   // REQUERIMIENTOS" + "VUELVA PRONTO"). Admite varias líneas.
   { key: 'gracias', label: 'Mensaje de agradecimiento', hasVisible: true, esTexto: true, placeholder: 'Dejar vacío para usar el mensaje por defecto', defaultSize: 10, min: 7, max: 16, grupo: 'Pie', ticketBase: 15 },
+  // La web del sistema es su propio interruptor: hay negocios que quieren dejar
+  // "Sistema punto de venta / Desarrollado por …" pero sin la URL impresa. Apagar
+  // la marca completa sigue estando en Perfil → Configuración.
+  // OCULTA por defecto: en una instalación white-label imprimir la web del
+  // proveedor delata al fabricante (el ticket decía "JAMBLE POS" y abajo
+  // "vendify.pe"). Quien la quiera la enciende aquí.
+  { key: 'marcaWeb', label: 'Web del sistema en el pie', hasVisible: true, defaultVisible: false, defaultSize: 10, min: 7, max: 16, grupo: 'Pie', ticketBase: 15 },
 ];
 
 /**

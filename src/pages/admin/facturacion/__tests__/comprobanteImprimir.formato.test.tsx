@@ -53,7 +53,7 @@ describe('formato configurable en factura/boleta A4', () => {
   it('sin configuración muestra todo (menos el QR de pago) y la razón social a 20px', () => {
     const { container } = renderFactura({});
     const html = container.innerHTML;
-    expect(html).toContain('NOMBRE COMERCIAL: DEMENVER STORE');
+    expect(html).toContain('DEMENVER STORE');
     expect(html).toContain('JR. C MZ. S LT. 6');
     expect(html).toContain('>BAZAR<');
     expect(html).toContain('CELULAR: 974282976');
@@ -81,7 +81,7 @@ describe('formato configurable en factura/boleta A4', () => {
       opExoneradas: hidden, icbper: hidden, montoTotal: hidden, cuentas: hidden, gracias: hidden, logo: hidden,
     });
     const html = container.innerHTML;
-    expect(html).not.toContain('NOMBRE COMERCIAL');
+    expect(html).not.toContain('DEMENVER STORE');
     expect(html).not.toContain('JR. C MZ. S LT. 6');
     expect(html).not.toContain('>BAZAR<');
     expect(html).not.toContain('CELULAR:');
