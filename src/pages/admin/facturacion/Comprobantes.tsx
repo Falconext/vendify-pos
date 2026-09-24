@@ -1228,6 +1228,11 @@ const Comprobantes = () => {
                                                         })
                                                         : inv
                                                 ));
+                                                // El estado de una NOTA DE CRÉDITO decide el badge de
+                                                // OTRA fila (la boleta que anula), y el parche local
+                                                // solo toca la fila propia. Sin recargar, la boleta
+                                                // sigue mostrando el estado anterior.
+                                                void fetchFormalInvoices();
                                             }
                                         }}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap text-sky-700 hover:bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-950/30"
@@ -1281,6 +1286,9 @@ const Comprobantes = () => {
                                                         ? normalizeSunatEstado({ ...inv, estadoEnvioSunat: res.estadoEnvioSunat, sunatCdrResponse: null, qpseCode: null, sunatCode: null })
                                                         : inv
                                                 ));
+                                                // Ídem: reemitir una nota de crédito cambia el badge
+                                                // de la boleta que anula, no solo el de la nota.
+                                                void fetchFormalInvoices();
                                             }
                                         }}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
