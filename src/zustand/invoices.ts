@@ -78,7 +78,7 @@ export interface IInvoicesState {
     cancelInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     discardInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
     conciliarInvoice: (id: number) => Promise<{ success: boolean, error?: string }>;
-    verificarSunat: (id: number) => Promise<{ success: boolean, error?: string, estado?: string, conciliado?: boolean }>;
+    verificarSunat: (id: number) => Promise<{ success: boolean, error?: string, estado?: string, conciliado?: boolean, estadoEnvioSunat?: string }>;
     reemitirInvoice: (id: number) => Promise<{ success: boolean, status?: string, estadoEnvioSunat?: string, message?: string, error?: string }>;
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
@@ -556,29 +556,47 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             const resp: any = await patch(`/comprobante/${id}/verificar-sunat`, {});
             if (resp.code === 1) {
                 const data = resp.data || {};
+                // El backend devuelve el estado en que quedó el comprobante tras la
+                // verificación (puede pasar a EMITIDO, ANULADO o FALLIDO_ENVIO). Se
+                // refleja siempre para que el menú ofrezca las acciones de ese estado.
+                const estadoRaw = String(data.estadoEnvioSunat || '').toUpperCase();
+                if (estadoRaw) {
+                    set(
+                        (state) => ({
+                            invoices: state.invoices.map((inv: any) =>
+                                inv.id === id
+                                    ? {
+                                        ...inv,
+                                        estadoEnvioSunat: estadoRaw === 'EMITIDO' ? 'ACEPTADO' : estadoRaw,
+                                        estadoSunatRaw: estadoRaw,
+                                    }
+                                    : inv,
+                            ),
+                        }),
+                        false,
+                        'VERIFICAR_SUNAT'
+                    );
+                }
                 if (data.estado === 'ACEPTADO') {
-                    if (data.conciliado) {
-                        set(
-                            (state) => ({
-                                invoices: state.invoices.map((inv: any) =>
-                                    inv.id === id
-                                        ? { ...inv, estadoEnvioSunat: 'EMITIDO', estadoSunatRaw: 'EMITIDO' }
-                                        : inv,
-                                ),
-                            }),
-                            false,
-                            'VERIFICAR_SUNAT'
-                        );
-                    }
                     useAlertStore.getState().alert('SUNAT confirma: comprobante ACEPTADO.', 'success');
                 } else if (data.estado === 'NO_EXISTE') {
-                    useAlertStore.getState().alert('SUNAT: el comprobante NO figura como registrado.', 'warning');
+                    useAlertStore.getState().alert(
+                        estadoRaw === 'FALLIDO_ENVIO'
+                            ? 'SUNAT no tiene registrado este comprobante: el envío nunca llegó. Queda como envío fallido, se reintentará solo y ya puedes usar "Reemitir a SUNAT".'
+                            : 'SUNAT: el comprobante NO figura como registrado.',
+                        'warning',
+                    );
                 } else if (data.estado === 'ANULADO') {
                     useAlertStore.getState().alert('SUNAT: el comprobante figura como ANULADO / dado de baja.', 'warning');
                 } else {
                     useAlertStore.getState().alert('SUNAT devolvió un estado no concluyente. Intenta de nuevo.', 'info');
                 }
-                return { success: true, estado: data.estado, conciliado: !!data.conciliado };
+                return {
+                    success: true,
+                    estado: data.estado,
+                    conciliado: !!data.conciliado,
+                    estadoEnvioSunat: estadoRaw || undefined,
+                };
             }
             useAlertStore.getState().alert(resp.error || 'No se pudo verificar en SUNAT', 'error');
             return { success: false, error: resp.error };

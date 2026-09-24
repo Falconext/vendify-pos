@@ -66,7 +66,14 @@ const normalizeSunatEstado = (invoice: any) => {
         estadoEnvioSunat = rawEstado;
     } else if (responseCode === '0' || responseLabel === 'ACEPTADO' || responseLabel === 'OBSERVADO' || rawEstado === 'EMITIDO') {
         estadoEnvioSunat = 'ACEPTADO';
-    } else if (responseCode === '98' || responseLabel === 'PENDIENTE' || responseLabel === 'EN_PROCESO' || responseLabel === 'INDETERMINADO' || rawEstado === 'FALLIDO_ENVIO') {
+    } else if (rawEstado === 'FALLIDO_ENVIO') {
+        // No se colapsa en "En procesamiento": son cosas distintas. PENDIENTE es
+        // "SUNAT lo tiene y falta su respuesta"; FALLIDO_ENVIO es "nunca llegó a
+        // SUNAT". Mostrarlos igual escondía envíos caídos detrás de una etiqueta
+        // que sugiere que todo va bien, y es el único estado (junto a RECHAZADO)
+        // desde el que se ofrece "Reemitir a SUNAT".
+        estadoEnvioSunat = 'FALLIDO_ENVIO';
+    } else if (responseCode === '98' || responseLabel === 'PENDIENTE' || responseLabel === 'EN_PROCESO' || responseLabel === 'INDETERMINADO') {
         estadoEnvioSunat = 'PENDIENTE';
     } else if (rawEstado === 'RECHAZADO') {
         estadoEnvioSunat = rawEstado;
@@ -395,7 +402,9 @@ const Comprobantes = () => {
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${tone}`}>
                 {enTramite ? 'Anulación en trámite'
                     : value === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'
-                        : value}
+                        : value === 'FALLIDO_ENVIO' ? 'Fallido Envío'
+                            : value === 'PENDIENTE' ? 'En procesamiento'
+                                : value}
             </span>
         );
     };
@@ -574,7 +583,7 @@ const Comprobantes = () => {
         setSelectedUsuarioId(value ? Number(value) : null);
     }
 
-    const estadosInvoice = [{ id: 1, value: "TODOS" }, { id: 2, value: "EMITIDO" }, { id: 3, value: "PENDIENTE" }, { id: 4, value: "PENDIENTE_CONCILIACION" }, { id: 5, value: "ANULADO" }, { id: 6, value: "RECHAZADO" }]
+    const estadosInvoice = [{ id: 1, value: "TODOS" }, { id: 2, value: "EMITIDO" }, { id: 3, value: "PENDIENTE" }, { id: 4, value: "PENDIENTE_CONCILIACION" }, { id: 5, value: "ANULADO" }, { id: 6, value: "RECHAZADO" }, { id: 7, value: "FALLIDO_ENVIO" }]
     const sedesOptions = [
         { id: 0, value: 'Todas las sedes' },
         ...sedes.map((s: any) => ({ id: s.id, value: s.nombre }))
@@ -1110,8 +1119,13 @@ const Comprobantes = () => {
                     const rowBase = selectedMenuRow;
                     const canEmitirSunat = ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(rowBase.comprobante);
 
-                    const canNC = ['FACTURA', 'BOLETA'].includes(rowBase.comprobante) && rowBase.estado !== 'ANULADO' && rowBase.estado !== 'RECHAZADO' && rowBase.estado !== 'PENDIENTE';
-                    const canBaja = rowBase.estado !== 'ANULADO' && rowBase.estado !== 'RECHAZADO' && rowBase.estado !== 'PENDIENTE';
+                    // Nota de crédito y comunicación de baja exigen que el documento YA
+                    // esté en SUNAT. 'FALLIDO_ENVIO' se lista aparte porque antes llegaba
+                    // hasta aquí normalizado como 'PENDIENTE'; al mostrarse con su propio
+                    // nombre hay que excluirlo explícitamente o se reabrirían estas acciones.
+                    const sinLlegarASunat = ['ANULADO', 'RECHAZADO', 'PENDIENTE', 'FALLIDO_ENVIO'];
+                    const canNC = ['FACTURA', 'BOLETA'].includes(rowBase.comprobante) && !sinLlegarASunat.includes(rowBase.estado);
+                    const canBaja = !sinLlegarASunat.includes(rowBase.estado);
 
                     return (
                         <>
@@ -1188,10 +1202,21 @@ const Comprobantes = () => {
                                         onClick={async () => {
                                             handleCloseMenu();
                                             const res = await verificarSunat(rowBase.id);
-                                            if (res?.success && res.estado === 'ACEPTADO') {
+                                            // Se refleja el estado REAL en que quedó tras la consulta
+                                            // (EMITIDO, ANULADO o FALLIDO_ENVIO), no solo el caso
+                                            // aceptado: si SUNAT no lo tiene, la fila debe pasar a
+                                            // "Fallido Envío" para ofrecer "Reemitir a SUNAT".
+                                            if (res?.success && res.estadoEnvioSunat) {
+                                                const raw = res.estadoEnvioSunat;
                                                 setInvoicesList((prev) => prev.map((inv: any) =>
                                                     inv.id === rowBase.id
-                                                        ? { ...inv, estadoEnvioSunat: 'ACEPTADO', estadoSunatRaw: 'EMITIDO' }
+                                                        ? normalizeSunatEstado({
+                                                            ...inv,
+                                                            estadoEnvioSunat: raw,
+                                                            sunatCdrResponse: null,
+                                                            qpseCode: null,
+                                                            sunatCode: null,
+                                                        })
                                                         : inv
                                                 ));
                                             }
