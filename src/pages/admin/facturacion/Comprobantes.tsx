@@ -339,6 +339,17 @@ const Comprobantes = () => {
             estado: ["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
                 ? item.estadoEnvioSunat
                 : item.estadoPago,
+            // El documento está ANULADO en el sistema, pero la nota de crédito que
+            // lo anula todavía no fue aceptada por SUNAT: ante SUNAT sigue vigente.
+            anulacionEnTramite: !!(item as any).anulacionEnTramite,
+            // Estado SOLO para pintar la celda. `estado` se conserva tal cual porque
+            // de él dependen los permisos de acciones (no emitir una segunda NC ni
+            // dar de baja algo ya anulado): cambiarlo reabriría esas acciones.
+            estadoTabla: (item as any).anulacionEnTramite
+                ? 'ANULACION_EN_TRAMITE'
+                : (["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
+                    ? item.estadoEnvioSunat
+                    : item.estadoPago),
             xmlSunat: xmlDownloadUrl,
             cdrSunat: cdrDownloadUrl,
             xmlFileName: `${item.serie}-${String(item.correlativo).padStart(8, '0')}.xml`,
@@ -369,11 +380,12 @@ const Comprobantes = () => {
 
     const renderEstadoBadge = (estado?: string) => {
         const value = String(estado || 'SIN ESTADO').toUpperCase();
+        const enTramite = value === 'ANULACION_EN_TRAMITE';
         const tone = value.includes('ACEPTADO') || value.includes('EMITIDO') || value.includes('PAGADO')
             ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
             : value.includes('CONCILIACION')
                 ? 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20'
-            : value.includes('PENDIENTE')
+            : value.includes('PENDIENTE') || enTramite
                 ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
                 : value.includes('ANULADO') || value.includes('RECHAZADO') || value.includes('FALLIDO')
                     ? 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
@@ -381,7 +393,9 @@ const Comprobantes = () => {
 
         return (
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${tone}`}>
-                {value === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT' : value}
+                {enTramite ? 'Anulación en trámite'
+                    : value === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'
+                        : value}
             </span>
         );
     };
@@ -845,7 +859,7 @@ const Comprobantes = () => {
                                         'Vendedor',
                                         'Sede',
                                         'Doc. Afiliado',
-                                        'Estado',
+                                        { label: 'Estado', key: 'estadoTabla' },
                                         'Acciones'
                                     ]} />
                             </div>
@@ -871,7 +885,7 @@ const Comprobantes = () => {
                                         </div>
 
                                         <div className="mt-3 flex items-center justify-between gap-3">
-                                            {renderEstadoBadge(row.estado)}
+                                            {renderEstadoBadge(row.estadoTabla ?? row.estado)}
                                             <p className="text-lg font-black text-gray-950 dark:text-white">{row.total}</p>
                                         </div>
 
@@ -1161,13 +1175,14 @@ const Comprobantes = () => {
                                 <span>Enviar WhatsApp</span>
                             </button>
 
-                            {/* Conciliar: la boleta ya está registrada en SUNAT (error 1033) pero
-                                el CDR no es recuperable vía QPSE. Marca el comprobante como aceptado. */}
-                            {rowBase.estadoSunatRaw === 'PENDIENTE_CONCILIACION' && (
+                            {/* Verificar contra SUNAT (Consulta de Validez): confirma si está
+                                ACEPTADO y, de estarlo, lo marca EMITIDO automáticamente. Se ofrece en
+                                todos los estados sin CDR — un comprobante que lleva horas
+                                "En procesamiento" (PENDIENTE) puede estar ya aceptado en SUNAT y esta
+                                es la única forma de saberlo sin reenviarlo. */}
+                            {['PENDIENTE_CONCILIACION', 'PENDIENTE', 'FALLIDO_ENVIO'].includes(rowBase.estadoSunatRaw) && (
                                 <>
                                     <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
-                                    {/* Verificar contra SUNAT (Consulta de Validez): confirma si está
-                                        ACEPTADO y, de estarlo, lo marca EMITIDO automáticamente. */}
                                     <button
                                         type="button"
                                         onClick={async () => {
@@ -1186,6 +1201,9 @@ const Comprobantes = () => {
                                         <Icon icon="solar:shield-check-bold-duotone" width={16} height={16} />
                                         <span>Verificar en SUNAT</span>
                                     </button>
+                                    {/* Conciliar: SUNAT ya tiene el comprobante registrado (error 1033)
+                                        pero el CDR no es recuperable vía QPSE. Solo para ese estado. */}
+                                    {rowBase.estadoSunatRaw === 'PENDIENTE_CONCILIACION' && (
                                     <button
                                         type="button"
                                         onClick={async () => {
@@ -1205,6 +1223,7 @@ const Comprobantes = () => {
                                         <Icon icon="solar:check-circle-bold-duotone" width={16} height={16} />
                                         <span>Marcar como conciliado</span>
                                     </button>
+                                    )}
                                 </>
                             )}
 

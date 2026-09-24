@@ -2,7 +2,7 @@ import { FC } from 'react';
 import { Icon } from '@iconify/react';
 import { ITableHeaderProps } from '../types';
 
-const CENTERED_KEYS = new Set(['estado', 'tipo', 'status', 'acciones']);
+const CENTERED_KEYS = new Set(['estado', 'estadotabla', 'tipo', 'status', 'acciones']);
 
 const TableHeader: FC<ITableHeaderProps> = ({ columns, onSort, actions, sortColumn, sortDirection }) => {
     return (

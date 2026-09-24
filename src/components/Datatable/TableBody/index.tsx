@@ -10,7 +10,7 @@ import { useReducedMotionPreference } from '@/lib/motion/reducedMotion';
 const DOCUMENT_TOKEN_CAPTURE_REGEX = /([a-zA-Z0-9]+-[a-zA-Z0-9]+)/g;
 const DOCUMENT_TOKEN_REGEX = /^[a-zA-Z0-9]+-[a-zA-Z0-9]+$/;
 
-const CENTERED_KEYS = new Set(['estado', 'tipo', 'status', 'acciones']);
+const CENTERED_KEYS = new Set(['estado', 'estadotabla', 'tipo', 'status', 'acciones']);
 
 /** Maps action.color or auto-detects from tooltip → Tailwind classes */
 const getButtonStyle = (action: any, row: any): string => {
@@ -200,14 +200,14 @@ const TableBody: FC<ITableBodyProps> = ({ data, formValues, actions, columns }) 
                                         <span className={`font-semibold ${Number(cell) > 10 ? 'text-emerald-600 dark:text-emerald-400' : Number(cell) > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'}`}>
                                             {cell?.toString()}
                                         </span>
-                                    ) : key === 'estado' || key === 'tipo' || key === 'status' || key === 'ambiente' || key === 'Ambiente' ? (
+                                    ) : key === 'estado' || key === 'estadoTabla' || key === 'tipo' || key === 'status' || key === 'ambiente' || key === 'Ambiente' ? (
                                         <div
                                             className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
                                                 ${cell === 'EMITIDO' || cell === 'ACTIVO' || cell === 'ACEPTADO' || cell === 'INGRESO' || cell === 'TRANSFERENCIA' || cell === 'SENT' || cell === 'Present' || cell === 'COMPLETADO' || cell === 'PRODUCCIÓN'
                                                     ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'
                                                     : cell === 'PENDIENTE' || cell === 'PENDIENTE_CONCILIACION'
                                                         ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
-                                                        : cell === 'PENDIENTE_PAGO' || cell === 'PAGO_PARCIAL' || cell === 'AJUSTE' || cell === 'ENVIANDO' || cell === 'DEMO'
+                                                        : cell === 'PENDIENTE_PAGO' || cell === 'PAGO_PARCIAL' || cell === 'AJUSTE' || cell === 'ENVIANDO' || cell === 'DEMO' || cell === 'ANULACION_EN_TRAMITE'
                                                             ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
                                                             : cell === 'PARTIAL'
                                                                 ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
@@ -216,7 +216,8 @@ const TableBody: FC<ITableBodyProps> = ({ data, formValues, actions, columns }) 
                                                                     : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400'
                                                 }`}
                                         >
-                                            {cell === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'
+                                            {cell === 'ANULACION_EN_TRAMITE' ? 'Anulación en trámite'
+                                                : cell === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'
                                                 : cell === 'PENDIENTE' ? 'En procesamiento'
                                                 : cell === 'INGRESO' ? 'Ingreso'
                                                 : cell === 'SALIDA' ? 'Salida'
