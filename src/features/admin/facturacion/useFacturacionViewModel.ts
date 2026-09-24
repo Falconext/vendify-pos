@@ -1028,12 +1028,19 @@ export const useFacturacionViewModel = () => {
             const { cliente, clienteId, productos, observaciones, origenComprobanteId } = state.notaDeVentaData;
             if (origenComprobanteId) setOrigenComprobanteId(Number(origenComprobanteId));
 
-            // Modo EDICIÓN de una NV existente (in-place): guardamos el id a editar
-            // y precargamos el vendedor de campo para que no se pierda al editar
-            // (se muestra seleccionado si la empresa usa "cobranza en campo").
+            // Modo EDICIÓN de una NV existente (in-place): guardamos el id a editar.
             if (state.isEditNV && state.notaVentaId) {
                 setIsEditMode(true);
                 setEditNotaVentaId(Number(state.notaVentaId));
+            }
+
+            // Precarga del COBRO y las condiciones de la nota. Aplica tanto al
+            // EDITARLA como al CONVERTIRLA en boleta/factura: convertir no es
+            // cobrar de nuevo, es emitir el documento formal de una venta que ya
+            // se cobró, así que el POS debe llegar con el mismo pago puesto en vez
+            // de preguntarlo otra vez (y de paso conservar el descuento global, la
+            // moneda y el crédito de la nota original).
+            {
                 const nvData = state.notaDeVentaData || {};
                 const vcId = nvData.vendedorCampoId;
                 if (vcId != null) setVendedorCampoId(Number(vcId));
@@ -1100,6 +1107,17 @@ export const useFacturacionViewModel = () => {
                         setAdelanto(pagado);
                         setAdelantoMetodo(normMetodo(nvData.medioPago));
                     }
+                }
+
+                // Al CONVERTIR, avisar que el cobro ya está hecho: el backend no
+                // vuelve a registrarlo en caja (antes se duplicaba el ingreso).
+                if (origenComprobanteId && pagado > 0) {
+                    const simbolo = String(nvData.tipoMoneda || 'PEN') === 'USD' ? '$' : 'S/';
+                    const ref = nvData.origenReferencia ? ` en ${nvData.origenReferencia}` : '';
+                    useAlertStore.getState().alert(
+                        `Esta venta ya fue cobrada${ref} (${normMetodo(nvData.medioPago)} ${simbolo} ${pagado.toFixed(2)}). El pago queda igual y no se volverá a registrar en caja.`,
+                        'warning',
+                    );
                 }
             }
 

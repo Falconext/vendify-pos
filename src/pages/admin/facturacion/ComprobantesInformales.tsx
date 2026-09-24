@@ -41,6 +41,28 @@ import { EditarDespachoModal } from "@/pages/admin/despacho/EditarDespachoModal"
 // Informales que sí se despachan (las cotizaciones no: se convierten primero).
 const TIPOS_ENVIABLES = new Set(['NV', 'TICKET', 'NP', 'OT', 'RH', 'CP']);
 
+/**
+ * Datos de cobro y condiciones de la nota, para que el POS los reciba tal cual
+ * al EDITARLA o al CONVERTIRLA en boleta/factura. Al convertir no viajaban, así
+ * que el POS volvía a pedir el método de pago de cero y perdía el descuento
+ * global, la moneda y el crédito de la nota original.
+ */
+const datosPagoDeNota = (item: IInvoices) => ({
+    vendedorCampoId: (item as any).vendedorCampoId,
+    vendedorCampoNombre: (item as any).vendedorCampoNombre,
+    medioPago: (item as any).medioPago,
+    paymentDetails: (item as any).paymentDetails,
+    saldo: (item as any).saldo,
+    mtoImpVenta: (item as any).mtoImpVenta,
+    estadoPago: (item as any).estadoPago,
+    mtoDescuentoGlobal: (item as any).mtoDescuentoGlobal,
+    formaPagoTipo: (item as any).formaPagoTipo,
+    fechaVencimientoCredito: (item as any).fechaVencimientoCredito,
+    cuotas: (item as any).cuotas,
+    tipoMoneda: (item as any).tipoMoneda,
+    tipoCambio: (item as any).tipoCambio,
+});
+
 const ACCENT = 'var(--accent, #7551FF)';
 
 // Pills de estado (CRM light) — punto de color + texto, fondos pastel.
@@ -1032,7 +1054,7 @@ const ComprobantesInformales = () => {
                                 <>
                                     <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
                                     <button type="button" onClick={() => {
-                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: String(item.tipoDoc), fromNotaDeVenta: true, isEditNV: true, notaVentaId: item.id, notaDeVentaData: { cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, vendedorCampoId: item.vendedorCampoId, vendedorCampoNombre: item.vendedorCampoNombre, medioPago: (item as any).medioPago, paymentDetails: (item as any).paymentDetails, saldo: (item as any).saldo, mtoImpVenta: (item as any).mtoImpVenta, estadoPago: (item as any).estadoPago, mtoDescuentoGlobal: (item as any).mtoDescuentoGlobal, formaPagoTipo: (item as any).formaPagoTipo, fechaVencimientoCredito: (item as any).fechaVencimientoCredito, cuotas: (item as any).cuotas, tipoMoneda: (item as any).tipoMoneda, tipoCambio: (item as any).tipoCambio, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
+                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: String(item.tipoDoc), fromNotaDeVenta: true, isEditNV: true, notaVentaId: item.id, notaDeVentaData: { cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, ...datosPagoDeNota(item), productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
                                         handleCloseMenu();
                                     }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">
                                         <Icon icon="mdi:pencil-outline" width={16} height={16} />
@@ -1045,14 +1067,14 @@ const ComprobantesInformales = () => {
                                     <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
                                     <button type="button" onClick={() => {
                                         const esRuc = item.cliente?.nroDoc?.length === 11;
-                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, cliente: esRuc ? item.cliente : null, clienteId: esRuc ? item.clienteId : null, observaciones: item.observaciones, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
+                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, origenReferencia: `${item.serie}-${String(item.correlativo).padStart(8, '0')}`, cliente: esRuc ? item.cliente : null, clienteId: esRuc ? item.clienteId : null, observaciones: item.observaciones, ...datosPagoDeNota(item), productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
                                         handleCloseMenu();
                                     }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                         <Icon icon="mdi:file-document-edit-outline" width={16} height={16} />
                                         <span>Convertir a Factura</span>
                                     </button>
                                     <button type="button" onClick={() => {
-                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'BOLETA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
+                                        navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'BOLETA', fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, origenReferencia: `${item.serie}-${String(item.correlativo).padStart(8, '0')}`, cliente: item.cliente, clienteId: item.clienteId, observaciones: item.observaciones, ...datosPagoDeNota(item), productos: (item.detalles || []).map(mapDetalleToInvoiceProduct) } } });
                                         handleCloseMenu();
                                     }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20">
                                         <Icon icon="mdi:receipt-outline" width={16} height={16} />
