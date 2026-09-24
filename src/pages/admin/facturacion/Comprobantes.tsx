@@ -348,15 +348,22 @@ const Comprobantes = () => {
                 : item.estadoPago,
             // El documento está ANULADO en el sistema, pero la nota de crédito que
             // lo anula todavía no fue aceptada por SUNAT: ante SUNAT sigue vigente.
+            // 'EN_TRAMITE' = la nota está en SUNAT y falta su respuesta.
+            // 'NO_CONFIRMADA' = la nota ni siquiera llegó (rechazada o envío fallido);
+            // nadie la está procesando y no avanza sola.
             anulacionEnTramite: !!(item as any).anulacionEnTramite,
+            anulacionEstado: (item as any).anulacionEstado
+                ?? ((item as any).anulacionEnTramite ? 'EN_TRAMITE' : null),
             // Estado SOLO para pintar la celda. `estado` se conserva tal cual porque
             // de él dependen los permisos de acciones (no emitir una segunda NC ni
             // dar de baja algo ya anulado): cambiarlo reabriría esas acciones.
-            estadoTabla: (item as any).anulacionEnTramite
-                ? 'ANULACION_EN_TRAMITE'
-                : (["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
-                    ? item.estadoEnvioSunat
-                    : item.estadoPago),
+            estadoTabla: (item as any).anulacionEstado === 'NO_CONFIRMADA'
+                ? 'ANULACION_NO_CONFIRMADA'
+                : (item as any).anulacionEnTramite
+                    ? 'ANULACION_EN_TRAMITE'
+                    : (["BOLETA", "FACTURA", "NOTA DE CREDITO", "NOTA DE DEBITO"].includes(item.comprobante)
+                        ? item.estadoEnvioSunat
+                        : item.estadoPago),
             xmlSunat: xmlDownloadUrl,
             cdrSunat: cdrDownloadUrl,
             xmlFileName: `${item.serie}-${String(item.correlativo).padStart(8, '0')}.xml`,
@@ -388,19 +395,21 @@ const Comprobantes = () => {
     const renderEstadoBadge = (estado?: string) => {
         const value = String(estado || 'SIN ESTADO').toUpperCase();
         const enTramite = value === 'ANULACION_EN_TRAMITE';
+        const noConfirmada = value === 'ANULACION_NO_CONFIRMADA';
         const tone = value.includes('ACEPTADO') || value.includes('EMITIDO') || value.includes('PAGADO')
             ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
             : value.includes('CONCILIACION')
                 ? 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20'
             : value.includes('PENDIENTE') || enTramite
                 ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
-                : value.includes('ANULADO') || value.includes('RECHAZADO') || value.includes('FALLIDO')
+                : noConfirmada || value.includes('ANULADO') || value.includes('RECHAZADO') || value.includes('FALLIDO')
                     ? 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
                     : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
 
         return (
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${tone}`}>
                 {enTramite ? 'Anulación en trámite'
+                    : noConfirmada ? 'Anulación no confirmada'
                     : value === 'PENDIENTE_CONCILIACION' ? 'Conciliación SUNAT'
                         : value === 'FALLIDO_ENVIO' ? 'Fallido Envío'
                             : value === 'PENDIENTE' ? 'En procesamiento'
