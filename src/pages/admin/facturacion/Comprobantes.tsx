@@ -955,10 +955,19 @@ const Comprobantes = () => {
             {isOpenModalConfirmDescartar && (
                 <ModalConfirm
                     confirmSubmit={async () => {
-                        await discardInvoice(formValues?.id);
+                        const res = await discardInvoice(formValues?.id);
+                        setIsOpenModalConfirmDescartar(false);
+                        // Solo se saca de la lista si el backend LO BORRÓ. Antes se
+                        // quitaba siempre: cuando el borrado se rechazaba (p. ej. un
+                        // comprobante en "En procesamiento", que no se puede eliminar)
+                        // la fila desaparecía igual y reaparecía al refrescar, dando
+                        // la impresión de que el borrado se deshacía solo.
+                        if (!res?.success) return;
                         setInvoicesList(prev => prev.filter(inv => inv.id !== formValues?.id));
                         setTotalInvoicesList(prev => Math.max(0, prev - 1));
-                        setIsOpenModalConfirmDescartar(false);
+                        // Descartar una nota de crédito devuelve a la vida el documento
+                        // que anulaba: esa otra fila también cambia de estado.
+                        void fetchFormalInvoices();
                     }}
                     information="¿Eliminar este comprobante? Se borrará permanentemente de la lista y se revertirá el stock. Esta acción no se puede deshacer."
                     isOpenModal
