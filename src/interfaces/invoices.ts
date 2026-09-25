@@ -39,6 +39,8 @@ export type IInvoices = {
   subTotal: number
   mtoImpVenta: number
   estadoEnvioSunat: string
+  /** "SERIE-CORRELATIVO" del comprobante formal en que se convirtió este informal, si ya ocurrió. */
+  convertidoA?: string | null
   envioDespacho?: {
     id: number
     comprobanteId: number
