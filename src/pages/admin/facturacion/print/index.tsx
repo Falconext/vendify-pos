@@ -19,6 +19,17 @@ Font.register({
 // Estilos para el PDF
 
 
+
+// Numeración del documento que se está emitiendo. `dataReceipt` es la serie y el
+// correlativo que el backend reservó para ÉL; `formValues` queda como respaldo
+// porque en una nota de crédito guarda el documento AFECTADO, no la nota: sin
+// esta preferencia el encabezado mostraba la boleta anulada en lugar de la nota.
+const numeracionDocumento = (formValues: any, dataReceipt: any): string => {
+    const serie = dataReceipt?.serie ?? formValues?.serie ?? '';
+    const correlativo = dataReceipt?.correlativo ?? formValues?.correlativo ?? '';
+    return `${serie}-${correlativo}`;
+};
+
 // Componente para generar el PDF
 const PrintPDF = ({
     productsInvoice,
@@ -33,12 +44,14 @@ const PrintPDF = ({
     selectedClient,
     discount,
     size,
+    dataReceipt,
 }: {
     productsInvoice: any[];
     selectedClient: any;
     company: any,
     size: any,
     formValues: any
+    dataReceipt?: any
     totalInWords: string;
     serie: string
     correlative: string
@@ -372,7 +385,7 @@ const PrintPDF = ({
                                 <Text style={{ fontWeight: "bold", textAlign: "center", fontSize: 8 }}>
                                     {receipt === 'COTIZACIÓN' ? 'COTIZACIÓN' : receipt === 'ORDEN DE PAGO' ? 'ORDEN DE PAGO' : /VENTA$/i.test(String(receipt || '')) ? `${receipt} ELECTRÓNICA` : `${receipt || ''} DE VENTA ELECTRÓNICA`}
                                     {'\n'}
-                                    <Text>{formValues.serie}-{formValues.correlativo}</Text>
+                                    <Text>{numeracionDocumento(formValues, dataReceipt)}</Text>
                                 </Text>
                             </View>
                             <Text style={styles.separator}>-------------------------------------------------------------------</Text>
@@ -648,7 +661,7 @@ const PrintPDF = ({
                                             {'\n'}
                                             <Text style={{ fontSize: "13px", fontWeight: "bold" }}>ELECTRONICA</Text>
                                             {'\n'}
-                                            {formValues.serie}-{formValues.correlativo}
+                                            {numeracionDocumento(formValues, dataReceipt)}
                                         </Text>
                                     </View>
                                 </View>
