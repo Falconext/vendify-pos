@@ -94,6 +94,21 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
     const hayRecetasPendientes = recetasPendientes > 0;
     const hayProductos = Array.isArray(vm.productsInvoice) && vm.productsInvoice.length > 0;
 
+    // Una nota de crédito no cobra nada: devuelve o anula. Pedir método de pago,
+    // monto recibido y vuelto para anular una boleta no tiene sentido y confunde.
+    //
+    // Saltearlo es seguro: `crearFormal` deriva el tipo 07 a `crearNotaCredito`
+    // (comprobante.service.ts), que nunca registra un pago en caja, y los valores
+    // que el modal habría fijado ya son los correctos por defecto — paymentMethod
+    // arranca en 'Efectivo' y formaPagoTipo cae a 'Contado'.
+    //
+    // La nota de DÉBITO queda fuera a propósito: esa sí recorre el flujo completo
+    // de `crearFormal`, que llega a registrarPagosDeEmision.
+    const esNotaCredito = ['NOTA DE CREDITO', 'NOTA DE CRÉDITO'].includes(
+        String(vm.formValues?.comprobante || '').toUpperCase(),
+    );
+    const emiteSinPasoDePago = vm.isQuotationRoute || esNotaCredito;
+
     // Split payment helpers
     const splitTotal = (vm.splitPayments as PaymentLine[])
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
@@ -433,7 +448,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                 <button
                     onClick={() => {
                         if (!hayProductos) return;
-                        if (vm.isQuotationRoute) {
+                        if (emiteSinPasoDePago) {
                             vm.addInvoiceReceipt();
                         } else {
                             // Incluye la EDICIÓN de una nota de venta: pasa por el paso de
@@ -451,7 +466,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                     title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
                     <Icon icon={vm.isQuotationRoute ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
-                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : vm.isEditNotaVenta ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
+                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : esNotaCredito ? "EMITIR NOTA DE CRÉDITO" : vm.isEditNotaVenta ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
                 </button>
             </div>
 
