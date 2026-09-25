@@ -831,6 +831,12 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                 vehiculoAutorizacion: numeroTucNormalizado || formValues.vehiculoAutorizacion,
                 partidaCodigoEstablecimiento: isTrasladoMismaEmpresa ? '0700' : formValues.partidaCodigoEstablecimiento,
                 llegadaCodigoEstablecimiento: isTrasladoMismaEmpresa ? '0700' : formValues.llegadaCodigoEstablecimiento,
+                // Un campo de fecha que el usuario no llenó vale "" en el form, y
+                // "" no es una fecha ISO: el backend rechazaba la guía entera por
+                // un dato opcional. Vacío significa "no lo mando".
+                ...(String(formValues.fechaEntregaBienes || '').trim()
+                    ? { fechaEntregaBienes: formValues.fechaEntregaBienes }
+                    : { fechaEntregaBienes: undefined }),
             };
 
             let res;

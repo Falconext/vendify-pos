@@ -131,6 +131,19 @@ export interface IGuiaRemisionState {
     resetGuiaRemision: () => void;
 }
 
+/**
+ * `utils/fetch` no lanza ante un error: atrapa la excepción y devuelve
+ * `{ success: false, error }`. Ese objeto es truthy, así que el `if (resp)`
+ * que había acá daba verdadero SIEMPRE y anunciaba "exitosamente" sobre
+ * peticiones que el backend había rechazado — el usuario veía el cartel verde,
+ * el modal se cerraba, y nada se había guardado.
+ *
+ * El mensaje real venía en `resp.error` y se descartaba. Ahora se muestra.
+ */
+const fallo = (resp: any): boolean => !resp || resp.success === false;
+const motivo = (resp: any, porDefecto: string): string =>
+    (resp && typeof resp.error === 'string' && resp.error.trim()) || porDefecto;
+
 export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, get) => ({
     guiasRemision: [],
     totalGuias: 0,
@@ -173,19 +186,20 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
             useAlertStore.setState({ loading: true });
             const resp: any = await fetchGet(`guia-remision/${id}`);
 
-            if (resp) {
-                set({
-                    guiaRemisionActual: resp,
-                    detallesGuia: resp.detalles || []
-                }, false, 'GET_GUIA_REMISION');
-
+            if (fallo(resp)) {
                 useAlertStore.setState({ loading: false });
-                return { success: true };
-            } else {
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Error al obtener la guía de remisión', 'error');
-                return { success: false, error: 'Error al obtener la guía de remisión' };
+                const detalle = motivo(resp, 'Error al obtener la guía de remisión');
+                useAlertStore.getState().alert(detalle, 'error');
+                return { success: false, error: detalle };
             }
+
+            set({
+                guiaRemisionActual: resp,
+                detallesGuia: resp.detalles || []
+            }, false, 'GET_GUIA_REMISION');
+
+            useAlertStore.setState({ loading: false });
+            return { success: true };
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al obtener la guía de remisión', 'error');
@@ -198,16 +212,17 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
             useAlertStore.setState({ loading: true });
             const resp: any = await post('guia-remision', data);
 
-            if (resp) {
+            if (fallo(resp)) {
                 useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Guía de remisión creada exitosamente', 'success');
-                set({ guiaRemisionActual: resp, detallesGuia: [] }, false, 'CREATE_GUIA_REMISION');
-                return { success: true, data: resp };
-            } else {
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Error al crear la guía de remisión', 'error');
-                return { success: false, error: 'Error al crear la guía de remisión' };
+                const detalle = motivo(resp, 'Error al crear la guía de remisión');
+                useAlertStore.getState().alert(detalle, 'error');
+                return { success: false, error: detalle };
             }
+
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert('Guía de remisión creada exitosamente', 'success');
+            set({ guiaRemisionActual: resp, detallesGuia: [] }, false, 'CREATE_GUIA_REMISION');
+            return { success: true, data: resp };
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al crear la guía de remisión', 'error');
@@ -220,16 +235,17 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
             useAlertStore.setState({ loading: true });
             const resp: any = await patch(`guia-remision/${id}`, data);
 
-            if (resp) {
+            if (fallo(resp)) {
                 useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Guía de remisión actualizada exitosamente', 'success');
-                set({ guiaRemisionActual: resp }, false, 'UPDATE_GUIA_REMISION');
-                return { success: true };
-            } else {
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Error al actualizar la guía de remisión', 'error');
-                return { success: false, error: 'Error al actualizar la guía de remisión' };
+                const detalle = motivo(resp, 'Error al actualizar la guía de remisión');
+                useAlertStore.getState().alert(detalle, 'error');
+                return { success: false, error: detalle };
             }
+
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert('Guía de remisión actualizada exitosamente', 'success');
+            set({ guiaRemisionActual: resp }, false, 'UPDATE_GUIA_REMISION');
+            return { success: true };
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al actualizar la guía de remisión', 'error');
@@ -242,18 +258,19 @@ export const useGuiaRemisionStore = create<IGuiaRemisionState>()(devtools((set, 
             useAlertStore.setState({ loading: true });
             const resp: any = await del(`guia-remision/${id}`);
 
-            if (resp) {
+            if (fallo(resp)) {
                 useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Guía de remisión eliminada exitosamente', 'success');
-                set((state) => ({
-                    guiasRemision: state.guiasRemision.filter((guia: any) => guia.id !== id)
-                }), false, 'DELETE_GUIA_REMISION');
-                return { success: true };
-            } else {
-                useAlertStore.setState({ loading: false });
-                useAlertStore.getState().alert('Error al eliminar la guía de remisión', 'error');
-                return { success: false, error: 'Error al eliminar la guía de remisión' };
+                const detalle = motivo(resp, 'Error al eliminar la guía de remisión');
+                useAlertStore.getState().alert(detalle, 'error');
+                return { success: false, error: detalle };
             }
+
+            useAlertStore.setState({ loading: false });
+            useAlertStore.getState().alert('Guía de remisión eliminada exitosamente', 'success');
+            set((state) => ({
+                guiasRemision: state.guiasRemision.filter((guia: any) => guia.id !== id)
+            }), false, 'DELETE_GUIA_REMISION');
+            return { success: true };
         } catch (error: any) {
             useAlertStore.setState({ loading: false });
             useAlertStore.getState().alert(error.message || 'Error al eliminar la guía de remisión', 'error');
