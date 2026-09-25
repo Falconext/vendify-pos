@@ -565,6 +565,25 @@ export default function PerfilIndex() {
                                         {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                <label data-testid="config-ley-amazonia" className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).leyAmazonia)}
+                                        disabled={vm.savingLeyAmazonia}
+                                        onChange={(e) => vm.handleLeyAmazoniaToggle(e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-emerald-600 dark:text-emerald-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-emerald-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Opero bajo la Ley de Amazonía (Ley 27037)</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Actívalo si tu negocio está en zona amazónica (Loreto, Ucayali, San Martín, Madre de Dios, Amazonas y provincias designadas de Junín, Cusco, Huánuco, Pasco, Puno, Ayacucho, Cajamarca, La Libertad, Piura y Huancavelica).
+                                            Tus facturas y boletas llevarán además la leyenda que SUNAT pide para sustentar la exoneración del IGV:
+                                            <span className="font-semibold"> "BIENES TRANSFERIDOS EN LA AMAZONIA REGION SELVA PARA SER CONSUMIDOS EN LA MISMA"</span>.
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Ojo: la exoneración aplica a lo que se consume dentro de la zona. Si vendes fuera, esa operación va gravada con IGV.</p>
+                                        {vm.savingLeyAmazonia && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
                                 <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                                     <input
                                         type="checkbox"
