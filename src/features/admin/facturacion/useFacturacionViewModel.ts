@@ -1178,6 +1178,21 @@ export const useFacturacionViewModel = () => {
         }
     }, [location]);
 
+    // El tipo del documento a modificar se deduce de la serie que se escribe, en
+    // vez de depender de que alguien acierte con el selector.
+    //
+    // El selector arranca en "01" (Factura) y no se mueve solo: si el emisor
+    // buscaba la boleta BOA1-16 y lo dejaba como estaba, la nota salía con serie
+    // FCA1 (serie de nota sobre factura) apuntando a una boleta. SUNAT rechaza
+    // esa contradicción con el error 2116 y la anulación nunca ocurre, aunque el
+    // sistema ya haya dado la boleta por anulada.
+    useEffect(() => {
+        if (!["NOTA DE CREDITO", "NOTA DE DEBITO"].includes(formValues?.comprobante)) return;
+        const prefijo = String(serie || '').trim().toUpperCase().charAt(0);
+        if (prefijo === 'B' && receiptNoteId !== '03') setReceiptNoteId('03');
+        else if (prefijo === 'F' && receiptNoteId !== '01') setReceiptNoteId('01');
+    }, [serie, formValues?.comprobante, receiptNoteId]);
+
     useEffect(() => {
         if (["NOTA DE CREDITO", "NOTA DE DEBITO"].includes(formValues?.comprobante)) {
             getSerieAndCorrelativeByReceipt(auth?.empresa?.id, formValues?.tipoDoc, receiptNoteId);
