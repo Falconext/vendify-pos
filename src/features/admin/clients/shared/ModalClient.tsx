@@ -302,6 +302,28 @@ export default function ModalClient({
                             onChange={handleChangeSelect}
                             label="Seleccionar ubigeo"
                         />
+
+                        {/* Agente de Retención del IGV. Solo una empresa con RUC puede
+                            ser designada por SUNAT, por eso la casilla aparece recién
+                            cuando el documento tiene 11 dígitos. */}
+                        {String(formValues?.nroDoc || '').trim().length === 11 && (
+                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 dark:border-slate-700 dark:hover:border-blue-700">
+                                <input
+                                    type="checkbox"
+                                    checked={!!(formValues as any)?.esAgenteRetencion}
+                                    onChange={(e) => setFormValues({ ...formValues, esAgenteRetencion: e.target.checked } as any)}
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                                />
+                                <span>
+                                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                                        Agente de Retención del IGV
+                                    </span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                        Designado por SUNAT. Al pagarte te retiene el 3% en cada factura mayor a S/&nbsp;700.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
                     </div>
                     <div className="flex flex-col-reverse gap-3 px-4 pb-5 pt-6 sm:flex-row sm:justify-end sm:px-6">
                         <Button color="gray" className="w-full sm:w-auto" onClick={() => setIsOpenModal(false)}>Cancelar</Button>
