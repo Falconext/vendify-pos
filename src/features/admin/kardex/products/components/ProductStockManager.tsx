@@ -53,13 +53,17 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                 <label className="flex items-center gap-2 rounded-lg border border-white/70 bg-white px-3 py-2 text-[11px] font-semibold text-gray-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200">
                     <input
                         type="checkbox"
-                        name="disponibleParaVenta"
-                        checked={formValues?.disponibleParaVenta !== false}
-                        onChange={(e) => handleChange({ target: { name: 'disponibleParaVenta', value: e.target.checked } } as any)}
+                        name="vendibleEnSede"
+                        checked={formValues?.vendibleEnSede !== false}
+                        onChange={(e) => handleChange({ target: { name: 'vendibleEnSede', value: e.target.checked } } as any)}
                         className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-700 text-violet-600 focus:ring-violet-500"
                     />
                     Permite vender
                 </label>
+                {/* Ojo: el `name` tiene que ser `vendibleEnSede`, que es el campo
+                    que viaja al backend. Antes decía `disponibleParaVenta`, que
+                    no existe en ningún lado: la casilla se marcaba y no guardaba
+                    nada (0 de 42,064 filas lo tenían apagado). */}
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
