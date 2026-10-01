@@ -170,6 +170,28 @@ const ModalClient = ({ isOpenModal, closeModal, setIsOpenModal, isEdit, formValu
                         <SelectUbigeo value={formValues?.departamento ? `${formValues?.departamento}/${formValues?.provincia}/${formValues?.distrito}` : ""} isSearch options={ubigeos} name="nombreUbigeo" id="ubigeo" onChange={handleChangeSelect} label="Seleccionar ubigeo de la empresa" />
                     </div>
 
+                    {/* Solo una empresa con RUC puede ser designada agente de retención. */}
+                    {String(formValues?.nroDoc || '').trim().length === 11 && (
+                        <div className="md:col-start-1 md:col-end-3">
+                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 dark:border-gray-700 dark:hover:border-blue-700">
+                                <input
+                                    type="checkbox"
+                                    checked={!!(formValues as any)?.esAgenteRetencion}
+                                    onChange={e => setFormValues({ ...formValues, esAgenteRetencion: e.target.checked } as any)}
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>
+                                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                                        Agente de Retención del IGV
+                                    </span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                        Designado por SUNAT. Al pagarte te retiene el 3% en cada factura mayor a S/&nbsp;700.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    )}
+
                     {isFarmacia && formValues.persona === 'CLIENTE' && (
                         <>
                             <div className="border-t border-gray-100 pt-4 dark:border-gray-700 md:col-start-1 md:col-end-3">

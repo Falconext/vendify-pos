@@ -31,6 +31,7 @@ const CLIENTE_PAYLOAD_KEYS = [
     'nombre', 'tipoDoc', 'nroDoc', 'direccion', 'email', 'telefono',
     'ubigeo', 'departamento', 'provincia', 'distrito', 'persona',
     'grupoSanguineo', 'alergias', 'fechaNacimiento', 'medicoTratanteId',
+    'esAgenteRetencion',
 ] as const;
 
 const sanitizeClientePayload = (data: any) => {

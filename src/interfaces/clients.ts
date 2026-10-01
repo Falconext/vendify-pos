@@ -20,6 +20,8 @@ export type IClient = {
     tipoDocumentoId: number
     empresaId: number
     tipoDocumento: IDocument
+    /** Agente de Retención del IGV: al pagarnos nos retiene el 3%. */
+    esAgenteRetencion?: boolean
   }
   
   
@@ -40,4 +42,6 @@ export type IClient = {
     tipoDocumentoId: number
     empresaId: number
     tipoDocumento: IDocument
+    /** Agente de Retención del IGV: al pagarnos nos retiene el 3%. */
+    esAgenteRetencion?: boolean
   }

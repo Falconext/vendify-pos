@@ -5,6 +5,7 @@ import { useState } from "react";
 import { EnvioModal } from "./EnvioModal";
 import { Calendar } from "@/components/Date";
 import moment from "moment";
+import { aplicaRetencion } from '../retencion';
 
 const COURIER_LABELS: Record<string, string> = {
     SHALOM_PRO: 'Shalom PRO', SHALOM_COD: 'Shalom COD', OLVA: 'Olva',
@@ -66,7 +67,15 @@ function OperacionFiscalTrigger({ vm }: { vm: any }) {
     const esDefault = tipoActual?.codigo === '0101' || !tipoActual;
     const tieneDetraccion = esDetraccion && vm.tipoDetraccionId;
     const tieneRetencion = !!vm.retencionData;
-    const mostrarRetencion = !esDetraccion && vm.totalAdjusted >= 700 && vm.auth?.empresa?.esAgenteRetencion;
+    // Misma regla que usa el cálculo: la marca de agente de retención es del
+    // CLIENTE. Si el comprador no es agente, la opción ni aparece.
+    const mostrarRetencion = aplicaRetencion({
+        esFactura: vm.formValues?.comprobante === 'FACTURA',
+        total: vm.totalAdjusted,
+        clienteEsAgenteRetencion: vm.selectedClient?.esAgenteRetencion,
+        empresaEsAgenteRetencion: vm.auth?.empresa?.esAgenteRetencion,
+        tieneDetraccion: esDetraccion,
+    });
     const activo = tieneDetraccion || tieneRetencion;
 
     return (

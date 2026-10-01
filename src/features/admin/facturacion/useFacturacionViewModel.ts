@@ -38,6 +38,7 @@ import {
 import { COURIERS } from "./components/EnvioModal";
 import { mapDetalleToInvoiceProduct } from "./utils/comprobanteProductMapper";
 import { tipoCambioService } from "@/services/tipoCambio.service";
+import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 
 type EnvioDespachoFormData = {
     transportista?: string;
@@ -1844,7 +1845,8 @@ export const useFacturacionViewModel = () => {
     };
 
     const handleSaveRetencion = (data: any) => {
-        setRetencionData(data);
+        // `manual` evita que el recálculo automático pise lo que el usuario puso.
+        setRetencionData({ ...data, manual: true });
         const formaPagoUpper = data.formaPago?.toUpperCase() || 'CONTADO';
         setFormValues(prev => ({
             ...prev,
@@ -2847,18 +2849,34 @@ export const useFacturacionViewModel = () => {
     const selectOperation = tiposOperacion.find(op => op.id === formValues.tipoOperacionId);
 
     useEffect(() => {
-        if (totalAdjusted < 700 && retencionData) {
-            setRetencionData(null);
+        // Quién retiene es el CLIENTE, no la empresa: el agente de retención es
+        // el que compra. Antes esto colgaba de un interruptor por empresa y le
+        // retenía el 3% a TODA factura, fuera o no el comprador un agente.
+        // La regla vive en `retencion.ts` para poder probarla sin montar el POS.
+        const corresponde = aplicaRetencion({
+            esFactura: formValues.comprobante === 'FACTURA',
+            total: totalAdjusted,
+            clienteEsAgenteRetencion: (selectedClient as any)?.esAgenteRetencion,
+            empresaEsAgenteRetencion: auth?.empresa?.esAgenteRetencion,
+            tieneDetraccion: selectOperation?.codigo === '0112',
+        });
+
+        if (!corresponde) {
+            if (retencionData) setRetencionData(null);
             return;
         }
-        if (totalAdjusted >= 700 && auth?.empresa?.esAgenteRetencion && selectOperation?.codigo !== "0112" && !retencionData) {
-            const monto = Number((totalAdjusted * 0.03).toFixed(2));
+
+        // Un monto editado a mano en el modal no se pisa; el automático sí se
+        // mantiene al día si cambia el carrito.
+        if (retencionData?.manual) return;
+        const monto = calcularRetencion(totalAdjusted);
+        if (retencionData?.montoDetraccion !== monto) {
             setRetencionData({
                 montoDetraccion: monto,
-                porcentajeDetraccion: 3
+                porcentajeDetraccion: PORCENTAJE_RETENCION,
             });
         }
-    }, [totalAdjusted, retencionData, auth?.empresa?.esAgenteRetencion, selectOperation?.codigo]);
+    }, [totalAdjusted, retencionData, selectedClient, auth?.empresa?.esAgenteRetencion, selectOperation?.codigo, formValues.comprobante]);
 
     const [showMobileCart, setShowMobileCart] = useState(false);
 
