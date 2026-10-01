@@ -39,6 +39,7 @@ import { COURIERS } from "./components/EnvioModal";
 import { mapDetalleToInvoiceProduct } from "./utils/comprobanteProductMapper";
 import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
+import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
 
 type EnvioDespachoFormData = {
     transportista?: string;
@@ -1844,6 +1845,17 @@ export const useFacturacionViewModel = () => {
         setEditingIndex(-1);
     };
 
+    // Si cambian el tipo de documento después de elegir una fecha, el plazo
+    // puede achicarse —una nota de venta admite 5 días y la factura 3—. La fecha
+    // vieja quedaría fuera del plazo de SUNAT sin que nadie lo note, así que
+    // vuelve a hoy: se ve en pantalla y obliga a elegirla de nuevo, en vez de
+    // emitir un comprobante fuera de plazo en silencio.
+    useEffect(() => {
+        if (fechaFueraDePlazo(fechaEmisionManual, (formValues as any)?.tipoDoc)) {
+            setFechaEmisionManual(todayStr);
+        }
+    }, [(formValues as any)?.tipoDoc]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const handleSaveRetencion = (data: any) => {
         // `manual` evita que el recálculo automático pise lo que el usuario puso.
         setRetencionData({ ...data, manual: true });
@@ -2978,14 +2990,17 @@ export const useFacturacionViewModel = () => {
         descontarStockNP, setDescontarStockNP,
         fechaEmisionManual, setFechaEmisionManual,
         fechaEmisionMinDate: (() => {
-            const tipoDoc = (formValues as any)?.tipoDoc;
-            const diasAtras = tipoDoc === '01' ? 3 : tipoDoc === '03' ? 5 : 0;
+            // Misma regla que `fechaEmisionDiasAtras`. Estaba duplicada a mano:
+            // si las dos no coinciden, el campo se muestra pero no deja elegir.
+            const diasAtras = diasEmisionRetroactiva((formValues as any)?.tipoDoc);
             const d = new Date();
             d.setDate(d.getDate() - diasAtras);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         })(),
         fechaEmisionMaxDate: todayStr,
-        fechaEmisionDiasAtras: (formValues as any)?.tipoDoc === '01' ? 3 : (formValues as any)?.tipoDoc === '03' ? 5 : 0,
+        // La regla vive en `fechaEmisionRetroactiva.ts`: los plazos de factura y
+        // boleta son de SUNAT, los informales no tienen plazo y antes caían a 0.
+        fechaEmisionDiasAtras: diasEmisionRetroactiva((formValues as any)?.tipoDoc),
         selectedClient, setSelectedClient,
         snapshotClient,
         selectedProduct, setSelectProduct,
