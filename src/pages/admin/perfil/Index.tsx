@@ -11,6 +11,21 @@ import MediosDePagoConfig from '@/pages/admin/empresa/MediosDePagoConfig';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
+/**
+ * `Field` vive FUERA de `PerfilIndex` a propósito.
+ *
+ * Definir un componente dentro de otro crea un tipo nuevo en cada render:
+ * React no lo reconoce como el mismo y desmonta y vuelve a montar todo el
+ * subárbol, lo que se ve como un parpadeo. Si necesita datos de la página,
+ * va por props. Nunca de vuelta adentro.
+ */
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="pb-3 border-b border-slate-50 dark:border-slate-800 last:border-0 last:pb-0">
+        <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>
+        {children}
+    </div>
+);
+
 export default function PerfilIndex() {
     const vm = usePerfilViewModel();
     const { perfil, loading, usageStats, savingBarcodeConfig, savingFefoPriceConfig, savingVentaSinStockConfig, savingDirectorTecnico, savingWhatsAppConfig, whatsAppForm, whatsappConfigDirty, passwordForm, setPasswordForm, passwordErrors, savingPassword, handleChangePassword } = vm;
@@ -95,12 +110,6 @@ export default function PerfilIndex() {
         );
     }
 
-    const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-        <div className="pb-3 border-b border-slate-50 dark:border-slate-800 last:border-0 last:pb-0">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>
-            {children}
-        </div>
-    );
 
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
