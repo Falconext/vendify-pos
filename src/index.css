@@ -153,6 +153,21 @@ html.is-admin .font-inter {
   font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
 }
 
+/* Comprobantes: en pantalla usan LA MISMA fuente que al imprimir, para que la
+   vista previa del modal "Continuar pago" se vea igual que el papel: Inter en
+   A4/A5 y VT323 (monoespaciada de impresora térmica) en ticket. Sin esto
+   heredaban Plus Jakarta Sans del panel y no se parecían al impreso.
+   Engancha por atributo y no por id: hay dos instancias en pantalla (la oculta
+   que imprime y la del modal). */
+html.is-admin [data-print-root],
+html.is-admin [data-print-root] * {
+  font-family: 'Inter', Arial, sans-serif !important;
+}
+html.is-admin [data-print-root][data-size='TICKET'],
+html.is-admin [data-print-root][data-size='TICKET'] * {
+  font-family: 'VT323', monospace !important;
+}
+
 /* Menús de acciones de tablas (TableActionMenu). Se renderizan por portal en
    <body>, así que además de la clase font-jakarta del contenedor forzamos la
    fuente en el menú y TODOS sus hijos (los <button> no siempre heredan y hay

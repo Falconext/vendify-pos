@@ -550,7 +550,7 @@ export const FacturacionNuevoView = () => {
                     </div>
                 </div>
                 <POSCartLayout vm={vm} />
-                <POSCalculations vm={vm} printFn={printFn} handleOpenNewTab={handleOpenNewTab} />
+                <POSCalculations vm={vm} printFn={printFn} handleOpenNewTab={handleOpenNewTab} printFormValues={printFormValues} />
             </div>
 
             {isSaleConfigOpen && (

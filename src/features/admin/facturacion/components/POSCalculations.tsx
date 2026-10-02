@@ -8,6 +8,8 @@ import EmitidoContent from "@/pages/admin/facturacion/modalResponseInvoice/Emiti
 import { descripcionParaImpresion } from "@/utils/descripcion-vehiculo";
 import type { PaymentLine } from "../useFacturacionViewModel";
 import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
+import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
+import { type FormatoImpresion } from "@/utils/formatoImpresion";
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 
@@ -72,17 +74,32 @@ function CpeRequeridoCard({ vm }: { vm: any }) {
 
 // Línea marcada como operación gratuita (Catálogo 07: 11-16/21/31-37) — el P.U. sigue
 // siendo informativo, pero el importe cobrado es 0. No suma al importe total.
-const esItemGratuitoPreview = (item: any): boolean => {
-    const n = Number(item?.tipoAfectacionIGV ?? item?.tipAfeIgv ?? 10);
-    return (n >= 11 && n <= 16) || n === 21 || (n >= 31 && n <= 37);
+/**
+ * Los formatos que ofrece el modal. A5 sigue disponible en "Configurar
+ * formato": acá no se usa, y tener tres botones para elegir entre ticket y A4
+ * solo estorba en el momento de cobrar.
+ */
+const FORMATOS_PREVIEW: FormatoImpresion[] = ['TICKET', 'A4'];
+
+/**
+ * Ancho real de cada formato en px (96 dpi) y cuánto se achica para que entre
+ * en el panel del modal. Mismos valores que el modal "Configurar formato".
+ */
+const PREVIEW_DIMS: Record<FormatoImpresion, { width: number; scale: number }> = {
+    A4: { width: 794, scale: 0.5 },
+    A5: { width: 559, scale: 0.7 },
+    TICKET: { width: 302, scale: 1 },
 };
 
-export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, printFn: any, handleOpenNewTab: any }) => {
+export const POSCalculations = ({ vm, printFn, handleOpenNewTab, printFormValues }: { vm: any, printFn: any, handleOpenNewTab: any, printFormValues?: any }) => {
     const total: number = vm.totalAdjusted ?? 0;
     const { cuentas, listar } = useCuentasBancariasStore();
     const cuentasActivas = cuentas.filter((cuenta) => cuenta.activo !== false);
     // Modal "Continuar pago": tipos de pago (izq) + preview del comprobante (der)
     const [showPago, setShowPago] = useState(false);
+    // Formato de la vista previa del modal. Arranca en TICKET porque es lo que
+    // se imprime en el mostrador; A4 está para revisar antes de emitir.
+    const [formatoPreview, setFormatoPreview] = useState<FormatoImpresion>('TICKET');
 
     useEffect(() => {
         listar();
@@ -266,29 +283,15 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
     const isCreditoPreview = vm.formValues?.medioPago === 'Crédito';
     const comprobanteRawPreview = String(vm.formValues?.comprobante || '').toUpperCase()
         || (vm.formValues?.tipoComprobante === '01' ? 'FACTURA' : 'BOLETA');
-    const tipoComprobantePreview =
-        comprobanteRawPreview === 'COTIZACIÓN' || comprobanteRawPreview === 'COTIZACION'
-            ? 'COTIZACIÓN'
-            : comprobanteRawPreview === 'ORDEN DE PAGO'
-                ? 'ORDEN DE PAGO'
-                : comprobanteRawPreview.includes('VENTA') || comprobanteRawPreview.includes('NOTA') || comprobanteRawPreview.includes('ORDEN') || comprobanteRawPreview.includes('RECIBO')
-                    ? comprobanteRawPreview
-                    : `${comprobanteRawPreview} DE VENTA ELECTRÓNICA`;
-    const clientePreviewNombre = clientePreview?.nombre || vm.formValuesClient?.nombre || 'CLIENTE VARIOS';
+const clientePreviewNombre = clientePreview?.nombre || vm.formValuesClient?.nombre || 'CLIENTE VARIOS';
     const clientePreviewDoc = clientePreview?.nroDoc || vm.formValuesClient?.nroDoc || '';
     const clientePreviewDireccion = (clientePreview?.direccion || vm.formValuesClient?.direccion || '').toString().trim();
-    const seriePreview = vm.serie || vm.formValues?.serie || '';
-    const correlativoPreview = vm.correlative || vm.formValues?.correlativo || '';
-    const fechaPreview = vm.formValues?.fechaEmision || '';
     // Pago inicial (adelanto) en una venta a crédito: mixto = suma de líneas; simple = campo adelanto.
     const inicialCreditoPreview = isCreditoPreview
         ? (vm.isMixedPayment ? splitTotal : Number(vm.adelanto || 0))
         : 0;
     const metodoPreviewLabel = vm.isMixedPayment ? 'MIXTO' : (isCreditoPreview ? (inicialCreditoPreview > 0 ? String(vm.adelantoMetodo || 'EFECTIVO').toUpperCase() : 'CRÉDITO') : String(vm.paymentMethod || 'EFECTIVO').toUpperCase());
-    const condicionPreview = isCreditoPreview ? 'CRÉDITO' : 'CONTADO';
     const vueltoPreview = isCreditoPreview ? 0 : (vm.isMixedPayment ? splitChange : (vm.isCashPayment ? (vm.vueltoCalculado || 0) : 0));
-    const montoMedioPreview = isCreditoPreview ? inicialCreditoPreview : total;
-    const pagadoPreview = isCreditoPreview ? inicialCreditoPreview : total + vueltoPreview;
     const creditoMensaje = inicialCreditoPreview > 0
         ? `Venta a crédito con pago inicial de S/ ${inicialCreditoPreview.toFixed(2)} (${metodoPreviewLabel}). El resto queda a crédito.`
         : 'Venta a crédito — no requiere método de pago (o configura un pago inicial en “Configurar venta”).';
@@ -296,19 +299,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
     const vendedorCampoNombrePreview = vm.vendedorCampoId
         ? (vm.vendedoresCampo?.find((u: any) => u.id === vm.vendedorCampoId)?.nombre)
         : null;
-    const vendedorPreview = (vendedorCampoNombrePreview || vm.auth?.nombre || vm.auth?.usuario?.nombre || vm.formValues?.vendedor || 'ADMIN').toString().toUpperCase();
-    const empresaCelularPreview = (empresaPreview?.celular || empresaPreview?.telefono || '').toString().trim();
-    const empresaEmailPreview = (empresaPreview?.email || empresaPreview?.correo || '').toString().trim();
-    const empresaWebPreview = (empresaPreview?.paginaWeb || '').toString().trim();
-    const previewLogo = (() => {
-        const raw = empresaPreview?.logo;
-        if (!raw) return undefined;
-        const t = String(raw).trim();
-        if (t.startsWith('data:')) return t;
-        if (/^https?:\/\//i.test(t) || t.startsWith('/')) return t;
-        return `data:${t.startsWith('/9j/') ? 'image/jpeg' : 'image/png'};base64,${t}`;
-    })();
-    const simboloPreview = vm.monedaSimbolo || 'S/';
+const simboloPreview = vm.monedaSimbolo || 'S/';
 
     // ── Transición del modal: pago → procesando → emitido (dentro del mismo modal) ──
     const emitStep: 'pago' | 'procesando' | 'emitido' = vm.IsOpenModalSuccessInvoice
@@ -509,6 +500,12 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                 >
                     <motion.div
                         layout
+                        // Sin `layoutDependency` el modal se re-anima cada vez que
+                        // su contenido cambia de alto —el logo del ticket carga
+                        // después y lo reacomoda—, y eso es el parpadeo al abrir.
+                        // Así solo anima cuando de verdad cambia de tamaño: al
+                        // pasar de "pago" (ancho) a "emitido" (angosto).
+                        layoutDependency={isEmitPhase}
                         transition={{ type: 'spring', stiffness: 260, damping: 28 }}
                         className={`w-full ${isEmitPhase ? 'max-w-md' : 'max-w-4xl'} max-h-[92vh] overflow-hidden rounded-2xl bg-white dark:bg-[#0f1535] shadow-2xl flex flex-col`}
                         onClick={(e) => e.stopPropagation()}
@@ -715,92 +712,58 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab }: { vm: any, pr
                                 {vm.formValues?.medioPago === 'Crédito' && vm.cpeRequeridoPorMedioPago && (
                                     <div className="mx-auto mb-3 max-w-[300px]"><CpeRequeridoCard vm={vm} /></div>
                                 )}
-                                <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>
-                                <div className="mx-auto w-full max-w-[300px] rounded-xl bg-white text-gray-900 border border-gray-200 shadow-inner p-4 font-mono text-[10px] leading-relaxed">
-                                    {/* Encabezado empresa */}
-                                    <div className="text-center">
-                                        {previewLogo && <img src={previewLogo} alt="logo" className="mx-auto mb-2 h-14 w-14 object-contain" />}
-                                        <p className="font-bold text-sm uppercase">{empresaPreview?.razonSocial || empresaPreview?.nombreComercial || 'MI EMPRESA'}</p>
-                                        {empresaPreview?.nombreComercial && <p className="text-[9px] text-gray-600 uppercase">{empresaPreview.nombreComercial}</p>}
-                                        {empresaPreview?.direccion && <p className="text-[9px] text-gray-600 uppercase">DIRECCION: {empresaPreview.direccion}</p>}
-                                        {empresaCelularPreview && <p className="text-[9px] text-gray-600">CELULAR: {empresaCelularPreview}</p>}
-                                        {empresaEmailPreview && <p className="text-[9px] text-gray-600 lowercase">CORREO: {empresaEmailPreview}</p>}
-                                        {empresaWebPreview && <p className="text-[9px] text-gray-600">WEB: {empresaWebPreview}</p>}
-                                        <p className="text-[9px] text-gray-600">RUC: {empresaPreview?.ruc || empresaPreview?.nroDoc || '—'}</p>
-                                    </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    {/* Tipo de comprobante + serie */}
-                                    <div className="text-center font-bold">
-                                        <p>{tipoComprobantePreview}</p>
-                                        <p>{seriePreview}{correlativoPreview ? `-${correlativoPreview}` : ''}</p>
-                                    </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    {/* Datos generales */}
-                                    <div className="space-y-0.5">
-                                        {fechaPreview && (
-                                            <div className="flex justify-between gap-2"><span className="text-gray-500">FECHA Y HORA:</span><span className="text-right">{fechaPreview}</span></div>
-                                        )}
-                                        <div className="flex justify-between gap-2"><span className="text-gray-500">RAZON SOCIAL:</span><span className="text-right uppercase">{clientePreviewNombre}</span></div>
-                                        {clientePreviewDoc && (
-                                            <div className="flex justify-between gap-2"><span className="text-gray-500">N° DOCUMENTO:</span><span className="text-right">{clientePreviewDoc}</span></div>
-                                        )}
-                                        {clientePreviewDireccion && (
-                                            <div className="flex justify-between gap-2"><span className="text-gray-500">DIRECCION:</span><span className="text-right uppercase">{clientePreviewDireccion}</span></div>
-                                        )}
-                                    </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    {/* Tabla de items */}
-                                    <div className="flex font-bold text-[9px] text-gray-500">
-                                        <span className="w-6 text-center">CANT.</span>
-                                        <span className="w-7 text-center">U.M.</span>
-                                        <span className="flex-1 px-1 text-left">DESCRIPCION</span>
-                                        <span className="w-10 text-right">P.U.</span>
-                                        <span className="w-12 text-right">IMP.</span>
-                                    </div>
-                                    <div className="my-1 border-t border-dashed border-gray-200" />
-                                    <div className="space-y-1 max-h-52 overflow-y-auto">
-                                        {(vm.productsInvoice || []).length === 0 && <p className="text-center text-gray-400 py-2">Sin productos</p>}
-                                        {(vm.productsInvoice || []).map((p: any, i: number) => (
-                                            <div key={i} className="flex">
-                                                <span className="w-6 text-center">{p.cantidad}</span>
-                                                <span className="w-7 text-center uppercase">{(p.unidad || p.unidadMedida || 'NIU').toString().toUpperCase().slice(0, 3)}</span>
-                                                <span className="flex-1 px-1 uppercase break-words" style={{ whiteSpace: 'pre-line' }}>{descripcionParaImpresion(p.descripcion || p.nombre || 'Producto', p.atributosTecnicos)}</span>
-                                                <span className="w-10 text-right">{Number(p.precioUnitario ?? p.mtoPrecioUnitario ?? 0).toFixed(2)}</span>
-                                                <span className="w-12 text-right">{Number(p.total ?? 0).toFixed(2)}</span>
-                                            </div>
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>
+                                    {/* Los mismos formatos que en "Configurar formato", para que lo
+                                        que se ve acá sea lo que sale impreso. */}
+                                    <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-slate-800">
+                                        {FORMATOS_PREVIEW.map((f) => (
+                                            <button
+                                                key={f}
+                                                type="button"
+                                                onClick={() => setFormatoPreview(f)}
+                                                className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${formatoPreview === f
+                                                    ? 'bg-white text-violet-600 shadow-sm dark:bg-slate-600 dark:text-violet-200'
+                                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                                            >
+                                                {f === 'TICKET' ? 'Ticket' : f}
+                                            </button>
                                         ))}
                                     </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    {/* Forma / medio de pago */}
-                                    <div className="space-y-0.5">
-                                        <div className="flex justify-between"><span className="text-gray-500">FORMA PAGO:</span><span>{condicionPreview}</span></div>
-                                        <div className="flex justify-between gap-2"><span className="text-gray-500">MEDIO PAGO:</span><span className="text-right">{metodoPreviewLabel} {simboloPreview} {montoMedioPreview.toFixed(2)}</span></div>
-                                        {!isCreditoPreview && (
-                                            <>
-                                                <div className="flex justify-between"><span className="text-gray-500">VUELTO:</span><span>{simboloPreview} {vueltoPreview.toFixed(2)}</span></div>
-                                                <div className="flex justify-between"><span className="text-gray-500">PAGADO:</span><span>{simboloPreview} {pagadoPreview.toFixed(2)}</span></div>
-                                            </>
-                                        )}
-                                        <div className="flex justify-between"><span className="text-gray-500">VENDEDOR:</span><span className="uppercase">{vendedorPreview}</span></div>
+                                </div>
+                                {/* El comprobante REAL, el mismo componente que imprime. Antes acá
+                                    había una maqueta escrita a mano que no coincidía con el papel. */}
+                                <div className="mx-auto flex justify-center overflow-auto" style={{ maxHeight: '58vh' }}>
+                                    <div
+                                        style={{
+                                            width: PREVIEW_DIMS[formatoPreview].width,
+                                            transform: `scale(${PREVIEW_DIMS[formatoPreview].scale})`,
+                                            transformOrigin: 'top center',
+                                        }}
+                                    >
+                                        <div className="bg-white shadow-xl">
+                                            <ComprobantePrintPage
+                                                id="preview-continuar-pago"
+                                                company={vm.authWithBranding}
+                                                qrCodeDataUrl={vm.qrCodeDataUrl}
+                                                productsInvoice={vm.productsInvoice}
+                                                total={vm.totalAdjusted}
+                                                mode="vista previa"
+                                                size={formatoPreview}
+                                                includeProductImages={vm.includeProductImages}
+                                                quotationCurrency={vm.quotationCurrency}
+                                                formValues={printFormValues ?? vm.formValues}
+                                                serie={vm.serie}
+                                                correlative={vm.correlative}
+                                                discount={String(vm.finalDiscount ?? 0)}
+                                                receipt={vm.formValues?.comprobante}
+                                                selectedClient={vm.snapshotClient ?? vm.selectedClient}
+                                                totalInWords={vm.totalInWords}
+                                                observation={vm.formValues?.observaciones || vm.formValues?.motivo}
+                                                retencionData={vm.retencionData}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    {/* Totales */}
-                                    <div className="space-y-0.5">
-                                        <div className="flex justify-between"><span>OP. GRAVADA</span><span>{simboloPreview} {Number(vm.opGravadaAdjusted ?? 0).toFixed(2)}</span></div>
-                                        {vm.opExoneradaAdjusted > 0 && (
-                                            <div className="flex justify-between"><span>OP. EXONERADA</span><span>{simboloPreview} {Number(vm.opExoneradaAdjusted).toFixed(2)}</span></div>
-                                        )}
-                                        {vm.opInafectaAdjusted > 0 && (
-                                            <div className="flex justify-between"><span>OP. INAFECTA</span><span>{simboloPreview} {Number(vm.opInafectaAdjusted).toFixed(2)}</span></div>
-                                        )}
-                                        <div className="flex justify-between"><span>IGV (18%)</span><span>{simboloPreview} {Number(vm.igvAdjusted ?? 0).toFixed(2)}</span></div>
-                                        {vm.finalDiscount > 0 && (
-                                            <div className="flex justify-between text-green-600"><span>DESCUENTO</span><span>- {simboloPreview} {Number(vm.finalDiscount).toFixed(2)}</span></div>
-                                        )}
-                                        <div className="mt-1 flex justify-between font-bold text-sm"><span>IMPORTE TOTAL</span><span>{simboloPreview} {Number(total).toFixed(2)}</span></div>
-                                    </div>
-                                    <div className="my-2 border-t border-dashed border-gray-300" />
-                                    <p className="text-center text-[8px] text-gray-500 leading-snug">Representación impresa del Comprobante de Pago Electrónico.</p>
                                 </div>
                             </div>
                         </div>{/* /body split */}
