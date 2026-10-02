@@ -14,6 +14,7 @@ import { del, post } from "@/utils/fetch";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
 
 import { IComprobanteWhatsApp, IEstadoInvoiceOption, IPrintFormatOption, PrintFormatSize } from "./CotizacionesModel";
+import { monedaDeCotizacion } from './monedaCotizacion';
 
 export function useCotizacionesViewModel() {
     const navigate = useNavigate();
@@ -209,6 +210,9 @@ export function useCotizacionesViewModel() {
         }
     };
 
+    // La moneda viaja con la conversión. Sin esto el POS arrancaba en soles y
+    // una cotización en dólares se facturaba en soles con los MISMOS números:
+    // $1,140 se convertían en S/1,140. Reportado por INPRA.
     const handleConvertirAFactura = (data: any) => {
         const cotizacion = invoices.find((inv: IInvoices) => inv.id === data.id);
         if (!cotizacion) return;
@@ -221,6 +225,7 @@ export function useCotizacionesViewModel() {
                     cliente: cotizacion.cliente,
                     productos: cotizacion.detalles,
                     observaciones: cotizacion.observaciones,
+                    cotizMoneda: monedaDeCotizacion(cotizacion),
                 }
             }
         });
@@ -238,6 +243,7 @@ export function useCotizacionesViewModel() {
                     cliente: cotizacion.cliente,
                     productos: cotizacion.detalles,
                     observaciones: cotizacion.observaciones,
+                    cotizMoneda: monedaDeCotizacion(cotizacion),
                 }
             }
         });
@@ -255,6 +261,7 @@ export function useCotizacionesViewModel() {
                     cliente: cotizacion.cliente,
                     productos: cotizacion.detalles,
                     observaciones: cotizacion.observaciones,
+                    cotizMoneda: monedaDeCotizacion(cotizacion),
                 }
             }
         });
