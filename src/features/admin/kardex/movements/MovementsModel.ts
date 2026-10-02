@@ -64,6 +64,8 @@ export interface IMovementsViewModelState {
         fechaFin: string;
         productoId: string;
         tipoMovimiento: string;
+        /** Motivo del ajuste: se compara contra el `concepto` del movimiento. */
+        concepto: string;
     };
     productQuery: string;
     showSuggestions: boolean;

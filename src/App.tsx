@@ -26,6 +26,7 @@ import PerfilIndex from './pages/admin/perfil/Index'
 import KardexIndex from './pages/admin/kardex/Index'
 import InventarioDashboard from './pages/admin/kardex/Dashboard'
 import KardexProductos from './pages/admin/kardex/Productos'
+import KardexMermas from './pages/admin/kardex/mermas'
 import ProductoNuevo from './pages/admin/kardex/ProductoNuevo'
 import KardexTraslados from './pages/admin/kardex/Traslados'
 import Lotes from './pages/admin/kardex/Lotes'
@@ -178,6 +179,7 @@ function App() {
           <Route path="kardex/traslados" element={<KardexTraslados />} />
           <Route path="kardex/lotes" element={<Lotes />} />
           <Route path="kardex/libro-control" element={<LibroControl />} />
+          <Route path="kardex/mermas" element={<KardexMermas />} />
           <Route path="kardex/series-garantias" element={<SeriesGarantias />} />
           <Route path="kardex/listas-precio" element={<ListasPrecioIndex />} />
           <Route path="reservas" element={<ReservasPage />} />

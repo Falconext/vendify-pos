@@ -11,6 +11,15 @@ import { Calendar } from '@/components/Date';
 import { useMovementsViewModel } from './useMovementsViewModel';
 import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import { MOTIVOS_INGRESO, MOTIVOS_SALIDA } from '../products/motivoAjusteStock';
+
+/**
+ * Los motivos que se pueden filtrar. Se comparan contra el `concepto` del
+ * movimiento, que arranca con esta misma frase.
+ */
+const MOTIVOS_DE_AJUSTE: string[] = Array.from(
+    new Set([...MOTIVOS_SALIDA, ...MOTIVOS_INGRESO].map((m) => m.etiqueta)),
+);
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -154,6 +163,21 @@ export default function MovementsView() {
                             value={filters.tipoMovimiento}
                             onChange={(id) => actions.handleFilterChange('tipoMovimiento', String(id))}
                             options={TIPOS_MOVIMIENTO.map(t => ({ id: t.value, value: t.label }))}
+                            withLabel
+                        />
+                    </div>
+                    <div>
+                        {/* Motivo del ajuste. Antes, para revisar las mermas había
+                            que filtrar por Salida y leer línea por línea: el
+                            buscador solo mira el nombre del producto. */}
+                        <Select
+                            name="concepto"
+                            label="Motivo del ajuste"
+                            error={""}
+                            value={filters.concepto ?? ''}
+                            onChange={(id) => actions.handleFilterChange('concepto', String(id))}
+                            options={[{ id: '', value: 'Todos los motivos' },
+                                ...MOTIVOS_DE_AJUSTE.map((m) => ({ id: m, value: m }))]}
                             withLabel
                         />
                     </div>

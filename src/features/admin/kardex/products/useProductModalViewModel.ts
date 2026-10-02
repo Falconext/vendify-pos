@@ -11,6 +11,7 @@ import { esRubroFabricacion, useRubroFeatures } from "@/utils/rubro-features";
 import { hasPlanFeature, hasSubPermission, type IUserPermissions } from "@/utils/permissions";
 import apiClient from "@/utils/apiClient";
 import { get } from "@/utils/fetch";
+import { faltaMotivo, type TipoAjuste } from './motivoAjusteStock';
 import {
   IPropsProducts,
   TipoAjusteStock,
@@ -210,6 +211,10 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const [tipoAjusteStock, setTipoAjusteStock] =
     useState<TipoAjusteStock>("ninguno");
   const [cantidadAjuste, setCantidadAjuste] = useState<number>(0);
+  // Por qué se ajusta el stock. Sin esto el kardex solo decía "Ajuste manual
+  // de stock desde inventario (-9)" y no quedaba registro de la razón.
+  const [motivoAjuste, setMotivoAjuste] = useState<string>('');
+  const [detalleAjuste, setDetalleAjuste] = useState<string>('');
   const stockOriginal = Number(formValues?.stock || 0);
 
   // --- Drawers State ---
@@ -1382,6 +1387,18 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
         return;
       }
 
+      // Un ajuste de stock sin motivo vuelve a dejar el kardex mudo.
+      if (isEdit && faltaMotivo({ tipo: tipoAjusteStock as TipoAjuste, motivo: motivoAjuste, detalle: detalleAjuste })) {
+        useAlertStore.getState().alert(
+          String(motivoAjuste).toUpperCase() === 'OTRO'
+            ? 'Escribe cuál es el motivo del ajuste de stock.'
+            : 'Elige el motivo del ajuste de stock para dejarlo registrado en el kardex.',
+          'warning',
+        );
+        setLoading(false);
+        return;
+      }
+
       let stockFinal = Number(formValues?.stock);
       if (isEdit && tipoAjusteStock !== "ninguno") {
         switch (tipoAjusteStock) {
@@ -1443,6 +1460,10 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
               ? Number((formValues as any).comisionPorcentaje)
               : undefined,
           stock: stockPayload,
+          // Para que el kardex registre POR QUÉ cambió el stock, no solo quién.
+          ...(isEdit && tipoAjusteStock !== 'ninguno' && motivoAjuste
+            ? { motivoAjusteStock: motivoAjuste, detalleAjusteStock: (detalleAjuste || '').trim() || undefined }
+            : {}),
           stockMinimo:
             formValues?.stockMinimo != null
               ? Number(formValues?.stockMinimo)
@@ -2094,6 +2115,10 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
     selectColorImageCandidate,
     tipoAjusteStock,
     cantidadAjuste,
+    motivoAjuste,
+    setMotivoAjuste,
+    detalleAjuste,
+    setDetalleAjuste,
     stockOriginal,
     showMedicamentoModal,
     showLotesModal,

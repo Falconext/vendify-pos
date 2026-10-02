@@ -23,6 +23,9 @@ export const useMovementsViewModel = () => {
             fechaFin: todayStr,
             productoId: '',
             tipoMovimiento: '',
+            // Motivo del ajuste: el backend filtra por `concepto`, y el motivo
+            // va al principio de ese texto ("Merma (…) · Ajuste de inventario").
+            concepto: '',
         },
         productQuery: '',
         showSuggestions: false,
@@ -67,7 +70,7 @@ export const useMovementsViewModel = () => {
         } else {
             getKardex({ page: 1, limit: state.itemsPerPage, ...state.filters });
         }
-    }, [state.filters.fechaInicio, state.filters.fechaFin, state.filters.tipoMovimiento, state.filters.productoId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [state.filters.fechaInicio, state.filters.fechaFin, state.filters.tipoMovimiento, state.filters.productoId, state.filters.concepto]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Search Products
     useEffect(() => {
@@ -123,6 +126,7 @@ export const useMovementsViewModel = () => {
             fechaFin: todayStr,
             productoId: '',
             tipoMovimiento: '',
+            concepto: '',
         };
         setState(prev => ({
             ...prev,

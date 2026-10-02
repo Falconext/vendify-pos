@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import InputPro from '@/components/InputPro';
 import { useAuthStore } from '@/zustand/auth';
 import { useProductModalViewModel } from '../useProductModalViewModel';
+import { faltaMotivo, motivosPara, type TipoAjuste } from '../motivoAjusteStock';
 
 type ViewProps = ReturnType<typeof useProductModalViewModel>;
 
@@ -11,7 +12,8 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const {
         isEdit, isRestaurante, isFarmacia, esFarmaceutico, isFabricacion, tipoAjusteStock, cantidadAjuste, stockOriginal, productSections,
         formValues, errors, isMobile,
-        setTipoAjusteStock, setCantidadAjuste, handleChange, sedeActiva
+        setTipoAjusteStock, setCantidadAjuste, handleChange, sedeActiva,
+        motivoAjuste, setMotivoAjuste, detalleAjuste, setDetalleAjuste,
     } = vm;
 
     const esServicio = String((formValues as any)?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
@@ -188,6 +190,39 @@ export const ProductStockManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                             placeholder="Ingrese la cantidad"
                                         />
+
+                                        {/* Por qué se ajusta. Sin esto el kardex solo guarda
+                                            quién lo hizo, y después nadie sabe por qué faltan
+                                            nueve unidades. Pedido de DEMENVER. */}
+                                        <label className="mt-3 mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            {tipoAjusteStock === 'restar' ? 'Motivo de la salida:' : 'Motivo del ingreso:'}
+                                        </label>
+                                        <select
+                                            value={motivoAjuste ?? ''}
+                                            onChange={(e) => setMotivoAjuste(e.target.value)}
+                                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        >
+                                            <option value="">Selecciona un motivo…</option>
+                                            {motivosPara(tipoAjusteStock as TipoAjuste).map((m) => (
+                                                <option key={m.codigo} value={m.codigo}>{m.etiqueta}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="text"
+                                            value={detalleAjuste ?? ''}
+                                            onChange={(e) => setDetalleAjuste(e.target.value)}
+                                            placeholder={String(motivoAjuste).toUpperCase() === 'OTRO'
+                                                ? 'Explica el motivo (obligatorio)'
+                                                : 'Detalle (opcional): a quién, para qué, cuál lote…'}
+                                            className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                                        />
+                                        {faltaMotivo({ tipo: tipoAjusteStock as TipoAjuste, motivo: motivoAjuste, detalle: detalleAjuste }) && (
+                                            <p className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                                {String(motivoAjuste).toUpperCase() === 'OTRO'
+                                                    ? 'Escribe cuál es el motivo.'
+                                                    : 'Elige el motivo para dejarlo registrado en el kardex.'}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
