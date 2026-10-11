@@ -229,7 +229,25 @@ export const FacturacionNuevoView = () => {
         ...vm.formValues,
         // El QR de SUNAT necesita la fecha real de emisión y, si ya existe, la
         // URL del PDF (para que el QR abra el comprobante en línea).
-        fechaEmision: vm.formValues?.fechaEmision ?? vm.dataReceipt?.fechaEmision ?? vm.fechaEmisionManual,
+        //
+        // Manda la que devolvió el servidor: es la que quedó guardada y la
+        // única que trae la hora. Antes ganaba el valor del formulario y, si
+        // venía vacío, se caía a `fechaEmisionManual`, que es solo la fecha del
+        // selector (AAAA-MM-DD). El ticket imprime FECHA/HORA formateando ese
+        // valor, así que la hora salía siempre 00:00:00.
+        //
+        // El respaldo compone la fecha elegida con la hora actual, para el
+        // caso de imprimir antes de emitir.
+        fechaEmision:
+            vm.dataReceipt?.fechaEmision
+            ?? vm.formValues?.fechaEmision
+            ?? (vm.fechaEmisionManual
+                ? (() => {
+                    const [a, m, d] = String(vm.fechaEmisionManual).split('-').map(Number);
+                    const ahora = new Date();
+                    return new Date(a, m - 1, d, ahora.getHours(), ahora.getMinutes(), ahora.getSeconds()).toISOString();
+                })()
+                : undefined),
         s3PdfUrl: vm.dataReceipt?.s3PdfUrl ?? vm.formValues?.s3PdfUrl ?? null,
         formaPagoTipo: isCreditSale ? 'Credito' : 'Contado',
         fechaVencimientoCredito: vm.fechaVencimientoCredito,

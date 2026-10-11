@@ -480,6 +480,29 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         placeholder="0.0"
                     />
                 </div>
+                {/* Pedido de un empresario cuyo personal de fin de semana cobra
+                    más: antes lo resolvía duplicando el producto con otra
+                    comisión, y el catálogo se le llenaba. Vacío = paga igual
+                    todos los días. Aplica a quien venda ese día, no a una
+                    persona en particular, así que cubrir un turno no descuadra
+                    el pago. */}
+                <div className="mt-3">
+                    <InputPro
+                        autocomplete="off"
+                        type="number"
+                        step="0.01"
+                        value={(formValues as any)?.comisionFinDeSemana || ''}
+                        name="comisionFinDeSemana"
+                        onChange={handleChange}
+                        isLabel
+                        label="Comisión de sábado y domingo (S/)"
+                        placeholder="Igual que arriba"
+                    />
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        Si los fines de semana pagas una comisión distinta, ponla aquí.
+                        Déjalo vacío para pagar lo mismo todos los días.
+                    </p>
+                </div>
             </div>
         </div>
     );
