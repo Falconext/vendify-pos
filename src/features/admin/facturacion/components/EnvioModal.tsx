@@ -1,3 +1,4 @@
+import { precargaDesdeCliente } from '../precargaEnvio';
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { Calendar } from "@/components/Date";
@@ -9,6 +10,7 @@ import { ShalomAgenciaSelect } from "@/components/ShalomAgenciaSelect";
 import { EstablecimientoCombobox } from "@/components/EstablecimientoCombobox";
 import { useExtentionsStore } from "@/zustand/extentions";
 import { TIPOS_VENTA_REPARTO, FORMAS_PAGO_COBRO, cobraEnDestinoReparto, esNombreGenericoCliente, filtrarDistritos } from "@/pages/admin/despacho/repartoPropio";
+import { aplicacionEfectiva, avisoDeAplicacion, etiquetaDelMonto, opcionesDeAplicacion } from '../aplicacionMontoEnvio';
 
 export const COURIERS = [
     { value: 'SHALOM_PRO', label: 'Shalom PRO' },
@@ -93,6 +95,20 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
 
     useEffect(() => { void fetchRepartidores(); }, [fetchRepartidores]);
 
+    // Trae del cliente de la venta lo que el envío ya sabe: celular, dirección,
+    // distrito y nombre de quien recibe. Solo campos vacíos, y nunca desde un
+    // cliente genérico (ver `precargaEnvio.ts`).
+    //
+    // Corre una sola vez al abrir: si el usuario cambia de cliente a mitad de
+    // la carga, no se le repisa lo que ya escribió.
+    useEffect(() => {
+        const precarga = precargaDesdeCliente(vm.selectedClient, envioData);
+        if (Object.keys(precarga).length === 0) return;
+        setEnvioData((prev: any) => ({ ...prev, ...precarga }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
     const selectedCourier = COURIERS.find(c => c.value === envioData.transportista);
     const esShalom = SHALOM_COURIERS.has(envioData.transportista);
     const esPropio = envioData.transportista === 'PROPIOS';
@@ -130,20 +146,10 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
     };
     const inputClass = (field: keyof EnvioValidationErrors) => `${inp} ${errors[field] ? invalidInp : ''}`;
     const esInformal = Boolean(vm.esInformal);
-    const opcionesMontoCliente = esInformal
-        ? [
-            { value: 'ADELANTO', label: 'Adelanto' },
-            { value: 'ITEM_ENVIO', label: 'Item envío' },
-            { value: 'NEGOCIO', label: 'Negocio absorbe' },
-        ]
-        : [
-            { value: 'ITEM_ENVIO', label: 'Item envío' },
-            { value: 'NEGOCIO', label: 'Negocio absorbe' },
-        ];
-    const aplicacionMontoCliente =
-        !esInformal && envioData.aplicacionMontoCliente === 'ADELANTO'
-            ? 'ITEM_ENVIO'
-            : (envioData.aplicacionMontoCliente ?? (esInformal ? 'ADELANTO' : 'ITEM_ENVIO'));
+    const contextoEnvio = { esInformal, esPropio };
+    const opcionesMontoCliente = opcionesDeAplicacion(contextoEnvio);
+    const aplicacionMontoCliente = aplicacionEfectiva(envioData.aplicacionMontoCliente, contextoEnvio);
+    const avisoMonto = avisoDeAplicacion(aplicacionMontoCliente, Number(envioData.costoEnvio), contextoEnvio);
 
     const validate = () => {
         const next: EnvioValidationErrors = {};
@@ -611,7 +617,7 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                             <p className="-mt-1 mb-2 text-[11px] leading-4 text-slate-500 dark:text-slate-400">Solo lo que el cliente <b>ya pagó</b> (Yape, transferencia…) antes de salir el pedido. Lo que cobra el motorizado en la puerta va arriba, en <b>Monto a cobrar al entregar</b>.</p>
                         )}
                         <div className={`grid gap-3 ${Number(envioData.costoEnvio) > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                            <Field label={esPropio ? 'Adelanto ya pagado (S/)' : 'Monto cobrado / adelanto (S/)'}>
+                            <Field label={etiquetaDelMonto(aplicacionMontoCliente, contextoEnvio)}>
                                 <input
                                     type="number"
                                     min={0}
@@ -642,16 +648,28 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                                 </Field>
                             )}
                         </div>
-                        {Number(envioData.costoEnvio) > 0 && aplicacionMontoCliente === 'ITEM_ENVIO' && (
-                            <p className="mt-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <Icon icon="solar:bill-check-bold-duotone" className="text-base" />
-                                S/ {Number(envioData.costoEnvio).toFixed(2)} se agregará como línea en el comprobante
-                            </p>
-                        )}
-                        {Number(envioData.costoEnvio) > 0 && aplicacionMontoCliente === 'ADELANTO' && (
-                            <p className="mt-2 text-[11px] font-semibold text-blue-600 dark:text-blue-300 flex items-center gap-1">
-                                <Icon icon="solar:card-recive-bold-duotone" className="text-base" />
-                                S/ {Number(envioData.costoEnvio).toFixed(2)} se registrará como adelanto y quedará saldo pendiente en la venta.
+                        {avisoMonto && (
+                            <p
+                                data-testid="aviso-monto-envio"
+                                className={`mt-2 flex items-start gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold leading-4 ${
+                                    avisoMonto.tono === 'alerta'
+                                        ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30'
+                                        : avisoMonto.tono === 'info'
+                                            ? 'text-blue-600 dark:text-blue-300'
+                                            : 'text-slate-500 dark:text-slate-400'
+                                }`}
+                            >
+                                <Icon
+                                    icon={
+                                        avisoMonto.tono === 'alerta'
+                                            ? 'solar:danger-triangle-bold-duotone'
+                                            : avisoMonto.tono === 'info'
+                                                ? 'solar:card-recive-bold-duotone'
+                                                : 'solar:wallet-bold-duotone'
+                                    }
+                                    className="text-base shrink-0"
+                                />
+                                {avisoMonto.texto}
                             </p>
                         )}
                     </div>

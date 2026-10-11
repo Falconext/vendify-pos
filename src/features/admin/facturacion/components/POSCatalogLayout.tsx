@@ -64,24 +64,17 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
             input.focus();
             input.select();
         };
+        // La regla de qué atajo aplica vive en `atajosPos.ts`, probada aparte:
+        // el bug fue justamente que esta rama miraba TEXTAREA pero no INPUT.
         const onKey = (e: KeyboardEvent) => {
-            const el = document.activeElement as HTMLElement | null;
-            const tag = el?.tagName;
-            const escribiendo = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!el?.isContentEditable;
-            const mod = e.ctrlKey || e.metaKey;
-
-            if (mod && !e.shiftKey && !e.altKey && (e.key === 'b' || e.key === 'B')) {
+            const accion = accionDeTecla(e, document.activeElement as HTMLElement | null);
+            if (accion === 'buscar') {
                 e.preventDefault();
                 enfocar(searchRef);
-                return;
-            }
-            if (mod && !e.shiftKey && !e.altKey && (e.key === 'v' || e.key === 'V')) {
-                if (tag === 'TEXTAREA' || el?.isContentEditable) return; // pegar normal ahí
+            } else if (accion === 'escanear') {
+                // Sin preventDefault: el texto del portapapeles se pega en el escáner.
                 enfocar(vm.barcodeRef);
-                return; // sin preventDefault: si hay texto en el portapapeles se pega en el escáner
-            }
-            if (e.key === '/' && !mod) {
-                if (escribiendo) return;
+            } else if (accion === 'buscarBarra') {
                 e.preventDefault();
                 searchRef.current?.focus();
             }

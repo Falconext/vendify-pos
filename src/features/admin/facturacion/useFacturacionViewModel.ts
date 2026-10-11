@@ -40,6 +40,7 @@ import { mapDetalleToInvoiceProduct } from "./utils/comprobanteProductMapper";
 import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
+import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
 
 import { afectacionPorDefecto } from '@/utils/afectacionIgv';
 type EnvioDespachoFormData = {
@@ -467,7 +468,11 @@ export const useFacturacionViewModel = () => {
         fechaEstimada: '',
         costoEnvio: 0,
         pagarFlete: 'CLIENTE' as 'CLIENTE' | 'NEGOCIO',
-        aplicacionMontoCliente: 'ADELANTO' as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO',
+        // Sin valor: lo decide el contexto (ver aplicacionPorDefecto). Antes
+        // arrancaba en 'ADELANTO' y no había forma de distinguir "recién
+        // abierto" de "el vendedor eligió adelanto", así que en un documento
+        // formal se convertía en cobro.
+        aplicacionMontoCliente: undefined as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO' | undefined,
         nombreDestinatario: '',
         dniDestinatario: '',
         contenidoPaquete: '',
@@ -2591,10 +2596,14 @@ export const useFacturacionViewModel = () => {
             }
         }
 
-        const aplicacionMontoEnvio =
-            envioData.aplicacionMontoCliente === 'ADELANTO' && !esDocumentoInformal
-                ? 'ITEM_ENVIO'
-                : (envioData.aplicacionMontoCliente ?? (esDocumentoInformal ? 'ADELANTO' : 'ITEM_ENVIO'));
+        // Misma regla que muestra el modal, para que lo que se ve y lo que se
+        // emite no puedan discrepar. Antes, un ADELANTO en documento formal se
+        // convertía acá en ITEM_ENVIO y se le cobraba al cliente plata que ya
+        // había pagado (boleta B0A1-269 de IMPORTEMOS JUNTOS).
+        const aplicacionMontoEnvio = aplicacionEfectiva(envioData.aplicacionMontoCliente, {
+            esInformal: esDocumentoInformal,
+            esPropio: envioData.transportista === 'PROPIOS',
+        });
 
         // Descuento global en comprobantes FORMALES: se prorratea en las líneas de producto
         // (el backend recalcula desde nuevoValorUnitario) para que el neto enviado a SUNAT
@@ -2665,13 +2674,14 @@ export const useFacturacionViewModel = () => {
                     ...(item.esItemLibre && item.unidadMedidaCodigo ? { unidadVenta: item.unidadMedidaCodigo } : {}),
                 })) ?? []),
                 // Monto cobrado como item de envío: aumenta el total del comprobante.
-                ...(envioActivo && Number(envioData.costoEnvio) > 0 && aplicacionMontoEnvio === 'ITEM_ENVIO' ? [{
-                    productoId: null,
-                    descripcion: `Servicio de envío${envioData.transportista ? ` (${COURIERS.find((c) => c.value === envioData.transportista)?.label ?? envioData.transportista})` : ''}`,
-                    cantidad: 1,
-                    nuevoValorUnitario: Number(envioData.costoEnvio),
-                    descuento: 0,
-                }] : []),
+                ...lineasDeEnvio({
+                    envioActivo,
+                    costoEnvio: envioData.costoEnvio,
+                    aplicacion: aplicacionMontoEnvio,
+                    etiquetaTransportista: envioData.transportista
+                        ? (COURIERS.find((c) => c.value === envioData.transportista)?.label ?? envioData.transportista)
+                        : '',
+                }),
             ],
             formaPagoTipo: esPagoCredito ? 'Credito' : (formValues.medioPago || 'Contado'),
             // Moneda del comprobante (PEN por defecto; USD si se eligió el toggle de moneda,
