@@ -237,10 +237,12 @@ export const ProductImageUploader: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           </div>
         )}
 
-        {/* ── Galería del producto — retirada del formulario a pedido del
-            negocio (la imagen principal + la del paquete cubren el uso real).
-            La infraestructura de imagenesExtra sigue viva en el backend. ── */}
-        {false && maxImagenesExtra > 0 && (
+        {/* ── Galería del producto ──────────────────────────────────────────
+            Se retiró en agosto por recargar el formulario (permitía 5 fotos).
+            Vuelve acotada a 2 adicionales: es lo que el negocio usa de verdad
+            —producto, conector, etiqueta— sin volver a llenar la pantalla.
+            Las fotos por color/variante son aparte y no cuentan aquí. ── */}
+        {maxImagenesExtra > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-800">
             <div className="flex items-center justify-between mb-2">
               <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">

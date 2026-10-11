@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import apiClient from "@/utils/apiClient";
 import ModalAnticipos from "./ModalAnticipos";
+import { avisoDeDisponibilidad, detalleEnCamino, enCaminoDe, textoDeStock } from '@/features/admin/kardex/products/stockEnCamino';
 
 export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?: 'CATALOGO' | 'CAJA' }) => {
     const compacto = layout === 'CAJA';
@@ -451,7 +452,14 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                             ? Number(item.precioCombo)
                             : Number(item.precioUnitario);
                         const simbolo = String(item.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/';
-                        const stockTxt = esServicio(item) ? 'Servicio' : `Stock: ${item.__catalogType === 'COMBO' ? getComboStock(item) : (item.stock ?? 0)}`;
+                        const stockReal = item.__catalogType === 'COMBO' ? getComboStock(item) : (item.stock ?? 0);
+                        // "+N en camino": lo pedido al proveedor que aún no llegó. No es
+                        // stock vendible; sirve para que la vendedora sepa qué ofrecer.
+                        const stockTxt = esServicio(item) ? 'Servicio' : textoDeStock(item, stockReal);
+                        // Lo que viene menos lo ya prometido en Notas de Pedido: es lo
+                        // que la vendedora todavía puede comprometer con un cliente.
+                        const dispo = esServicio(item) ? null : avisoDeDisponibilidad(item, stockReal);
+                        const avisoEnCamino = esServicio(item) ? '' : [detalleEnCamino(item), dispo?.texto].filter(Boolean).join(' — ');
                         return (
                             <button
                                 key={`c-${item.__catalogType}-${item.id}-${itemIndex}`}
@@ -469,7 +477,20 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-[13px] font-bold uppercase text-gray-800 dark:text-gray-200">{item.__catalogType === 'COMBO' ? item.nombre : item.descripcion}</p>
-                                    <p className="text-[11px] font-semibold text-gray-400">{stockTxt}{item.__catalogType === 'COMBO' ? ' · KIT' : ''}</p>
+                                    <p
+                                        className={`text-[11px] font-semibold ${enCaminoDe(item) > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400'}`}
+                                        title={avisoEnCamino || undefined}
+                                    >
+                                        {stockTxt}{item.__catalogType === 'COMBO' ? ' · KIT' : ''}
+                                    </p>
+                                    {dispo && dispo.tono !== 'ok' && (
+                                        <p
+                                            data-testid={`dispo-${item.id}`}
+                                            className={`truncate text-[10px] font-bold ${dispo.tono === 'alerta' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}
+                                        >
+                                            {dispo.texto}
+                                        </p>
+                                    )}
                                 </div>
                                 <span className="shrink-0 text-sm font-black text-gray-900 dark:text-white">{simbolo}{precio.toFixed(2)}</span>
                                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white shadow-sm transition group-hover:bg-violet-700">
