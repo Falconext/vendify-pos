@@ -84,6 +84,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
         empaquetador: '',
         fechaEstimada: '',
         costoEnvio: 0,
+        costoCourier: '',
         pagarFlete: 'CLIENTE' as 'CLIENTE' | 'NEGOCIO',
         aplicacionMontoCliente: 'ADELANTO' as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO',
         montoCOD: 0,
@@ -148,6 +149,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                         empaquetador: payload.empaquetador || vendedorNombre || '',
                         fechaEstimada: payload.fechaEstimada ? moment(payload.fechaEstimada).format('YYYY-MM-DD') : '',
                         costoEnvio: payload.costoEnvio ?? adelantoComprobante ?? 0,
+                        costoCourier: payload.costoCourier ?? '',
                         pagarFlete: payload.pagarFlete ?? (adelantoComprobante > 0 ? 'CLIENTE' : 'NEGOCIO'),
                         aplicacionMontoCliente: payload.aplicacionMontoCliente ?? (adelantoComprobante > 0 ? 'ADELANTO' : 'NEGOCIO'),
                         montoCOD: payload.montoCOD ?? 0,
@@ -201,6 +203,10 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                 tipoVentaReparto: opcional(envioData.tipoVentaReparto),
                 formaPagoCobro: opcional(envioData.formaPagoCobro),
                 revisarProducto: !!envioData.revisarProducto,
+                // Lo que el negocio le paga al courier por este despacho. Va aparte de
+                // `costoEnvio`, que es lo que cobra al cliente: alimenta el reporte de
+                // gasto de envío por courier.
+                costoCourier: Number(envioData.costoCourier) > 0 ? Number(envioData.costoCourier) : undefined,
                 // Solo lectura (viene del comprobante), no es parte del DTO.
                 sedeOrigenNombre: undefined,
             };
@@ -695,6 +701,20 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                                     Este monto queda como cobro de envío, no como pago adelantado.
                                 </p>
                             )}
+                            <Field label="Pago al courier (S/)">
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={0.01}
+                                    value={envioData.costoCourier ?? ''}
+                                    onChange={e => set('costoCourier', e.target.value)}
+                                    placeholder="Lo que le pagas por este envío"
+                                    className={inp}
+                                />
+                                <p className="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                                    Es tu <b>gasto</b>, no lo que cobras al cliente. Se suma en el reporte de envíos por courier.
+                                </p>
+                            </Field>
                         </div>
                     )}
 

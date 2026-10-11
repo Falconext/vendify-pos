@@ -11,6 +11,7 @@ import { ModalTrazabilidad } from './ModalTrazabilidad';
 import { useRepartidoresStore } from '@/zustand/repartidores';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
 
+import { ReporteEnviosModal } from './ReporteEnviosModal';
 const ACCENT = 'var(--accent, #7551FF)';
 
 const KPI_CHIP: Record<string, string> = {
@@ -875,6 +876,7 @@ export default function DespachoView() {
     // Reparto propio / motorizado: resumen del día (mismos filtros que el export).
     const [repartoResumen, setRepartoResumen] = useState<any>(null);
     const [exportandoReparto, setExportandoReparto] = useState(false);
+    const [reporteEnviosAbierto, setReporteEnviosAbierto] = useState(false);
 
     const cargar = useCallback(async () => {
         setLoading(true);
@@ -1248,6 +1250,16 @@ export default function DespachoView() {
                         <span className="hidden sm:inline">Exportar reparto</span>
                     </button>
                     <button
+                        type="button"
+                        onClick={() => setReporteEnviosAbierto(true)}
+                        className="relative top-2 h-11 px-3 flex items-center gap-1.5 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-colors text-xs font-black shrink-0 dark:bg-slate-700 dark:hover:bg-slate-600"
+                        title="Estadísticas y Excel de envíos por rango de fechas y courier (Shalom, Olva o reparto propio)"
+                        data-testid="btn-reporte-envios"
+                    >
+                        <Icon icon="solar:chart-2-bold-duotone" className="text-base" />
+                        <span className="hidden sm:inline">Reporte de envíos</span>
+                    </button>
+                    <button
                         onClick={() => navigate('/administrador/despacho/config')}
                         className="relative top-2 h-11 w-11 grid place-items-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors shrink-0"
                         title="Configurar notificaciones WhatsApp"
@@ -1496,6 +1508,9 @@ export default function DespachoView() {
                     orderCode={shalomTracking.orderCode}
                     onClose={() => setShalomTracking(null)}
                 />
+            )}
+            {reporteEnviosAbierto && (
+                <ReporteEnviosModal onClose={() => setReporteEnviosAbierto(false)} />
             )}
         </div>
     );
