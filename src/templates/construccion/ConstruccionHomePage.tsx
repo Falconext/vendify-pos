@@ -10,6 +10,7 @@ import { getProductPricing } from '@/templates/shared/pricing';
 import { getStoreLinkAction, runStoreLinkAction } from '@/components/tienda/storeLinkActions';
 import ConstruccionCartModal from './ConstruccionCartModal';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
@@ -158,7 +159,7 @@ function HammerProductCard({
   const regular = getRegularPrice(producto);
   const offered = hasOffer(producto);
   const offerParts = offered ? getOfferTimeParts(producto) : null;
-  const isOutOfStock = Number(producto?.stock ?? 1) <= 0;
+  const isOutOfStock = sinStock(Number(producto?.stock ?? 1));
   const img = producto?.imagenUrl || producto?.imagen || producto?.imageUrl;
   const name = producto?.descripcion || producto?.nombre || 'Producto';
   const hasVariants = Array.isArray(producto?.variantes) && producto.variantes.length > 0;

@@ -11,6 +11,7 @@ import ReviewFeedbackModal from '@/components/tienda/ReviewFeedbackModal';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { withPricing, withPricingList } from '@/templates/shared/pricing';
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 import {
   findFashionVariant,
   getDefaultVariantSelection,
@@ -21,6 +22,7 @@ import {
   isFashionVariantAvailable,
   variantValues,
 } from '@/templates/urbano/fashionVariants';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -225,7 +227,7 @@ export default function ModaProductoDetalle() {
         const prod = withPricing(prodRes.data.data || prodRes.data);
         const tiendaData = tiendaRes.data.data || tiendaRes.data;
         setProducto(prod);
-        setTienda(tiendaData);
+        setTienda(recordarVentaSinStock(tiendaData));
         const defaultVariantSelection = getDefaultVariantSelection(prod);
         const defaultVariant = findFashionVariant(prod, defaultVariantSelection);
         const defaultColor = defaultVariantSelection[getVariantOptionNames(prod).color];
@@ -501,7 +503,7 @@ export default function ModaProductoDetalle() {
   const finalPrice = price + precioExtra;
   const currentStock = Number(varianteActiva?.stock ?? producto?.stock ?? 0);
   const isUnavailableVariant = Array.isArray(producto.variantes) && producto.variantes.length > 0 && !varianteActiva;
-  const isOutOfStock = isUnavailableVariant || currentStock <= 0;
+  const isOutOfStock = isUnavailableVariant || sinStock(currentStock);
   const esServicio = String(producto?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
   const ratingCount = reviewSummary.ratingCount || Number(producto.ratingCount || 0);
   const starRating = ratingCount > 0 ? Number(reviewSummary.ratingAvg || producto.ratingAvg || 0) : 0;
@@ -1243,6 +1245,7 @@ export default function ModaProductoDetalle() {
         </section>
 
         {/* ── You May Also Like ── */}
+        <ProductoVideo url={producto?.videoUrl} />
         {related.length > 0 && (
           <section className="mt-16">
             <div className="flex items-center justify-between mb-2">

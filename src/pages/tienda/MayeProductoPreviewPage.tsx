@@ -8,6 +8,7 @@ import ProductCardMaye from '@/components/tienda/ProductCardMaye';
 import { mayeCard, mayePage, mayeSection, mayeStagger, mayeTap } from '@/lib/motion/maye';
 import { getProductPricing } from '@/templates/shared/pricing';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface MayeProductoPreviewPageProps {
   producto: any;
   demo: any;
@@ -81,7 +82,7 @@ export function MayeProductoPreviewPage({
     enOferta: hasDiscount,
     descuentoOferta: discount,
   };
-  const isOutOfStock = Number(producto.stock ?? 0) <= 0;
+  const isOutOfStock = sinStock(Number(producto.stock ?? 0));
   const ratingCount = Number(producto.ratingCount ?? producto.reviewsCount ?? 0);
   const ratingAvg = ratingCount > 0 ? Number(producto.ratingAvg || 0) : 0;
   const carritoTotal = carrito.reduce((total, item) => total + Number(item.precioUnitario || 0) * Number(item.cantidad || 1), 0);

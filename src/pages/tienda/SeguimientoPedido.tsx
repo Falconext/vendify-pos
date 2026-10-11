@@ -9,6 +9,7 @@ import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
+import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 const TERMINAL_STATES = ['ENTREGADO', 'ENTREGADO_COMPLETADO', 'CANCELADO', 'CANCELADO_INTERNO', 'CANCELADO_CLIENTE'];
 const POLLING_INTERVAL_MS = 30_000;
@@ -32,7 +33,7 @@ export default function SeguimientoPedido() {
     useEffect(() => {
         if (slug) {
             axios.get(`${BASE_URL}/public/store/${slug}`)
-                .then(({ data }) => setTienda(data.data || data))
+                .then(({ data }) => setTienda(recordarVentaSinStock(data.data || data)))
                 .catch(console.error);
         }
     }, [slug]);

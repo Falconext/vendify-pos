@@ -10,7 +10,9 @@ import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { withPricing, withPricingList } from '@/templates/shared/pricing';
 import TiendaFloatingButtons from '@/components/tienda/TiendaFloatingButtons';
 import { parsePastedPairs } from '@/lib/pastedSpecs';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 export default function TecnologiaProductoDetalle() {
@@ -30,7 +32,7 @@ export default function TecnologiaProductoDetalle() {
             try {
                 const res = await axios.get(`${BASE_URL}/public/store/${slug}`);
                 const data = res.data.data || res.data;
-                setTienda(data);
+                setTienda(recordarVentaSinStock(data));
                 
                 // Categories
                 const catRes = await axios.get(`${BASE_URL}/public/store/${slug}/categories`);
@@ -163,7 +165,7 @@ export default function TecnologiaProductoDetalle() {
     const extraImages = Array.isArray(producto.imagenesExtra) ? producto.imagenesExtra : [];
     const images = [producto.imagenUrl, ...extraImages].filter(Boolean);
     const stock = Number(producto.stock || 0);
-    const isOutOfStock = stock <= 0;
+    const isOutOfStock = sinStock(stock);
     const price = Number(producto.precioUnitario || 0);
     const originalPrice = Number(producto.precioOriginal || producto.precioRegular || 0);
     const hasDiscount = Boolean(producto.enOferta) && originalPrice > price;
@@ -421,6 +423,7 @@ export default function TecnologiaProductoDetalle() {
                     )}
                 </section>
 
+                <ProductoVideo url={producto?.videoUrl} />
                 {related.length > 0 && (
                     <section className="mt-16 border-t border-gray-200 pt-12">
                         <div className="mb-7 flex items-end justify-between gap-4">

@@ -11,6 +11,7 @@ import ProductModifiersSelector from '@/components/tienda/ProductModifiersSelect
 import UrbanoHeader from '@/templates/urbano/UrbanoHeader';
 import UrbanoProductCard from '@/templates/urbano/UrbanoProductCard';
 import UrbanoFooter from '@/templates/urbano/UrbanoFooter';
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 import {
   findFashionVariant,
   getDefaultVariantSelection,
@@ -22,6 +23,7 @@ import {
   isFashionVariantAvailable,
   variantValues,
 } from '@/templates/urbano/fashionVariants';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -104,7 +106,7 @@ export default function UrbanoProductoDetalle() {
         const prod = withPricing(prodRes.data.data || prodRes.data);
         const tiendaData = tiendaRes.data.data || tiendaRes.data;
         setProducto(prod);
-        setTienda(tiendaData);
+        setTienda(recordarVentaSinStock(tiendaData));
         setReviews([]);
         setReviewSummary({
           ratingAvg: Number(prod.ratingAvg || prod.ratingPromedio || prod.promedioRating || 0),
@@ -305,7 +307,7 @@ export default function UrbanoProductoDetalle() {
   const finalPrice = variantPrice + precioExtra;
   const currentStock = Number(varianteActiva?.stock ?? producto?.stock ?? 0);
   const isUnavailableVariant = Array.isArray(producto.variantes) && producto.variantes.length > 0 && !varianteActiva;
-  const isOutOfStock = isUnavailableVariant || currentStock <= 0;
+  const isOutOfStock = isUnavailableVariant || sinStock(currentStock);
   const cartCount = carrito.reduce((sum, item) => sum + Number(item.cantidad || 1), 0);
   const extraImages = Array.isArray(producto.imagenes)
     ? producto.imagenes
@@ -759,6 +761,7 @@ export default function UrbanoProductoDetalle() {
           </div>
         </section>
 
+        <ProductoVideo url={producto?.videoUrl} />
         {related.length > 0 && (
           <section className="w-full py-16 lg:py-24 bg-white border-t border-gray-100">
             <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-10 flex justify-between items-center">

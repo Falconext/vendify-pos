@@ -8,6 +8,7 @@ import { useCompareStore } from '@/zustand/compare';
 import { mayeCard, mayeHover, mayeModal, mayeOverlay, mayeSection, mayeStagger, mayeTap, mayeViewport } from '@/lib/motion/maye';
 import { getStoreLinkAction, runStoreLinkAction } from '@/components/tienda/storeLinkActions';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface Props {
   cp: string;
   slug: string;
@@ -125,7 +126,7 @@ export default function MayeDealsOfTheWeek({ cp, slug, productos, diseno, onAddT
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (!actionProduct || Number(featuredDeal?.stock ?? 1) <= 0) return;
+    if (!actionProduct || sinStock(Number(featuredDeal?.stock ?? 1))) return;
     onAddToCart?.(actionProduct);
   };
 
@@ -265,7 +266,7 @@ export default function MayeDealsOfTheWeek({ cp, slug, productos, diseno, onAddT
                     )}
 
                   <div className="flex items-center gap-2">
-                    <motion.button onClick={handleAddToCart} className="px-5 py-2.5 bg-[#1A1A1A] text-white font-bold rounded text-xs hover:bg-black transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={!actionProduct || Number(featuredDeal?.stock ?? 1) <= 0} whileHover={!actionProduct ? undefined : { y: -2, scale: 1.04 }} whileTap={mayeTap}>
+                    <motion.button onClick={handleAddToCart} className="px-5 py-2.5 bg-[#1A1A1A] text-white font-bold rounded text-xs hover:bg-black transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={!actionProduct || sinStock(Number(featuredDeal?.stock ?? 1))} whileHover={!actionProduct ? undefined : { y: -2, scale: 1.04 }} whileTap={mayeTap}>
                       Añadir al Carrito
                     </motion.button>
                     <motion.button

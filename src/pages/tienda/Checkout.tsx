@@ -14,6 +14,7 @@ import { withPricingList } from '@/templates/shared/pricing';
 import { withStorePurchaseWhatsapp } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
+import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 const CLIENTE_STORAGE_KEY = (slug: string) => `tienda:${slug}:cliente`;
@@ -98,7 +99,7 @@ export default function Checkout() {
     useEffect(() => {
         if (!tienda && slug) {
             axios.get(`${BASE_URL}/public/store/${slug}`)
-                .then(({ data }) => setTienda(withStorePurchaseWhatsapp(data.data || data)))
+                .then(({ data }) => setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data))))
                 .catch(console.error);
         }
     }, [slug]);

@@ -6,6 +6,7 @@ import { useCompareStore } from '@/zustand/compare';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import { mayeCard, mayeHover, mayeTap } from '@/lib/motion/maye';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface ProductCardProps {
     producto: any;
     slug: string;
@@ -32,7 +33,7 @@ export default function ProductCardMaye({ producto, slug, diseno, onAddToCart, o
     const [hoveredAction, setHoveredAction] = useState<string | null>(null);
     const [isAddHovered, setIsAddHovered] = useState(false);
     const [zoomOpen, setZoomOpen] = useState(false);
-    const isOutOfStock = Number(producto.stock) <= 0;
+    const isOutOfStock = sinStock(Number(producto.stock));
     const { toggleFavorito, isFavorito } = useFavoritosStore();
     const { toggle: toggleCompare, isInCompare } = useCompareStore();
     

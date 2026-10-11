@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react';
 import ProductCardActions from '@/components/tienda/ProductCardActions';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface Props {
   producto: {
     id: number;
@@ -26,7 +27,7 @@ export default function ProductCardCatalog({ producto, slug, cp, onAddToCart, on
   const hasDiscount = !!(originalPrice && originalPrice > price);
   const ratingCount = Number(producto.ratingCount || 0);
   const ratingAvg = ratingCount > 0 ? Number(producto.ratingAvg || 0) : 0;
-  const isOutOfStock = Number(producto.stock) <= 0;
+  const isOutOfStock = sinStock(Number(producto.stock));
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group" onClick={onClick}>

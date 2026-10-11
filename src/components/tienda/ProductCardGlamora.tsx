@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useState } from 'react';
 import ProductCardActions from '@/components/tienda/ProductCardActions';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface ProductCardProps {
     producto: any;
     slug: string;
@@ -17,7 +18,7 @@ export default function ProductCardGlamora({ producto, slug, diseno, onAddToCart
     const price = Number(producto.precioUnitario || 0);
     const priceInt = Math.floor(price);
     const priceDec = price.toFixed(2).split('.')[1];
-    const isOutOfStock = Number(producto.stock) <= 0;
+    const isOutOfStock = sinStock(Number(producto.stock));
 
     // Determine category name and unit safely
     const categoryName = producto.categoria && typeof producto.categoria === 'object'

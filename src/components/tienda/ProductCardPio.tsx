@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useState } from 'react';
 import ProductCardActions from '@/components/tienda/ProductCardActions';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface ProductCardProps {
     producto: any;
     slug: string;
@@ -23,7 +24,7 @@ export default function ProductCardPio({ producto, slug, diseno, onAddToCart, on
     const isVetApproved = (producto.id % 3 === 0);
     const isSpecialDeal = hasDiscount && (producto.id % 2 === 0);
 
-    const isOutOfStock = Number(producto.stock) <= 0;
+    const isOutOfStock = sinStock(Number(producto.stock));
 
     const handleAdd = (e: React.MouseEvent) => {
         e.stopPropagation();

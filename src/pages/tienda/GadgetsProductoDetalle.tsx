@@ -12,7 +12,9 @@ import { useFavoritosStore } from '@/zustand/favoritos';
 import { useCompareStore } from '@/zustand/compare';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { withPricing, withPricingList } from '@/templates/shared/pricing';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 const QUILL_PROSE = [
@@ -230,7 +232,7 @@ export default function GadgetsProductoDetalle() {
         const prod = withPricing(prodRes.data.data || prodRes.data);
         const tiendaData = tiendaRes.data.data || tiendaRes.data;
         setProducto(prod);
-        setTienda(tiendaData);
+        setTienda(recordarVentaSinStock(tiendaData));
         if (prod.imagenUrl) setSelectedImage(prod.imagenUrl);
 
         try {
@@ -500,7 +502,7 @@ export default function GadgetsProductoDetalle() {
   const hasDiscount = !!(originalPrice && originalPrice > price);
   const discountPct = hasDiscount ? Math.round((1 - price / originalPrice) * 100) : 0;
   const finalPrice = price + precioExtra;
-  const isOutOfStock = Number(producto?.stock || 0) <= 0;
+  const isOutOfStock = sinStock(Number(producto?.stock || 0));
   const esServicio = String(producto?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
   const ratingCount = reviewSummary.ratingCount || Number(producto.ratingCount || 0);
   const starRating = ratingCount > 0 ? Number(reviewSummary.ratingAvg || producto.ratingAvg || 0) : 0;
@@ -658,6 +660,8 @@ export default function GadgetsProductoDetalle() {
                   {producto.descripcion}
                 </p>
               )}
+
+              <ProductoVideo url={producto?.videoUrl} />
 
               <ProductModifiersSelector modifiers={modificadoresProducto} selections={selecciones} onChange={setSelecciones} />
 

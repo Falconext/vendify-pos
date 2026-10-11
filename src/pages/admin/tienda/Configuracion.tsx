@@ -192,10 +192,19 @@ export default function ConfiguracionTienda() {
                 <input type="checkbox" name="aceptaEfectivo" checked={formData.aceptaEfectivo} onChange={handleChange} className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700" />
                 <label className="text-sm dark:text-gray-300">Acepto pago en efectivo contra entrega</label>
               </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" name="tiendaVentaSinStock" checked={formData.tiendaVentaSinStock} onChange={handleChange} className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700" />
+                <label className="text-sm dark:text-gray-300">Acepto pedidos de productos agotados</label>
+              </div>
             </div>
             {formData.aceptaEnvio && <InputPro label="Costo de envío fijo (S/)" name="costoEnvioFijo" type="number" value={formData.costoEnvioFijo} onChange={handleChange} placeholder="0.00" isLabel />}
             {formData.aceptaEnvio && <InputPro label="Envío gratis desde (S/) — 0 = nunca gratis" name="envioGratisDesdeSoles" type="number" value={formData.envioGratisDesdeSoles} onChange={handleChange} placeholder="0.00" isLabel />}
             {formData.aceptaRecojo && <InputPro label="Dirección de recojo" name="direccionRecojo" value={formData.direccionRecojo} onChange={handleChange} placeholder="Av. Principal 123, Distrito, Ciudad" isLabel />}
+            {formData.tiendaVentaSinStock && (
+              <p className="-mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                Tus clientes podrán pedir aunque el stock esté en cero y el inventario quedará en negativo: eso te marca lo que debes reponer. Úsalo si trabajas por encargo.
+              </p>
+            )}
             <InputPro label="Monto mínimo de pedido (S/) — 0 = sin mínimo" name="minimoCompra" type="number" value={formData.minimoCompra} onChange={handleChange} placeholder="0.00" isLabel />
             <InputPro label="Tiempo estimado de preparación (minutos)" name="tiempoPreparacionMin" type="number" value={formData.tiempoPreparacionMin} onChange={handleChange} placeholder="30" isLabel />
           </div>

@@ -5,12 +5,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
 import { getProductPricing, withPricing, withPricingList } from '@/templates/shared/pricing';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 import {
   GREEN, resolveFalconGreen, getName, money, getImg, catOf, storeNameOf, editable, withPreviewQuery, FALCON_DEFAULT_IMAGES,
   FalconHeader, FalconFooter, FalconBenefits, FalconProductCard,
   FalconCartDrawer, FalconWishlistDrawer, FalconCompareModal, FalconQuickView,
   falconFadeUp, falconHoverLift, falconScaleIn, falconStagger, falconTap,
 } from '@/templates/falcon/FalconShared';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -93,7 +95,7 @@ export function FalconProductoDetalleView({
   const [zoom, setZoom] = useState({ x: 50, y: 50, active: false });
 
   const stock = Number(producto?.stock ?? 10);
-  const outOfStock = stock <= 0;
+  const outOfStock = sinStock(stock);
   const name = producto?.descripcion || producto?.nombre || 'Producto';
   const rawLarga = String(producto?.descripcionLarga || '');
   const descHasHtml = hasHtmlMarkup(rawLarga);
@@ -302,6 +304,7 @@ export function FalconProductoDetalleView({
         </section>
 
         {/* Recommended */}
+        <ProductoVideo url={producto?.videoUrl} />
         {related.length > 0 && (
           <section className="mx-auto max-w-[1400px] px-4 py-12 lg:px-6">
             <div className="mb-5 flex items-center justify-between rounded-2xl bg-white px-6 py-4 shadow-sm">
@@ -388,7 +391,7 @@ export default function FalconProductoDetalle() {
         ]);
         const store = storeRes.data.data || storeRes.data;
         const product = withPricing(productRes.data.data || productRes.data);
-        setTienda(store);
+        setTienda(recordarVentaSinStock(store));
         setAllCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);
         setProducto(product);
         const category = product.categoria?.nombre || product.categoria;

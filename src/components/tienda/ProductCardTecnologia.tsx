@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react';
 import { useState } from 'react';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface ProductCardProps {
     producto: any;
     slug: string;
@@ -11,7 +12,7 @@ interface ProductCardProps {
 
 export default function ProductCardTecnologia({ producto, slug, diseno, onAddToCart, onClick }: ProductCardProps) {
     const [imageLoaded, setImageLoaded] = useState(false);
-    const isOutOfStock = Number(producto.stock) <= 0;
+    const isOutOfStock = sinStock(Number(producto.stock));
     const cp = diseno?.colorPrimario || '#e11d48';
     const price = Number(producto.precioUnitario || 0);
     const originalPrice = Number(producto.precioOriginal || producto.precioRegular || 0);

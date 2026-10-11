@@ -5,6 +5,7 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { getProductPricing } from '@/templates/shared/pricing';
 import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 export const GREEN = '#1a8d4e';
 
 // True si el color es muy claro (poco contraste sobre fondo blanco).
@@ -196,7 +197,7 @@ export function FalconProductCard({
   const desc = plainText(producto?.detalle || producto?.descripcionCorta || producto?.descripcionLarga || '') ||
     'Lorem ipsum dolor sit amet consectetur. Est morbi cum bibendum id eleifend...';
   const reviews = Number(producto?.numReviews || producto?.reviews || 1);
-  const outOfStock = Number(producto?.stock ?? 1) <= 0;
+  const outOfStock = sinStock(Number(producto?.stock ?? 1));
 
   return (
     <motion.article

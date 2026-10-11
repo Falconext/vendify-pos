@@ -8,6 +8,7 @@ import ApiculturaVariantSelector from '@/templates/apicultura/ApiculturaVariantS
 import { buildVariantCartItem, findApiculturaVariant, getApiculturaVariantData } from '@/templates/apicultura/variantUtils';
 import { honeyCard, honeyEase, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from '@/templates/apicultura/motion';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 const honeyPattern = {
   backgroundImage:
     'linear-gradient(30deg, rgba(0,0,0,.045) 12%, transparent 12.5%, transparent 87%, rgba(0,0,0,.045) 87.5%, rgba(0,0,0,.045)), linear-gradient(150deg, rgba(0,0,0,.045) 12%, transparent 12.5%, transparent 87%, rgba(0,0,0,.045) 87.5%, rgba(0,0,0,.045))',
@@ -213,11 +214,11 @@ export function ApiculturaProductoPreviewPage({
                 <span className="font-black">{qty}</span>
                 <button type="button" onClick={() => setQty(qty + 1)} className="text-lg font-black">+</button>
               </div>
-              <motion.button type="button" disabled={stock <= 0} onClick={() => { onAddToCart(buildVariantCartItem(producto, selectedVariant, qty)); setMostrarCarrito(true); }} className="flex h-12 items-center justify-center gap-2 rounded-full text-sm font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: cp }} whileHover={stock > 0 ? { scale: 1.025, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
+              <motion.button type="button" disabled={sinStock(stock)} onClick={() => { onAddToCart(buildVariantCartItem(producto, selectedVariant, qty)); setMostrarCarrito(true); }} className="flex h-12 items-center justify-center gap-2 rounded-full text-sm font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: cp }} whileHover={stock > 0 ? { scale: 1.025, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
                 <Icon icon="solar:cart-large-2-bold" width={20} /> Agregar al carrito
               </motion.button>
             </div>
-            <motion.button type="button" disabled={stock <= 0} onClick={() => { onAddToCart(buildVariantCartItem(producto, selectedVariant, qty)); onNav('checkout'); }} className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-black uppercase text-white disabled:opacity-50" whileHover={stock > 0 ? { scale: 1.02, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
+            <motion.button type="button" disabled={sinStock(stock)} onClick={() => { onAddToCart(buildVariantCartItem(producto, selectedVariant, qty)); onNav('checkout'); }} className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-black uppercase text-white disabled:opacity-50" whileHover={stock > 0 ? { scale: 1.02, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
               Comprar ahora
             </motion.button>
 

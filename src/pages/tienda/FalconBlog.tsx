@@ -11,6 +11,7 @@ import {
 } from '@/templates/falcon/FalconShared';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 
+import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -324,10 +325,10 @@ export default function FalconBlog() {
           axios.get(`${BASE_URL}/public/store/${slug}`),
           axios.get(`${BASE_URL}/public/store/${slug}/categories`).catch(() => ({ data: { data: [] } })),
         ]);
-        setTienda(storeRes.data.data || storeRes.data);
+        setTienda(recordarVentaSinStock(storeRes.data.data || storeRes.data));
         setAllCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);
       } catch {
-        setTienda({});
+        setTienda(recordarVentaSinStock({}));
       } finally {
         setLoading(false);
       }
