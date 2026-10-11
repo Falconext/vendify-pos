@@ -453,7 +453,9 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
             productoId: p.id,
             descripcion: p.descripcion,
             cantidad: 1,
-            precioUnitario: Number(p.costoPromedio ?? 0) || 0,
+            // El costo se guarda sin IGV y suele traer 4 decimales (ej. 46.6102 = 55÷1.18);
+            // en la orden al proveedor basta con 2 decimales para que se vea limpio.
+            precioUnitario: Number((Number(p.costoPromedio ?? 0) || 0).toFixed(2)),
             gravado: esGravadoAfectacion(p.tipoAfectacionIGV),
         }]);
         setProdQuery('');
@@ -641,6 +643,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                                     <th className="w-24 py-1.5">Cant.</th>
                                     <th className="w-28 py-1.5">P. Unit.</th>
                                     <th className="w-24 py-1.5 text-right">Subtotal</th>
+                                    {aplicaIgv && <th className="w-24 py-1.5 text-right">Total c/IGV</th>}
                                     <th className="w-10" />
                                 </tr>
                             </thead>
@@ -659,6 +662,11 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                                             <input type="number" min="0" step="0.01" value={d.precioUnitario} onChange={(e) => actualizarDetalle(i, 'precioUnitario', e.target.value)} className={`${inputCls} !py-1.5`} />
                                         </td>
                                         <td className="py-2 text-right font-bold text-gray-900 dark:text-white">{mon} {(d.cantidad * d.precioUnitario).toFixed(2)}</td>
+                                        {aplicaIgv && (
+                                            <td className="py-2 text-right font-black text-gray-900 dark:text-white" title={d.gravado === false ? 'Producto sin IGV' : 'Costo de la línea con IGV incluido'}>
+                                                {mon} {((d.cantidad * d.precioUnitario) * (d.gravado === false || igvIncluido ? 1 : 1.18)).toFixed(2)}
+                                            </td>
+                                        )}
                                         <td className="py-2 text-right">
                                             <button type="button" onClick={() => setDetalles((prev) => prev.filter((_, j) => j !== i))} className="text-gray-300 transition hover:text-rose-500">
                                                 <Icon icon="solar:trash-bin-trash-bold" className="text-base" />
