@@ -50,7 +50,37 @@ describe('El orden de las tallas', () => {
         expect(tallasDisponibles(conNueve).map((t) => t.talla)).toEqual(['9', '36', '40']);
     });
 
-    it('las de letra van alfabéticas', () => {
+    /** Alfabéticamente S, M, L y XL salían "L · M · S · XL": ningún orden. */
+    const conTallas = (...tallas: string[]) => ({
+        opcionesAtributos: [{ nombre: 'Talla', valores: tallas }],
+        variantes: tallas.map((t, i) => ({
+            id: i + 1, estado: 'ACTIVO', valoresAtributos: { Talla: t }, stock: 1, stocks: [],
+        })),
+    });
+    const orden = (...tallas: string[]) =>
+        tallasDisponibles(conTallas(...tallas)).map((t) => t.talla);
+
+    it('las de letra van de la más chica a la más grande, no alfabéticas', () => {
+        expect(orden('L', 'M', 'S', 'XL', 'XS')).toEqual(['XS', 'S', 'M', 'L', 'XL']);
+    });
+
+    it('"2XL" es lo mismo que "XXL": cada X aleja un escalón', () => {
+        expect(orden('3XL', 'XL', 'XXL', 'M')).toEqual(['M', 'XL', 'XXL', '3XL']);
+    });
+
+    it('también el sistema en español (CH · M · G · EG)', () => {
+        expect(orden('EG', 'CH', 'G', 'M')).toEqual(['CH', 'M', 'G', 'EG']);
+    });
+
+    it('la talla única va al final: no compite con las demás', () => {
+        expect(orden('Talla Única', 'M', 'S')).toEqual(['S', 'M', 'Talla Única']);
+    });
+
+    it('lo que no se reconoce cae al orden alfabético de siempre', () => {
+        expect(orden('28x30', '26x32')).toEqual(['26x32', '28x30']);
+    });
+
+    it('el texto del catálogo sale con ese mismo orden', () => {
         const ropa = {
             opcionesAtributos: [{ nombre: 'Talla', valores: ['S', 'M', 'L'] }],
             variantes: [
@@ -58,7 +88,7 @@ describe('El orden de las tallas', () => {
                 { id: 2, estado: 'ACTIVO', valoresAtributos: { Talla: 'L' }, stock: 1, stocks: [] },
             ],
         };
-        expect(textoDeTallas(ropa)).toBe('L:1 · M:2');
+        expect(textoDeTallas(ropa)).toBe('M:2 · L:1');
     });
 });
 

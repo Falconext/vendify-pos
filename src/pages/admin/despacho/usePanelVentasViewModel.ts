@@ -350,10 +350,44 @@ export function usePanelVentasViewModel() {
         }
     }, [exportandoReparto, paramsReparto, fecha, repartoResumen, alert]);
 
+    // Exporta el Excel AGREGADO POR PRODUCTO (Producto, Cantidad, Valor, Valor
+    // con IGV) para el rango/sede del panel. Pedido de LUBRICANTES NORTHCORE.
+    const [exportandoProducto, setExportandoProducto] = useState(false);
+    const exportarPorProducto = useCallback(async () => {
+        setExportandoProducto(true);
+        try {
+            const hasta = fechaFin && fechaFin > fecha ? fechaFin : fecha;
+            const params = new URLSearchParams({ tipoComprobante: 'TODOS', fechaInicio: fecha, fechaFin: hasta });
+            if (esPrincipalAdmin) {
+                if (sedeVista) params.set('sedeId', String(sedeVista));
+            } else if (sedeActiva?.id) {
+                params.set('sedeId', String(sedeActiva.id));
+            }
+            if (canFilterByUsuario && filtroUsuarioId) params.set('usuarioId', String(filtroUsuarioId));
+            const resp = await apiClient.get(`/comprobante/exportar-por-producto?${params.toString()}`, {
+                responseType: 'blob',
+                timeout: 60_000,
+            });
+            const url = window.URL.createObjectURL(new Blob([resp.data as any]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `ventas_por_producto_${fecha}_a_${hasta}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('No se pudo exportar por producto: verifica que existan ventas en el rango.', 'error');
+        } finally {
+            setExportandoProducto(false);
+        }
+    }, [fecha, fechaFin, sedeActiva?.id, esPrincipalAdmin, sedeVista, filtroUsuarioId, canFilterByUsuario, alert]);
+
     return {
         fecha, setFecha,
         fechaFin, setFechaFin,
         fechaEnvio, setFechaEnvio,
+        exportandoProducto, exportarPorProducto,
         exportando, exportarResumen,
         repartoResumen, exportandoReparto, exportarReparto,
         items, filtrados,

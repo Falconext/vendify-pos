@@ -51,6 +51,27 @@ const TIPO_CONFIG: Record<TipoVenta, { label: string; cls: string }> = {
 // Columnas configurables de la tabla de ventas (el usuario elige cuáles ver).
 // Las columnas fijas (Fecha, Referencia, Tipo, Cliente, Total, Pago, Vendedor,
 // Acciones) siempre se muestran. `sede` solo aplica al admin principal.
+
+/**
+ * Si el cliente ya compró antes, y cuántas veces.
+ *
+ * Se muestra el número de compra y no un sí/no: "3ra compra" le dice al
+ * vendedor mucho más que "recurrente" — sabe si tiene delante a alguien que
+ * vuelve seguido o a uno que compró dos veces en un año.
+ *
+ * El conteo es de TODA la historia del cliente con la empresa, no del rango que
+ * se está viendo: el panel muestra un día y ahí todos parecerían nuevos.
+ */
+const recurrencia = (compras: number | undefined) => {
+  const n = Number(compras ?? 0);
+  // `Number.isFinite` y no `n <= 0`: un NaN pasa de largo las comparaciones y
+  // terminaba pintando "NaN compras" en la fila.
+  if (!Number.isFinite(n) || n <= 0) return { texto: '—', clase: 'text-gray-400' };
+  if (n === 1) return { texto: 'Nuevo', clase: 'bg-blue-50 text-blue-700 border-blue-200' };
+  if (n <= 3) return { texto: `${n}ª compra`, clase: 'bg-amber-50 text-amber-700 border-amber-200' };
+  return { texto: `${n} compras`, clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+};
+
 const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolean }[] = [
     { key: 'sede', label: 'Sede', soloAdminPrincipal: true },
     { key: 'saldo', label: 'Saldo' },
@@ -62,6 +83,7 @@ const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolea
     // dónde ver la relación de pedidos programados. El dato ya venía del panel
     // (EnvioDespacho.fechaEstimada); solo faltaba mostrarlo.
     { key: 'fechaEnvio', label: 'Fecha de envío' },
+    { key: 'recurrente', label: 'Cliente recurrente' },
     { key: 'turno', label: 'Turno' },
     { key: 'celular', label: 'Celular' },
     { key: 'agencia', label: 'Agencia' },
@@ -862,12 +884,12 @@ export default function PanelVentasView() {
                         <button
                             type="button"
                             onClick={() => setShowExportMenu(!showExportMenu)}
-                            disabled={vm.exportando !== null || vm.exportandoReparto}
+                            disabled={vm.exportando !== null || vm.exportandoProducto || vm.exportandoReparto}
                             data-testid="btn-exportar-menu"
                             className="h-11 px-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
                             title="Exportar y descargar: PDF, Excel, Reparto y el reporte de envíos"
                         >
-                            <Icon icon={(vm.exportando !== null || vm.exportandoReparto) ? 'svg-spinners:180-ring' : 'solar:download-minimalistic-bold-duotone'} className="text-lg" />
+                            <Icon icon={(vm.exportando !== null || vm.exportandoProducto || vm.exportandoReparto) ? 'svg-spinners:180-ring' : 'solar:download-minimalistic-bold-duotone'} className="text-lg" />
                             Exportar
                             <Icon icon={showExportMenu ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} width={14} />
                         </button>
@@ -892,6 +914,17 @@ export default function PanelVentasView() {
                                 >
                                     <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg text-emerald-500" />
                                     <span className="flex-1 text-left">Excel (detalle de ventas)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); vm.exportarPorProducto(); }}
+                                    disabled={vm.exportandoProducto}
+                                    data-testid="btn-exportar-producto"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                    title="Excel por producto: cuánto vendiste de cada uno (cantidad, valor y valor con IGV) en el rango"
+                                >
+                                    <Icon icon={vm.exportandoProducto ? 'svg-spinners:180-ring' : 'solar:box-bold-duotone'} className="text-lg text-indigo-500" />
+                                    <span className="flex-1 text-left">Por producto</span>
                                 </button>
                                 <button
                                     type="button"
@@ -1196,6 +1229,7 @@ export default function PanelVentasView() {
                                 {col('sunat') && <th className="px-3 py-3 text-left">SUNAT</th>}
                                 {col('despacho') && <th className="px-3 py-3 text-left">Despacho</th>}
                                 {col('fechaEnvio') && <th className="px-3 py-3 text-left whitespace-nowrap">Fecha de envío</th>}
+                                {col('recurrente') && <th className="px-3 py-3 text-left">Recurrente</th>}
                                 {col('turno') && <th className="px-3 py-3 text-left">Turno</th>}
                                 {col('celular') && <th className="px-3 py-3 text-left">Celular</th>}
                                 {col('agencia') && <th className="px-3 py-3 text-left">Agencia</th>}
@@ -1348,6 +1382,20 @@ export default function PanelVentasView() {
                                                     {fechaDeEnvio(item)}
                                                 </td>
                                             )}
+                                            {col('recurrente') && (() => {
+                                                const r = recurrencia((item as any).clienteCompras);
+                                                return (
+                                                    <td className="px-3 py-2.5 whitespace-nowrap">
+                                                        {r.texto === '—' ? (
+                                                            <span className="text-xs text-gray-400">—</span>
+                                                        ) : (
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-semibold ${r.clase}`}>
+                                                                {r.texto}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })()}
                                             {col('turno') && (
                                                 <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                     {item.estadoDespacho !== 'NO_APLICA' ? (item.turnoEnvio ?? '—') : '—'}

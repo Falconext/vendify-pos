@@ -13,6 +13,7 @@
  * repartir a mano.
  */
 import {
+    compararTallas,
     filasDeVariantes,
     nombreDeLaTalla,
     tieneVariantes,
@@ -59,7 +60,8 @@ export const sePideEnCurva = (producto: any): boolean =>
 /**
  * Las casillas del modelo, en el orden en que se piden.
  *
- * El orden numérico importa: con orden alfabético la 40 iría antes que la 9 y
+ * El orden importa: alfabéticamente la 40 iría antes que la 9 —y S·M·L·XL
+ * saldría "L · M · S · XL" (ver `compararTallas`)—; así
  * la curva se leería al revés de como la piensa el comprador.
  */
 export const curvaDeModelo = (producto: any): CeldaCurva[] => {
@@ -83,12 +85,7 @@ export const curvaDeModelo = (producto: any): CeldaCurva[] => {
                 costo: num(variante?.costoPromedio) || costoDelPadre,
             };
         })
-        .sort((a, b) => {
-            const na = Number(a.talla);
-            const nb = Number(b.talla);
-            if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-            return a.talla.localeCompare(b.talla, 'es');
-        });
+        .sort((a, b) => compararTallas(a.talla, b.talla));
 };
 
 /** Qué afectación hereda la línea (el padre manda: es el mismo producto). */

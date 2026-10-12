@@ -165,6 +165,83 @@ export const sinStock = (filas: FilaVariante[]): number =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Una talla, cuánto queda y cuánto viene en camino. */
+/**
+ * El orden en que el negocio piensa las tallas.
+ *
+ * Las tallas en letras se estaban ordenando alfabéticamente: un modelo con
+ * S, M, L y XL se listaba "L · M · S · XL", que no es ningún orden y obliga a
+ * leer la línea entera para saber si queda la chica. Las numéricas ya se
+ * ordenaban bien.
+ *
+ * Se cubren los dos sistemas que se usan en Perú: el internacional
+ * (XS·S·M·L·XL, con las variantes 2XL/XXL) y el de letras en español
+ * (CH·M·G·EG). Lo que no se reconoce cae al orden alfabético de siempre, que
+ * es lo que había: nunca se pierde una talla por no estar en la tabla.
+ */
+const RANGO_DE_TALLA: Record<string, number> = {
+  S: 40, CH: 40, CHICA: 40, CHICO: 40, PEQUENA: 40, PEQUENO: 40,
+  M: 50, MED: 50, MEDIANA: 50, MEDIANO: 50,
+  L: 60, G: 60, GRANDE: 60,
+  EG: 70, XG: 70, EXTRAGRANDE: 70,
+  EEG: 80, XXG: 80,
+  // "Talla única" no compite con las demás: va siempre al final.
+  U: 1000, UNICA: 1000, UNICO: 1000, UNITALLA: 1000,
+  FREE: 1000, STD: 1000, ESTANDAR: 1000,
+};
+
+/** Sin tildes ni separadores: "Talla Única" y "T-UNICA" son la misma. */
+const normalizarTalla = (talla: string): string =>
+  String(talla ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/\bTALLAS?\b/g, '')
+    .replace(/[\s._/-]/g, '');
+
+/** Dónde cae una talla en letras, o `null` si no se reconoce. */
+export const rangoDeTalla = (talla: string): number | null => {
+  const t = normalizarTalla(talla);
+  if (!t) return null;
+  const directo = RANGO_DE_TALLA[t];
+  if (directo !== undefined) return directo;
+  // XS, XXS, 3XS… y XL, XXL, 4XL…: cada X aleja un escalón de la M, y "2XL"
+  // es lo mismo que "XXL" (los proveedores escriben de las dos formas).
+  const escalones = t.match(/^(?:(\d)X|(X+))(S|L)$/);
+  if (escalones) {
+    const veces = escalones[1] ? Number(escalones[1]) : (escalones[2] as string).length;
+    if (veces >= 1) return escalones[3] === 'S' ? 40 - veces * 10 : 60 + veces * 10;
+  }
+  return null;
+};
+
+/** La talla leída como número ("38", "38.5", "38,5"), o `null` si no lo es. */
+const tallaComoNumero = (talla: string): number | null => {
+  const t = String(talla ?? '').trim().replace(',', '.');
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Compara dos tallas para ordenarlas: primero las numéricas de menor a mayor
+ * (la 9 antes que la 40), después las de letras de la más chica a la más
+ * grande, y al final lo que no se reconoce, alfabético.
+ */
+export const compararTallas = (a: string, b: string): number => {
+  const na = tallaComoNumero(a);
+  const nb = tallaComoNumero(b);
+  if (na !== null && nb !== null) return na - nb;
+  if (na !== null) return -1;
+  if (nb !== null) return 1;
+
+  const ra = rangoDeTalla(a);
+  const rb = rangoDeTalla(b);
+  if (ra !== null && rb !== null) return ra !== rb ? ra - rb : a.localeCompare(b, 'es');
+  if (ra !== null) return -1;
+  if (rb !== null) return 1;
+  return a.localeCompare(b, 'es');
+};
+
 export interface TallaDisponible {
     talla: string;
     stock: number;
@@ -217,16 +294,9 @@ export const tallasDisponibles = (
         }
     }
 
-    // Las tallas se ordenan como números cuando lo son (35, 36, 37…) y como
-    // texto cuando no (S, M, L): ordenar "40" antes que "9" sería absurdo.
     return [...acumulado.entries()]
         .map(([talla, stock]) => ({ talla, stock, enCamino: enCaminoPorTalla.get(talla) ?? 0 }))
-        .sort((a, b) => {
-            const na = Number(a.talla);
-            const nb = Number(b.talla);
-            if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-            return a.talla.localeCompare(b.talla, 'es');
-        });
+        .sort((a, b) => compararTallas(a.talla, b.talla));
 };
 
 /**
