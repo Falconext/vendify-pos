@@ -1,3 +1,4 @@
+import { accionDeTecla } from '../atajosPos';
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Pagination from "@/components/Pagination";
