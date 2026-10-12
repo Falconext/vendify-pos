@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import moment from 'moment';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
@@ -92,14 +93,30 @@ export function usePanelVentasViewModel() {
     const { auth, sedeActiva } = useAuthStore();
     const { alert } = useAlertStore();
 
-    const [fecha, setFecha] = useState(() => moment().format('YYYY-MM-DD'));
+    /**
+     * Los filtros que llegan por la URL se leen en el estado INICIAL, no en un
+     * efecto posterior.
+     *
+     * Se entra acá desde Repartidores → "Ver despachos", que navega con
+     * `?fechaEnvio=…&repartidorId=…`. Aplicándolos después, la primera consulta
+     * salía con "hoy" y la lista se cargaba dos veces: una con el día
+     * equivocado —que el usuario llegaba a ver— y otra con el de la URL.
+     */
+    const [searchParams] = useSearchParams();
+    const diaValido = (v: string | null) =>
+        v && moment(v, 'YYYY-MM-DD', true).isValid() ? v : null;
+    const [fecha, setFecha] = useState(
+        () => diaValido(searchParams.get('fecha')) ?? moment().format('YYYY-MM-DD'),
+    );
     // Fin del rango (opcional). Vacío = panel de un solo día (comportamiento original).
     const [fechaFin, setFechaFin] = useState('');
     // Día de ENTREGA programada: el negocio que despacha por día necesita ver
     // "qué sale el jueves". Cuando se usa, reemplaza al filtro por fecha de
     // emisión: un pedido que sale el jueves pudo tomarse el lunes y si no, no
     // aparecería.
-    const [fechaEnvio, setFechaEnvio] = useState('');
+    const [fechaEnvio, setFechaEnvio] = useState(
+        () => diaValido(searchParams.get('fechaEnvio')) ?? '',
+    );
     const [items, setItems] = useState<VentaPanelItem[]>([]);
     const [porCobrarGlobal, setPorCobrarGlobal] = useState({ total: 0, cantidad: 0 });
     const [loading, setLoading] = useState(true);
@@ -108,7 +125,10 @@ export function usePanelVentasViewModel() {
     const [filtroSerie, setFiltroSerie] = useState('');
     const [filtroDni, setFiltroDni] = useState('');
     const [filtroProducto, setFiltroProducto] = useState('');
-    const [filtroRepartidorId, setFiltroRepartidorId] = useState<number | null | undefined>(undefined);
+    const [filtroRepartidorId, setFiltroRepartidorId] = useState<number | null | undefined>(() => {
+        const id = Number(searchParams.get('repartidorId'));
+        return Number.isFinite(id) && id > 0 ? id : undefined;
+    });
     const [filtroUsuarioId, setFiltroUsuarioId] = useState<number | null>(null);
     const isAdmin = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
     const canFilterByUsuario = isAdmin;

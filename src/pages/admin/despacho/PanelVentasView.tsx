@@ -380,11 +380,18 @@ export default function PanelVentasView() {
         }
     }, [vm.canFilterByUsuario, getAllUsers]);
 
-    // Los filtros que llegan por la URL se aplican UNA vez por cada valor
-    // distinto; después manda el usuario. Con el guard anterior
-    // (`queryFecha !== vm.fecha`), retroceder el día devolvía la fecha a la de
-    // la URL y la pantalla entraba en un bucle de peticiones.
-    const urlAplicada = useRef<string | null>(null);
+    // Cada valor distinto que trae la URL se aplica UNA vez; después manda el
+    // usuario. Con el guard anterior (`queryFecha !== vm.fecha`), retroceder el
+    // día devolvía la fecha a la de la URL y la pantalla entraba en un bucle de
+    // peticiones.
+    // El estado inicial del ViewModel YA leyó estos parámetros, así que la
+    // primera pasada se marca como aplicada: volver a setearlos acá no cambiaría
+    // nada y solo invita a que los dos lugares se desincronicen. Este efecto
+    // existe para cuando la URL cambia con la pantalla ya montada — la ruta es
+    // la misma (`/administrador/ventas`), así que no se remonta.
+    const urlAplicada = useRef<string | null>(
+        `${queryFecha ?? ''}|${queryFechaEnvio ?? ''}|${queryRepartidorId ?? ''}`,
+    );
     useEffect(() => {
         const clave = `${queryFecha ?? ''}|${queryFechaEnvio ?? ''}|${queryRepartidorId ?? ''}`;
         if (urlAplicada.current === clave) return;
