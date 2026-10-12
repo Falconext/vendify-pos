@@ -4,6 +4,7 @@ import ModalConfirm from "@/components/ModalConfirm";
 import { ProductImageUploader } from "./ProductImageUploader";
 import { ProductWholesalePricing } from "./ProductWholesalePricing";
 import { ProductBasicForm } from "./ProductBasicForm";
+import { ProductDisponibilidad } from "./ProductDisponibilidad";
 import { ProductRichDescription } from "./ProductRichDescription";
 import ModalMedicamento from "@/pages/admin/kardex/modal-productos/components/ModalMedicamento";
 import ModalLotes from "@/pages/admin/kardex/modal-productos/components/ModalLotes";
@@ -79,6 +80,7 @@ export const ProductFormContent: React.FC<{ vm: any; onCancel?: () => void; forc
                                 <ProductWholesalePricing vm={vm} />
                             </div>
                         )}
+                        <ProductDisponibilidad vm={vm} />
                         <ProductRichDescription vm={vm} />
 
                     </div>
