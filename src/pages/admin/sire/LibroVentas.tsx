@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react';
 import apiClient from '@/utils/apiClient';
 import { post } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import RevisionSireVentas from './RevisionSireVentas';
 
 const MESES = [
   { id: 1, value: 'Enero' }, { id: 2, value: 'Febrero' }, { id: 3, value: 'Marzo' },
@@ -258,6 +259,14 @@ export default function LibroVentas() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Revisión previa del período: totales para cuadrar, IGV, lo que
+            SUNAT observaría y el cruce con la propuesta del RVIE. Va antes de
+            la caja informativa y después de la descarga, que es el orden en
+            que se usa: primero se revisa, después se declara. */}
+        <div className="mt-4">
+          <RevisionSireVentas mes={mes} anio={anio} empresarial={empresarial} />
         </div>
 
         {/* Info */}

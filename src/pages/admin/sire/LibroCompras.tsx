@@ -4,6 +4,7 @@ import apiClient from '@/utils/apiClient';
 import { post } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
+import RevisionYCruceSire from './RevisionYCruceSire';
 
 const MESES = [
   { id: 1, value: 'Enero' }, { id: 2, value: 'Febrero' }, { id: 3, value: 'Marzo' },
@@ -248,6 +249,11 @@ export default function LibroCompras() {
             </div>
           )}
         </div>
+
+        {/* Revisión del contador y cruce con lo que SUNAT tiene a nombre del
+            RUC. Va después de la descarga porque es el paso de antes: primero
+            se revisa y se completa, y recién después se declara. */}
+        <RevisionYCruceSire mes={mes} anio={anio} />
 
         {/* Info */}
         <div className="mt-4 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5">
