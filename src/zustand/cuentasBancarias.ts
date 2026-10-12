@@ -56,10 +56,42 @@ export interface IUpdateCuentaBancaria extends Partial<ICreateCuentaBancaria> {
   activo?: boolean;
 }
 
+export interface ICuentaSaldo extends ICuentaBancaria {
+  ingresos: number;
+  egresos: number;
+  saldo: number;
+}
+
+export interface IMovimientoBanco {
+  id: string;
+  fecha: string;
+  tipo: 'INGRESO' | 'EGRESO';
+  origen: 'COBRO' | 'DEPOSITO' | 'COMPRA' | 'GASTO';
+  concepto: string;
+  referencia: string | null;
+  monto: number;
+}
+
+export interface IMovimientosResp {
+  cuenta: ICuentaBancaria;
+  ingresos: number;
+  egresos: number;
+  saldo: number;
+  movimientos: IMovimientoBanco[];
+}
+
 interface CuentasBancariasState {
   cuentas: ICuentaBancaria[];
+  saldos: ICuentaSaldo[];
   loading: boolean;
+  loadingSaldos: boolean;
   listar: () => Promise<void>;
+  cargarSaldos: () => Promise<void>;
+  obtenerMovimientos: (
+    id: number,
+    desde?: string,
+    hasta?: string,
+  ) => Promise<IMovimientosResp | null>;
   crear: (data: ICreateCuentaBancaria) => Promise<void>;
   actualizar: (id: number, data: IUpdateCuentaBancaria) => Promise<void>;
   eliminar: (id: number) => Promise<void>;
@@ -69,7 +101,37 @@ export const useCuentasBancariasStore = create<CuentasBancariasState>()(
   devtools(
     (set, getState: () => CuentasBancariasState) => ({
       cuentas: [],
+      saldos: [],
       loading: false,
+      loadingSaldos: false,
+
+      cargarSaldos: async () => {
+        try {
+          set({ loadingSaldos: true });
+          const res: any = await get('empresa/cuentas-bancarias/saldos');
+          if (res.code === 1) set({ saldos: res.data || [] });
+        } catch {
+          // silencioso
+        } finally {
+          set({ loadingSaldos: false });
+        }
+      },
+
+      obtenerMovimientos: async (id, desde, hasta) => {
+        try {
+          const qs = new URLSearchParams();
+          if (desde) qs.set('desde', desde);
+          if (hasta) qs.set('hasta', hasta);
+          const suffix = qs.toString() ? `?${qs.toString()}` : '';
+          const res: any = await get(
+            `empresa/cuentas-bancarias/${id}/movimientos${suffix}`,
+          );
+          if (res.code === 1) return res.data as IMovimientosResp;
+          return null;
+        } catch {
+          return null;
+        }
+      },
 
       listar: async () => {
         try {

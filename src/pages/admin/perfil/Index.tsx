@@ -4,10 +4,12 @@ import { Icon } from '@iconify/react';
 import Loading from '@/components/Loading';
 import { usaLotesFarmaciaRubro } from '@/utils/rubro-features';
 import { hasPlanFeature } from '@/utils/permissions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CuentasBancariasConfig from '@/pages/admin/empresa/CuentasBancariasConfig';
 import MediosDePagoConfig from '@/pages/admin/empresa/MediosDePagoConfig';
+import ShalomProConexion from '@/components/ShalomProConexion';
+import OlvaConfiguracion from '@/components/OlvaConfiguracion';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -33,6 +35,15 @@ export default function PerfilIndex() {
     const [showNueva, setShowNueva] = useState(false);
     const [directorInput, setDirectorInput] = useState<string | null>(null);
     const [sunatClientIdInput, setSunatClientIdInput] = useState<string | null>(null);
+    // Credenciales del SIRE. Las secretas nunca vuelven del backend, así que
+    // esos campos arrancan vacíos y solo se mandan si el usuario escribe algo.
+    const [sireClientIdInput, setSireClientIdInput] = useState<string | null>(null);
+    const [sireSecretInput, setSireSecretInput] = useState('');
+    const [sireUsuarioInput, setSireUsuarioInput] = useState<string | null>(null);
+    const [sireClaveInput, setSireClaveInput] = useState('');
+    // El estado de la conexión del SIRE lo decide el backend (qué credencial
+    // falta); se consulta al entrar y después de cada guardado.
+    useEffect(() => { void vm.cargarEstadoSire(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [sunatClientSecretInput, setSunatClientSecretInput] = useState<string | null>(null);
     // Pestañas Perfil / Configuración (sincronizadas con la URL para deep-link desde el menú)
     const [searchParams, setSearchParams] = useSearchParams();
@@ -53,9 +64,10 @@ export default function PerfilIndex() {
     const limiteRaw = Number(usageStats?.limiteMaximo ?? 0);
     const comprobantesIlimitados = !!usageStats && (!Number.isFinite(limiteRaw) || limiteRaw <= 0);
     const fefoPermitidoPorPlan = hasPlanFeature(perfil as any, 'tieneGestionLotes');
-    // Conexión Shalom: solo disponible en planes Negocio y Corporativo.
-    const planNombre = String(perfil?.empresa?.plan?.nombre ?? '').toLowerCase();
-    const puedeShalom = /negocio|corporativo/.test(planNombre);
+    // Crear guías en Shalom Pro es una característica del plan, no su nombre:
+    // el regex sobre el nombre se rompía al renombrar un plan o al armar uno
+    // a medida.
+    const puedeShalom = hasPlanFeature(perfil as any, 'tieneShalomGuias');
     // Envío automático por WhatsApp: desactivado temporalmente (a pedido).
     const SHOW_WHATSAPP: boolean = false;
 
@@ -461,53 +473,34 @@ export default function PerfilIndex() {
                             </div>
                         </div>
 
-                        <div className="p-5 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Estado</span>
-                                <span className={`rounded-full px-3 py-1 text-xs font-bold ${perfil.empresa.shalomConfigured ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
-                                    {perfil.empresa.shalomConfigured ? 'Cuenta conectada' : 'Sin conectar'}
-                                </span>
-                            </div>
-                            <div className="grid gap-3 md:grid-cols-2">
-                                <label className="space-y-1.5">
-                                    <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Correo de Shalom Pro</span>
-                                    <input
-                                        value={vm.shalomForm.email}
-                                        onChange={e => vm.updateShalomField('email', e.target.value)}
-                                        placeholder="tu-correo@ejemplo.com"
-                                        autoComplete="off"
-                                        className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-rose-400"
-                                    />
-                                </label>
-                                <label className="space-y-1.5">
-                                    <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Contraseña de Shalom Pro</span>
-                                    <input
-                                        value={vm.shalomForm.password}
-                                        onChange={e => vm.updateShalomField('password', e.target.value)}
-                                        type="password"
-                                        autoComplete="new-password"
-                                        placeholder={perfil.empresa.shalomConfigured ? 'Dejar vacío para conservar la actual' : 'Tu contraseña de Shalom'}
-                                        className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-rose-400"
-                                    />
-                                </label>
-                            </div>
-                            <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs leading-5 text-slate-500">
-                                    Tu contraseña se guarda cifrada y solo se usa para autenticar tus operaciones con Shalom.
-                                </p>
-                                <button
-                                    type="button"
-                                    disabled={!vm.shalomConfigDirty || vm.savingShalomConfig}
-                                    onClick={vm.handleShalomConfigSave}
-                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-600/15 transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-                                >
-                                    <Icon icon={vm.savingShalomConfig ? 'svg-spinners:180-ring' : 'solar:diskette-bold'} width={18} />
-                                    {vm.savingShalomConfig ? 'Guardando...' : 'Guardar conexión'}
-                                </button>
-                            </div>
+                        <div className="p-5">
+                            <ShalomProConexion
+                                sinTitulo
+                                nombreSugerido={perfil.empresa.nombreComercial || perfil.empresa.razonSocial}
+                            />
                         </div>
                     </div>
                     )}
+
+                    {/* ── Envíos Olva — rastreo para todos, guías en plan Corporativo ── */}
+                    <div className={`lg:col-span-2 lg:order-3 overflow-hidden rounded-3xl border border-amber-100 dark:border-amber-900/40 bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none ${configTab}`}>
+                        <div className="relative border-b border-amber-100/70 dark:border-amber-900/40 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-900/20 dark:via-[#111827] dark:to-orange-900/10 p-5">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/20">
+                                    <Icon icon="solar:box-minimalistic-bold-duotone" width={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Envíos Olva</h2>
+                                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                                        A diferencia de Shalom Pro no hay cuenta que conectar: acá solo eliges desde qué agencia despachas y si quieres el rastreo automático.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-5">
+                            <OlvaConfiguracion sinTitulo />
+                        </div>
+                    </div>
                     <div className={`${cardCls} p-5 lg:order-2 ${perfilTab}`}>
                         <SectionHeader icon="solar:buildings-bold-duotone" title="Información de la Empresa" chip="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300" />
                         <div className="space-y-4">
@@ -1033,6 +1026,76 @@ export default function PerfilIndex() {
                                         >
                                             {vm.savingSunatValidez ? '...' : 'Guardar credenciales'}
                                         </button>
+                                        {/* ── SIRE: credenciales aparte (ver sire.client.ts) ── */}
+                                        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800" data-testid="config-sire">
+                                            <p className="text-xs font-bold text-slate-700 dark:text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                                <Icon icon="solar:cloud-download-bold-duotone" width={14} />
+                                                SIRE · traer mis compras de SUNAT
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-gray-400 mb-2">
+                                                Permite descargar del SIRE las compras que SUNAT tiene a nombre de tu RUC (incluso las que nunca registraste).
+                                                Son credenciales <strong>distintas</strong> a las de arriba: se generan en Menú SOL → <strong>Credenciales de API SUNAT → Gestión</strong>, marcando el servicio
+                                                <strong> “MIGE RCE y RVIE - SIRE”</strong>. El SIRE además exige tu usuario y clave SOL; la clave se guarda cifrada y nunca se muestra.
+                                            </p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    placeholder="Client ID del SIRE"
+                                                    value={sireClientIdInput ?? (vm.sireEstado?.clientId ?? '')}
+                                                    onChange={e => setSireClientIdInput(e.target.value)}
+                                                />
+                                                <input
+                                                    type="password"
+                                                    className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    placeholder="Client Secret del SIRE"
+                                                    value={sireSecretInput}
+                                                    onChange={e => setSireSecretInput(e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    placeholder="Usuario SOL"
+                                                    value={sireUsuarioInput ?? (vm.sireEstado?.usuarioSol ?? '')}
+                                                    onChange={e => setSireUsuarioInput(e.target.value)}
+                                                />
+                                                <input
+                                                    type="password"
+                                                    className="px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    placeholder={vm.sireEstado?.configurado ? 'Clave SOL (guardada — escribe para cambiarla)' : 'Clave SOL'}
+                                                    value={sireClaveInput}
+                                                    onChange={e => setSireClaveInput(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                <button
+                                                    disabled={vm.savingSire}
+                                                    onClick={() => vm.handleSireSave({
+                                                        clientId: sireClientIdInput ?? (vm.sireEstado?.clientId ?? ''),
+                                                        clientSecret: sireSecretInput,
+                                                        usuarioSol: sireUsuarioInput ?? (vm.sireEstado?.usuarioSol ?? ''),
+                                                        claveSol: sireClaveInput,
+                                                    }).then(() => { setSireSecretInput(''); setSireClaveInput(''); })}
+                                                    className="px-3 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-colors"
+                                                >
+                                                    {vm.savingSire ? '...' : 'Guardar credenciales del SIRE'}
+                                                </button>
+                                                <button
+                                                    disabled={vm.probandoSire || !vm.sireEstado?.configurado}
+                                                    onClick={() => vm.handleSireProbar()}
+                                                    title={vm.sireEstado?.configurado ? undefined : 'Primero guarda las credenciales'}
+                                                    className="px-3 py-2 border border-sky-200 dark:border-sky-900 text-sky-700 dark:text-sky-300 text-sm font-bold rounded-xl hover:bg-sky-50 dark:hover:bg-sky-950/30 disabled:opacity-50 transition-colors"
+                                                    data-testid="probar-sire"
+                                                >
+                                                    {vm.probandoSire ? 'Probando...' : 'Probar conexión'}
+                                                </button>
+                                                {vm.sireEstado && (
+                                                    <span className={`text-xs font-semibold ${vm.sireEstado.configurado ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                                        {vm.sireEstado.configurado ? 'Configurado' : `Falta: ${vm.sireEstado.falta.join(', ')}`}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

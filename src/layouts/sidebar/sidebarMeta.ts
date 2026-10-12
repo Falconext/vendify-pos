@@ -234,6 +234,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   },
 
   caja: {
+    // Bancos vive como pestaña dentro de la página de Caja (mismo módulo).
+    labelOverride: () => 'Caja y Bancos',
     navRoute: () => '/administrador/ventas/caja',
     pathPrefix: () => '/administrador/ventas/caja',
   },

@@ -3,7 +3,9 @@ import { Icon } from '@iconify/react';
 import CajaControl from './components/CajaControl';
 import CajaHistorial from './components/CajaHistorial';
 import CajaDepositos from './components/CajaDepositos';
+import BancosPanel from './components/BancosPanel';
 import { useAuthStore } from '@/zustand/auth';
+import { useSearchParams } from 'react-router-dom';
 
 // ── Gestión de Caja — estilo CRM claro (Brix UI) ──────────────────────────────
 const ACCENT = 'var(--accent, #7551FF)';
@@ -12,12 +14,19 @@ const TABS = [
     { key: 'CONTROL', label: 'Control de Caja', icon: 'solar:shop-2-bold-duotone', adminOnly: false },
     { key: 'HISTORIAL', label: 'Historial de Turnos', icon: 'solar:history-bold-duotone', adminOnly: false },
     { key: 'DEPOSITOS', label: 'Depósitos', icon: 'solar:card-transfer-bold-duotone', adminOnly: true },
+    // Bancos vive como pestaña de Caja y no como página aparte: el empresario
+    // cuadra el efectivo y el banco en la misma sentada.
+    { key: 'BANCOS', label: 'Bancos', icon: 'solar:bank-bold-duotone', adminOnly: true },
 ] as const;
 
 const CajaIndex: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'CONTROL' | 'HISTORIAL' | 'DEPOSITOS'>('CONTROL');
     const { auth } = useAuthStore();
     const isAdmin = auth?.rol === 'ADMIN_EMPRESA';
+    const [searchParams] = useSearchParams();
+    // `?tab=bancos` deja enlazar la pestaña directo desde el menú.
+    const [activeTab, setActiveTab] = useState<'CONTROL' | 'HISTORIAL' | 'DEPOSITOS' | 'BANCOS'>(
+        searchParams.get('tab') === 'bancos' && isAdmin ? 'BANCOS' : 'CONTROL',
+    );
 
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
@@ -39,7 +48,7 @@ const CajaIndex: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight truncate">Gestión de Caja</h1>
-                        <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">Control de turnos, apertura, cierre y reportes de caja.</p>
+                        <p className="text-sm text-slate-400 dark:text-gray-400 mt-0.5">Turnos y arqueo de efectivo, depósitos, y saldo/movimientos de tus cuentas bancarias.</p>
                     </div>
                 </div>
             </div>
@@ -70,6 +79,7 @@ const CajaIndex: React.FC = () => {
                 {activeTab === 'CONTROL' && <CajaControl />}
                 {activeTab === 'HISTORIAL' && <CajaHistorial />}
                 {activeTab === 'DEPOSITOS' && isAdmin && <CajaDepositos />}
+                {activeTab === 'BANCOS' && isAdmin && <BancosPanel />}
             </div>
         </div>
     );
