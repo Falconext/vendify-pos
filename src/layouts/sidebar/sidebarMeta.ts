@@ -219,6 +219,18 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   ventas: {
     navRoute: () => '/administrador/ventas',
     pathPrefix: () => '/administrador/ventas',
+    // Tablero de couriers (Shalom / Olva / propios): solo si el plan tiene
+    // alguno de los dos couriers habilitados.
+    extraItems: (auth) =>
+      hasPlanFeature(auth, 'tieneShalom') || hasPlanFeature(auth, 'tieneOlva')
+        ? [
+            {
+              codigo: 'ventas:couriers',
+              nombre: 'Couriers Shalom / Olva',
+              ruta: '/administrador/ventas/couriers',
+            },
+          ]
+        : [],
   },
 
   caja: {

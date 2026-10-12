@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import moment from 'moment';
 import apiClient from '@/utils/apiClient';
+import { EvidenciaEntrega, type Evidencia } from './EvidenciaEntrega';
+import { enlaceAlCliente, mensajeAlCliente } from './mensajeTrazabilidad';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,6 +23,8 @@ interface DespachoDetalle {
     agenciaDestino?: string | null;
     celularDest?: string | null;
     codigoGuia?: string | null;
+    shalomFleteCotizado?: number | null;
+    claveEnvio?: string | null;
     nroPaquetes?: number | null;
     turnoEnvio?: string | null;
     fechaEstimada?: string | null;
@@ -29,6 +33,8 @@ interface DespachoDetalle {
     empaquetador?: string | null;
     establecimiento?: string | null;
     nroOrden?: string | null;
+    entregadoEn?: string | null;
+    evidencias?: Evidencia[];
     creadoEn?: string;
 }
 
@@ -68,8 +74,8 @@ export function ModalTrazabilidad({ comprobanteId, referencia, cliente, onClose 
     const [despacho, setDespacho] = useState<DespachoDetalle | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        apiClient.get<any>(`/envio-despacho/comprobante/${comprobanteId}`)
+    const cargar = useCallback(() => {
+        return apiClient.get<any>(`/envio-despacho/comprobante/${comprobanteId}`)
             .then(({ data }) => {
                 const payload = data?.data ?? data;
                 if (payload) setDespacho(payload);
@@ -77,6 +83,10 @@ export function ModalTrazabilidad({ comprobanteId, referencia, cliente, onClose 
             .catch(() => {})
             .finally(() => setLoading(false));
     }, [comprobanteId]);
+
+    useEffect(() => { void cargar(); }, [cargar]);
+
+    const evidencias: Evidencia[] = despacho?.evidencias ?? [];
 
     const historial: HistorialEntry[] = Array.isArray(despacho?.historial) ? [...despacho.historial].reverse() : [];
     const cfg = getEstadoCfg(despacho?.estado ?? '');
@@ -203,6 +213,17 @@ export function ModalTrazabilidad({ comprobanteId, referencia, cliente, onClose 
                                 </div>
                             )}
 
+                            {/* ── Evidencia de entrega ── */}
+                            <EvidenciaEntrega
+                                comprobanteId={comprobanteId}
+                                evidencias={evidencias}
+                                yaEntregado={despacho.estado === 'ENTREGADO'}
+                                onCambio={(lista) =>
+                                    setDespacho((d) => (d ? { ...d, evidencias: lista } : d))
+                                }
+                                onEntregado={() => { void cargar(); }}
+                            />
+
                             {/* ── Timeline historial ── */}
                             <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
@@ -272,15 +293,22 @@ export function ModalTrazabilidad({ comprobanteId, referencia, cliente, onClose 
                 {despacho?.celularDest && (
                     <div className="px-6 pb-6 pt-3 flex-shrink-0 border-t border-slate-100 dark:border-slate-800">
                         <a
-                            href={`https://wa.me/51${despacho.celularDest.replace(/\D/g, '')}?text=${encodeURIComponent(
-                                `Hola, su pedido ${referencia ?? ''} está en estado: ${getEstadoCfg(despacho.estado).label}.${despacho.codigoGuia ? ` Guía: ${despacho.codigoGuia}.` : ''} Gracias.`
-                            )}`}
+                            href={enlaceAlCliente(
+                                despacho.celularDest,
+                                mensajeAlCliente(
+                                    { ...despacho, estadoLabel: getEstadoCfg(despacho.estado).label },
+                                    referencia,
+                                    evidencias,
+                                ),
+                            )}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm transition-colors shadow-sm"
                         >
                             <Icon icon="mdi:whatsapp" className="text-lg" />
-                            Notificar al cliente por WhatsApp
+                            {despacho.estado === 'ENTREGADO' && evidencias.length > 0
+                                ? 'Enviar la foto de la entrega'
+                                : 'Notificar al cliente por WhatsApp'}
                         </a>
                     </div>
                 )}
@@ -293,7 +321,7 @@ export function ModalTrazabilidad({ comprobanteId, referencia, cliente, onClose 
 
 function DataChip({ icon, label, value, mono }: { icon: string; label: string; value: string; mono?: boolean }) {
     return (
-        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-transparent">
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
             <Icon icon={icon} className="text-slate-400 text-lg mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import moment from 'moment';
@@ -14,6 +14,28 @@ import {
 } from './usePanelVentasViewModel';
 import { EditarDespachoModal } from './EditarDespachoModal';
 import { ModalTrazabilidad } from './ModalTrazabilidad';
+import ShalomTrackingModal from '@/components/ShalomTrackingModal';
+import OlvaTrackingModal from '@/components/OlvaTrackingModal';
+import { fechaDeEnvio } from './fechaDeEnvio';
+import { ReporteEnviosModal } from './ReporteEnviosModal';
+import RotuloPrint from './RotuloPrint';
+import RotulosLotePrint, { type RotuloLoteItem } from './RotulosLotePrint';
+import { useAuthStore } from '@/zustand/auth';
+import {
+    ROTULO_FORMATOS,
+    guardarRotuloFormato,
+    leerRotuloFormato,
+    type RotuloFormato,
+} from './rotuloFormato';
+import { elegiblesParaRotulo } from './seleccionRotulos';
+import {
+    alternarRotulo,
+    alternarTodos,
+    estaMarcado,
+    rotulosAImprimir,
+    resumenSeleccion,
+    type SeleccionRotulos,
+} from './seleccionRotulos';
 import KpiHero from '@/components/ui/KpiHero';
 import Select from '@/components/Select';
 import { Calendar } from '@/components/Date';
@@ -55,6 +77,10 @@ const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolea
     { key: 'productos', label: 'Productos' },
     { key: 'sunat', label: 'SUNAT' },
     { key: 'despacho', label: 'Despacho' },
+    // El negocio que despacha por día de entrega no tenía dónde ver la
+    // relación de pedidos programados. El dato ya venía del panel
+    // (EnvioDespacho.fechaEstimada); solo faltaba mostrarlo.
+    { key: 'fechaEnvio', label: 'Fecha de envío' },
     { key: 'turno', label: 'Turno' },
     { key: 'celular', label: 'Celular' },
     { key: 'agencia', label: 'Agencia' },
@@ -211,212 +237,7 @@ function mapProductosComprobante(comprobante: any) {
 // ─── Shalom ───────────────────────────────────────────────────────────────────
 
 const SHALOM_COURIERS = new Set(['SHALOM_PRO', 'SHALOM_COD']);
-
-const SHALOM_TIMELINE = [
-    { key: 'registrado', label: 'Registrado' },
-    { key: 'origen',     label: 'En origen' },
-    { key: 'transito',   label: 'En tránsito' },
-    { key: 'destino',    label: 'En destino / Agencia' },
-    { key: 'entregado',  label: 'Entregado' },
-];
-
-function openBlob(blob: Blob, filename: string, mimeType: string) {
-    const url = URL.createObjectURL(new Blob([blob], { type: mimeType }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    if (mimeType === 'application/pdf') a.download = filename;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-function ShalomTrackingModal({ orderNumber, orderCode, onClose, onEntregado }: {
-    orderNumber: string;
-    orderCode: string;
-    onClose: () => void;
-    onEntregado?: () => Promise<void>;
-}) {
-    const [trackData, setTrackData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [blobLoading, setBlobLoading] = useState<'ticket' | 'label' | null>(null);
-    const [markingEntregado, setMarkingEntregado] = useState(false);
-    const [retryKey, setRetryKey] = useState(0);
-
-    useEffect(() => {
-        let cancelled = false;
-        const fetchTrack = async (): Promise<void> => {
-            try {
-                const res = await apiClient.post('/shalom/track', { orderNumber, orderCode });
-                if (cancelled) return;
-                setTrackData(res.data?.data ?? res.data);
-                setError('');
-            } catch (err: any) {
-                if (cancelled) return;
-                setError(err?.response?.data?.message || 'No se pudo obtener el tracking. Verifica el N° de orden.');
-            }
-            if (!cancelled) setLoading(false);
-        };
-        setLoading(true);
-        setError('');
-        void fetchTrack();
-        return () => { cancelled = true; };
-    }, [orderNumber, orderCode, retryKey]);
-
-    // Cuando responseType='blob', el error del backend también llega como Blob:
-    // lo leemos para mostrar el motivo real (no un genérico).
-    const blobErrorMsg = async (e: any, fallback: string): Promise<string> => {
-        try {
-            const blob = e?.response?.data;
-            if (blob instanceof Blob) { const txt = await blob.text(); return JSON.parse(txt)?.message || fallback; }
-        } catch { /* no-op */ }
-        return e?.response?.data?.message || fallback;
-    };
-
-    const openTicket = async () => {
-        setBlobLoading('ticket');
-        try {
-            const oseId = trackData?.ose_id ?? trackData?.order?.ose_id;
-            const qs = oseId ? `?oseId=${encodeURIComponent(oseId)}` : '';
-            const res = await apiClient.get(`/shalom/ticket/${orderNumber}/${orderCode}${qs}`, { responseType: 'blob' });
-            openBlob(res.data, `voucher-${orderNumber}.pdf`, 'application/pdf');
-        } catch (e) { useAlertStore.getState().alert(await blobErrorMsg(e, 'No se pudo obtener el ticket'), 'error'); }
-        finally { setBlobLoading(null); }
-    };
-
-    const openLabel = async () => {
-        setBlobLoading('label');
-        try {
-            const oseId = trackData?.ose_id ?? trackData?.order?.ose_id;
-            const qs = oseId ? `?oseId=${encodeURIComponent(oseId)}` : '';
-            const res = await apiClient.get(`/shalom/label/${orderNumber}/${orderCode}${qs}`, { responseType: 'blob' });
-            openBlob(res.data, `etiqueta-${orderNumber}.pdf`, 'application/pdf');
-        } catch (e) { useAlertStore.getState().alert(await blobErrorMsg(e, 'No se pudo obtener la etiqueta'), 'error'); }
-        finally { setBlobLoading(null); }
-    };
-
-    const search = trackData?.search?.data ?? trackData?.search ?? null;
-    const statuses = trackData?.statuses?.data ?? trackData?.statuses ?? null;
-
-    return (
-        <div className="fixed inset-0 top-[-30px] z-[9999] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50  " onClick={onClose} />
-            <div className="relative w-full max-w-lg bg-white dark:bg-[#111827] rounded-3xl shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-                            <Icon icon="solar:delivery-bold-duotone" className="text-white text-lg" />
-                        </div>
-                        <div>
-                            <p className="text-white font-black text-sm">Tracking Shalom</p>
-                            <p className="text-slate-400 text-xs">Orden #{orderNumber} · clave {orderCode}</p>
-                        </div>
-                    </div>
-                    <button type="button" onClick={onClose} className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
-                        <Icon icon="solar:close-circle-bold" />
-                    </button>
-                </div>
-
-                <div className="p-6 max-h-[70vh] overflow-y-auto space-y-4">
-                    {loading && (
-                        <div className="flex items-center justify-center gap-2 py-8 text-slate-500">
-                            <Icon icon="eos-icons:loading" className="animate-spin text-xl" />
-                            <span className="text-sm">Consultando Shalom...</span>
-                        </div>
-                    )}
-                    {error && (
-                        <div className="text-center py-6 space-y-3">
-                            <p className="text-sm text-red-500">{error}</p>
-                            <button
-                                type="button"
-                                onClick={() => setRetryKey(k => k + 1)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                            >
-                                <Icon icon="solar:refresh-linear" />
-                                Reintentar
-                            </button>
-                        </div>
-                    )}
-
-                    {search && !loading && (
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-xs space-y-1.5">
-                            <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">{search.contenido}</p>
-                            <div className="flex gap-4 text-slate-500 dark:text-slate-400">
-                                <span>De: <strong className="text-slate-700 dark:text-slate-200">{search.origen?.nombre}</strong></span>
-                                <span>→</span>
-                                <span>A: <strong className="text-slate-700 dark:text-slate-200">{search.destino?.nombre}</strong></span>
-                            </div>
-                            <p className="text-slate-500 dark:text-slate-400">
-                                Destinatario: <strong className="text-slate-700 dark:text-slate-200">{search.destinatario?.nombre}</strong>
-                            </p>
-                            {search.entregado && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 font-bold">
-                                    <Icon icon="solar:check-circle-bold" width={12} /> Entregado
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    {statuses && !loading && (
-                        <div className="space-y-0">
-                            {SHALOM_TIMELINE.map((step, i) => {
-                                const ev = statuses[step.key];
-                                const done = Boolean(ev?.fecha);
-                                const isLast = i === SHALOM_TIMELINE.length - 1;
-                                return (
-                                    <div key={step.key} className="flex gap-3">
-                                        <div className="flex flex-col items-center">
-                                            <div className={`w-3 h-3 rounded-full mt-0.5 flex-shrink-0 ${done ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                                            {!isLast && <div className={`w-0.5 flex-1 my-0.5 ${done ? 'bg-indigo-200 dark:bg-indigo-900' : 'bg-slate-100 dark:bg-slate-800'}`} style={{ minHeight: 20 }} />}
-                                        </div>
-                                        <div className="pb-3">
-                                            <p className={`text-sm font-semibold ${done ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-600'}`}>{step.label}</p>
-                                            {ev?.fecha && <p className="text-xs text-slate-400 dark:text-slate-500">{ev.fecha}</p>}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col gap-2 px-6 pb-6 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    {onEntregado && search?.entregado && (
-                        <button
-                            type="button"
-                            disabled={markingEntregado}
-                            onClick={async () => {
-                                setMarkingEntregado(true);
-                                try { await onEntregado(); onClose(); }
-                                finally { setMarkingEntregado(false); }
-                            }}
-                            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-60"
-                        >
-                            {markingEntregado
-                                ? <Icon icon="eos-icons:loading" className="animate-spin" />
-                                : <Icon icon="solar:check-circle-bold-duotone" />}
-                            Marcar como entregado en el panel
-                        </button>
-                    )}
-                    <div className="flex gap-3">
-                        <button type="button" onClick={openTicket} disabled={blobLoading === 'ticket'}
-                            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-60">
-                            {blobLoading === 'ticket' ? <Icon icon="eos-icons:loading" className="animate-spin" /> : <Icon icon="solar:bill-list-bold-duotone" />}
-                            Comprobante
-                        </button>
-                        <button type="button" onClick={openLabel} disabled={blobLoading === 'label'}
-                            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors disabled:opacity-60">
-                            {blobLoading === 'label' ? <Icon icon="eos-icons:loading" className="animate-spin" /> : <Icon icon="solar:tag-price-bold-duotone" />}
-                            Rótulo
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── Main view ────────────────────────────────────────────────────────────────
+const OLVA_COURIER = 'OLVA';
 
 export default function PanelVentasView() {
     const vm = usePanelVentasViewModel();
@@ -425,6 +246,8 @@ export default function PanelVentasView() {
     const { alert } = useAlertStore();
     const { usuarios, getAllUsers } = useUsersStore();
     const queryFecha = searchParams.get('fecha');
+    const queryFechaEnvio = searchParams.get('fechaEnvio');
+    const queryRepartidorId = searchParams.get('repartidorId');
     const queryComprobanteId = Number(searchParams.get('comprobanteId') || 0) || null;
 
     // El componente Calendar entrega la fecha en DD/MM/YYYY; el VM trabaja en YYYY-MM-DD.
@@ -509,6 +332,45 @@ export default function PanelVentasView() {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [menuItem, setMenuItem] = useState<VentaPanelItem | null>(null);
     const [shalomTracking, setShalomTracking] = useState<{ orderNumber: string; orderCode: string; item: VentaPanelItem } | null>(null);
+    const [olvaTracking, setOlvaTracking] = useState<{ trackingNumber: string; item: VentaPanelItem } | null>(null);
+    const [reporteEnviosAbierto, setReporteEnviosAbierto] = useState(false);
+    const [rotuloPrintComprobanteId, setRotuloPrintComprobanteId] = useState<number | null>(null);
+    const [rotulosLote, setRotulosLote] = useState<RotuloLoteItem[]>([]);
+    const [showRotulosMenu, setShowRotulosMenu] = useState(false);
+    // Selección de qué rótulos imprimir: `null` = todos (un clic, como siempre).
+    // Apenas destildan uno, manda la lista marcada.
+    const [seleccionRotulos, setSeleccionRotulos] = useState<SeleccionRotulos>(null);
+    // Formato del rótulo (ticket 80 mm o etiqueta 80×50): es de la caja/impresora,
+    // se recuerda en este navegador por empresa.
+    const empresaIdRotulo = useAuthStore(
+        (st: any) => st.auth?.empresa?.id ?? st.auth?.empresaId,
+    );
+    const [rotuloFormato, setRotuloFormatoState] = useState<RotuloFormato>(() =>
+        leerRotuloFormato(empresaIdRotulo),
+    );
+    const setRotuloFormato = (f: RotuloFormato) => {
+        setRotuloFormatoState(f);
+        guardarRotuloFormato(empresaIdRotulo, f);
+    };
+    const preparandoParaRotulo = useMemo(
+        () => elegiblesParaRotulo(vm.filtrados),
+        [vm.filtrados],
+    );
+    const rotulosResumen = useMemo(
+        () => resumenSeleccion(preparandoParaRotulo, seleccionRotulos),
+        [preparandoParaRotulo, seleccionRotulos],
+    );
+
+    /**
+     * Rótulo propio (no el PDF con la marca de Shalom): solo el bloque de
+     * destinatario/destino, con el formato de ticket que ya usan los demás
+     * comprobantes. `RotuloPrint` hace el fetch y dispara la impresión sola
+     * apenas tiene los datos.
+     */
+    const imprimirRotuloPropio = useCallback((item: VentaPanelItem) => {
+        if (!item.comprobanteId) return;
+        setRotuloPrintComprobanteId(item.comprobanteId);
+    }, []);
     const [anularItem, setAnularItem] = useState<VentaPanelItem | null>(null);
     const { cancelInvoice } = useInvoiceStore((s) => s);
 
@@ -518,11 +380,36 @@ export default function PanelVentasView() {
         }
     }, [vm.canFilterByUsuario, getAllUsers]);
 
+    // Los filtros que llegan por la URL se aplican UNA vez por cada valor
+    // distinto; después manda el usuario. Con el guard anterior
+    // (`queryFecha !== vm.fecha`), retroceder el día devolvía la fecha a la de
+    // la URL y la pantalla entraba en un bucle de peticiones.
+    const urlAplicada = useRef<string | null>(null);
     useEffect(() => {
-        if (queryFecha && moment(queryFecha, 'YYYY-MM-DD', true).isValid() && queryFecha !== vm.fecha) {
+        const clave = `${queryFecha ?? ''}|${queryFechaEnvio ?? ''}|${queryRepartidorId ?? ''}`;
+        if (urlAplicada.current === clave) return;
+        urlAplicada.current = clave;
+        if (queryFecha && moment(queryFecha, 'YYYY-MM-DD', true).isValid()) {
             vm.setFecha(queryFecha);
         }
-    }, [queryFecha, vm.fecha, vm.setFecha]);
+        // Día de ENTREGA: es como cuenta sus despachos la pantalla de
+        // Repartidores. Filtrar por fecha de emisión dejaba la tabla vacía,
+        // porque un pedido que sale hoy pudo tomarse días antes.
+        if (queryFechaEnvio && moment(queryFechaEnvio, 'YYYY-MM-DD', true).isValid()) {
+            vm.setFechaEnvio(queryFechaEnvio);
+        }
+        if (queryRepartidorId) {
+            const id = Number(queryRepartidorId);
+            if (Number.isFinite(id) && id > 0) vm.setFiltroRepartidorId(id);
+        }
+    }, [
+        queryFecha,
+        queryFechaEnvio,
+        queryRepartidorId,
+        vm.setFecha,
+        vm.setFechaEnvio,
+        vm.setFiltroRepartidorId,
+    ]);
 
     const filasVisibles = queryComprobanteId
         ? vm.filtrados.filter((item) => item.comprobanteId === queryComprobanteId)
@@ -768,6 +655,7 @@ export default function PanelVentasView() {
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
+                        data-testid="btn-dia-anterior"
                         className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-left-linear" className="text-lg" />
@@ -802,10 +690,41 @@ export default function PanelVentasView() {
                     )}
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
+                        data-testid="btn-dia-siguiente"
                         className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-right-linear" className="text-lg" />
                     </button>
+                    {/* Día de ENTREGA: "qué sale el jueves". Al usarlo deja de
+                        importar cuándo se tomó el pedido, así que se muestra
+                        aparte y con su propia forma de quitarlo. */}
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-2 py-1 dark:border-slate-700 dark:bg-slate-800/40">
+                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>
+                            Sale el
+                        </span>
+                        <div className="w-36">
+                            <Calendar
+                                name="fechaEnvio"
+                                value={vm.fechaEnvio ? moment(vm.fechaEnvio).format('DD/MM/YYYY') : ''}
+                                onChange={(d: string) => {
+                                    const iso = moment(d, 'DD/MM/YYYY', true);
+                                    vm.setFechaEnvio(iso.isValid() ? iso.format('YYYY-MM-DD') : '');
+                                }}
+                                className="admin-date-filter"
+                                portal
+                            />
+                        </div>
+                        {vm.fechaEnvio && (
+                            <button
+                                onClick={() => vm.setFechaEnvio('')}
+                                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-white hover:text-rose-500 dark:hover:bg-slate-800"
+                                title="Quitar el filtro por día de entrega"
+                                data-testid="quitar-fecha-envio"
+                            >
+                                <Icon icon="solar:close-circle-linear" className="text-lg" />
+                            </button>
+                        )}
+                    </div>
                     <button
                         onClick={vm.cargar}
                         className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
@@ -844,6 +763,141 @@ export default function PanelVentasView() {
                         <Icon icon={vm.exportandoReparto ? 'svg-spinners:180-ring' : 'solar:scooter-bold-duotone'} className="text-lg" />
                         Reparto
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setReporteEnviosAbierto(true)}
+                        data-testid="btn-reporte-envios"
+                        className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 text-sky-600 dark:text-sky-300 text-sm font-semibold hover:bg-sky-50 dark:hover:bg-slate-700 transition"
+                        title="Estadísticas de envíos por courier y rango de fechas (Shalom, Olva, reparto propio o todos): a dónde mandas más mes a mes, entregados y flete, con su Excel"
+                    >
+                        <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
+                        Reporte
+                    </button>
+                    {/* Formato del rótulo: ticket 80 mm o etiqueta adhesiva 80×50
+                        (impresora etiquetera). Es de la caja, no de la empresa. */}
+                    <select
+                        value={rotuloFormato}
+                        onChange={(e) => setRotuloFormato(e.target.value as RotuloFormato)}
+                        title="Formato con el que se imprimen los rótulos (individuales y en lote) desde esta caja"
+                        aria-label="Formato del rótulo"
+                        data-testid="rotulo-formato"
+                        className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                    >
+                        {ROTULO_FORMATOS.map((f) => (
+                            <option key={f.value} value={f.value} title={f.hint}>
+                                {f.label}
+                            </option>
+                        ))}
+                    </select>
+                    {/* Rótulos de los paquetes en preparación (uno por página).
+                        El botón imprime; la flecha abre el selector para elegir
+                        solo algunas filas en vez de todo lo que está en Preparando. */}
+                    <div className="relative flex">
+                        <button
+                            type="button"
+                            onClick={() => setRotulosLote(rotulosAImprimir(preparandoParaRotulo, seleccionRotulos))}
+                            disabled={rotulosResumen.vacio || rotulosLote.length > 0}
+                            title={
+                                preparandoParaRotulo.length === 0
+                                    ? 'No hay despachos en Preparando en la lista'
+                                    : rotulosResumen.vacio
+                                        ? 'No marcaste ningún rótulo: abre la flecha y elige al menos uno'
+                                        : rotulosResumen.todos
+                                            ? `Imprimir los ${rotulosResumen.total} rótulo(s) en Preparando de la lista`
+                                            : `Imprimir ${rotulosResumen.marcados} de ${rotulosResumen.total} rótulo(s) marcados`
+                            }
+                            data-testid="rotulos-imprimir"
+                            className="inline-flex items-center gap-1.5 h-10 pl-3 pr-2.5 rounded-l-lg border border-r-0 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <Icon icon="solar:printer-2-bold-duotone" className="text-lg" />
+                            Rótulos
+                            {preparandoParaRotulo.length > 0 && (
+                                <span
+                                    data-testid="rotulos-badge"
+                                    className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-white text-[10px] font-black"
+                                    style={{ background: rotulosResumen.todos ? '#F59E0B' : ACCENT }}
+                                >
+                                    {rotulosResumen.marcados}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowRotulosMenu((v) => !v)}
+                            disabled={preparandoParaRotulo.length === 0}
+                            title="Elegir qué rótulos imprimir"
+                            aria-label="Elegir qué rótulos imprimir"
+                            data-testid="rotulos-selector"
+                            className="inline-flex items-center h-10 px-2 rounded-r-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <Icon icon="solar:alt-arrow-down-bold" className="text-xs" />
+                        </button>
+                        {showRotulosMenu && preparandoParaRotulo.length > 0 && (
+                            <>
+                                <div className="fixed inset-0 z-20" onClick={() => setShowRotulosMenu(false)} />
+                                <div className="absolute right-0 top-full mt-2 z-30 w-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                            Rótulos a imprimir
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSeleccionRotulos(alternarTodos(preparandoParaRotulo, seleccionRotulos))}
+                                            data-testid="rotulos-todos"
+                                            className="text-[11px] font-bold hover:underline"
+                                            style={{ color: ACCENT }}
+                                        >
+                                            {rotulosResumen.todos ? 'Ninguno' : 'Todos'}
+                                        </button>
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto -mx-1 px-1 space-y-0.5">
+                                        {preparandoParaRotulo.map((r) => {
+                                            const marcado = estaMarcado(seleccionRotulos, r.comprobanteId);
+                                            return (
+                                                <label
+                                                    key={r.comprobanteId}
+                                                    className="flex items-start gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={marcado}
+                                                        onChange={() => setSeleccionRotulos(alternarRotulo(preparandoParaRotulo, seleccionRotulos, r.comprobanteId))}
+                                                        data-testid={`rotulo-check-${r.comprobanteId}`}
+                                                        className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600"
+                                                        style={{ accentColor: ACCENT }}
+                                                    />
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block text-xs font-bold text-slate-700 dark:text-gray-200 truncate">
+                                                            {r.referencia}
+                                                        </span>
+                                                        <span className="block text-[11px] text-slate-500 dark:text-gray-400 truncate">
+                                                            {r.cliente || 'Sin cliente'}
+                                                            {r.courier ? ` · ${r.courier}` : ''}
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRotulosLote(rotulosAImprimir(preparandoParaRotulo, seleccionRotulos));
+                                            setShowRotulosMenu(false);
+                                        }}
+                                        disabled={rotulosResumen.vacio || rotulosLote.length > 0}
+                                        data-testid="rotulos-imprimir-seleccion"
+                                        className="mt-2.5 w-full px-3 py-2 rounded-xl text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                                        style={{ background: ACCENT }}
+                                    >
+                                        {rotulosResumen.vacio
+                                            ? 'Marca al menos uno'
+                                            : `Imprimir ${rotulosResumen.marcados} rótulo${rotulosResumen.marcados === 1 ? '' : 's'}`}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -1122,6 +1176,7 @@ export default function PanelVentasView() {
                                 )}
                                 {col('sunat') && <th className="px-3 py-3 text-left">SUNAT</th>}
                                 {col('despacho') && <th className="px-3 py-3 text-left">Despacho</th>}
+                                {col('fechaEnvio') && <th className="px-3 py-3 text-left whitespace-nowrap">Fecha de envío</th>}
                                 {col('turno') && <th className="px-3 py-3 text-left">Turno</th>}
                                 {col('celular') && <th className="px-3 py-3 text-left">Celular</th>}
                                 {col('agencia') && <th className="px-3 py-3 text-left">Agencia</th>}
@@ -1267,6 +1322,11 @@ export default function PanelVentasView() {
                                             {col('despacho') && (
                                                 <td className="px-3 py-2.5">
                                                     <EstadoDespachoSelector item={item} onChange={vm.actualizarEstado} />
+                                                </td>
+                                            )}
+                                            {col('fechaEnvio') && (
+                                                <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
+                                                    {fechaDeEnvio(item)}
                                                 </td>
                                             )}
                                             {col('turno') && (
@@ -1527,6 +1587,31 @@ export default function PanelVentasView() {
                                             <span>{it.nroOrden ? `Tracking Shalom #${it.nroOrden}` : 'Tracking Shalom (sin N° orden)'}</span>
                                         </button>
                                     )}
+                                    {SHALOM_COURIERS.has(it.courier) && (
+                                        <button type="button"
+                                            onClick={() => { handleCloseMenu(); imprimirRotuloPropio(it); }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        >
+                                            <Icon icon="solar:printer-2-bold-duotone" width={15} />
+                                            <span>Imprimir Rótulo</span>
+                                        </button>
+                                    )}
+                                    {it.courier === OLVA_COURIER && (
+                                        <button type="button"
+                                            onClick={() => {
+                                                handleCloseMenu();
+                                                if (!it.nroOrden) {
+                                                    useAlertStore.getState().alert('Agrega el N° de guía Olva en "Editar despacho" primero', 'warning');
+                                                    return;
+                                                }
+                                                setOlvaTracking({ trackingNumber: it.nroOrden, item: it });
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        >
+                                            <Icon icon="solar:delivery-bold-duotone" width={15} />
+                                            <span>{it.nroOrden ? `Tracking Olva #${it.nroOrden}` : 'Tracking Olva (sin N° de guía)'}</span>
+                                        </button>
+                                    )}
                                 </>
                             )}
 
@@ -1669,13 +1754,32 @@ export default function PanelVentasView() {
                 </div>
             )}
 
+            <RotuloPrint
+                comprobanteId={rotuloPrintComprobanteId}
+                onDone={() => setRotuloPrintComprobanteId(null)}
+                formato={rotuloFormato}
+            />
+            <RotulosLotePrint items={rotulosLote} onDone={() => setRotulosLote([])} formato={rotuloFormato} />
+
             {shalomTracking && (
                 <ShalomTrackingModal
                     orderNumber={shalomTracking.orderNumber}
                     orderCode={shalomTracking.orderCode}
                     onClose={() => setShalomTracking(null)}
                     onEntregado={async () => { await vm.actualizarEstado(shalomTracking.item, 'ENTREGADO'); }}
+                    wrapperClassName="top-[-30px]"
                 />
+            )}
+            {olvaTracking && (
+                <OlvaTrackingModal
+                    trackingNumber={olvaTracking.trackingNumber}
+                    onClose={() => setOlvaTracking(null)}
+                    onEntregado={async () => { await vm.actualizarEstado(olvaTracking.item, 'ENTREGADO'); }}
+                    wrapperClassName="top-[-30px]"
+                />
+            )}
+            {reporteEnviosAbierto && (
+                <ReporteEnviosModal onClose={() => setReporteEnviosAbierto(false)} />
             )}
         </div>
     );

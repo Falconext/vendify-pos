@@ -95,6 +95,11 @@ export function usePanelVentasViewModel() {
     const [fecha, setFecha] = useState(() => moment().format('YYYY-MM-DD'));
     // Fin del rango (opcional). Vacío = panel de un solo día (comportamiento original).
     const [fechaFin, setFechaFin] = useState('');
+    // Día de ENTREGA programada: el negocio que despacha por día necesita ver
+    // "qué sale el jueves". Cuando se usa, reemplaza al filtro por fecha de
+    // emisión: un pedido que sale el jueves pudo tomarse el lunes y si no, no
+    // aparecería.
+    const [fechaEnvio, setFechaEnvio] = useState('');
     const [items, setItems] = useState<VentaPanelItem[]>([]);
     const [porCobrarGlobal, setPorCobrarGlobal] = useState({ total: 0, cantidad: 0 });
     const [loading, setLoading] = useState(true);
@@ -130,6 +135,7 @@ export function usePanelVentasViewModel() {
             const params = new URLSearchParams({ fecha });
             // Rango: solo se envía si el usuario eligió una fecha final posterior
             if (fechaFin && fechaFin > fecha) params.set('fechaFin', fechaFin);
+            if (fechaEnvio) params.set('fechaEnvio', fechaEnvio);
             // El admin en la sede principal ve todas por defecto, o solo una si
             // la eligió en el selector; el resto siempre ve la suya.
             if (esPrincipalAdmin) {
@@ -152,7 +158,7 @@ export function usePanelVentasViewModel() {
         } finally {
             setLoading(false);
         }
-    }, [fecha, fechaFin, sedeActiva?.id, esPrincipalAdmin, sedeVista, filtroUsuarioId, canFilterByUsuario, alert]);
+    }, [fecha, fechaFin, fechaEnvio, sedeActiva?.id, esPrincipalAdmin, sedeVista, filtroUsuarioId, canFilterByUsuario, alert]);
 
     useEffect(() => { cargar(); }, [cargar]);
 
@@ -347,6 +353,7 @@ export function usePanelVentasViewModel() {
     return {
         fecha, setFecha,
         fechaFin, setFechaFin,
+        fechaEnvio, setFechaEnvio,
         exportando, exportarResumen,
         repartoResumen, exportandoReparto, exportarReparto,
         items, filtrados,

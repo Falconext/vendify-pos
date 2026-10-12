@@ -334,7 +334,14 @@ export default function RepartidoresView() {
   };
 
   const handleViewDespachos = (item: Repartidor) => {
-    navigate(`/administrador/ventas?fecha=${moment().format('YYYY-MM-DD')}&repartidorId=${item.id}`);
+    // Se manda `fechaEnvio` (día de ENTREGA) y no `fecha` (día de emisión),
+    // que es exactamente lo que cuentan las tarjetas de esta pantalla. Con
+    // `fecha` el Panel de Ventas filtraba por el día en que se tomó la venta y
+    // la tabla salía vacía, porque un pedido que sale hoy pudo venderse días
+    // antes.
+    navigate(
+      `/administrador/ventas?fechaEnvio=${moment().format('YYYY-MM-DD')}&repartidorId=${item.id}`,
+    );
   };
 
   const globalTasa = globalDespacho.total > 0 ? Math.round((globalDespacho.entregado / globalDespacho.total) * 100) : 0;
