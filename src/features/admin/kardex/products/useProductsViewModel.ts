@@ -531,6 +531,23 @@ export const useProductsViewModel = () => {
         setState(prev => ({ ...prev, isOpenModal: true, isEdit: true }));
         const originalProduct = products.find((p: IProduct) => p.id === data.productoId);
 
+        // La comisión de fin de semana no viene con el producto: es una regla
+        // aparte. Se pide en segundo plano y se completa el campo cuando
+        // llega, para no demorar la apertura del modal por un dato opcional.
+        if (originalProduct?.id) {
+            void apiClient
+                .get(`/comisiones/producto/${originalProduct.id}/fin-de-semana`)
+                .then((r) => {
+                    const monto = r?.data?.data?.monto ?? r?.data?.monto ?? null;
+                    if (monto == null) return;
+                    setState(prev => ({
+                        ...prev,
+                        formValues: { ...(prev as any).formValues, comisionFinDeSemana: monto },
+                    }));
+                })
+                .catch(() => { /* opcional: si no se pudo leer, queda vacío */ });
+        }
+
         if (originalProduct) {
             setState(prev => ({
                 ...prev,

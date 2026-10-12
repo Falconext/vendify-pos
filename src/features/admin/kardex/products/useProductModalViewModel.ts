@@ -1500,6 +1500,22 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
           return;
         }
 
+        // La comisión de fin de semana vive aparte del producto (es una regla
+        // con condición de día, no un campo suyo). Se guarda después y sin
+        // frenar el resto: si falla, el producto ya quedó bien y el empresario
+        // puede reintentar solo esto.
+        try {
+          const cfs = (formValues as any)?.comisionFinDeSemana;
+          await apiClient.put(
+            `/comisiones/producto/${(updatedProduct as any).id}/fin-de-semana`,
+            { monto: cfs === '' || cfs == null ? null : Number(cfs) },
+          );
+        } catch {
+          useAlertStore
+            .getState()
+            .alert('Producto guardado, pero no se pudo guardar la comisión de fin de semana', 'error');
+        }
+
         try {
           const allGroups = gruposSeleccionados.map((id, idx) => ({
             grupoId: id,
