@@ -1,5 +1,6 @@
 import React from 'react';
-import { Facebook, Instagram, Linkedin, Twitter, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -19,16 +20,16 @@ const Footer = () => {
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                <Facebook size={18} />
+                <Icon icon="mdi:facebook" width={18} height={18} />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                <Instagram size={18} />
+                <Icon icon="mdi:instagram" width={18} height={18} />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                <Linkedin size={18} />
+                <Icon icon="mdi:linkedin" width={18} height={18} />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                <Twitter size={18} />
+                <Icon icon="mdi:twitter" width={18} height={18} />
               </a>
             </div>
           </div>

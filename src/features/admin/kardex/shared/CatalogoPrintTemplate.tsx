@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '@iconify/react';
 
 interface Props {
-    componentRef: React.RefObject<HTMLDivElement>;
+    componentRef: React.RefObject<HTMLDivElement | null>;
     productos: any[];
     theme: 'moderna' | 'tecnica' | 'minimal' | 'menu' | 'premium-tech';
     company: any;
@@ -12,12 +12,12 @@ interface Props {
 
 export default function CatalogoPrintTemplate({ componentRef, productos, theme, company, showPrice = true, showStock = false }: Props) {
     // Agrupar por categoría
-    const groupedProducts = productos.reduce((acc, curr) => {
+    const groupedProducts = productos.reduce<Record<string, any[]>>((acc, curr) => {
         const cat = curr.categoria?.nombre || 'General';
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(curr);
         return acc;
-    }, {} as Record<string, any[]>);
+    }, {});
 
     const rawBase64 = company?.logo;
     const logoUrl = (() => {

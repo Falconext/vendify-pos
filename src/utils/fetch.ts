@@ -1,7 +1,7 @@
 import type { AxiosResponse } from 'axios'
 import apiClient from './apiClient'
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   code?: number
   success: boolean
   data?: T

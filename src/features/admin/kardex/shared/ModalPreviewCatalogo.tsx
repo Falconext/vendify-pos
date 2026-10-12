@@ -111,7 +111,7 @@ export default function ModalPreviewCatalogo({ isOpen, onClose }: Props) {
         }
     };
 
-    const componentRef = useRef(null);
+    const componentRef = useRef<HTMLDivElement>(null);
     const printFn = useReactToPrint({
         // @ts-ignore
         contentRef: componentRef,

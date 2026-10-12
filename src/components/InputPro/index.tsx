@@ -20,6 +20,8 @@ interface IInput {
   id?: string;
   uppercase?: boolean;
   step?: string;
+  min?: string | number;
+  max?: string | number;
   error?: string | null | undefined;
   onCopy?: (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onSelect?: (e: React.SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -41,6 +43,8 @@ const InputPro: FC<IInput> = ({
   item,
   autoFocus,
   step,
+  min,
+  max,
   isLabel,
   placeholder,
   onChange,
@@ -128,6 +132,8 @@ const InputPro: FC<IInput> = ({
         onKeyDown?.(e);
       },
       step,
+      min,
+      max,
       onCopy,
       onBlur: (e: any) => {
         handleBlur(e);

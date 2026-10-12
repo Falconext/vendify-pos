@@ -71,12 +71,12 @@ export const withPreviewQuery = (path: string, diseno?: any) => {
 
 export const falconFadeUp: Variants = {
   hidden: { opacity: 0, y: 22 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' as const } },
 };
 
 export const falconScaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.96, y: 14 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.42, ease: 'easeOut' } },
+  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.42, ease: 'easeOut' as const } },
 };
 
 export const falconStagger: Variants = {
@@ -85,7 +85,7 @@ export const falconStagger: Variants = {
 };
 
 export const falconTap = { scale: 0.985 };
-export const falconHoverLift = { y: -5, transition: { duration: 0.22, ease: 'easeOut' } };
+export const falconHoverLift = { y: -5, transition: { duration: 0.22, ease: 'easeOut' as const } };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Blog posts — shared source used by home + blog page
@@ -587,7 +587,7 @@ export function FalconCartDrawer({ isOpen, onClose, carrito, actualizarCantidad,
       {isOpen && (
         <div className="fixed inset-0 z-[80]">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50" onClick={onClose} />
-          <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.3 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+          <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween' as const, duration: 0.3 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
               <h3 className="text-lg font-black text-[#151515]">{editable(diseno?.falconCartTitle, 'Carrito de compras')}</h3>
               <button type="button" onClick={onClose}><Icon icon="solar:close-circle-linear" width={26} className="text-gray-500 hover:text-[#151515]" /></button>
@@ -640,7 +640,7 @@ export function FalconWishlistDrawer({ isOpen, onClose, items, onRemove, onViewA
       {isOpen && (
         <div className="fixed inset-0 z-[80]">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50" onClick={onClose} />
-          <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.3 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+          <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween' as const, duration: 0.3 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
               <h3 className="text-lg font-black text-[#151515]">Mi lista de deseos</h3>
               <button type="button" onClick={onClose}><Icon icon="solar:close-circle-linear" width={26} className="text-gray-500 hover:text-[#151515]" /></button>

@@ -23,7 +23,7 @@ const BANCO_BRANDS: Record<string, { bg: string; fg: string; label: string; acce
   OTROS:      { bg: '#64748B', fg: '#FFFFFF', label: 'BANK', accent: '#CBD5E1' },
 };
 
-export const BancoLogo = ({ banco, size = 36 }: { banco: string; size?: number }) => {
+export const BancoLogo = ({ banco, size = 36, className = '' }: { banco: string; size?: number; className?: string }) => {
   const key = normalizeBanco(banco);
   const brand = BANCO_BRANDS[key] ?? { ...BANCO_BRANDS.OTROS, label: key.slice(0, 4) || 'BANK' };
   const fontSize = Math.max(9, Math.round(size * (brand.label.length > 4 ? 0.2 : 0.28)));
@@ -32,7 +32,7 @@ export const BancoLogo = ({ banco, size = 36 }: { banco: string; size?: number }
     <div
       aria-label={banco}
       title={banco}
-      className="relative overflow-hidden border border-white/30 shadow-sm shrink-0"
+      className={`relative overflow-hidden border border-white/30 shadow-sm shrink-0 ${className}`.trim()}
       style={{ width: size, height: size, background: brand.bg, borderRadius: Math.max(8, size * 0.22) }}
     >
       <span
