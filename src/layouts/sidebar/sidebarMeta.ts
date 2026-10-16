@@ -147,6 +147,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
       items.push({ codigo: 'kardex:mermas', nombre: 'Mermas', ruta: '/administrador/kardex/mermas' });
       // Listas de Precio: gestión de precios por sede/usuario (multi-local).
       items.push({ codigo: 'kardex:listas-precio', nombre: 'Listas de Precio', ruta: '/administrador/kardex/listas-precio' });
+      // Reprecio masivo: cambiar el precio de muchos productos de una vez.
+      items.push({ codigo: 'kardex:reprecio-masivo', nombre: 'Reprecio Masivo', ruta: '/administrador/kardex/listas-precio/reprecio' });
       return items;
     },
   },
