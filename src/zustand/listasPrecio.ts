@@ -212,7 +212,7 @@ export const useListasPrecioStore = create<IListasPrecioState>()(
           );
           return d;
         }
-        throw new Error(resp.message || 'No se pudo aplicar');
+        throw new Error(resp.error || resp.message || 'No se pudo aplicar');
       } catch (e: any) {
         useAlertStore.getState().alert(e.message || 'No se pudo aplicar el reprecio', 'error');
         return null;
@@ -233,7 +233,7 @@ export const useListasPrecioStore = create<IListasPrecioState>()(
           useAlertStore.getState().alert('Reprecio deshecho: los precios volvieron a como estaban.', 'success');
           return true;
         }
-        throw new Error(resp.message || 'No se pudo deshacer');
+        throw new Error(resp.error || resp.message || 'No se pudo deshacer');
       } catch (e: any) {
         useAlertStore.getState().alert(e.message || 'No se pudo deshacer', 'error');
         return false;
