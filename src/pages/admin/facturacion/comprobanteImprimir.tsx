@@ -249,7 +249,18 @@ console.log(formValues)
         || 'EFECTIVO'
     ).toUpperCase();
     const saldoCredito = Math.max(0, round2(mtoImpVenta - pagoInicialCredito));
-    const displayPagado = isCreditPayment ? pagoInicialCredito : (splitPaidTotal > 0 ? splitPaidTotal : mtoImpVenta + displayVuelto);
+    // Nota EDITADA que ya estaba cobrada (ver utils/cobroEdicion): el vuelto es
+    // sobre el saldo, así que se imprime lo pagado antes y lo recibido ahora, y
+    // PAGADO pasa a ser el total cubierto (20.80 antes + 50 recibido − 25.80 de
+    // vuelto = 45). Sin estos datos, PAGADO = total + vuelto daba 70.80.
+    const pagoAnteriorEdicion = isCreditPayment ? 0 : parseAmount(paymentDetails?.pagoAnterior, 0);
+    const recibidoEdicion = pagoAnteriorEdicion > 0 ? parseAmount(paymentDetails?.recibido, 0) : 0;
+    const devolucionEdicion = pagoAnteriorEdicion > 0 ? parseAmount(paymentDetails?.devolucion, 0) : 0;
+    const displayPagado = isCreditPayment
+        ? pagoInicialCredito
+        : pagoAnteriorEdicion > 0
+            ? round2(mtoImpVenta)
+            : (splitPaidTotal > 0 ? splitPaidTotal : mtoImpVenta + displayVuelto);
     const splitPaymentDetails = Array.isArray(paymentDetails?.splitPayments)
         ? paymentDetails.splitPayments
         : (Array.isArray(formValues?.splitPayments) ? formValues.splitPayments : []);
@@ -523,9 +534,21 @@ console.log(formValues)
                                 ))}
                             </>
                         )}
+                        {pagoAnteriorEdicion > 0 && (
+                            <p className={`text-[16px] flex justify-between`}>
+                                <span>PAGO ANTERIOR:</span>
+                                <span>S/ {pagoAnteriorEdicion.toFixed(2)}</span>
+                            </p>
+                        )}
+                        {recibidoEdicion > 0 && (
+                            <p className={`text-[16px] flex justify-between`}>
+                                <span>RECIBIDO:</span>
+                                <span>S/ {recibidoEdicion.toFixed(2)}</span>
+                            </p>
+                        )}
                         <p className={`text-[16px] flex justify-between`}>
-                            <span>VUELTO:</span>
-                            <span>S/ {displayVuelto.toFixed(2)}</span>
+                            <span>{devolucionEdicion > 0 ? 'DEVOLUCIÓN:' : 'VUELTO:'}</span>
+                            <span>S/ {(devolucionEdicion > 0 ? devolucionEdicion : displayVuelto).toFixed(2)}</span>
                         </p>
                         <p className={`text-[16px] flex justify-between`}>
                             <span>PAGADO:</span>
@@ -1056,8 +1079,17 @@ console.log(formValues)
                                                     </>
                                                 )}
 
-                                                <span className="font-bold">VUELTO:</span>
-                                                <span>S/ {displayVuelto.toFixed(2)}</span>
+                                                {pagoAnteriorEdicion > 0 && (<>
+                                                    <span className="font-bold">PAGO ANTERIOR:</span>
+                                                    <span>S/ {pagoAnteriorEdicion.toFixed(2)}</span>
+                                                </>)}
+                                                {recibidoEdicion > 0 && (<>
+                                                    <span className="font-bold">RECIBIDO:</span>
+                                                    <span>S/ {recibidoEdicion.toFixed(2)}</span>
+                                                </>)}
+
+                                                <span className="font-bold">{devolucionEdicion > 0 ? 'DEVOLUCIÓN:' : 'VUELTO:'}</span>
+                                                <span>S/ {(devolucionEdicion > 0 ? devolucionEdicion : displayVuelto).toFixed(2)}</span>
 
                                                 <span className="font-bold">PAGADO:</span>
                                                 <span>S/ {displayPagado.toFixed(2)}</span>
