@@ -65,13 +65,21 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
         descuento: 0,
         descripcion: ""
     });
+    // El descuento por línea viaja siempre como porcentaje (precio, totales y
+    // backend lo leen así). "En monto" solo cambia cómo lo escribe el cajero:
+    // al guardar se convierte al porcentaje exacto de esa línea.
+    const [descuentoTipo, setDescuentoTipo] = useState<'PORCENTAJE' | 'MONTO'>('PORCENTAJE');
 
     useEffect(() => {
         if (item) {
+            const tipo = item.descuentoTipo === 'MONTO' ? 'MONTO' : 'PORCENTAJE';
+            const pct = Number(item.descuento || 0);
+            const subtotal = Number(item.precioUnitario) * Number(item.cantidad);
+            setDescuentoTipo(tipo);
             setFormValues({
                 precioUnitario: Number(item.precioUnitario),
                 cantidad: Number(item.cantidad),
-                descuento: Number(item.descuento || 0),
+                descuento: tipo === 'MONTO' ? Number((subtotal * pct / 100).toFixed(2)) : pct,
                 descripcion: item.descripcion
             });
         }
@@ -89,12 +97,40 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
         }
     };
 
+    const precioActual = Number(formValues.precioUnitario);
+    const subtotalLinea = precioActual * Number(formValues.cantidad);
+    const descuentoIngresado = Number(formValues.descuento) || 0;
+    const descuentoPct = descuentoTipo === 'MONTO'
+        ? (subtotalLinea > 0 ? (descuentoIngresado / subtotalLinea) * 100 : 0)
+        : descuentoIngresado;
+    const descuentoMonto = descuentoTipo === 'MONTO' ? descuentoIngresado : subtotalLinea * descuentoIngresado / 100;
+    const errorDescuento =
+        descuentoIngresado < 0
+            ? 'El descuento no puede ser negativo'
+            : descuentoTipo === 'MONTO' && descuentoIngresado > subtotalLinea + 0.001
+                ? `El descuento no puede pasar de ${monedaSimbolo} ${subtotalLinea.toFixed(2)}`
+                : descuentoTipo === 'PORCENTAJE' && descuentoIngresado > 100
+                    ? 'El descuento no puede pasar de 100%'
+                    : '';
+
+    const cambiarTipoDescuento = (tipo: 'PORCENTAJE' | 'MONTO') => {
+        if (tipo === descuentoTipo) return;
+        // Conserva el mismo descuento expresado en la otra unidad.
+        const valor = tipo === 'MONTO'
+            ? Number(descuentoMonto.toFixed(2))
+            : Number(descuentoPct.toFixed(2));
+        setDescuentoTipo(tipo);
+        setFormValues((prev: any) => ({ ...prev, descuento: valor }));
+    };
+
     const handleSubmit = () => {
+        if (errorDescuento) return;
         onSave({
             ...item,
             precioUnitario: Number(formValues.precioUnitario),
             cantidad: Number(formValues.cantidad),
-            descuento: Number(formValues.descuento),
+            descuento: descuentoPct,
+            descuentoTipo,
             descripcion: formValues.descripcion
         });
         onClose();
@@ -135,14 +171,48 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                             onChange={handleChange}
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-1">Descuento (%)</label>
-                        <InputPro
-                            name="descuento"
-                            type="number"
-                            value={formValues.descuento}
-                            onChange={handleChange}
-                        />
+                    <div className="col-span-2">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                            <label className="block text-sm font-bold text-gray-600">
+                                Descuento ({descuentoTipo === 'MONTO' ? monedaSimbolo : '%'})
+                            </label>
+                            <div className="inline-flex rounded-lg border border-gray-200 dark:border-slate-600 p-0.5 text-xs font-semibold" role="group" aria-label="Tipo de descuento">
+                                {([['PORCENTAJE', '%'], ['MONTO', monedaSimbolo]] as const).map(([tipo, etiqueta]) => (
+                                    <button
+                                        key={tipo}
+                                        type="button"
+                                        aria-pressed={descuentoTipo === tipo}
+                                        onClick={() => cambiarTipoDescuento(tipo)}
+                                        className={`px-2.5 py-1 rounded-md transition-colors ${
+                                            descuentoTipo === tipo
+                                                ? 'bg-[var(--accent,#7551FF)] text-white'
+                                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        {etiqueta}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 items-start">
+                            <InputPro
+                                name="descuento"
+                                type="number"
+                                value={formValues.descuento}
+                                onChange={handleChange}
+                            />
+                            {descuentoIngresado > 0 && !errorDescuento && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 pt-2.5">
+                                    {descuentoTipo === 'MONTO'
+                                        ? `Equivale a ${descuentoPct.toFixed(2)}%`
+                                        : `Equivale a ${monedaSimbolo} ${descuentoMonto.toFixed(2)}`}
+                                    {' · '}Total {monedaSimbolo} {(subtotalLinea - descuentoMonto).toFixed(2)}
+                                </p>
+                            )}
+                        </div>
+                        {errorDescuento && (
+                            <p className="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{errorDescuento}</p>
+                        )}
                     </div>
                 </div>
 
@@ -213,7 +283,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
 
                 <div className="flex justify-end gap-2 pt-4">
                     <Button color="secondary" outline onClick={onClose}>Cancelar</Button>
-                    <Button color="primary" onClick={handleSubmit}>Guardar</Button>
+                    <Button color="primary" onClick={handleSubmit} disabled={!!errorDescuento}>Guardar</Button>
                 </div>
             </div>
         </Modal>

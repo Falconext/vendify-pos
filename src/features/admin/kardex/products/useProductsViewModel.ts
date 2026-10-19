@@ -10,7 +10,7 @@ import apiClient from '@/utils/apiClient';
 import { get, patch } from '@/utils/fetch';
 import { hasPlanFeature, type IUserPermissions } from '@/utils/permissions';
 import { useRubroFeatures } from '@/utils/rubro-features';
-import { IProductsViewModelState, initialProductForm, IFormProduct, IProduct, buildEditFormValues } from './ProductsModel';
+import { IProductsViewModelState, initialProductForm, IFormProduct, IProduct, buildEditFormValues, type StockFiltro } from './ProductsModel';
 
 const COLUMNAS_CORPORATIVAS = ['Localización', '% Venta', '% Provisión'];
 const REQUIRED_VISIBLE_COLUMNS = ['Valor Inventario'];
@@ -43,10 +43,15 @@ export const useProductsViewModel = () => {
 
     const isAdmin = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
     const esPrincipal = !sedeActiva || sedeActiva.esPrincipal === true;
-    const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
+    // `?sede=` llega desde la alerta "stock bajo" del dashboard: el Kardex abre en
+    // la MISMA sede que contó el dashboard (0 = todas), si no los números no cuadran.
+    const sedeDesdeUrl = new URLSearchParams(window.location.search).get('sede');
+    const [selectedSedeId, setSelectedSedeId] = useState<number | null>(
+        sedeDesdeUrl && Number(sedeDesdeUrl) > 0 ? Number(sedeDesdeUrl) : null,
+    );
     // Track whether the admin has explicitly chosen "Todas las sedes" (id=0 → null)
     // so we don't override that choice with the sedeActiva fallback.
-    const userChoseSede = useRef(false);
+    const userChoseSede = useRef(sedeDesdeUrl != null);
     // For principal-sede admins: default to the current sede's stock instead of the
     // global total (sum of all sedes), which doesn't change on inter-sede transfers.
     const effectiveSedeId = useMemo(() => {
@@ -173,9 +178,14 @@ export const useProductsViewModel = () => {
         marcaIdFilter: undefined,
         categoriaIdFilter: undefined,
         localizacionFilter: undefined,
-        soloStockBajo: (() => {
-            const searchParams = new URLSearchParams(window.location.search);
-            return searchParams.get('soloStockBajo') === 'true';
+        // `?soloStockBajo=true` es el link del dashboard; `?stock=` el filtro nuevo.
+        ...(() => {
+            const sp = new URLSearchParams(window.location.search);
+            const stock = sp.get('stock') || '';
+            const stockFiltro: StockFiltro = sp.get('soloStockBajo') === 'true' || sp.get('stockBajo') === 'true'
+                ? 'BAJO'
+                : (['BAJO', 'SIN_STOCK', 'RANGO'].includes(stock) ? stock as StockFiltro : '');
+            return { stockFiltro, stockDesde: sp.get('stockDesde') || '', stockHasta: sp.get('stockHasta') || '' };
         })(),
         incluirOcultos: false,
         isOpenModalAsignarSedes: false,
@@ -324,7 +334,14 @@ export const useProductsViewModel = () => {
             if (state.categoriaIdFilter) params.categoriaId = String(state.categoriaIdFilter);
             if (state.localizacionFilter) params.localizacion = state.localizacionFilter;
             if (effectiveSedeId) params.sedeId = String(effectiveSedeId);
-            if (state.soloStockBajo) params.soloStockBajo = 'true';
+            if (state.stockFiltro) params.stockFiltro = state.stockFiltro;
+            // Un backend sin `stockFiltro` (aún no desplegado) lo descarta en silencio:
+            // el nombre viejo mantiene "stock bajo" funcionando mientras tanto.
+            if (state.stockFiltro === 'BAJO') params.soloStockBajo = 'true';
+            if (state.stockFiltro === 'RANGO') {
+                if (state.stockDesde.trim() !== '') params.stockDesde = state.stockDesde.trim();
+                if (state.stockHasta.trim() !== '') params.stockHasta = state.stockHasta.trim();
+            }
             if (effectiveSedeId && state.incluirOcultos) params.incluirOcultos = 'true';
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos?${query}`);
@@ -344,7 +361,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -354,7 +371,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchProductsListRef.current();
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.soloStockBajo, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchResumenInventario = useCallback(async () => {
         if (!auth?.empresaId) {
@@ -868,12 +885,14 @@ export const useProductsViewModel = () => {
                 ...prev,
                 categoriaIdFilter: undefined,
                 localizacionFilter: undefined,
-                soloStockBajo: false,
+                stockFiltro: '',
+                stockDesde: '',
+                stockHasta: '',
                 incluirOcultos: false,
                 currentPage: 1,
             }));
             const url = new URL(window.location.href);
-            url.searchParams.delete('soloStockBajo');
+            ['soloStockBajo', 'stockBajo', 'stock', 'stockDesde', 'stockHasta'].forEach((k) => url.searchParams.delete(k));
             window.history.replaceState({}, '', url);
         },
         setIsOpenModalAsignarSedes: (v: boolean) => setState(prev => ({ ...prev, isOpenModalAsignarSedes: v })),
@@ -882,14 +901,17 @@ export const useProductsViewModel = () => {
         refreshProducts: async () => {
             await fetchProductsList();
         },
-        setSoloStockBajo: (val: boolean) => {
-            setState(prev => ({ ...prev, soloStockBajo: val, currentPage: 1 }));
-            // Optional: update URL to remove the parameter if disabled
-            if (!val) {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('soloStockBajo');
-                window.history.replaceState({}, '', url);
+        setStockFiltro: (filtro: StockFiltro, desde = '', hasta = '') => {
+            setState(prev => ({ ...prev, stockFiltro: filtro, stockDesde: desde, stockHasta: hasta, currentPage: 1 }));
+            // En la URL para poder compartir el link con el filtro puesto.
+            const url = new URL(window.location.href);
+            ['soloStockBajo', 'stockBajo', 'stock', 'stockDesde', 'stockHasta'].forEach((k) => url.searchParams.delete(k));
+            if (filtro) url.searchParams.set('stock', filtro);
+            if (filtro === 'RANGO') {
+                if (desde) url.searchParams.set('stockDesde', desde);
+                if (hasta) url.searchParams.set('stockHasta', hasta);
             }
+            window.history.replaceState({}, '', url);
         }
     };
 

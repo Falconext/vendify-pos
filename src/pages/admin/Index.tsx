@@ -304,17 +304,17 @@ export default function AdminIndex() {
   // ── Tarjetas "Requiere tu atención" ──
   const atencion = useMemo(() => {
     const items: { key: string; icon: string; label: string; value: string; to: string; tone: string }[] = []
-    const stockN = alertas?.stockBajo?.length ?? 0
+    const stockN = alertas?.stockBajoTotal ?? alertas?.stockBajo?.length ?? 0
     const sunatN = alertas?.sunatPendientes?.count ?? 0
     const cobrar = alertas?.cuentasCobrar?.total ?? 0
     const pedidos = alertas?.pedidosTiendaPendientes ?? 0
-    if (stockN > 0) items.push({ key: 'stock', icon: 'solar:box-minimalistic-bold-duotone', label: 'Productos con stock bajo', value: String(stockN), to: '/administrador/kardex/productos?soloStockBajo=true', tone: 'rose' })
+    if (stockN > 0) items.push({ key: 'stock', icon: 'solar:box-minimalistic-bold-duotone', label: 'Productos con stock bajo', value: String(stockN), to: `/administrador/kardex/productos?soloStockBajo=true&sede=${effectiveSedeId ?? 0}`, tone: 'rose' })
     if (sunatN > 0) items.push({ key: 'sunat', icon: 'solar:document-add-bold-duotone', label: 'Comprobantes pendientes en SUNAT', value: String(sunatN), to: '/administrador/facturacion/comprobantes?soloPendientesSunat=true', tone: 'amber' })
     if (cobrar > 0) items.push({ key: 'cobrar', icon: 'solar:wallet-money-bold-duotone', label: `Por cobrar${alertas?.cuentasCobrar?.cantidad ? ` (${alertas.cuentasCobrar.cantidad})` : ''}`, value: formatShort(cobrar), to: '/administrador/ventas/pagos/cuentas-cobrar?soloPendientesCobro=true', tone: 'violet' })
     if (pedidos > 0) items.push({ key: 'pedidos', icon: 'solar:cart-large-2-bold-duotone', label: 'Pedidos de tienda por atender', value: String(pedidos), to: '/administrador/tienda/pedidos?soloPendientesAtencion=true', tone: 'sky' })
     // Rubro reordena: farmacia/droguería priorizan el stock (ya va primero).
     return items
-  }, [alertas])
+  }, [alertas, effectiveSedeId])
 
   const toneMap: Record<string, { bg: string; text: string; ring: string }> = {
     rose: { bg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-600 dark:text-rose-400', ring: 'ring-rose-100 dark:ring-rose-900/40' },

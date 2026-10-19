@@ -45,6 +45,7 @@ import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
 import ModalHistorialPagos from '@/pages/admin/facturacion/ModalHistorialPagos';
 import ModalDetalleCuenta from '@/pages/admin/facturacion/ModalDetalleCuenta';
 import TableActionMenu from '@/components/TableActionMenu';
+import { etiquetaMedioPago, lineasPagoMixto } from '@/utils/pagoMixto';
 import AutoScrollTable from '@/components/Autoscrolltable';
 import ModalConfirm from '@/components/ModalConfirm';
 import { useUsersStore } from '@/zustand/users';
@@ -1282,6 +1283,12 @@ export default function PanelVentasView() {
                                             {col('mpago') && (
                                                 <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                     {item.metodoPago}
+                                                    {/* Mixto: cuánto entró por cada medio, no solo la palabra. */}
+                                                    {String(item.metodoPago).toUpperCase() === 'MIXTO' && lineasPagoMixto(item).map((l) => (
+                                                        <span key={l.method} className="block text-[10px] text-gray-400 dark:text-slate-500">
+                                                            {etiquetaMedioPago(l.method)} S/ {l.amount.toFixed(2)}
+                                                        </span>
+                                                    ))}
                                                 </td>
                                             )}
                                             <td className="px-3 py-2.5">

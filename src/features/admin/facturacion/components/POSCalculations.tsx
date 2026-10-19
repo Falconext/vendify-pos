@@ -471,7 +471,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                     title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
                     <Icon icon={vm.isQuotationRoute ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
-                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : esNotaCredito ? "EMITIR NOTA DE CRÉDITO" : vm.isEditNotaVenta ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
+                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : esNotaCredito ? "EMITIR NOTA DE CRÉDITO" : vm.isEditNotaVenta && !vm.editaHaciaFormal ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
                 </button>
             </div>
 
@@ -779,8 +779,8 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                 title={vm.cpeRequeridoPorMedioPago ? 'Cambia a Boleta o Factura para emitir' : undefined}
                                 className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${(vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && vm.isMixedPayment && !splitValid)) ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
                             >
-                                <Icon icon={vm.isEditMode ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
-                                {vm.isEditMode ? 'ACTUALIZAR' : 'EMITIR'}
+                                <Icon icon={vm.isEditMode && !vm.editaHaciaFormal ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
+                                {vm.isEditMode && !vm.editaHaciaFormal ? 'ACTUALIZAR' : 'EMITIR'}
                             </button>
                         </div>
                     </motion.div>
@@ -807,7 +807,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                             observation={vm.formValues?.observaciones}
                             isPendiente={vm.isComprobantePendiente}
                             pendienteMensaje={vm.pendienteMensaje}
-                            isUpdate={vm.isEditMode}
+                            isUpdate={vm.isEditMode && !vm.editaHaciaFormal}
                             hasDespacho={vm.despachoCreado}
                             handleOpenNewTab={handleOpenNewTab}
                             closeModal={closeEmitido}

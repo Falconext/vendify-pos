@@ -1166,16 +1166,22 @@ export const useFacturacionViewModel = () => {
                 resetProductInvoice();
                 productos.forEach((d: any) => {
                     const mapped = mapDetalleToInvoiceProduct(d);
+                    // Ítem libre (producto externo, sin fila en el catálogo): viaja
+                    // con productoId null para que el backend lo emita como línea
+                    // libre. Forzar un id acá era lo que tumbaba la conversión.
+                    const afectacion = String(mapped.tipoAfectacionIGV ?? '10');
                     addProductsInvoice({
                         ...mapped,
-                        productoId: d.productoId || mapped.productoId || 0,
+                        productoId: mapped.productoId ?? null,
                         descripcion: d.descripcion || mapped.descripcion,
                         cantidadInicial: d.cantidad || mapped.cantidad,
                         precioUnitario: d.precioUnitario || mapped.precioUnitario,
                         descuento: 0,
                         unidadMedidaNombre: d.unidad || mapped.unidadMedidaNombre || 'NIU',
-                        afectacionNombre: 'Gravado – Operación Onerosa',
-                        tipoAfectacionIGV: '10',
+                        // La afectación se hereda de la nota: hardcodear '10' convertía
+                        // en gravada una línea exonerada/inafecta y cambiaba el IGV.
+                        afectacionNombre: NOMBRE_AFECTACION[afectacion] || 'Gravado – Operación Onerosa',
+                        tipoAfectacionIGV: afectacion,
                         stock: mapped.stock || 999,
                         estado: 'ACTIVO',
                         atributosTecnicos: mapped.atributosTecnicos || d.producto?.atributosTecnicos || undefined,
@@ -2360,6 +2366,9 @@ export const useFacturacionViewModel = () => {
         const m = normalizePaymentMethod(paymentMethod);
         return MEDIOS_BANCARIZADOS.includes(m) ? [m] : [];
     })();
+    // Editando una nota (NV/ticket/…) pero con Boleta o Factura elegida: al
+    // guardar se actualiza la nota Y se emite el comprobante formal desde ella.
+    const editaHaciaFormal = isEditMode && editNotaVentaId != null && ['01', '03'].includes(String(formValues?.tipoDoc || ''));
     const cpeRequeridoPorMedioPago = exigeCpePorMedioPago && !esComprobanteElectronico && !isEditMode && mediosBancarizadosDelCobro.length > 0;
     const etiquetaMedio = (m: string) => ({ YAPE: 'Yape', PLIN: 'Plin', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta' } as Record<string, string>)[m] || m;
     const cpeRequeridoMedios = mediosBancarizadosDelCobro.map(etiquetaMedio).join(' y ');
@@ -2751,6 +2760,21 @@ export const useFacturacionViewModel = () => {
         let result: { success: boolean; error?: string };
         if (isEditMode && editNotaVentaId) {
             result = await updateNotaVenta(editNotaVentaId, finalData);
+            // Editar la nota y elegir Boleta/Factura en "Cambiar" es convertirla.
+            // Antes solo se actualizaba la nota (seguía siendo NV01-…) pero el
+            // ticket salía como "BOLETA DE VENTA ELECTRÓNICA NV01-…" y el cliente
+            // se llevaba una boleta que nunca fue a SUNAT.
+            // Primero se guardan los productos nuevos en la nota (kardex y cobro)
+            // y luego se emite el formal desde ella, igual que "Hacer Boleta".
+            if (result.success && editaHaciaFormal) {
+                result = await addInvoice({ ...finalData, comprobanteOrigenId: editNotaVentaId });
+                if (!result.success) {
+                    useAlertStore.getState().alert(
+                        `La nota se actualizó, pero la ${String(formValues?.comprobante || 'boleta').toLowerCase()} no se emitió: ${result.error || 'error desconocido'}. Emítala desde Notas de venta → "Hacer Boleta".`,
+                        'error',
+                    );
+                }
+            }
         } else if (isEditMode && editQuotationId) {
             result = await updateQuotation(editQuotationId, finalData);
         } else if (tiposInformales.includes(formValues.tipoDoc)) {
@@ -3162,5 +3186,6 @@ export const useFacturacionViewModel = () => {
         isLoading,
         isEditMode,
         isEditNotaVenta: editNotaVentaId != null,
+        editaHaciaFormal,
     };
 };

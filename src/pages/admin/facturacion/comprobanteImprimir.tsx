@@ -6,6 +6,7 @@ import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/
 import { useAuthStore } from '@/zustand/auth';
 import { descripcionParaImpresion } from '@/utils/descripcion-vehiculo';
 import { useQrSunat } from '@/utils/qrSunat';
+import { lineasPagoMixto } from '@/utils/pagoMixto';
 
 // Factor para pasar de precio (con IGV) a valor (sin IGV) en una línea. Se saca de
 // la propia línea cuando ya está persistida, así respeta la afectación real de cada
@@ -207,9 +208,9 @@ console.log(formValues)
         ? 'CRÉDITO'
         : (formValues?.medioPago ? String(formValues.medioPago).toUpperCase() : 'EFECTIVO');
     const displayVuelto = isCreditPayment ? 0 : parseAmount(formValues?.vuelto, 0);
-    const splitPaidTotal = isMixedPayment && Array.isArray(formValues?.splitPayments)
-        ? formValues.splitPayments.reduce((sum: number, sp: { amount: number }) => sum + parseAmount(sp.amount, 0), 0)
-        : 0;
+    // Al reimprimir el desglose viene del comprobante guardado, no de `splitPayments`.
+    const lineasMixtas = isMixedPayment ? lineasPagoMixto(formValues) : [];
+    const splitPaidTotal = lineasMixtas.reduce((sum, sp) => sum + sp.amount, 0);
     const paymentDetails = (() => {
         let pd = formValues?.paymentDetails;
         if (typeof pd === 'string') { try { pd = JSON.parse(pd); } catch { pd = null; } }
@@ -478,10 +479,10 @@ console.log(formValues)
                                 ))}
                             </div>
                         )}
-                        {isMixedPayment && Array.isArray(formValues?.splitPayments) && formValues.splitPayments.length > 0 ? (
+                        {lineasMixtas.length > 0 ? (
                             <div>
                                 <p className={`text-[16px] font-bold`}>MEDIOS DE PAGO:</p>
-                                {formValues.splitPayments.map((sp: { method: string; amount: number }, idx: number) => {
+                                {lineasMixtas.map((sp, idx) => {
                                     const detail = splitPaymentDetails[idx] || sp;
                                     return (
                                         <div key={idx} className="mb-0.5">
@@ -1005,11 +1006,11 @@ console.log(formValues)
                                                 <span className="font-bold">FORMA PAGO:</span>
                                                 <span>{paymentConditionLabel}</span>
 
-                                                {isMixedPayment && Array.isArray(formValues?.splitPayments) && formValues.splitPayments.length > 0 ? (
+                                                {lineasMixtas.length > 0 ? (
                                                     <>
                                                         <span className="font-bold">MEDIOS PAGO:</span>
                                                         <span>
-                                                            {formValues.splitPayments.map((sp: { method: string; amount: number }, idx: number) => {
+                                                            {lineasMixtas.map((sp, idx) => {
                                                                 const detail = splitPaymentDetails[idx] || sp;
                                                                 return (
                                                                     <span key={idx} className="block">

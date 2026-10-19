@@ -139,7 +139,11 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                                 <h5 className="font-bold text-gray-800 dark:text-gray-200 text-sm line-clamp-2 leading-tight mb-0.5">{item.descripcion}</h5>
                                 <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                                     {Number(item.descuento) > 0 && (
-                                        <span className="text-green-600 dark:text-green-400 font-bold">-{item.descuento}%</span>
+                                        <span className="text-green-600 dark:text-green-400 font-bold">
+                                            {item.descuentoTipo === 'MONTO'
+                                                ? `-${vm.monedaSimbolo} ${(Number(item.precioUnitario) * Number(item.cantidad) * Number(item.descuento) / 100).toFixed(2)}`
+                                                : `-${Number(Number(item.descuento).toFixed(2))}%`}
+                                        </span>
                                     )}
                                     {/* Farmacia: lote asignado */}
                                     {item.loteNumero && (
