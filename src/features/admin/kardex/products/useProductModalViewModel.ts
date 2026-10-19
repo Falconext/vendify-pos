@@ -204,8 +204,10 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [galleryDirty, setGalleryDirty] = useState(false);
-  // Máximo de imágenes EXTRA (galería, sin contar la principal). Default 4 (=5 total).
-  const [maxImagenesExtra, setMaxImagenesExtra] = useState<number>(4);
+  // Máximo de imágenes EXTRA (galería, sin contar la principal). El valor real
+  // lo confirma /productos/limite-imagenes; este es el que se asume mientras
+  // responde, y debe coincidir para que no se vea un tope y luego otro.
+  const [maxImagenesExtra, setMaxImagenesExtra] = useState<number>(2);
 
   // --- Stock State ---
   const [tipoAjusteStock, setTipoAjusteStock] =

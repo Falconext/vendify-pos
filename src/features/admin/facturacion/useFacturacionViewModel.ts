@@ -42,7 +42,9 @@ import { detalleAdicionalParaPayload } from "@/utils/detalleAdicional";
 import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
+import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
 
+import { afectacionPorDefecto } from '@/utils/afectacionIgv';
 type EnvioDespachoFormData = {
     transportista?: string;
     tipoEnvio?: string;
@@ -97,14 +99,16 @@ const cleanText = (value?: string) => String(value ?? '').trim();
 const esServicioTecnico = (item: any) =>
     String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
 
-const crearEstadoItemLibre = () => ({
+const crearEstadoItemLibre = (empresa?: { leyAmazonia?: boolean | null } | null) => ({
     descripcion: '',
     cantidad: '1',
     precioUnitario: '',
     tipo: 'SERVICIO' as 'SERVICIO' | 'PRODUCTO',
     // Afectación IGV (Catálogo 07): '10' gravado, '20' exonerado, '30' inafecto,
     // '40' exportación, y gratuitas (11-16 gravado, 21 exonerado, 31-37 inafecto).
-    afectacion: '10' as string,
+    // Bajo la Ley de Amazonía arranca exonerado: un delivery o un flete cargado
+    // acá salía con 18% aunque el resto del comprobante fuera exonerado.
+    afectacion: afectacionPorDefecto(empresa) as string,
     // Producto externo con número de serie (p. ej. accesorios/repuestos de cómputo
     // que no están en catálogo pero requieren registrar su serie para garantía).
     requiereSerie: false,
@@ -480,7 +484,11 @@ export const useFacturacionViewModel = () => {
         fechaEstimada: '',
         costoEnvio: 0,
         pagarFlete: 'CLIENTE' as 'CLIENTE' | 'NEGOCIO',
-        aplicacionMontoCliente: 'ADELANTO' as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO',
+        // Sin valor: lo decide el contexto (ver aplicacionPorDefecto). Antes
+        // arrancaba en 'ADELANTO' y no había forma de distinguir "recién
+        // abierto" de "el vendedor eligió adelanto", así que en un documento
+        // formal se convertía en cobro.
+        aplicacionMontoCliente: undefined as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO' | undefined,
         nombreDestinatario: '',
         dniDestinatario: '',
         contenidoPaquete: '',
@@ -558,7 +566,7 @@ export const useFacturacionViewModel = () => {
     const [editQuotationId, setEditQuotationId] = useState<number | null>(null);
     const [editNotaVentaId, setEditNotaVentaId] = useState<number | null>(null);
     const [showFreeQuoteItemForm, setShowFreeQuoteItemForm] = useState(false);
-    const [freeQuoteItem, setFreeQuoteItem] = useState(crearEstadoItemLibre);
+    const [freeQuoteItem, setFreeQuoteItem] = useState(() => crearEstadoItemLibre(auth?.empresa as any));
     // Anticipos previos a regularizar/descontar en esta factura (referencia a
     // comprobantes de anticipo ya emitidos). Se envían en el payload como `anticipos[]`
     // y el backend genera el UBL de regularización (PrepaidPayment + descuento 04/05/06).
@@ -1778,7 +1786,7 @@ export const useFacturacionViewModel = () => {
             },
         } as any);
 
-        setFreeQuoteItem(crearEstadoItemLibre());
+        setFreeQuoteItem(crearEstadoItemLibre(auth?.empresa as any));
     };
 
     // Farmacia: confirmar datos de receta para un ítem del carrito
@@ -2670,10 +2678,14 @@ export const useFacturacionViewModel = () => {
             }
         }
 
-        const aplicacionMontoEnvio =
-            envioData.aplicacionMontoCliente === 'ADELANTO' && !esDocumentoInformal
-                ? 'ITEM_ENVIO'
-                : (envioData.aplicacionMontoCliente ?? (esDocumentoInformal ? 'ADELANTO' : 'ITEM_ENVIO'));
+        // Misma regla que muestra el modal, para que lo que se ve y lo que se
+        // emite no puedan discrepar. Antes, un ADELANTO en documento formal se
+        // convertía acá en ITEM_ENVIO y se le cobraba al cliente plata que ya
+        // había pagado (boleta B0A1-269 de IMPORTEMOS JUNTOS).
+        const aplicacionMontoEnvio = aplicacionEfectiva(envioData.aplicacionMontoCliente, {
+            esInformal: esDocumentoInformal,
+            esPropio: envioData.transportista === 'PROPIOS',
+        });
 
         // Descuento global en comprobantes FORMALES: se prorratea en las líneas de producto
         // (el backend recalcula desde nuevoValorUnitario) para que el neto enviado a SUNAT
@@ -2746,13 +2758,14 @@ export const useFacturacionViewModel = () => {
                     ...detalleAdicionalParaPayload(item.detalleAdicional),
                 })) ?? []),
                 // Monto cobrado como item de envío: aumenta el total del comprobante.
-                ...(envioActivo && Number(envioData.costoEnvio) > 0 && aplicacionMontoEnvio === 'ITEM_ENVIO' ? [{
-                    productoId: null,
-                    descripcion: `Servicio de envío${envioData.transportista ? ` (${COURIERS.find((c) => c.value === envioData.transportista)?.label ?? envioData.transportista})` : ''}`,
-                    cantidad: 1,
-                    nuevoValorUnitario: Number(envioData.costoEnvio),
-                    descuento: 0,
-                }] : []),
+                ...lineasDeEnvio({
+                    envioActivo,
+                    costoEnvio: envioData.costoEnvio,
+                    aplicacion: aplicacionMontoEnvio,
+                    etiquetaTransportista: envioData.transportista
+                        ? (COURIERS.find((c) => c.value === envioData.transportista)?.label ?? envioData.transportista)
+                        : '',
+                }),
             ],
             formaPagoTipo: esPagoCredito ? 'Credito' : (formValues.medioPago || 'Contado'),
             // Moneda del comprobante (PEN por defecto; USD si se eligió el toggle de moneda,

@@ -1095,7 +1095,7 @@ export default function DespachoView() {
                     <button
                         type="button"
                         onClick={() => setReporteEnviosAbierto(true)}
-                        className="relative top-2 h-11 px-4 rounded-2xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-300 text-sm font-bold flex items-center gap-1.5 hover:bg-sky-50 dark:hover:bg-slate-700 transition-colors shrink-0"
+                        className="relative top-2 h-11 px-3 flex items-center gap-1.5 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-colors text-xs font-black shrink-0 dark:bg-slate-700 dark:hover:bg-slate-600"
                         title="Estadísticas y Excel de envíos por rango de fechas y courier (Shalom, Olva o reparto propio)"
                         data-testid="btn-reporte-envios"
                     >

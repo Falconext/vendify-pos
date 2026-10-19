@@ -145,6 +145,8 @@ export type IFormProduct = {
   costoFijo?: number
   comisionPorVenta?: number
   comisionPorcentaje?: number
+  /** Comisión (monto) de sábado y domingo; vacío = la de siempre. */
+  comisionFinDeSemana?: string | number
   imagenUrl?: string | null
   // Campos Farmacia
   principioActivo?: string

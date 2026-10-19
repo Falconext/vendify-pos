@@ -1,4 +1,5 @@
 import React from 'react';
+import { textoDeTallas, tieneVariantes } from '../products/stockPorVariante';
 import { Icon } from '@iconify/react';
 
 interface Props {
@@ -9,6 +10,19 @@ interface Props {
     showPrice?: boolean;
     showStock?: boolean;
 }
+
+/**
+ * Lo que se imprime en el renglón de stock.
+ *
+ * Un modelo con tallas mostraba "Stock: 5" y la vendedora no sabía de qué
+ * tallas eran esos 5 (pedido de COMERCIAL LINNA MODA). Ahora muestra el
+ * desglose; un producto suelto sigue mostrando su número de siempre.
+ */
+const renglonDeStock = (p: any): string => {
+    if (!tieneVariantes(p)) return `Stock: ${Number(p?.stock ?? 0)}`;
+    const detalle = textoDeTallas(p);
+    return detalle ? `Tallas: ${detalle}` : 'Sin stock';
+};
 
 export default function CatalogoPrintTemplate({ componentRef, productos, theme, company, showPrice = true, showStock = false }: Props) {
     // Agrupar por categoría
@@ -98,7 +112,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                         </div>
                                         <h3 className="font-semibold text-sm leading-tight text-gray-800 line-clamp-2 h-10">{p.descripcion || p.nombre || p.codigo}</h3>
                                         {showPrice && <p className="text-blue-600 font-extrabold mt-1">S/ {Number(p.precioUnitario || 0).toFixed(2)}</p>}
-                                        {showStock && <p className="text-[11px] font-semibold text-gray-500 mt-0.5">Stock: {Number(p.stock ?? 0)}</p>}
+                                        {showStock && <p className="text-[11px] font-semibold text-gray-500 mt-0.5">{renglonDeStock(p)}</p>}
                                     </div>
                                 ))}
                             </div>
@@ -132,7 +146,14 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                             <td className="py-2 px-4 font-mono text-xs text-gray-500">{p.codigo || '-'}</td>
                                             <td className="py-2 px-4 font-semibold text-gray-800">{p.descripcion || p.nombre || p.codigo}</td>
                                             <td className="py-2 px-4 text-center text-gray-600 text-xs">{p.marca?.nombre || '-'}</td>
-                                            {showStock && <td className="py-2 px-4 text-center font-semibold text-gray-600">{Number(p.stock ?? 0)}</td>}
+                                            {showStock && (
+                                                <td className="py-2 px-4 text-center font-semibold text-gray-600">
+                                                    {Number(p.stock ?? 0)}
+                                                    {tieneVariantes(p) && textoDeTallas(p) && (
+                                                        <span className="block text-[9px] font-normal text-gray-500">{textoDeTallas(p)}</span>
+                                                    )}
+                                                </td>
+                                            )}
                                             {showPrice && <td className="py-2 px-4 text-right font-bold text-blue-600 whitespace-nowrap">S/ {Number(p.precioUnitario || 0).toFixed(2)}</td>}
                                         </tr>
                                     ))}
@@ -150,7 +171,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                         </div>
                                         <div className="whitespace-nowrap text-right">
                                             {showPrice && <div className="font-extrabold text-gray-900">S/ {Number(p.precioUnitario || 0).toFixed(2)}</div>}
-                                            {showStock && <div className="text-[10px] font-semibold text-gray-500">Stock: {Number(p.stock ?? 0)}</div>}
+                                            {showStock && <div className="text-[10px] font-semibold text-gray-500">{renglonDeStock(p)}</div>}
                                         </div>
                                     </div>
                                 ))}
@@ -177,7 +198,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                                 {showPrice && <span className="font-bold text-orange-600 whitespace-nowrap bg-orange-50 px-2 py-0.5 rounded text-sm">S/ {Number(p.precioUnitario || 0).toFixed(2)}</span>}
                                             </div>
                                             {p.descripcionLarga && <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mt-1">{String(p.descripcionLarga).replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim()}</p>}
-                                            {showStock && <p className="text-[11px] font-semibold text-gray-500 mt-1">Stock: {Number(p.stock ?? 0)}</p>}
+                                            {showStock && <p className="text-[11px] font-semibold text-gray-500 mt-1">{renglonDeStock(p)}</p>}
                                         </div>
                                     </div>
                                 ))}
@@ -227,7 +248,7 @@ export default function CatalogoPrintTemplate({ componentRef, productos, theme, 
                                                 <p className="text-[9px] text-gray-400 leading-relaxed line-clamp-3">
                                                     {p.descripcion || 'Dispositivo de alto rendimiento, optimizado para brindarte la mejor experiencia y durabilidad garantizada.'}
                                                 </p>
-                                                {showStock && <p className="text-[9px] font-semibold text-gray-500 mt-1">Stock: {Number(p.stock ?? 0)}</p>}
+                                                {showStock && <p className="text-[9px] font-semibold text-gray-500 mt-1">{renglonDeStock(p)}</p>}
                                             </div>
                                         </div>
                                     );

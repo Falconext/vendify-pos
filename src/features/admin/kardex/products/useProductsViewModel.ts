@@ -4,6 +4,7 @@ import { useProductsStore } from '@/zustand/products';
 import { useBrandsStore } from '@/zustand/brands';
 import { useCategoriesStore } from '@/zustand/categories';
 import { useAuthStore } from '@/zustand/auth';
+import { afectacionPorDefecto, nombreAfectacionPorDefecto } from '@/utils/afectacionIgv';
 import { useSedesStore } from '@/zustand/sedes';
 import useAlertStore from '@/zustand/alert';
 import apiClient from '@/utils/apiClient';
@@ -101,6 +102,11 @@ export const useProductsViewModel = () => {
     })();
     const createEmptyProductForm = (): IFormProduct => ({
         ...initialProductForm,
+        // Un negocio bajo la Ley de Amazonia (Ley 27037) vende exonerado: que el
+        // formulario arranque en "Gravado" obliga a corregir cada producto a mano, y
+        // el olvido recien se ve en la factura, con el IGV ya cobrado al cliente.
+        tipoAfectacionIGV: afectacionPorDefecto(auth?.empresa as any),
+        afectacionNombre: nombreAfectacionPorDefecto(auth?.empresa as any),
         preciosMayorista: [],
     });
     const createEmptyProductErrors = () => ({

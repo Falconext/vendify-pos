@@ -15,7 +15,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 import ProductModifiersSelector from '@/components/tienda/ProductModifiersSelector';
 import ShoppingCartModal from '@/components/tienda/ShoppingCartModal';
 import ProductVariantsShopify from '@/components/tienda/ProductVariantsShopify';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 const PROSE_CLASSES = [
   'text-sm text-gray-600 leading-relaxed break-words overflow-hidden w-full',
   '[&_h1]:text-xl [&_h1]:font-black [&_h1]:text-gray-900 [&_h1]:mb-3 [&_h1]:mt-5',
@@ -176,7 +178,7 @@ export default function ProductoDetalle() {
         ]);
         const prod = withPricing(prodRes.data.data || prodRes.data);
         setProducto(prod);
-        setTienda(tiendaRes.data.data || tiendaRes.data);
+        setTienda(recordarVentaSinStock(tiendaRes.data.data || tiendaRes.data));
         if (prod.imagenUrl) setSelectedImage(prod.imagenUrl);
 
         // Preseleccionar primera variante si existe
@@ -279,7 +281,7 @@ export default function ProductoDetalle() {
 
   const precioBaseActual = varianteActiva ? Number(varianteActiva.precioUnitario || 0) : Number(producto?.precioUnitario || 0);
   const stockActual = varianteActiva ? (varianteActiva.stock || 0) : (producto?.stock || 0);
-  const isOutOfStock = stockActual <= 0;
+  const isOutOfStock = sinStock(stockActual);
   const precioFinal = precioBaseActual + precioExtra;
 
   const handleVarianteChange = (nombre: string, valor: string) => {
@@ -870,6 +872,12 @@ export default function ProductoDetalle() {
       {producto.descripcionLarga && (
         <div className="max-w-7xl mx-auto px-5 md:px-8 mb-10">
           <ClassicDescripcion descripcionLarga={producto.descripcionLarga} />
+        </div>
+      )}
+
+      {producto.videoUrl && (
+        <div className="max-w-7xl mx-auto px-5 md:px-8 mb-10">
+          <ProductoVideo url={producto.videoUrl} />
         </div>
       )}
 

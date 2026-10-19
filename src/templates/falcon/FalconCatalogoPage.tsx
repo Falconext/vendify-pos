@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TemplateCatalogoPageProps } from '@/templates/shared/types';
+import { sinStock } from '@/templates/shared/ventaSinStock';
 import {
   GREEN, resolveFalconGreen, getName, money, getImg, catOf, storeNameOf, editable, withPreviewQuery, FALCON_DEFAULT_IMAGES,
   FalconHeader, FalconFooter, FalconProductCard,
@@ -66,12 +67,12 @@ export default function FalconCatalogoPage({
     .filter((c) => c.count > 0), [categoryNames, catalogProducts]);
 
   const inStockCount = productos.filter((p) => Number(p?.stock ?? 1) > 0).length;
-  const outStockCount = productos.filter((p) => Number(p?.stock ?? 1) <= 0).length;
+  const outStockCount = productos.filter((p) =>sinStock(Number(p?.stock ?? 1))).length;
 
   const displayed = useMemo(() => {
     let list = sortedProductos;
     if (avail.in && !avail.out) list = list.filter((p) => Number(p?.stock ?? 1) > 0);
-    else if (avail.out && !avail.in) list = list.filter((p) => Number(p?.stock ?? 1) <= 0);
+    else if (avail.out && !avail.in) list = list.filter((p) =>sinStock(Number(p?.stock ?? 1)));
     return list;
   }, [sortedProductos, avail]);
 

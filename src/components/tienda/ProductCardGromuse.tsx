@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useState } from 'react';
 import ProductCardActions from '@/components/tienda/ProductCardActions';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface ProductCardProps {
     producto: any;
     slug: string;
@@ -12,7 +13,7 @@ interface ProductCardProps {
 
 export default function ProductCardGromuse({ producto, slug, diseno, onAddToCart, onClick }: ProductCardProps) {
     const [imageLoaded, setImageLoaded] = useState(false);
-    const isOutOfStock = Number(producto.stock) <= 0;
+    const isOutOfStock = sinStock(Number(producto.stock));
 
     // Parse price to separate integer and decimal for styling
     const priceStr = Number(producto.precioUnitario || 0).toFixed(2);

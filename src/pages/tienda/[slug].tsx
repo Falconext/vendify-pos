@@ -33,6 +33,7 @@ import { withPricing, withPricingList } from '@/templates/shared/pricing';
 import { withStorePurchaseWhatsapp } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
+import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 export default function TiendaPublica() {
@@ -230,7 +231,7 @@ export default function TiendaPublica() {
   const cargarTienda = async () => {
     try {
       const { data } = await axios.get(`${BASE_URL}/public/store/${slug}`);
-      setTienda(withStorePurchaseWhatsapp(data.data || data));
+      setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data)));
     } catch (error) {
       console.error('Error al cargar tienda:', error);
     }

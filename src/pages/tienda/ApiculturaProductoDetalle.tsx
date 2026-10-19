@@ -11,7 +11,9 @@ import { APICULTURA_BANNER, ApiculturaFooter, ApiculturaHeader, ApiculturaProduc
 import ApiculturaVariantSelector from '@/templates/apicultura/ApiculturaVariantSelector';
 import { buildVariantCartItem, findApiculturaVariant, getApiculturaVariantData } from '@/templates/apicultura/variantUtils';
 import { honeyCard, honeyEase, honeyHover, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from '@/templates/apicultura/motion';
+import ProductoVideo from '@/components/tienda/ProductoVideo';
 
+import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 const honeyPattern = {
   backgroundImage:
@@ -50,7 +52,7 @@ export default function ApiculturaProductoDetalle() {
     const loadBase = async () => {
       try {
         const storeRes = await axios.get(`${BASE_URL}/public/store/${slug}`);
-        setTienda(storeRes.data?.data || storeRes.data);
+        setTienda(recordarVentaSinStock(storeRes.data?.data || storeRes.data));
         const catRes = await axios.get(`${BASE_URL}/public/store/${slug}/categories`);
         setAllCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);
       } catch (error) {
@@ -331,11 +333,11 @@ export default function ApiculturaProductoDetalle() {
                 <span className="font-black">{qty}</span>
                 <button type="button" onClick={() => setQty(qty + 1)} className="text-lg font-black">+</button>
               </div>
-              <motion.button type="button" disabled={stock <= 0} onClick={() => { addToCart(buildVariantCartItem(producto, selectedVariant, qty)); setMostrarCarrito(true); }} className="flex h-12 items-center justify-center gap-2 rounded-full text-sm font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: cp }} whileHover={stock > 0 ? { scale: 1.025, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
+              <motion.button type="button" disabled={sinStock(stock)} onClick={() => { addToCart(buildVariantCartItem(producto, selectedVariant, qty)); setMostrarCarrito(true); }} className="flex h-12 items-center justify-center gap-2 rounded-full text-sm font-black uppercase text-black disabled:opacity-50" style={{ backgroundColor: cp }} whileHover={stock > 0 ? { scale: 1.025, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
                 <Icon icon="solar:cart-large-2-bold" width={20} /> Agregar al carrito
               </motion.button>
             </div>
-            <motion.button type="button" disabled={stock <= 0} onClick={() => { addToCart(buildVariantCartItem(producto, selectedVariant, qty)); navigate(`/tienda/${slug}/checkout`); }} className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-black uppercase text-white disabled:opacity-50" whileHover={stock > 0 ? { scale: 1.02, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
+            <motion.button type="button" disabled={sinStock(stock)} onClick={() => { addToCart(buildVariantCartItem(producto, selectedVariant, qty)); navigate(`/tienda/${slug}/checkout`); }} className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-black uppercase text-white disabled:opacity-50" whileHover={stock > 0 ? { scale: 1.02, y: -2 } : undefined} whileTap={stock > 0 ? honeyTap : undefined}>
               Comprar ahora
             </motion.button>
 
@@ -379,6 +381,7 @@ export default function ApiculturaProductoDetalle() {
           </div>
         </motion.section>
 
+        <ProductoVideo url={producto?.videoUrl} />
         {related.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={honeyViewport} variants={honeySection} className="mt-16 border-t border-yellow-100 pt-12">
             <div className="mb-7 flex items-end justify-between">

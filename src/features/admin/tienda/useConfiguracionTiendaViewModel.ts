@@ -9,7 +9,7 @@ const defaultForm = {
     colorPrimario: '#000000', colorSecundario: '#ffffff',
     yapeQrUrl: '', yapeNumero: '', plinQrUrl: '', plinNumero: '',
     aceptaEfectivo: true, costoEnvioFijo: 0, envioGratisDesdeSoles: 0, minimoCompra: 0,
-    aceptaRecojo: true, aceptaEnvio: true, direccionRecojo: '', tiempoPreparacionMin: 30,
+    aceptaRecojo: true, aceptaEnvio: true, tiendaVentaSinStock: false, direccionRecojo: '', tiempoPreparacionMin: 30,
     bancoNombre: '', numeroCuenta: '', cci: '', monedaCuenta: 'SOLES',
 };
 
@@ -126,6 +126,7 @@ export const useConfiguracionTiendaViewModel = (): any => {
                 yapeNumero: data.data.yapeNumero || '', plinQrUrl: data.data.plinQrUrl || '',
                 plinNumero: data.data.plinNumero || '', aceptaEfectivo: data.data.aceptaEfectivo ?? true,
                 costoEnvioFijo: Number(data.data.costoEnvioFijo || 0), aceptaRecojo: data.data.aceptaRecojo ?? true,
+                tiendaVentaSinStock: data.data.tiendaVentaSinStock ?? false,
                 aceptaEnvio: data.data.aceptaEnvio ?? true, direccionRecojo: data.data.direccionRecojo || '',
                 tiempoPreparacionMin: data.data.tiempoPreparacionMin || 30, bancoNombre: data.data.bancoNombre || '',
                 numeroCuenta: data.data.numeroCuenta || '', cci: data.data.cci || '', monedaCuenta: data.data.monedaCuenta || 'SOLES',

@@ -51,6 +51,7 @@ import ModalConfirm from '@/components/ModalConfirm';
 import { useUsersStore } from '@/zustand/users';
 import { mapDetalleToInvoiceProduct } from '@/features/admin/facturacion/utils/comprobanteProductMapper';
 
+import useOutsideClick from '@/hooks/useOutsideClick';
 // ─── Config badges (CRM claro) ──────────────────────────────────────────────────
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -71,6 +72,27 @@ const TIPO_CONFIG: Record<TipoVenta, { label: string; cls: string }> = {
 // Columnas configurables de la tabla de ventas (el usuario elige cuáles ver).
 // Las columnas fijas (Fecha, Referencia, Tipo, Cliente, Total, Pago, Vendedor,
 // Acciones) siempre se muestran. `sede` solo aplica al admin principal.
+
+/**
+ * Si el cliente ya compró antes, y cuántas veces.
+ *
+ * Se muestra el número de compra y no un sí/no: "3ra compra" le dice al
+ * vendedor mucho más que "recurrente" — sabe si tiene delante a alguien que
+ * vuelve seguido o a uno que compró dos veces en un año.
+ *
+ * El conteo es de TODA la historia del cliente con la empresa, no del rango que
+ * se está viendo: el panel muestra un día y ahí todos parecerían nuevos.
+ */
+const recurrencia = (compras: number | undefined) => {
+  const n = Number(compras ?? 0);
+  // `Number.isFinite` y no `n <= 0`: un NaN pasa de largo las comparaciones y
+  // terminaba pintando "NaN compras" en la fila.
+  if (!Number.isFinite(n) || n <= 0) return { texto: '—', clase: 'text-gray-400' };
+  if (n === 1) return { texto: 'Nuevo', clase: 'bg-blue-50 text-blue-700 border-blue-200' };
+  if (n <= 3) return { texto: `${n}ª compra`, clase: 'bg-amber-50 text-amber-700 border-amber-200' };
+  return { texto: `${n} compras`, clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+};
+
 const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolean }[] = [
     { key: 'sede', label: 'Sede', soloAdminPrincipal: true },
     { key: 'saldo', label: 'Saldo' },
@@ -82,6 +104,7 @@ const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolea
     // relación de pedidos programados. El dato ya venía del panel
     // (EnvioDespacho.fechaEstimada); solo faltaba mostrarlo.
     { key: 'fechaEnvio', label: 'Fecha de envío' },
+    { key: 'recurrente', label: 'Cliente recurrente' },
     { key: 'turno', label: 'Turno' },
     { key: 'celular', label: 'Celular' },
     { key: 'agencia', label: 'Agencia' },
@@ -276,6 +299,12 @@ export default function PanelVentasView() {
     });
     const [showColsMenu, setShowColsMenu] = useState(false);
     const [showFiltrosMenu, setShowFiltrosMenu] = useState(false);
+    // Menú único "Exportar" (agrupa PDF/Excel/Reparto/Reporte para no llenar la barra).
+    const [showExportMenu, setShowExportMenu, exportMenuRef] = useOutsideClick(false);
+    // Reporte de envíos: estadísticas por courier y rango (Shalom, Olva, reparto
+    // propio o todos juntos) + su Excel. Va en el menú Exportar, al lado del
+    // Excel de reparto, que es de un día y en el formato del motorizado.
+    const [reporteEnviosAbierto, setReporteEnviosAbierto] = useState(false);
     // El Select del proyecto espera {id, value}; el id 0 representa "todas".
     const sedesSelectOptions = [
         { id: 0, value: 'Todas las sedes (consolidado)' },
@@ -334,7 +363,6 @@ export default function PanelVentasView() {
     const [menuItem, setMenuItem] = useState<VentaPanelItem | null>(null);
     const [shalomTracking, setShalomTracking] = useState<{ orderNumber: string; orderCode: string; item: VentaPanelItem } | null>(null);
     const [olvaTracking, setOlvaTracking] = useState<{ trackingNumber: string; item: VentaPanelItem } | null>(null);
-    const [reporteEnviosAbierto, setReporteEnviosAbierto] = useState(false);
     const [rotuloPrintComprobanteId, setRotuloPrintComprobanteId] = useState<number | null>(null);
     const [rotulosLote, setRotulosLote] = useState<RotuloLoteItem[]>([]);
     const [showRotulosMenu, setShowRotulosMenu] = useState(false);
@@ -687,29 +715,11 @@ export default function PanelVentasView() {
                             portal
                         />
                     </div>
-                    {vm.fechaFin && (
-                        <button
-                            onClick={() => vm.setFechaFin('')}
-                            className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
-                            title="Quitar rango (volver a un solo día)"
-                        >
-                            <Icon icon="solar:close-circle-linear" className="text-lg" />
-                        </button>
-                    )}
-                    <button
-                        onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
-                        data-testid="btn-dia-siguiente"
-                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    >
-                        <Icon icon="solar:arrow-right-linear" className="text-lg" />
-                    </button>
                     {/* Día de ENTREGA: "qué sale el jueves". Al usarlo deja de
                         importar cuándo se tomó el pedido, así que se muestra
                         aparte y con su propia forma de quitarlo. */}
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-2 py-1 dark:border-slate-700 dark:bg-slate-800/40">
-                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>
-                            Sale el
-                        </span>
+                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 px-2 py-1 dark:border-indigo-900/40 dark:bg-indigo-950/10">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-300">Sale el</span>
                         <div className="w-36">
                             <Calendar
                                 name="fechaEnvio"
@@ -733,6 +743,22 @@ export default function PanelVentasView() {
                             </button>
                         )}
                     </div>
+                    {vm.fechaFin && (
+                        <button
+                            onClick={() => vm.setFechaFin('')}
+                            className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
+                            title="Quitar rango (volver a un solo día)"
+                        >
+                            <Icon icon="solar:close-circle-linear" className="text-lg" />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
+                        data-testid="btn-dia-siguiente"
+                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    >
+                        <Icon icon="solar:arrow-right-linear" className="text-lg" />
+                    </button>
                     <button
                         onClick={vm.cargar}
                         className="h-11 px-4 rounded-2xl text-white text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all"
@@ -742,45 +768,78 @@ export default function PanelVentasView() {
                         <Icon icon="solar:refresh-linear" className={vm.loading ? 'animate-spin text-lg' : 'text-lg'} />
                         <span className="hidden sm:inline">Actualizar</span>
                     </button>
-                    <button
-                        onClick={() => vm.exportarResumen('pdf', columnasVisiblesCSV)}
-                        disabled={vm.exportando !== null}
-                        className="h-11 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-50"
-                        title="Exportar el rango en PDF imprimible"
-                    >
-                        <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg" />
-                        PDF
-                    </button>
-                    <button
-                        onClick={() => vm.exportarResumen('excel', columnasVisiblesCSV)}
-                        disabled={vm.exportando !== null}
-                        className="h-11 px-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all disabled:opacity-50"
-                        title="Exportar el rango en Excel"
-                    >
-                        <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg" />
-                        Excel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={vm.exportarReparto}
-                        disabled={vm.exportandoReparto}
-                        className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-slate-700 text-fuchsia-600 dark:text-fuchsia-300 text-sm font-semibold hover:bg-fuchsia-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
-                        title="Descargar el Excel del reparto propio (formato de carga masiva del motorizado) para el rango seleccionado"
-                        data-testid="btn-exportar-reparto"
-                    >
-                        <Icon icon={vm.exportandoReparto ? 'svg-spinners:180-ring' : 'solar:scooter-bold-duotone'} className="text-lg" />
-                        Reparto
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setReporteEnviosAbierto(true)}
-                        data-testid="btn-reporte-envios"
-                        className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 text-sky-600 dark:text-sky-300 text-sm font-semibold hover:bg-sky-50 dark:hover:bg-slate-700 transition"
-                        title="Estadísticas de envíos por courier y rango de fechas (Shalom, Olva, reparto propio o todos): a dónde mandas más mes a mes, entregados y flete, con su Excel"
-                    >
-                        <Icon icon="solar:chart-2-bold-duotone" className="text-lg" />
-                        Reporte
-                    </button>
+                    {/* Menú único "Exportar": PDF, Excel, Reparto y el reporte de envíos,
+                        para no seguir llenando la barra de botones. */}
+                    <div className="relative" ref={exportMenuRef}>
+                        <button
+                            type="button"
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            disabled={vm.exportando !== null || vm.exportandoProducto || vm.exportandoReparto}
+                            data-testid="btn-exportar-menu"
+                            className="h-11 px-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+                            title="Exportar y descargar: PDF, Excel, Reparto y el reporte de envíos"
+                        >
+                            <Icon icon={(vm.exportando !== null || vm.exportandoProducto || vm.exportandoReparto) ? 'svg-spinners:180-ring' : 'solar:download-minimalistic-bold-duotone'} className="text-lg" />
+                            Exportar
+                            <Icon icon={showExportMenu ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} width={14} />
+                        </button>
+                        {showExportMenu && (
+                            <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#1E2435] border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden py-1">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); vm.exportarResumen('pdf', columnasVisiblesCSV); }}
+                                    disabled={vm.exportando !== null}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                    title="Exportar el rango en PDF imprimible"
+                                >
+                                    <Icon icon={vm.exportando === 'pdf' ? 'svg-spinners:180-ring' : 'solar:file-text-bold-duotone'} className="text-lg text-rose-500" />
+                                    <span className="flex-1 text-left">PDF del rango</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); vm.exportarResumen('excel', columnasVisiblesCSV); }}
+                                    disabled={vm.exportando !== null}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                    title="Exportar el rango en Excel (detalle por venta)"
+                                >
+                                    <Icon icon={vm.exportando === 'excel' ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-lg text-emerald-500" />
+                                    <span className="flex-1 text-left">Excel (detalle de ventas)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); vm.exportarPorProducto(); }}
+                                    disabled={vm.exportandoProducto}
+                                    data-testid="btn-exportar-producto"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                    title="Excel por producto: cuánto vendiste de cada uno (cantidad, valor y valor con IGV) en el rango"
+                                >
+                                    <Icon icon={vm.exportandoProducto ? 'svg-spinners:180-ring' : 'solar:box-bold-duotone'} className="text-lg text-indigo-500" />
+                                    <span className="flex-1 text-left">Por producto</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); vm.exportarReparto(); }}
+                                    disabled={vm.exportandoReparto}
+                                    data-testid="btn-exportar-reparto"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                    title="Excel del reparto propio (formato de carga masiva del motorizado) para el rango seleccionado"
+                                >
+                                    <Icon icon={vm.exportandoReparto ? 'svg-spinners:180-ring' : 'solar:scooter-bold-duotone'} className="text-lg text-fuchsia-500" />
+                                    <span className="flex-1 text-left">Reparto (carga del motorizado)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowExportMenu(false); setReporteEnviosAbierto(true); }}
+                                    data-testid="btn-reporte-envios"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+                                    title="Estadísticas de envíos por courier y rango de fechas (Shalom, Olva, reparto propio o todos): a dónde mandas más mes a mes, entregados y flete, con su Excel"
+                                >
+                                    <Icon icon="solar:chart-2-bold-duotone" className="text-lg text-sky-500" />
+                                    <span className="flex-1 text-left">Reporte de envíos (estadísticas)</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     {/* Formato del rótulo: ticket 80 mm o etiqueta adhesiva 80×50
                         (impresora etiquetera). Es de la caja, no de la empresa. */}
                     <select
@@ -1185,6 +1244,7 @@ export default function PanelVentasView() {
                                 {col('sunat') && <th className="px-3 py-3 text-left">SUNAT</th>}
                                 {col('despacho') && <th className="px-3 py-3 text-left">Despacho</th>}
                                 {col('fechaEnvio') && <th className="px-3 py-3 text-left whitespace-nowrap">Fecha de envío</th>}
+                                {col('recurrente') && <th className="px-3 py-3 text-left">Recurrente</th>}
                                 {col('turno') && <th className="px-3 py-3 text-left">Turno</th>}
                                 {col('celular') && <th className="px-3 py-3 text-left">Celular</th>}
                                 {col('agencia') && <th className="px-3 py-3 text-left">Agencia</th>}
@@ -1339,10 +1399,24 @@ export default function PanelVentasView() {
                                                 </td>
                                             )}
                                             {col('fechaEnvio') && (
-                                                <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                                     {fechaDeEnvio(item)}
                                                 </td>
                                             )}
+                                            {col('recurrente') && (() => {
+                                                const r = recurrencia((item as any).clienteCompras);
+                                                return (
+                                                    <td className="px-3 py-2.5 whitespace-nowrap">
+                                                        {r.texto === '—' ? (
+                                                            <span className="text-xs text-gray-400">—</span>
+                                                        ) : (
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-semibold ${r.clase}`}>
+                                                                {r.texto}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })()}
                                             {col('turno') && (
                                                 <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
                                                     {item.estadoDespacho !== 'NO_APLICA' ? (item.turnoEnvio ?? '—') : '—'}

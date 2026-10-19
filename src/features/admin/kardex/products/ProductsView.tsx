@@ -6,6 +6,9 @@ import { Icon } from '@iconify/react';
 import Select from '@/components/Select';
 import ModalProduct from '@/pages/admin/kardex/modal-productos';
 import ModalCategories from '@/pages/admin/kardex/modal-categorias';
+import ModalStockVariantes from './components/ModalStockVariantes';
+import { tieneVariantes } from './stockPorVariante';
+import { detalleEnCamino, enCaminoDe } from './stockEnCamino';
 import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
 import CategoriaInlineSelect from './components/CategoriaInlineSelect';
@@ -103,6 +106,10 @@ export default function ProductsView() {
         }
     };
 
+    // Modelo cuyo desglose por talla está abierto. Guarda el producto entero
+    // (no el id) porque las variantes ya vienen en la fila: abrirlo no cuesta
+    // otra llamada.
+    const [desgloseProducto, setDesgloseProducto] = useState<any | null>(null);
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     // Filtros activos (para el contador del botón Filtro).
@@ -276,17 +283,50 @@ export default function ProductsView() {
                 'Valor Inventario': esServicio ? '-' : valorInventario > 0 ? `S/ ${formatMoney(valorInventario)}` : '-',
                 'Margen': margen > 0 ? `${margen.toFixed(1)}%` : (esUsd && !tcHoy && costo > 0 ? 'sin TC' : '-'),
                 'Ganancia/Unidad': gananciaUnidad > 0 ? `S/ ${gananciaUnidad.toFixed(2)}` : '-',
-                'Stock': (
-                    <span
-                        style={{
-                            backgroundColor: esServicio ? '#7C3AED' : stock <= 0 ? '#F43F5F' : stock <= 10 ? '#F49D0D' : '#0BB980',
-                            color: '#ffffff',
-                        }}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                    >
-                        {esServicio ? 'Servicio' : stock}
-                    </span>
-                ),
+                'Stock': (() => {
+                    // Un modelo con tallas muestra el total, y el total se abre:
+                    // el desglose por talla ya viene en la fila, solo faltaba
+                    // dónde verlo sin entrar a vender.
+                    const conVariantes = !esServicio && tieneVariantes(itemAny);
+                    // Pedido al proveedor y aún no recibido: va aparte del número de
+                    // stock, nunca sumado, para que nadie lo lea como disponible.
+                    const viene = esServicio ? 0 : enCaminoDe(itemAny);
+                    const badge = (
+                        <span className="inline-flex items-center gap-1">
+                            <span
+                                style={{
+                                    backgroundColor: esServicio ? '#7C3AED' : stock <= 0 ? '#F43F5F' : stock <= 10 ? '#F49D0D' : '#0BB980',
+                                    color: '#ffffff',
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                            >
+                                {esServicio ? 'Servicio' : stock}
+                                {conVariantes && <Icon icon="solar:alt-arrow-down-bold" width={11} />}
+                            </span>
+                            {viene > 0 && (
+                                <span
+                                    data-testid={`en-camino-${itemAny?.id}`}
+                                    title={detalleEnCamino(itemAny)}
+                                    className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/30"
+                                >
+                                    <Icon icon="solar:posting-square-bold-duotone" width={11} />
+                                    +{viene}
+                                </span>
+                            )}
+                        </span>
+                    );
+                    if (!conVariantes) return badge;
+                    return (
+                        <button
+                            type="button"
+                            onClick={() => setDesgloseProducto(itemAny)}
+                            title="Ver el stock por talla"
+                            className="cursor-pointer transition-transform hover:scale-105"
+                        >
+                            {badge}
+                        </button>
+                    );
+                })(),
                 'Localización': item?.localizacion?.trim() ? item.localizacion.toUpperCase() : '-',
                 '% Venta': `${Number((item as any)?.porcentajeVenta ?? 100)}%`,
                 '% Provisión': `${Number((item as any)?.porcentajeProvision ?? 0)}%`,
@@ -975,6 +1015,11 @@ export default function ProductsView() {
                     </div>
 
                     {/* Modals */}
+                    <ModalStockVariantes
+                        producto={desgloseProducto}
+                        onClose={() => setDesgloseProducto(null)}
+                        sedeId={vm.effectiveSedeId ? Number(vm.effectiveSedeId) : undefined}
+                    />
                     <ModalCategories isOpenModal={vm.isOpenModalCategory} closeModal={() => actions.setIsOpenModalCategory(false)} setIsOpenModal={actions.setIsOpenModalCategory} />
                     <ModalMarcas isOpenModal={vm.isOpenModalBrands} closeModal={() => actions.setIsOpenModalBrands(false)} setIsOpenModal={actions.setIsOpenModalBrands} />
                     {vm.isOpenModalCatalog && <ModalCatalog

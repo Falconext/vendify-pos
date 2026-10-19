@@ -6,8 +6,6 @@ import { Calendar } from '@/components/Date';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 
-const ACCENT = 'var(--accent, #7551FF)';
-
 /**
  * Reporte de envíos por rango y courier.
  *
@@ -142,14 +140,9 @@ export function ReporteEnviosModal({ onClose }: { onClose: () => void }) {
                             data-testid={`reporte-courier-${c.key}`}
                             className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-black transition-colors ${
                                 courier === c.key
-                                    ? 'text-white'
-                                    : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300'
+                                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300'
                             }`}
-                            style={
-                                courier === c.key
-                                    ? { background: ACCENT, borderColor: ACCENT }
-                                    : undefined
-                            }
                         >
                             <Icon icon={c.icon} className="text-base" />
                             {c.label}
@@ -204,7 +197,7 @@ export function ReporteEnviosModal({ onClose }: { onClose: () => void }) {
                                 key={p.label}
                                 type="button"
                                 onClick={() => preset(p.d, p.h)}
-                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
+                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
                             >
                                 {p.label}
                             </button>
@@ -367,11 +360,8 @@ function Bloque({
                         </div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div
-                                className="h-full rounded-full"
-                                style={{
-                                    background: ACCENT,
-                                    width: `${(g.pedidos / max) * 100}%`,
-                                }}
+                                className="h-full rounded-full bg-indigo-500"
+                                style={{ width: `${(g.pedidos / max) * 100}%` }}
                             />
                         </div>
                     </div>

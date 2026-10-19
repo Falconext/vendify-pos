@@ -337,7 +337,8 @@ export default function OrdenesCompraPage() {
 }
 
 /* ─── Modal Crear/Editar ─────────────────────────────────────────────────── */
-function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | null; onClose: () => void; onSaved: () => void }) {
+/** Exportado para poder probar el formulario sin montar toda la página. */
+export function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | null; onClose: () => void; onSaved: () => void }) {
     const { alert } = useAlertStore();
     const esEdicion = Boolean(orden?.id);
 
@@ -411,6 +412,8 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
     const [observaciones, setObservaciones] = useState(orden?.observaciones ?? '');
     const [moneda, setMoneda] = useState(orden?.moneda ?? 'PEN');
     const [aplicaIgv, setAplicaIgv] = useState(orden ? Number(orden.igv) > 0 : true);
+    // Modelo elegido del catálogo que se está pidiendo por curva de tallas.
+    const [modeloEnCurva, setModeloEnCurva] = useState<any | null>(null);
     // true = los precios unitarios que teclea el usuario YA incluyen el IGV
     // (ej: S/ 100 → Op. Gravada S/ 84.75 + IGV S/ 15.25). Se envía el precio
     // BRUTO tal cual y el backend extrae el IGV (columna OrdenCompra.igvIncluido).
@@ -467,9 +470,6 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
         })();
     }, [debouncedProd]);
 
-    // Modelo elegido del catálogo que se está pidiendo por curva de tallas.
-    const [modeloEnCurva, setModeloEnCurva] = useState<any | null>(null);
-
     const agregarProducto = (p: any) => {
         // Un modelo con varias tallas se pide por curva: al proveedor se le
         // encarga "2 de la 36, 3 de la 37", no "1 Verona rosa".
@@ -484,9 +484,10 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
             descripcion: p.descripcion,
             cantidad: 1,
             // Con "Precios con IGV incluido" el costo del catálogo (neto) entra con su IGV.
-            precioUnitario: aplicaIgv && igvIncluido && esGravadoAfectacion(p.tipoAfectacionIGV)
-                ? precioOrdenConFactorIgv(Number(p.costoPromedio ?? 0) || 0, 1.18)
-                : Number(p.costoPromedio ?? 0) || 0,
+            // El costo se guarda sin IGV y suele traer 4 decimales (ej. 46.6102 = 55÷1.18);
+            // en la orden al proveedor basta con 2 decimales para que se vea limpio.
+            precioUnitario: Number(((Number(p.costoPromedio ?? 0) || 0)
+                * (aplicaIgv && igvIncluido && esGravadoAfectacion(p.tipoAfectacionIGV) ? 1.18 : 1)).toFixed(2)),
             gravado: esGravadoAfectacion(p.tipoAfectacionIGV),
         }]);
         setProdQuery('');
@@ -590,7 +591,9 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {/* items-end: si una etiqueta ocupara dos renglones, los tres campos
+                    seguirían alineados por abajo en vez de escalonarse. */}
+                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3">
                     <div>
                         <Calendar
                             text="Fecha de entrega"
@@ -603,7 +606,8 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                     <div>
                         <InputPro
                             name="condicionesPago"
-                            label="Condiciones de pago (Ej: Crédito 30 días)"
+                            label="Condiciones de pago"
+                            placeholder="Ej: Crédito 30 días"
                             isLabel
                             value={condicionesPago}
                             onChange={(e: any) => setCondicionesPago(e.target.value)}
@@ -686,6 +690,7 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                                     <th className="w-24 py-1.5">Cant.</th>
                                     <th className="w-28 py-1.5">P. Unit.</th>
                                     <th className="w-24 py-1.5 text-right">Subtotal</th>
+                                    {aplicaIgv && <th className="w-24 py-1.5 text-right">Total c/IGV</th>}
                                     <th className="w-10" />
                                 </tr>
                             </thead>
@@ -704,6 +709,11 @@ function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenCompra | nu
                                             <input type="number" min="0" step="0.01" value={d.precioUnitario} onChange={(e) => actualizarDetalle(i, 'precioUnitario', e.target.value)} className={`${inputCls} !py-1.5`} />
                                         </td>
                                         <td className="py-2 text-right font-bold text-gray-900 dark:text-white">{mon} {(d.cantidad * d.precioUnitario).toFixed(2)}</td>
+                                        {aplicaIgv && (
+                                            <td className="py-2 text-right font-black text-gray-900 dark:text-white" title={d.gravado === false ? 'Producto sin IGV' : 'Costo de la línea con IGV incluido'}>
+                                                {mon} {((d.cantidad * d.precioUnitario) * (d.gravado === false || igvIncluido ? 1 : 1.18)).toFixed(2)}
+                                            </td>
+                                        )}
                                         <td className="py-2 text-right">
                                             <button type="button" onClick={() => setDetalles((prev) => prev.filter((_, j) => j !== i))} className="text-gray-300 transition hover:text-rose-500">
                                                 <Icon icon="solar:trash-bin-trash-bold" className="text-base" />

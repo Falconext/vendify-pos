@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import ProductCardActions from '@/components/tienda/ProductCardActions';
 import { motion } from 'framer-motion';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface Props {
   producto: {
     id: number;
@@ -38,7 +39,7 @@ export default function ProductCardXtra({ producto, slug, diseno, onClick, onAdd
   const rating = ratingCount > 0 ? Number(producto.ratingAvg || 0) : 0;
   const fullStars = Math.floor(rating);
   const hasHalf = rating % 1 !== 0;
-  const isOutOfStock = Number(producto.stock) <= 0;
+  const isOutOfStock = sinStock(Number(producto.stock));
 
   return (
     <>

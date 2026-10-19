@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import { useCompareStore } from '@/zustand/compare';
 
+import { sinStock } from '@/templates/shared/ventaSinStock';
 interface Props {
   cp: string;
   slug: string;
@@ -106,7 +107,7 @@ export default function AutopartesDealsOfTheWeek({ cp, slug, productos, diseno, 
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (!actionProduct || Number(featuredDeal?.stock ?? 1) <= 0) return;
+    if (!actionProduct || sinStock(Number(featuredDeal?.stock ?? 1))) return;
     onAddToCart?.(actionProduct);
   };
 
@@ -229,7 +230,7 @@ export default function AutopartesDealsOfTheWeek({ cp, slug, productos, diseno, 
                     </div>
 
                   <div className="flex items-center gap-2">
-                    <button onClick={handleAddToCart} className="px-5 py-2.5 bg-[#1A1A1A] text-white font-bold rounded text-xs hover:bg-black transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={!actionProduct || Number(featuredDeal?.stock ?? 1) <= 0}>
+                    <button onClick={handleAddToCart} className="px-5 py-2.5 bg-[#1A1A1A] text-white font-bold rounded text-xs hover:bg-black transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={!actionProduct || sinStock(Number(featuredDeal?.stock ?? 1))}>
                       Añadir al Carrito
                     </button>
                     <button onClick={handleFavorite} className={`w-10 h-10 rounded flex items-center justify-center transition-colors ${wished ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600'}`} title={wished ? 'Quitar de favoritos' : 'Agregar a favoritos'}>

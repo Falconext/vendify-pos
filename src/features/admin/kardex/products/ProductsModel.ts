@@ -85,6 +85,7 @@ export const initialProductForm: IFormProduct = {
     costoFijo: 0,
     comisionPorVenta: 0,
     comisionPorcentaje: 0,
+    comisionFinDeSemana: '',
     // Campos Farmacia
     principioActivo: "",
     concentracion: "",
@@ -129,6 +130,11 @@ export const buildEditFormValues = (originalProduct: any): IFormProduct => {
         costoFijo: Number((originalProduct as any).costoFijo || 0),
         comisionPorVenta: Number((originalProduct as any).comisionPorVenta || 0),
         comisionPorcentaje: Number((originalProduct as any).comisionPorcentaje || 0),
+        // Vive aparte del producto (es una regla con condición de día). Se
+        // pide al abrir el modal; si falla, queda vacío y el empresario ve
+        // "paga igual todos los días", que es el estado por defecto y no una
+        // mentira.
+        comisionFinDeSemana: '',
         stockMinimo: Number(sedeStockConfig.stockMinimo ?? originalProduct.stockMinimo ?? 0),
         stockMaximo: Number(sedeStockConfig.stockMaximo ?? originalProduct.stockMaximo ?? 0),
         visibleEnSede: sedeStockConfig.visibleEnSede ?? true,

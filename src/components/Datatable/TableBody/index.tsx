@@ -12,6 +12,19 @@ const DOCUMENT_TOKEN_REGEX = /^[a-zA-Z0-9]+-[a-zA-Z0-9]+$/;
 
 const CENTERED_KEYS = new Set(['estado', 'estadotabla', 'tipo', 'status', 'acciones']);
 
+/**
+ * Columnas que se pintan como chip de estado en vez de texto plano.
+ *
+ * Vive acá y no como una cadena de `||` porque ya pasó: la pantalla de
+ * comprobantes renombró su columna a `estadoTabla` (para poder pintar las
+ * anulaciones en trámite) y los chips desaparecieron sin que nada fallara —
+ * el valor caía al render genérico y salía "Pendiente_conciliacion".
+ * Si aparece otra variante, se agrega acá.
+ */
+const COLUMNAS_DE_ESTADO = new Set([
+    'estado', 'estadoTabla', 'tipo', 'status', 'ambiente', 'Ambiente',
+]);
+
 /** Maps action.color or auto-detects from tooltip → Tailwind classes */
 const getButtonStyle = (action: any, row: any): string => {
     if (action.color) {
@@ -200,7 +213,7 @@ const TableBody: FC<ITableBodyProps> = ({ data, formValues, actions, columns }) 
                                         <span className={`font-semibold ${Number(cell) > 10 ? 'text-emerald-600 dark:text-emerald-400' : Number(cell) > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'}`}>
                                             {cell?.toString()}
                                         </span>
-                                    ) : key === 'estado' || key === 'estadoTabla' || key === 'tipo' || key === 'status' || key === 'ambiente' || key === 'Ambiente' ? (
+                                    ) : COLUMNAS_DE_ESTADO.has(key) ? (
                                         <div
                                             className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
                                                 ${cell === 'EMITIDO' || cell === 'ACTIVO' || cell === 'ACEPTADO' || cell === 'INGRESO' || cell === 'TRANSFERENCIA' || cell === 'SENT' || cell === 'Present' || cell === 'COMPLETADO' || cell === 'PRODUCCIÓN'

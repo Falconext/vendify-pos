@@ -234,7 +234,12 @@ export default function RepartidoresView() {
     setDespachoLoading(true);
     try {
       const fecha = moment().format('YYYY-MM-DD');
-      const { data } = await apiClient.get<any>(`/envio-despacho/panel?fecha=${fecha}`);
+      const { data } = // Se filtra por día de ENTREGA (`fechaEnvio`), no por día de creación:
+      // un pedido tomado el lunes que sale el jueves pertenece al jueves. Con
+      // `fecha` (creadoEn) este panel decía "sin despachos hoy" mientras el
+      // Panel de Ventas sí mostraba las entregas del día, porque cada pantalla
+      // entendía "hoy" de una forma distinta.
+      await apiClient.get<any>(`/envio-despacho/panel?fechaEnvio=${fecha}`);
       const raw: any[] = data?.data?.data ?? data?.data ?? [];
       if (!Array.isArray(raw)) return;
 
