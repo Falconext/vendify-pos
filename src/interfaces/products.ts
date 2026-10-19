@@ -108,6 +108,10 @@ export type IProduct = {
 
 
 export type IFormProduct = {
+    /** Qué se le puede prometer al cliente. Vacío = se deduce del stock. */
+    disponibilidad?: 'INMEDIATA' | 'BAJO_PEDIDO' | 'NO_DISPONIBLE' | 'NO_COMERCIAL';
+    /** Empuje frente a productos equivalentes (1 baja … 4 muy alta). */
+    prioridadVenta?: number;
   productoId: number
   descripcion: string,
   categoriaNombre: string
@@ -141,6 +145,8 @@ export type IFormProduct = {
   costoFijo?: number
   comisionPorVenta?: number
   comisionPorcentaje?: number
+  /** Comisión (monto) de sábado y domingo; vacío = la de siempre. */
+  comisionFinDeSemana?: string | number
   imagenUrl?: string | null
   // Campos Farmacia
   principioActivo?: string

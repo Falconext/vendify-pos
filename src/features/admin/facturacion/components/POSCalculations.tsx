@@ -138,15 +138,26 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab, printFormValues
     const motivoNota = (vm.typesOperation as any[])
         ?.find((op: any) => op.id === Number(vm.formValues?.motivoId))?.descripcion || 'Nota de crédito';
 
+    // Editando una nota ya cobrada: el cobro es solo el SALDO (nuevo total − lo
+    // ya pagado). "Exacto", el vuelto, el faltante y el pago mixto se miden
+    // contra este monto; sin pago previo es el total, como siempre.
+    const pagoPrevio: number = Number(vm.pagoPrevio ?? 0);
+    const enModoSaldo = pagoPrevio > 0;
+    const cobroObjetivo: number = enModoSaldo ? Number(vm.montoACobrar ?? 0) : total;
+    const aDevolver: number = enModoSaldo ? Number(vm.montoADevolver ?? 0) : 0;
+    const sinCobroPendiente = enModoSaldo && cobroObjetivo <= 0;
+    // Efectivo simple con un monto recibido menor a lo que se cobra.
+    const faltanteEfectivo: number = Number(vm.faltanteEfectivo ?? 0);
+
     // Split payment helpers
     const splitTotal = (vm.splitPayments as PaymentLine[])
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    const splitRemaining = Math.max(0, total - splitTotal);
-    const splitExcess = Math.max(0, splitTotal - total);
+    const splitRemaining = Math.max(0, cobroObjetivo - splitTotal);
+    const splitExcess = Math.max(0, splitTotal - cobroObjetivo);
     const splitCashTotal = (vm.splitPayments as PaymentLine[])
         .filter((p) => String(p.method).trim().toUpperCase() === 'EFECTIVO')
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    const splitValid = Math.abs(splitTotal - total) < 0.01 || (splitExcess > 0 && splitCashTotal + 0.01 >= splitExcess);
+    const splitValid = sinCobroPendiente || Math.abs(splitTotal - cobroObjetivo) < 0.01 || (splitExcess > 0 && splitCashTotal + 0.01 >= splitExcess);
     const splitChange = splitValid ? Number(splitExcess.toFixed(2)) : 0;
 
     const updateSplitAmount = (idx: number, value: number) => {
@@ -193,7 +204,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab, printFormValues
     const handleFillRemaining = (idx: number) => {
         vm.setSplitPayments((curr: PaymentLine[]) => {
             const otherTotal = curr.reduce((s, p, i) => i === idx ? s : s + (Number(p.amount) || 0), 0);
-            const fill = parseFloat(Math.max(0, total - otherTotal).toFixed(2));
+            const fill = parseFloat(Math.max(0, cobroObjetivo - otherTotal).toFixed(2));
             const next = [...curr];
             next[idx] = { ...next[idx], amount: fill };
             return next;
@@ -323,6 +334,41 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
         autoImpresionHecha.current = true;
         handleOpenNewTab(getFormatoImpresionDefault(vm.auth?.empresa));
     }, [emitStep, vm.auth?.empresa?.imprimirAutomatico, handleOpenNewTab, vm.auth?.empresa]);
+    // Mismas condiciones que deshabilitan el botón EMITIR/ACTUALIZAR.
+    const emitirBloqueado = vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && ((vm.isMixedPayment && !splitValid) || faltanteEfectivo > 0));
+
+    // Enter emite (pedido de cajeros: escribir el monto y Enter, sin ir al mouse).
+    // El ref evita una doble emisión si se mantiene o repite la tecla mientras la
+    // primera petición todavía no cambió el modal a "procesando".
+    const emitiendoConEnter = useRef(false);
+    useEffect(() => {
+        if (!showPago || emitStep !== 'pago') {
+            emitiendoConEnter.current = false;
+            return;
+        }
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Enter' || e.repeat || e.isComposing || e.defaultPrevented) return;
+            if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            const el = e.target as HTMLElement | null;
+            const tag = el?.tagName;
+            // EMITIR, Cancelar y la X ya responden al Enter por sí mismos. En el
+            // resto de botones (Efectivo, Yape, Exacto…) el foco queda ahí tras el
+            // clic, y lo esperado es que Enter emita, no que vuelva a elegir Yape.
+            // En un textarea o un select el Enter tiene su propio uso.
+            if (el?.closest('[data-enter-nativo]')) return;
+            if (tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'A') return;
+            if (el?.closest('[role="listbox"], [role="combobox"], [role="menu"]')) return;
+            e.preventDefault();
+            if (emitirBloqueado || emitiendoConEnter.current) return;
+            emitiendoConEnter.current = true;
+            Promise.resolve(vm.addInvoiceReceipt()).finally(() => {
+                emitiendoConEnter.current = false;
+            });
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [showPago, emitStep, emitirBloqueado, vm.addInvoiceReceipt]);
+
     const handleModalOverlay = () => {
         if (emitStep === 'pago') setShowPago(false);
         else if (emitStep === 'emitido') closeEmitido();
@@ -471,7 +517,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                     title={!hayProductos ? 'Agrega productos antes de continuar' : undefined}
                 >
                     <Icon icon={vm.isQuotationRoute ? (vm.isEditMode ? "solar:pen-bold" : "solar:diskette-bold") : "solar:card-send-bold"} className="text-lg text-white" />
-                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : esNotaCredito ? "EMITIR NOTA DE CRÉDITO" : vm.isEditNotaVenta ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
+                    <span className="text-white">{vm.isQuotationRoute ? (vm.isEditMode ? "ACTUALIZAR" : "GUARDAR") : esNotaCredito ? "EMITIR NOTA DE CRÉDITO" : vm.isEditNotaVenta && !vm.editaHaciaFormal ? "ACTUALIZAR PAGO" : "CONTINUAR PAGO"}</span>
                 </button>
             </div>
 
@@ -531,7 +577,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                     <p className="text-xs text-gray-400">{vm.formValues?.medioPago === 'Crédito' ? 'Revisa y confirma el comprobante a crédito' : 'Elige el método de pago y confirma'}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setShowPago(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                            <button data-enter-nativo onClick={() => setShowPago(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                                 <Icon icon="solar:close-circle-bold" width={22} />
                             </button>
                         </div>
@@ -548,6 +594,39 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                     </div>
                                 ) : (
                 <div className="mb-1">
+                    {enModoSaldo && (
+                        <div data-testid="pos-pago-previo" className="mb-3 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/70 dark:bg-violet-950/30 p-3">
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-wide text-gray-400">Nuevo total</p>
+                                    <p className="text-sm font-black text-gray-800 dark:text-white">S/ {total.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-wide text-gray-400">Ya pagado</p>
+                                    <p className="text-sm font-black text-emerald-600 dark:text-emerald-300">S/ {pagoPrevio.toFixed(2)}</p>
+                                </div>
+                                {aDevolver > 0 ? (
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-wide text-amber-600">A devolver</p>
+                                        <p className="text-sm font-black text-amber-600 dark:text-amber-300">S/ {aDevolver.toFixed(2)}</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-wide text-violet-600">Saldo a cobrar</p>
+                                        <p className="text-sm font-black text-violet-700 dark:text-violet-300">S/ {cobroObjetivo.toFixed(2)}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <p className="mt-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                                {aDevolver > 0
+                                    ? `El cliente pagó más que el nuevo total: devuélvele S/ ${aDevolver.toFixed(2)}. No hay nada que cobrar.`
+                                    : sinCobroPendiente
+                                        ? 'Lo ya pagado cubre el nuevo total. No hay nada que cobrar.'
+                                        : `Cobra solo la diferencia. Ingresa lo que el cliente entrega ahora; el vuelto se calcula sobre S/ ${cobroObjetivo.toFixed(2)}.`}
+                            </p>
+                        </div>
+                    )}
+                    {!sinCobroPendiente && (<>
                     {/* Toggle simple / mixto */}
                     <div className="flex items-center justify-end mb-2">
                         <button
@@ -603,12 +682,13 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                             step="0.01"
                                             value={vm.pay || ''}
                                             onChange={(e) => vm.setPay(Number(e.target.value) || 0)}
-                                            placeholder={`Recibido ${total.toFixed(2)}`}
+                                            placeholder={`Recibido ${cobroObjetivo.toFixed(2)}`}
+                                            data-testid="pos-recibido"
                                             className="w-full pl-7 pr-16 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-300"
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => vm.setPay(Number(total.toFixed(2)))}
+                                            onClick={() => vm.setPay(Number(cobroObjetivo.toFixed(2)))}
                                             className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-[9px] font-black text-emerald-700 dark:text-emerald-300"
                                         >
                                             Exacto
@@ -624,7 +704,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                             )}
 
                             {renderPaymentTraceFields(
-                                { ...vm.paymentDetail, method: vm.paymentMethod, amount: total },
+                                { ...vm.paymentDetail, method: vm.paymentMethod, amount: cobroObjetivo },
                                 (patch) => vm.setPaymentDetail((curr: PaymentLine) => ({ ...curr, ...patch })),
                             )}
                         </div>
@@ -696,6 +776,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                             </div>
                         </div>
                     )}
+                    </>)}
                 </div>
                                 )}
                                 {vm.cpeRequeridoPorMedioPago && <CpeRequeridoCard vm={vm} />}
@@ -770,17 +851,20 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
 
                         {/* Footer: emitir */}
                         <div className="flex items-center justify-end gap-3 px-5 py-3.5 border-t border-gray-100 dark:border-white/10">
-                            <button onClick={() => setShowPago(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                            <button data-enter-nativo onClick={() => setShowPago(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                                 Cancelar
                             </button>
                             <button
+                                data-enter-nativo
+                                data-testid="pos-emitir"
                                 onClick={() => vm.addInvoiceReceipt()}
-                                disabled={vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && vm.isMixedPayment && !splitValid)}
-                                title={vm.cpeRequeridoPorMedioPago ? 'Cambia a Boleta o Factura para emitir' : undefined}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${(vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && vm.isMixedPayment && !splitValid)) ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
+                                disabled={emitirBloqueado}
+                                title={vm.cpeRequeridoPorMedioPago ? 'Cambia a Boleta o Factura para emitir' : 'Atajo: Enter'}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all ${emitirBloqueado ? 'bg-gray-400 cursor-not-allowed' : 'btn-accent shadow-lg shadow-black/20'}`}
                             >
-                                <Icon icon={vm.isEditMode ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
-                                {vm.isEditMode ? 'ACTUALIZAR' : 'EMITIR'}
+                                <Icon icon={vm.isEditMode && !vm.editaHaciaFormal ? "solar:pen-bold" : "solar:printer-minimalistic-bold"} width={18} />
+                                {vm.isEditMode && !vm.editaHaciaFormal ? 'ACTUALIZAR' : 'EMITIR'}
+                                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-white/20 text-white/90">Enter ↵</kbd>
                             </button>
                         </div>
                     </motion.div>
@@ -807,7 +891,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                             observation={vm.formValues?.observaciones}
                             isPendiente={vm.isComprobantePendiente}
                             pendienteMensaje={vm.pendienteMensaje}
-                            isUpdate={vm.isEditMode}
+                            isUpdate={vm.isEditMode && !vm.editaHaciaFormal}
                             hasDespacho={vm.despachoCreado}
                             handleOpenNewTab={handleOpenNewTab}
                             closeModal={closeEmitido}

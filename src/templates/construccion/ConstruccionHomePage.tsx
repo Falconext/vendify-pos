@@ -13,7 +13,7 @@ import ConstruccionCartModal from './ConstruccionCartModal';
 import { sinStock } from '@/templates/shared/ventaSinStock';
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
 const getName = (item: any) => (typeof item === 'string' ? item : item?.nombre || item?.name || '');
@@ -680,7 +680,7 @@ export default function ConstruccionHomePage({
               </div>
             ) : (
               <div className="grid gap-x-10 gap-y-16 pt-12 sm:grid-cols-2 lg:grid-cols-5">
-                {trendingProducts.map((producto, index) => (
+                {trendingProducts.map((producto: any, index: number) => (
                   <HammerCatalogCard
                     key={`${producto.id || producto.descripcion}-${index}`}
                     producto={producto}

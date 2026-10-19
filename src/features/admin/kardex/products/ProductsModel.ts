@@ -44,7 +44,10 @@ export interface IProductsViewModelState {
     categoriaIdFilter: number | undefined;
     /** Filtro por localización física (estante/zona), tal como está guardada en el producto. */
     localizacionFilter: string | undefined;
-    soloStockBajo: boolean;
+    /** Filtro de stock: '' = todos; BAJO (≤ mínimo), SIN_STOCK (0) o RANGO (desde–hasta). */
+    stockFiltro: StockFiltro;
+    stockDesde: string;
+    stockHasta: string;
     /** Ver también los productos NO asignados a la sede seleccionada. */
     incluirOcultos: boolean;
     isOpenModalAsignarSedes: boolean;
@@ -177,3 +180,5 @@ export const buildEditFormValues = (originalProduct: any): IFormProduct => {
             : [],
     } as IFormProduct;
 };
+
+export type StockFiltro = '' | 'BAJO' | 'SIN_STOCK' | 'RANGO';

@@ -89,7 +89,7 @@ export const curvaDeModelo = (producto: any): CeldaCurva[] => {
 };
 
 /** Qué afectación hereda la línea (el padre manda: es el mismo producto). */
-const esGravado = (producto: any): boolean =>
+export const esGravado = (producto: any): boolean =>
     String(producto?.tipoAfectacionIGV ?? '10') === '10';
 
 /**
@@ -103,8 +103,15 @@ export const lineasDeCurva = (
     producto: any,
     cantidades: Record<number, unknown>,
     costos: Record<number, unknown> = {},
+    /**
+     * 1.18 cuando la orden está en "Precios con IGV incluido": el costo del
+     * catálogo (neto) entra con su IGV, igual que al agregar un producto suelto.
+     * Lo tecleado en "Ajustar el costo" ya está en los términos de la orden.
+     */
+    factorCosto = 1,
 ): LineaOrden[] => {
     const gravado = esGravado(producto);
+    const factor = gravado ? Number(factorCosto) || 1 : 1;
     const nombre = String(producto?.descripcion ?? '').trim();
 
     return curvaDeModelo(producto)
@@ -123,7 +130,7 @@ export const lineasDeCurva = (
                 // (ej. 46.6102) y en la orden al proveedor se ve más limpio redondeado.
                 precioUnitario: Number(
                     (costoElegido === undefined || costoElegido === ''
-                        ? celda.costo
+                        ? celda.costo * factor
                         : Math.max(0, num(costoElegido))
                     ).toFixed(2),
                 ),

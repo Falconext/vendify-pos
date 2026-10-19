@@ -17,6 +17,10 @@ jest.mock('@/utils/fetch', () => ({
 }));
 jest.mock('@/utils/apiClient', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }));
 jest.mock('@/zustand/alert', () => ({ __esModule: true, default: () => ({ alert: jest.fn() }) }));
+// El modal de recepción elige la sede destino: auth y sedes leen import.meta
+// (Vite), que Jest no entiende.
+jest.mock('@/zustand/auth', () => ({ useAuthStore: (sel?: any) => (sel ? sel({ sedeActiva: null }) : { sedeActiva: null }) }));
+jest.mock('@/zustand/sedes', () => ({ useSedesStore: () => ({ sedes: [], listarSedes: jest.fn() }) }));
 
 const pintar = () =>
     render(<ModalOrdenCompra orden={null} onClose={jest.fn()} onSaved={jest.fn()} />);

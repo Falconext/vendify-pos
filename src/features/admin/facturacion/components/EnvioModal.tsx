@@ -7,6 +7,8 @@ import moment from "moment";
 import { useRepartidoresStore } from "@/zustand/repartidores";
 import useAlertStore from "@/zustand/alert";
 import { ShalomAgenciaSelect } from "@/components/ShalomAgenciaSelect";
+import { OlvaAgenciaSelect } from "@/components/OlvaAgenciaSelect";
+import { ShalomProductoSelect } from "@/components/ShalomProductoSelect";
 import { EstablecimientoCombobox } from "@/components/EstablecimientoCombobox";
 import { useExtentionsStore } from "@/zustand/extentions";
 import { TIPOS_VENTA_REPARTO, FORMAS_PAGO_COBRO, cobraEnDestinoReparto, esNombreGenericoCliente, filtrarDistritos } from "@/pages/admin/despacho/repartoPropio";
@@ -29,6 +31,7 @@ export const TURNOS = [
 ];
 
 const SHALOM_COURIERS = new Set(['SHALOM_PRO', 'SHALOM_COD']);
+const OLVA_COURIER = 'OLVA';
 
 const inp = "w-full h-10 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all placeholder:text-slate-400";
 const lbl = "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5";
@@ -111,6 +114,7 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
 
     const selectedCourier = COURIERS.find(c => c.value === envioData.transportista);
     const esShalom = SHALOM_COURIERS.has(envioData.transportista);
+    const esOlva = envioData.transportista === OLVA_COURIER;
     const esPropio = envioData.transportista === 'PROPIOS';
 
     // Reparto propio / motorizado: distrito con buscador de ubigeos y cobro en destino.
@@ -312,6 +316,18 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                                     </Field>
                                 </div>
 
+                                {/* Tamaño del paquete: es lo que Shalom usa para
+                                    calcular el flete y lo que exige para crear la guía. */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <Field label="Tamaño del paquete (define el flete)">
+                                        <ShalomProductoSelect
+                                            value={envioData.shalomTipoProducto}
+                                            onChange={(v: number | undefined) => set('shalomTipoProducto', v)}
+                                            destinoId={envioData.shalomAgenciaDestinoId || null}
+                                        />
+                                    </Field>
+                                </div>
+
                                 {/* Fecha + monto COD */}
                                 <div className={`grid gap-3 ${envioData.transportista === 'SHALOM_COD' ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                     <Calendar
@@ -480,9 +496,20 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                             {esShalom && envioData.tipoEnvio === 'AGENCIA' ? (
                                 <ShalomAgenciaSelect
                                     value={envioData.agenciaDestino}
-                                    onChange={v => set('agenciaDestino', v)}
+                                    // Al escribir a mano se borra el ter_id: si quedara
+                                    // el de la agencia anterior, la guía saldría a otro
+                                    // destino que el que dice el texto.
+                                    onChange={v => { set('agenciaDestino', v); set('shalomAgenciaDestinoId', ''); }}
+                                    onSelectAgencia={a => set('shalomAgenciaDestinoId', a.terId)}
                                     invalid={Boolean(errors.agenciaDestino)}
                                     placeholder="Buscar agencia Shalom por nombre, provincia o departamento..."
+                                />
+                            ) : esOlva && envioData.tipoEnvio === 'AGENCIA' ? (
+                                <OlvaAgenciaSelect
+                                    value={envioData.agenciaDestino}
+                                    onChange={v => set('agenciaDestino', v)}
+                                    invalid={Boolean(errors.agenciaDestino)}
+                                    placeholder="Buscar agencia Olva por nombre, distrito o departamento..."
                                 />
                             ) : (
                                 <input type="text" value={envioData.agenciaDestino}

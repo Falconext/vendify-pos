@@ -24,6 +24,8 @@ import { useProductsViewModel } from './useProductsViewModel';
 import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
+import RangoStockInputs, { describirFiltroStock } from './components/RangoStockInputs';
+import type { StockFiltro } from './ProductsModel';
 
 const ACCENT = 'var(--accent, #7551FF)';
 // Estilo unificado para los botones de acción del toolbar (Categorías, Marcas,
@@ -112,7 +114,7 @@ export default function ProductsView() {
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     // Filtros activos (para el contador del botón Filtro).
     const filtrosActivos =
-        (vm.soloStockBajo ? 1 : 0) +
+        (vm.stockFiltro ? 1 : 0) +
         (vm.incluirOcultos ? 1 : 0) +
         (vm.categoriaIdFilter ? 1 : 0) +
         (vm.localizacionFilter ? 1 : 0);
@@ -676,16 +678,18 @@ export default function ProductsView() {
                                 {showFilterMenu && (
                                     <div className="absolute left-0 z-50 mt-2 w-[19rem] rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl dark:shadow-none p-1.5 max-h-[70vh] overflow-y-auto">
                                         <p className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Stock</p>
-                                        {[
-                                            { key: false, label: 'Todos los productos', icon: 'solar:widget-2-linear' },
-                                            { key: true, label: 'Solo stock bajo', icon: 'solar:box-minimalistic-linear' },
-                                        ].map((opt) => {
-                                            const active = vm.soloStockBajo === opt.key;
+                                        {([
+                                            { key: '', label: 'Todos los productos', icon: 'solar:widget-2-linear' },
+                                            { key: 'BAJO', label: 'Stock bajo (≤ mínimo)', icon: 'solar:box-minimalistic-linear' },
+                                            { key: 'SIN_STOCK', label: 'Sin stock (0)', icon: 'solar:box-linear' },
+                                            { key: 'RANGO', label: 'Rango de stock…', icon: 'solar:sort-vertical-linear' },
+                                        ] as { key: StockFiltro; label: string; icon: string }[]).map((opt) => {
+                                            const active = vm.stockFiltro === opt.key;
                                             return (
                                                 <button
-                                                    key={String(opt.key)}
+                                                    key={opt.key || 'todos'}
                                                     type="button"
-                                                    onClick={() => actions.setSoloStockBajo(opt.key)}
+                                                    onClick={() => actions.setStockFiltro(opt.key, opt.key === 'RANGO' ? vm.stockDesde : '', opt.key === 'RANGO' ? vm.stockHasta : '')}
                                                     className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
                                                 >
                                                     <Icon icon={opt.icon} className="text-base text-slate-400 dark:text-gray-400" />
@@ -694,6 +698,13 @@ export default function ProductsView() {
                                                 </button>
                                             );
                                         })}
+                                        {vm.stockFiltro === 'RANGO' && (
+                                            <RangoStockInputs
+                                                desde={vm.stockDesde}
+                                                hasta={vm.stockHasta}
+                                                onAplicar={(d, h) => actions.setStockFiltro('RANGO', d, h)}
+                                            />
+                                        )}
                                         {vm.tieneVariasSedes && vm.effectiveSedeId && (
                                             <>
                                                 <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Sede</p>
@@ -963,18 +974,24 @@ export default function ProductsView() {
                     </div>
                 </div>
                 <div className="p-3 sm:p-0">
-                    {vm.soloStockBajo && (
+                    {vm.stockFiltro && (
                         <div className="flex items-center gap-2 mb-4 px-4 py-2.5 ml-3 bg-rose-50 dark:bg-rose-950/20 border mt-2 border-rose-100 dark:border-rose-900/40 rounded-xl max-w-fit animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
                                 <Icon icon="solar:box-minimalistic-bold-duotone" width={18} />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">Filtro de Stock Bajo Activo</p>
-                                <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Mostrando productos con stock igual o menor al mínimo establecido.</p>
+                                <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">Filtrando: {describirFiltroStock(vm.stockFiltro, vm.stockDesde, vm.stockHasta)}</p>
+                                <p className="text-xs text-rose-600/70 dark:text-rose-400/70">
+                                    {vm.stockFiltro === 'BAJO'
+                                        ? 'Productos con stock igual o menor al mínimo establecido.'
+                                        : vm.stockFiltro === 'SIN_STOCK'
+                                            ? 'Productos sin unidades disponibles para vender.'
+                                            : 'Productos cuyo stock disponible está dentro del rango.'}
+                                </p>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => actions.setSoloStockBajo(false)}
+                                onClick={() => actions.setStockFiltro('')}
                                 className="ml-4 p-1.5 hover:bg-rose-200/50 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 dark:text-rose-400 transition-colors shrink-0"
                             >
                                 <Icon icon="solar:close-circle-bold" width={20} />

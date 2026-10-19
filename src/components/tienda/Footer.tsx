@@ -5,6 +5,8 @@ import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/s
 interface FooterProps {
     tienda: any;
     diseno: any;
+    /** Slug de la tienda: lo pasan las fichas de producto para armar enlaces. */
+    slug?: string;
 }
 
 export default function Footer({ tienda, diseno }: FooterProps) {

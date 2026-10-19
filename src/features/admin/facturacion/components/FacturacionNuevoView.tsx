@@ -261,8 +261,13 @@ export const FacturacionNuevoView = () => {
         serie: vm.dataReceipt?.serie,
         correlativo: vm.dataReceipt?.correlativo,
         numDocAfectado: `${vm.serie}-${vm.correlative}`,
-        medioPago: printMedioPago,
-        splitPayments: vm.isMixedPayment && !isCreditSale ? vm.splitPayments : undefined,
+        // Editando una nota ya cobrada, el ticket muestra el pago completo (lo de
+        // antes + lo de ahora) y lleva `pagoAnterior`/`recibido` para imprimir
+        // "PAGO ANTERIOR / RECIBIDO / VUELTO" coherentes con el saldo.
+        medioPago: vm.pagoEdicion && !isCreditSale ? vm.pagoEdicion.medioPago : printMedioPago,
+        splitPayments: vm.pagoEdicion && !isCreditSale
+            ? vm.pagoEdicion.splitPayments
+            : (vm.isMixedPayment && !isCreditSale ? vm.splitPayments : undefined),
         paymentDetails: isCreditSale ? { mode: 'CREDITO', method: 'Crédito', amount: 0 } : vm.buildPaymentDetails?.(),
         pagoInicialMonto: isCreditSale ? printInicialCredito : undefined,
         pagoInicialMetodo: isCreditSale && printInicialCredito > 0

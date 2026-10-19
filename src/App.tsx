@@ -43,6 +43,7 @@ import ReviewsTienda from './pages/admin/tienda/Reviews'
 import BlogTienda from './pages/admin/tienda/Blog'
 import PanelVentasView from './pages/admin/despacho/PanelVentasView'
 import DespachoConfigPage from './pages/admin/despacho/DespachoConfigPage'
+import CouriersView from './features/admin/despacho/couriers/CouriersView'
 import RepartidoresView from './pages/admin/repartidores/RepartidoresView'
 import CombosTienda from './pages/admin/tienda/Combos'
 import ModificadoresTienda from './pages/admin/tienda/Modificadores'
@@ -214,6 +215,7 @@ function App() {
           <Route path="tienda/reviews" element={<ReviewsTienda />} />
           <Route path="tienda/blog" element={<BlogTienda />} />
           <Route path="ventas" element={<PanelVentasView />} />
+          <Route path="ventas/couriers" element={<CouriersView />} />
           <Route path="despacho/config" element={<DespachoConfigPage />} />
           <Route path="repartidores" element={<RepartidoresView />} />
           <Route path="tienda/combos" element={<CombosTienda />} />

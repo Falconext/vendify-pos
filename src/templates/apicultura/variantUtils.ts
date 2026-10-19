@@ -103,7 +103,7 @@ function normalizeAttrs(producto: any, variant: any, fallbackIndex: number) {
 
   if (rawAttrs && typeof rawAttrs === 'object' && !Array.isArray(rawAttrs)) {
     Object.entries(rawAttrs).forEach(([name, value]) => {
-      const cleanName = optionsMap.get(normalizeText(name)) || String(name || '').trim();
+      const cleanName = String(optionsMap.get(normalizeText(name)) || String(name || '').trim());
       const cleanValue = String(value || '').trim();
       if (cleanName && cleanValue) attrs[cleanName] = cleanValue;
     });

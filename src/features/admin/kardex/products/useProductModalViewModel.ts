@@ -1482,6 +1482,16 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             formValues?.porcentajeProvision != null
               ? Number(formValues?.porcentajeProvision)
               : undefined,
+          // El payload se arma campo por campo, así que un campo nuevo del
+          // formulario que no se liste acá se pierde en silencio: el usuario
+          // lo cambia, ve "guardado" y no cambió nada.
+          disponibilidad: (formValues as any)?.disponibilidad || undefined,
+          // "Sin preferencia" es 0 en la pantalla, pero el backend solo acepta
+          // 1-4: se manda sin el campo, que es justo lo que significa.
+          prioridadVenta:
+            Number((formValues as any)?.prioridadVenta) >= 1
+              ? Number((formValues as any).prioridadVenta)
+              : undefined,
           preciosMayorista: Array.isArray(formValues?.preciosMayorista)
             ? formValues.preciosMayorista.map((p) => ({
                 cantidadMinima: Number(p.cantidadMinima),
@@ -1825,6 +1835,16 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             porcentajeProvision:
               formValues?.porcentajeProvision != null
                 ? Number(formValues?.porcentajeProvision)
+                : undefined,
+            // El payload se arma campo por campo, así que un campo nuevo del
+            // formulario que no se liste acá se pierde en silencio: el usuario
+            // lo cambia, ve "guardado" y no cambió nada.
+            disponibilidad: (formValues as any)?.disponibilidad || undefined,
+            // "Sin preferencia" es 0 en la pantalla, pero el backend solo acepta
+            // 1-4: se manda sin el campo, que es justo lo que significa.
+            prioridadVenta:
+              Number((formValues as any)?.prioridadVenta) >= 1
+                ? Number((formValues as any).prioridadVenta)
                 : undefined,
             estado: "ACTIVO",
             imagenUrl: imageToSave,

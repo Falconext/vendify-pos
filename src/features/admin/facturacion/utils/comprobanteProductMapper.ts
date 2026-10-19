@@ -30,7 +30,17 @@ export const getDetalleSerials = (detalle: any) =>
 
 export const mapDetalleToInvoiceProduct = (detalle: any) => {
   const producto = detalle?.producto || {};
-  const productoId = Number(firstValue(producto?.id, detalle?.productoId, detalle?.id) || 0);
+  // OJO: `detalle.id` es la PK de DetalleComprobante, NO un id de producto.
+  // Tenerlo en esta cadena hacía que un ÍTEM LIBRE (productoId null, sin
+  // `producto`) saliera del mapper con el id de su propia línea. Al convertir
+  // una Nota de Venta en factura, esa línea viajaba como productoId = 11240 y
+  // el backend buscaba el producto 11240: si no era de la empresa, rechazaba
+  // con "productos no encontrados"; y si por casualidad SÍ era uno suyo,
+  // facturaba un producto equivocado y le descontaba el stock sin avisar.
+  const productoId = Number(firstValue(producto?.id, detalle?.productoId) || 0);
+  // Sin producto en catálogo la línea es un ítem libre: se mantiene en null
+  // para que el backend la trate como tal (su rama `productoId == null`).
+  const esItemLibre = !productoId;
   const precioUnitario = Number(firstValue(detalle?.mtoPrecioUnitario, detalle?.precioUnitario, detalle?.precioUnit, producto?.precioUnitario) || 0);
   const cantidad = Number(firstValue(detalle?.cantidad, detalle?.cantidadInicial) || 1);
   const imagenUrl = getDetalleProductImage(detalle);
@@ -38,8 +48,9 @@ export const mapDetalleToInvoiceProduct = (detalle: any) => {
 
   return {
     ...detalle,
-    id: productoId || detalle?.id,
-    productoId,
+    id: productoId || null,
+    productoId: productoId || null,
+    ...(esItemLibre ? { esItemLibre: true } : {}),
     descripcion: firstValue(detalle?.descripcion, producto?.descripcion, 'Producto'),
     cantidad,
     cantidadInicial: cantidad,
@@ -49,6 +60,18 @@ export const mapDetalleToInvoiceProduct = (detalle: any) => {
     unidad: firstValue(detalle?.unidad, detalle?.unidadMedida, producto?.unidadMedida?.codigo, producto?.unidadMedida?.nombre, 'NIU'),
     unidadMedida: detalle?.unidadMedida || { nombre: firstValue(detalle?.unidad, producto?.unidadMedida?.nombre, 'NIU') },
     unidadMedidaNombre: firstValue(detalle?.unidad, detalle?.unidadMedida, producto?.unidadMedida?.nombre, 'NIU'),
+    ...(esItemLibre
+      ? {
+          // El backend arma el ítem de servicio con `unidadVenta || unidad || 'ZZ'`:
+          // sin esto, un producto externo vendido por unidad se reemitía como
+          // servicio (ZZ). La afectación también se respeta, para no convertir
+          // en gravada una línea que iba exonerada o inafecta.
+          unidadMedidaCodigo: firstValue(detalle?.unidadVenta, detalle?.unidad, 'NIU'),
+          tipoAfectacionIGV: String(
+            firstValue(detalle?.tipoAfectacionIGV, detalle?.tipAfeIgv, '10'),
+          ),
+        }
+      : {}),
     stock: Number(firstValue(producto?.stock, detalle?.stock, 999) || 999),
     estado: producto?.estado || detalle?.estado || 'ACTIVO',
     atributosTecnicos: firstValue(detalle?.atributosTecnicos, producto?.atributosTecnicos, undefined),

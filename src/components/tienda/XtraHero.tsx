@@ -2,6 +2,8 @@ import { Icon } from '@iconify/react';
 
 interface XtraHeroProps {
   tienda: any;
+  /** Lo pasan todos los layouts de tienda; este hero aún no lo usa. */
+  diseno?: any;
   productos: any[];
   cp: string;
   onExplore?: () => void;

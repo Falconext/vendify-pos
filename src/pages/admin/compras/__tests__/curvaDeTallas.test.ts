@@ -135,3 +135,21 @@ describe('El total mientras se carga', () => {
         expect(totalDeCurva({})).toBe(0);
     });
 });
+
+describe('Curva en una orden con "Precios con IGV incluido"', () => {
+    it('el costo del catálogo (neto) entra con su IGV, como un producto suelto', () => {
+        const [linea] = lineasDeCurva(VERONA, { 12: 1 }, {}, 1.18);
+        expect(linea.precioUnitario).toBe(55); // 46.61 × 1.18 = 54.9998
+    });
+
+    it('lo tecleado en "Ajustar el costo" se respeta tal cual', () => {
+        const [linea] = lineasDeCurva(VERONA, { 12: 1 }, { 12: '60' }, 1.18);
+        expect(linea.precioUnitario).toBe(60);
+    });
+
+    it('un modelo exonerado no suma IGV', () => {
+        const exo = { ...VERONA, tipoAfectacionIGV: '20' };
+        const [linea] = lineasDeCurva(exo, { 12: 1 }, {}, 1.18);
+        expect(linea.precioUnitario).toBe(46.61);
+    });
+});

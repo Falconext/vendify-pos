@@ -92,3 +92,24 @@ describe('Dos comprobantes en pantalla sin pisarse', () => {
             .toContain('contentRef: componentRef');
     });
 });
+
+describe('Enter emite desde el modal de pago', () => {
+    // Pedido de cajeros: escribir el monto recibido y pulsar Enter, sin ir al mouse.
+    it('escucha Enter solo mientras el modal está en la fase de pago', () => {
+        expect(POS).toContain("if (!showPago || emitStep !== 'pago')");
+        expect(POS).toContain("if (e.key !== 'Enter' || e.repeat || e.isComposing || e.defaultPrevented) return;");
+    });
+
+    it('respeta las mismas condiciones que deshabilitan el botón', () => {
+        expect(POS).toContain('disabled={emitirBloqueado}');
+        expect(POS).toContain('if (emitirBloqueado || emitiendoConEnter.current) return;');
+    });
+
+    it('no emite dos veces con Enter repetido', () => {
+        expect(POS).toContain('emitiendoConEnter.current = true;');
+    });
+
+    it('EMITIR, Cancelar y la X conservan su propio Enter', () => {
+        expect((POS.match(/data-enter-nativo/g) || []).length).toBeGreaterThanOrEqual(3);
+    });
+});
