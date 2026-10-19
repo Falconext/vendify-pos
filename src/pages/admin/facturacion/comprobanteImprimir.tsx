@@ -5,6 +5,7 @@ import { BRAND } from '@/lib/branding';
 import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
 import { descripcionParaImpresion } from '@/utils/descripcion-vehiculo';
+import { imprimeDetalleAdicional, lineasDetalleAdicional } from '@/utils/detalleAdicional';
 import { useQrSunat } from '@/utils/qrSunat';
 import { lineasPagoMixto } from '@/utils/pagoMixto';
 
@@ -139,6 +140,13 @@ console.log(formValues)
     const displayRetencionMonto = retencionData ? Number(retencionData.montoDetraccion || 0) : calculatedRetention;
     const shouldShowRetention = retencionData || (hasRetentionText && calculatedRetention > 0);
     const isDocumentoFiscal = ['01', '03', '07', '08'].includes(String(formValues?.tipoDoc || ''));
+    // Detalle multilínea bajo el título de cada ítem (cotización de servicios). No
+    // se imprime en factura/boleta/notas: el XML de SUNAT solo lleva el título.
+    const muestraDetalleAdicional =
+        imprimeDetalleAdicional(formValues?.tipoDoc) &&
+        !/^(FACTURA|BOLETA|NOTA DE CR|NOTA DE D)/i.test(String(receipt || ''));
+    const detalleLineas = (item: any): string[] =>
+        muestraDetalleAdicional ? lineasDetalleAdicional(item?.detalleAdicional) : [];
     const explicitDiscount = parseAmount(
         formValues?.mtoDescuentoGlobal ??
         formValues?.totalDescuentos ??
@@ -376,6 +384,9 @@ console.log(formValues)
                                     <span className="basis-[16%] shrink-0 text-center" style={{ fontSize: tpx('productos') }}>{item?.cantidad || 0}</span>
                                     <span className="basis-[44%] shrink-0 text-left" style={{ fontSize: tpx('productos') }}>
                                         <span style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase() || ''}</span>
+                                        {detalleLineas(item).map((l, idx) => (
+                                            <span key={`da-${idx}`} className="block" style={{ fontSize: tpx('productos', 13) }}>{l}</span>
+                                        ))}
                                         {item?.lotes && item.lotes.length > 0 && (
                                             <div className="flex flex-col mt-0.5">
                                                 {item.lotes.map((l: any, idx: number) => (
@@ -733,7 +744,12 @@ console.log(formValues)
                                                     </div>
                                                 )}
                                                 {/* <div className="w-[10%] text-center border-r border-gray-300 py-1">{item?.codigo || '-'}</div> */}
-                                                <div className="flex-1 text-left border-r border-gray-300 px-2 py-1" style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase()}</div>
+                                                <div className="flex-1 text-left border-r border-gray-300 px-2 py-1">
+                                                    <div style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase()}</div>
+                                                    {detalleLineas(item).map((l, idx) => (
+                                                        <div key={`da-${idx}`} className="font-normal" style={{ whiteSpace: 'normal', lineHeight: 1.35 }}>{l}</div>
+                                                    ))}
+                                                </div>
                                                 {/* <div className="w-[10%] text-right border-r border-gray-300 px-1 py-1">{round2(pUnit / 1.18).toFixed(2)}</div> */}
                                                 {/* <div className="w-[8%] text-right border-r border-gray-300 px-1 py-1">{round2(pUnit - (pUnit / 1.18)).toFixed(2)}</div> */}
                                                 <div className="w-[9%] text-center border-r border-gray-300 py-1">{monedaSimbolo}</div>
@@ -1136,6 +1152,9 @@ console.log(formValues)
                                                 )}
                                                 <div className="flex-1 text-left border-r border-gray-300 px-2 py-1">
                                                     <div style={descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).includes('\n') ? { whiteSpace: 'pre-line', lineHeight: 1.7 } : undefined}>{descripcionParaImpresion(item?.descripcion, item?.atributosTecnicos).toUpperCase()}</div>
+                                                    {detalleLineas(item).map((l, idx) => (
+                                                        <div key={`da-${idx}`} className="font-normal" style={{ lineHeight: 1.35 }}>{l}</div>
+                                                    ))}
                                                     {item?.lotes && item.lotes.length > 0 && (
                                                         <div className="flex flex-col mt-0.5">
                                                             {item.lotes.map((l: any, idx: number) => (

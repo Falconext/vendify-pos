@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import apiClient from "@/utils/apiClient";
 import ModalAnticipos from "./ModalAnticipos";
+import { DETALLE_ADICIONAL_MAX } from '@/utils/detalleAdicional';
 
 export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?: 'CATALOGO' | 'CAJA' }) => {
     const compacto = layout === 'CAJA';
@@ -235,6 +236,17 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
                                 autoFocus
                                 placeholder="Nombre del producto o servicio — Ej: Instalación de Windows, mantenimiento, producto a pedido..."
                                 className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-violet-300"
+                            />
+                            {/* Detalle multilínea bajo el título (sale en el PDF, letra normal).
+                                Enter hace salto de línea; se agrega con el botón. */}
+                            <textarea
+                                value={vm.freeQuoteItem.detalleAdicional ?? ''}
+                                onChange={(e) => vm.setFreeQuoteItem((prev: any) => ({ ...prev, detalleAdicional: e.target.value }))}
+                                rows={3}
+                                maxLength={DETALLE_ADICIONAL_MAX}
+                                aria-label="Descripción / detalle (opcional)"
+                                placeholder={'Descripción / detalle (opcional) — una idea por línea. Ej:\nRetiro de pintura antigua\nRaspado, lijado y eliminación de material suelto'}
+                                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-violet-300 resize-y min-h-[72px]"
                             />
 
                             {/* Fila PRIORITARIA: cantidad, precio y el botón Agregar van juntos y

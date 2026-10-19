@@ -37,6 +37,7 @@ import {
 } from "./FacturacionModel";
 import { COURIERS } from "./components/EnvioModal";
 import { mapDetalleToInvoiceProduct } from "./utils/comprobanteProductMapper";
+import { detalleAdicionalParaPayload } from "@/utils/detalleAdicional";
 import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
@@ -106,6 +107,8 @@ const crearEstadoItemLibre = () => ({
     // Producto externo con número de serie (p. ej. accesorios/repuestos de cómputo
     // que no están en catálogo pero requieren registrar su serie para garantía).
     requiereSerie: false,
+    // Detalle multilínea bajo el título (cotización de servicios). Ver utils/detalleAdicional.
+    detalleAdicional: '',
 });
 
 // Nombre legible por código de afectación (Catálogo 07) para mostrar en el ticket.
@@ -1744,6 +1747,7 @@ export const useFacturacionViewModel = () => {
             afectacionNombre: NOMBRE_AFECTACION[freeQuoteItem.afectacion] || 'Gravado – Operación Onerosa',
             estado: 'ACTIVO',
             esItemLibre: true,
+            ...detalleAdicionalParaPayload(freeQuoteItem.detalleAdicional),
             // requiereSerie habilita el campo de series del carrito también para ítem
             // libre (producto externo). Solo aplica a productos, no a servicios.
             atributosTecnicos: {
@@ -2680,6 +2684,8 @@ export const useFacturacionViewModel = () => {
                     // Fraccionamiento: unidad de venta cuando difiere de la unidad base
                     ...(item.unidadSeleccionada === 'UNIDAD' && item.unidadVentaNombre ? { unidadVenta: item.unidadVentaNombre } : {}),
                     ...(item.esItemLibre && item.unidadMedidaCodigo ? { unidadVenta: item.unidadMedidaCodigo } : {}),
+                    // Detalle multilínea de la línea (solo PDF; no va al XML de SUNAT).
+                    ...detalleAdicionalParaPayload(item.detalleAdicional),
                 })) ?? []),
                 // Monto cobrado como item de envío: aumenta el total del comprobante.
                 ...(envioActivo && Number(envioData.costoEnvio) > 0 && aplicacionMontoEnvio === 'ITEM_ENVIO' ? [{
