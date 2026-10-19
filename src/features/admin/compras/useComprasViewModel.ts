@@ -201,7 +201,17 @@ export const useComprasViewModel = () => {
             const compra = state.compraAnular;
             if (!compra) return;
             const ok = await anularCompra(compra.id);
-            setState(prev => ({ ...prev, showAnularConfirm: false, compraAnular: null }));
+            // Con abonos el backend no la anula: hay que anularlos primero. El
+            // aviso decía "desde el historial de pagos" y el empresario lo
+            // buscaba en Gestión de Pagos (que es de ventas); se le abre aquí
+            // mismo el historial de ESTA compra, que es donde se anulan.
+            const tieneAbonos = Number(compra.total || 0) - Number(compra.saldo ?? compra.total ?? 0) > 0.005;
+            setState(prev => ({
+                ...prev,
+                showAnularConfirm: false,
+                compraAnular: null,
+                ...(!ok && tieneAbonos ? { selectedCompra: compra, showHistorialModal: true } : {}),
+            }));
             if (ok) refresh();
         },
         // Maker-checker (solo ADMIN_EMPRESA; guard en backend)

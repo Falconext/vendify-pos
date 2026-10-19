@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Modal from '@/components/Modal';
 import {
     curvaDeModelo,
+    esGravado,
     lineasDeCurva,
     totalDeCurva,
     type LineaOrden,
@@ -12,6 +13,8 @@ interface Props {
     producto: any | null;
     onCancelar: () => void;
     onAgregar: (lineas: LineaOrden[]) => void;
+    /** 1.18 si la orden está en "Precios con IGV incluido" (ver lineasDeCurva). */
+    factorCosto?: number;
 }
 
 /**
@@ -29,14 +32,15 @@ interface Props {
  * significaba pelear con el apilamiento (el del proyecto va en z-[999999]) y
  * perder la tecla Escape y la animación.
  */
-export const ModalCurvaTallas = ({ producto, onCancelar, onAgregar }: Props) => {
+export const ModalCurvaTallas = ({ producto, onCancelar, onAgregar, factorCosto = 1 }: Props) => {
     const [cantidades, setCantidades] = useState<Record<number, string>>({});
     const [costos, setCostos] = useState<Record<number, string>>({});
     const [verCostos, setVerCostos] = useState(false);
 
     const curva = useMemo(() => (producto ? curvaDeModelo(producto) : []), [producto]);
+    const esGravadoModelo = esGravado(producto);
     const total = totalDeCurva(cantidades);
-    const lineas = producto ? lineasDeCurva(producto, cantidades, costos) : [];
+    const lineas = producto ? lineasDeCurva(producto, cantidades, costos, factorCosto) : [];
     const importe = lineas.reduce((s, l) => s + l.cantidad * l.precioUnitario, 0);
 
     const cerrar = () => {
@@ -102,7 +106,7 @@ export const ModalCurvaTallas = ({ producto, onCancelar, onAgregar }: Props) => 
                                             step="0.01"
                                             value={costos[celda.productoId] ?? ''}
                                             onChange={(e) => setCostos((p) => ({ ...p, [celda.productoId]: e.target.value }))}
-                                            placeholder={celda.costo.toFixed(2)}
+                                            placeholder={(celda.costo * (esGravadoModelo ? factorCosto : 1)).toFixed(2)}
                                             className={inputCls}
                                             data-testid={`costo-${celda.productoId}`}
                                         />
