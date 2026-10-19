@@ -1,4 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useReactToPrint } from 'react-to-print';
+import apiClient from '@/utils/apiClient';
+import ArqueoTurnoPrint, { type DetalleTurno } from './ArqueoTurnoPrint';
 import { useCajaStore, MovimientoCaja } from '../../../../zustand/caja';
 import { Icon } from '@iconify/react';
 import ModalEditarGasto from './ModalEditarGasto';
@@ -73,6 +76,33 @@ const CajaHistorial: React.FC = () => {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(50);
     const [exporting, setExporting] = useState(false);
+    // Arqueo que se está por imprimir. Se pide al backend recién al pulsar, que
+    // es cuando hace falta: traerlo para cada fila de la tabla sería una
+    // consulta por turno para algo que casi nunca se mira.
+    const [arqueo, setArqueo] = useState<DetalleTurno | null>(null);
+    const [cargandoArqueo, setCargandoArqueo] = useState<number | null>(null);
+    const arqueoRef = useRef<HTMLDivElement>(null);
+
+    const lanzarImpresion = useReactToPrint({
+        // @ts-ignore — la versión instalada tipa `content`, no `contentRef`.
+        contentRef: arqueoRef,
+        pageStyle: `@media print { @page { size: A4; margin: 0; } body { background-color: #fff; } }`,
+    });
+
+    const imprimirArqueo = async (cierreId: number) => {
+        if (cargandoArqueo) return;
+        setCargandoArqueo(cierreId);
+        try {
+            const { data } = await apiClient.get(`/caja/turno/${cierreId}/detalle`);
+            setArqueo(data?.data ?? data);
+            // Un tick para que el papel ya esté montado cuando se dispare.
+            setTimeout(() => lanzarImpresion?.(), 50);
+        } catch {
+            alert('No se pudo armar el arqueo de ese turno');
+        } finally {
+            setCargandoArqueo(null);
+        }
+    };
 
     useEffect(() => {
         if (isAdmin && esPrincipal) listarSedes();
@@ -97,7 +127,13 @@ const CajaHistorial: React.FC = () => {
     const handleDate = (date: string, name: string) => {
         if (!moment(date, 'DD/MM/YYYY', true).isValid()) return;
         const formatted = moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD');
-        setLocalFilters(prev => ({ ...prev, [name]: formatted }));
+        const siguiente = { ...localFilters, [name]: formatted };
+        setLocalFilters(siguiente);
+        // Elegir una fecha YA es la intención de filtrar: pedirle además que
+        // apriete "Filtrar" hacía que la pantalla siguiera mostrando el rango
+        // anterior y pareciera que la fecha no había tomado efecto.
+        setFilters(siguiente);
+        setPage(1);
     };
 
     const applyFilters = () => {
@@ -146,6 +182,10 @@ const CajaHistorial: React.FC = () => {
 
     return (
         <div className="animate-in fade-in">
+            {/* Fuera de la pantalla: existe solo para que la impresión lo tome. */}
+            <div style={{ position: 'fixed', left: '-9999px', top: 0, visibility: 'hidden', pointerEvents: 'none' }}>
+                {arqueo && <ArqueoTurnoPrint ref={arqueoRef} detalle={arqueo} />}
+            </div>
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none overflow-hidden">
                 {/* Sección de filtros */}
                 <div className="p-5 border-b border-slate-100 dark:border-slate-700">
@@ -300,7 +340,19 @@ const CajaHistorial: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="py-3 px-3 pr-5">
-                                            {(mov.tipoMovimiento === 'EGRESO' && !mov.esTransferencia) ? (
+                                            {mov.tipoMovimiento === 'CIERRE' ? (
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        onClick={() => imprimirArqueo(mov.id)}
+                                                        disabled={cargandoArqueo === mov.id}
+                                                        data-testid={`imprimir-arqueo-${mov.id}`}
+                                                        className="h-8 w-8 grid place-items-center rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50"
+                                                        title="Imprimir el arqueo de este turno"
+                                                    >
+                                                        <Icon icon={cargandoArqueo === mov.id ? 'eos-icons:loading' : 'solar:printer-2-bold-duotone'} className="text-base" />
+                                                    </button>
+                                                </div>
+                                            ) : (mov.tipoMovimiento === 'EGRESO' && !mov.esTransferencia) ? (
                                                 <div className="flex items-center justify-end gap-1.5">
                                                     {isAdmin && mov.estadoAprobacion === 'PENDIENTE' && (
                                                         <>

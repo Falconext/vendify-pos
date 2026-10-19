@@ -43,6 +43,11 @@ export interface AperturaCaja {
 }
 
 export interface CierreCaja {
+  /**
+   * Id de la APERTURA cuando se está cuadrando un turno de un día anterior que
+   * quedó sin cerrar. Vacío = el turno de hoy, que es el caso de siempre.
+   */
+  aperturaId?: number;
   montoEfectivo: number;
   montoYape: number;
   montoPlin: number;

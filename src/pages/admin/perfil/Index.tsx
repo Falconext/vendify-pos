@@ -899,6 +899,25 @@ export default function PerfilIndex() {
                                         {vm.savingControlFlag === 'requiereCajaParaEmitir' && <p className="text-xs text-sky-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-sky-100 dark:border-sky-900/30 bg-sky-50/40 dark:bg-sky-900/10 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean((perfil.empresa as any).cajaPrellenarMontosCierre)}
+                                        disabled={vm.savingControlFlag === 'cajaPrellenarMontosCierre'}
+                                        onChange={(e) => vm.handleControlFlagToggle('cajaPrellenarMontosCierre', e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-sky-600 dark:text-sky-500 rounded border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-sky-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Al cerrar caja, traer los montos del sistema</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            El formulario de cierre viene con el efectivo, Yape, Plin, tarjeta y transferencia ya calculados por el sistema: la cajera solo revisa y guarda. Para negocios que no arquean y se guían del sistema.
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Apágalo si quieres un arqueo real: los campos salen vacíos, la persona cuenta el cajón y escribe lo que encontró, y la diferencia contra lo esperado significa algo.
+                                        </p>
+                                        {vm.savingControlFlag === 'cajaPrellenarMontosCierre' && <p className="text-xs text-sky-600 mt-1">Guardando configuración...</p>}
+                                    </div>
+                                </label>
                                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
                                         <Icon icon="solar:chart-2-bold-duotone" width={14} />

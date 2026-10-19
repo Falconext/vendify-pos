@@ -3,6 +3,7 @@ import { useCajaStore } from '../../../../zustand/caja';
 import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
 import { Icon } from '@iconify/react';
+import apiClient from '@/utils/apiClient';
 import Button from '@/components/Button';
 import InputPro from '@/components/InputPro';
 import ModalConfirm from '@/components/ModalConfirm';
@@ -32,10 +33,25 @@ const CajaControl: React.FC = () => {
         clearError,
     } = useCajaStore();
     const { sedes, listarSedes } = useSedesStore();
-    const { sedeActiva } = useAuthStore();
+    const { sedeActiva, auth } = useAuthStore();
+    /**
+     * Si el cierre arranca con los montos del sistema o en blanco.
+     *
+     * Lo eligió cada negocio en Configuración → Ventas y caja. Prellenado, la
+     * cajera revisa y guarda: sirve donde no arquean y se guían del sistema.
+     * En blanco, cuenta el cajón y escribe lo que encontró, y recién ahí la
+     * diferencia contra lo esperado significa algo.
+     *
+     * Por defecto prendido: es como venía funcionando.
+     */
+    const prellenarCierre =
+        ((auth as any)?.empresa?.cajaPrellenarMontosCierre ?? true) !== false;
 
     const [showApertura, setShowApertura] = useState(false);
     const [showCierre, setShowCierre] = useState(false);
+    // Turno de un día anterior que se está cuadrando. null = el turno de hoy,
+    // que es el caso de siempre.
+    const [turnoPendiente, setTurnoPendiente] = useState<{ id: number; fecha: string } | null>(null);
     const [showGasto, setShowGasto] = useState(false);
     const [showTransferencia, setShowTransferencia] = useState(false);
     const [confirmCierre, setConfirmCierre] = useState(false);
@@ -52,6 +68,13 @@ const CajaControl: React.FC = () => {
         observaciones: ''
     });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    // Montos que el sistema espera al cierre. Se muestran como referencia
+    // debajo de cada campo, pero NO se prellenan: el cajero tiene que escribir
+    // lo que contó de verdad para que la diferencia del arqueo sea real (con el
+    // prellenado todos los cierres salían con diferencia 0).
+    const [esperadoCierre, setEsperadoCierre] = useState({
+        montoEfectivo: 0, montoYape: 0, montoPlin: 0, montoTransferencia: 0, montoTarjeta: 0,
+    });
 
     useEffect(() => {
         obtenerEstadoCaja();
@@ -109,6 +132,7 @@ const CajaControl: React.FC = () => {
 
     const handleCerrarCaja = async () => {
         const result = await cerrarCaja({
+            ...(turnoPendiente ? { aperturaId: turnoPendiente.id } : {}),
             montoEfectivo: parseFloat(String(formCierre.montoEfectivo)) || 0,
             montoYape: parseFloat(String(formCierre.montoYape)) || 0,
             montoPlin: parseFloat(String(formCierre.montoPlin)) || 0,
@@ -119,6 +143,7 @@ const CajaControl: React.FC = () => {
         if (result.success) {
             setShowCierre(false);
             setConfirmCierre(false);
+            setTurnoPendiente(null);
             setFormCierre({
                 montoEfectivo: '',
                 montoYape: '',
@@ -162,28 +187,95 @@ const CajaControl: React.FC = () => {
         );
     }
 
-    const handleOpenCierre = () => {
-        if (estadoCaja && estadoCaja.ventasDelDia) {
-            const { mediosPago } = estadoCaja.ventasDelDia;
-            const montoInicial = Number(estadoCaja.movimiento?.montoInicial || 0);
-            // Efectivo esperado = monto inicial + ventas en efectivo − egresos
-            // (gastos del turno) + transferencias recibidas de otra sede −
-            // transferencias enviadas a otra sede.
-            const egresos = Number(estadoCaja.totalEgresos || 0);
-            const transferenciasRecibidas = Number(estadoCaja.totalTransferenciasRecibidas || 0);
-            const transferenciasEnviadas = Number(estadoCaja.totalTransferenciasEnviadas || 0);
+    /**
+     * Lo que debería haber en el cajón, a partir del estado de un turno.
+     *
+     * Efectivo esperado = monto inicial + ventas en efectivo − egresos (gastos
+     * del turno) + transferencias recibidas de otra sede − transferencias
+     * enviadas a otra sede.
+     *
+     * Sirve igual para el turno de hoy y para uno pendiente: la diferencia está
+     * en de dónde sale el estado, no en la cuenta.
+     */
+    const calcularEsperado = (estado: any) => {
+        const mediosPago = estado?.ventasDelDia?.mediosPago ?? {};
+        const montoInicial = Number(estado?.movimiento?.montoInicial || 0);
+        const egresos = Number(estado?.totalEgresos || 0);
+        const transferenciasRecibidas = Number(estado?.totalTransferenciasRecibidas || 0);
+        const transferenciasEnviadas = Number(estado?.totalTransferenciasEnviadas || 0);
+        return {
+            montoEfectivo: Math.max(0, montoInicial + Number(mediosPago.EFECTIVO || 0) - egresos + transferenciasRecibidas - transferenciasEnviadas),
+            montoYape: Number(mediosPago.YAPE || 0),
+            montoPlin: Number(mediosPago.PLIN || 0),
+            montoTransferencia: Number(mediosPago.TRANSFERENCIA || 0),
+            montoTarjeta: Number(mediosPago.TARJETA || 0),
+        };
+    };
 
-            setFormCierre({
-                montoEfectivo: Math.max(0, montoInicial + Number(mediosPago.EFECTIVO || 0) - egresos + transferenciasRecibidas - transferenciasEnviadas).toFixed(2),
-                montoYape: Number(mediosPago.YAPE || 0).toFixed(2),
-                montoPlin: Number(mediosPago.PLIN || 0).toFixed(2),
-                montoTransferencia: Number(mediosPago.TRANSFERENCIA || 0).toFixed(2),
-                montoTarjeta: Number(mediosPago.TARJETA || 0).toFixed(2),
-                observaciones: ''
-            });
+    const EN_CERO = { montoEfectivo: 0, montoYape: 0, montoPlin: 0, montoTransferencia: 0, montoTarjeta: 0 };
+    const FORM_VACIO = { montoEfectivo: '', montoYape: '', montoPlin: '', montoTransferencia: '', montoTarjeta: '', observaciones: '' };
+
+    /** Los montos del sistema, listos para el formulario. */
+    const formDesdeEsperado = (esp: typeof EN_CERO, observaciones = '') => ({
+        montoEfectivo: esp.montoEfectivo.toFixed(2),
+        montoYape: esp.montoYape.toFixed(2),
+        montoPlin: esp.montoPlin.toFixed(2),
+        montoTransferencia: esp.montoTransferencia.toFixed(2),
+        montoTarjeta: esp.montoTarjeta.toFixed(2),
+        observaciones,
+    });
+
+    /**
+     * Cuadrar un turno que quedó abierto de un día anterior.
+     *
+     * El esperado se le pide al backend para ESE turno: `estadoCaja` trae las
+     * ventas de HOY, y mostrarlas como referencia de un turno del viernes sería
+     * mentirle a quien está contando el cajón.
+     */
+    const handleOpenCierrePendiente = async (t: { id: number; fecha: string }) => {
+        setTurnoPendiente(t);
+        setEsperadoCierre(EN_CERO);
+        setFormCierre(FORM_VACIO);
+        setShowCierre(true);
+        try {
+            const { data } = await apiClient.get(`/caja/turno-pendiente/${t.id}/estado`);
+            const esperado = calcularEsperado(data?.data ?? data);
+            // El esperado se guarda igual aunque no se prellene: es la
+            // referencia contra la que se compara lo declarado.
+            setEsperadoCierre(esperado);
+            if (prellenarCierre) setFormCierre(formDesdeEsperado(esperado));
+        } catch {
+            // Sin el esperado se puede cuadrar igual: el backend lo recalcula al
+            // cerrar. Lo que no se puede es inventarlo con los números de hoy.
+        }
+    };
+
+    const handleOpenCierre = () => {
+        setTurnoPendiente(null);
+        if (estadoCaja && estadoCaja.ventasDelDia) {
+            const esperado = calcularEsperado(estadoCaja);
+            setEsperadoCierre(esperado);
+            setFormCierre(prellenarCierre ? formDesdeEsperado(esperado) : FORM_VACIO);
+        } else {
+            setFormCierre(FORM_VACIO);
         }
         setShowCierre(true);
     };
+
+    /** Copia los montos del sistema al formulario. Es una acción explícita, no el estado inicial. */
+    const usarMontosDelSistema = () => {
+        setFormCierre(prev => ({
+            ...prev,
+            montoEfectivo: esperadoCierre.montoEfectivo.toFixed(2),
+            montoYape: esperadoCierre.montoYape.toFixed(2),
+            montoPlin: esperadoCierre.montoPlin.toFixed(2),
+            montoTransferencia: esperadoCierre.montoTransferencia.toFixed(2),
+            montoTarjeta: esperadoCierre.montoTarjeta.toFixed(2),
+        }));
+    };
+    const HintEsperado = ({ monto }: { monto: number }) => (
+        <p className="text-[11px] text-slate-400 mt-1">Según el sistema: {formatCurrency(monto)}</p>
+    );
 
     return (
         <div className="space-y-6 font-jakarta animate-in fade-in duration-500">
@@ -284,17 +376,21 @@ const CajaControl: React.FC = () => {
                                     : `Tienes ${estadoCaja!.pendientesDeCierre!.length} turnos anteriores sin cerrar`}
                             </p>
                             <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">
-                                Sus ventas y gastos sí están contabilizados, pero esos días quedaron sin arqueo: nadie contó el efectivo del cajón.
+                                Sus ventas y gastos sí están contabilizados, pero esos días quedaron sin arqueo: nadie contó el efectivo del cajón. Toca una fecha para cuadrarla.
                             </p>
                             <div className="flex flex-wrap gap-1.5 mt-2">
                                 {estadoCaja!.pendientesDeCierre!.slice(0, 6).map((t) => (
-                                    <span
+                                    <button
                                         key={t.id}
-                                        title={[t.sede, t.usuario, t.turno].filter(Boolean).join(' · ')}
-                                        className="px-2 py-0.5 rounded-lg bg-white/70 dark:bg-slate-800/60 text-[11px] font-bold text-amber-700 dark:text-amber-300"
+                                        type="button"
+                                        onClick={() => handleOpenCierrePendiente({ id: t.id, fecha: t.fecha })}
+                                        title={`Cuadrar este turno · ${[t.sede, t.usuario, t.turno].filter(Boolean).join(' · ')}`}
+                                        data-testid={`cerrar-turno-${t.id}`}
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white shadow-sm transition-colors hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500"
                                     >
-                                        {fechaCorta(t.fecha)}
-                                    </span>
+                                        <Icon icon="solar:safe-circle-bold" className="text-sm" />
+                                        Cerrar turno del {fechaCorta(t.fecha)}
+                                    </button>
                                 ))}
                                 {estadoCaja!.pendientesDeCierre!.length > 6 && (
                                     <span className="px-2 py-0.5 text-[11px] font-bold text-amber-700/70 dark:text-amber-300/70">
@@ -434,9 +530,14 @@ const CajaControl: React.FC = () => {
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
                         <div className="bg-slate-50 p-6 border-b border-slate-100">
                             <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                                <Icon icon="solar:safe-circle-bold" className="text-rose-500" /> Cierre de Turno
+                                <Icon icon="solar:safe-circle-bold" className="text-rose-500" />
+                                {turnoPendiente ? `Cuadrar el turno del ${fechaCorta(turnoPendiente.fecha)}` : 'Cierre de Turno'}
                             </h3>
-                            <p className="text-sm text-slate-400 mt-1">Ingresa los montos finales contados en caja.</p>
+                            <p className="text-sm text-slate-400 mt-1">
+                                {turnoPendiente
+                                    ? 'Es un turno de un día anterior que quedó sin cerrar. Escribe lo que había en el cajón al terminar ESE día; el sistema calcula la diferencia contra lo que debió haber y deja anotado que se cuadró tarde.'
+                                    : 'Cuenta el dinero y escribe lo que hay de verdad. Debajo de cada campo va lo que el sistema espera, solo como referencia.'}
+                            </p>
                         </div>
                         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="col-span-2">
@@ -449,39 +550,52 @@ const CajaControl: React.FC = () => {
                                     isLabel
                                     autoFocus
                                 />
+                                <HintEsperado monto={esperadoCierre.montoEfectivo} />
                             </div>
-                            <InputPro
-                                label="Yape (S/)"
-                                name="montoYape"
-                                type="number"
-                                value={formCierre.montoYape}
-                                onChange={(e: any) => setFormCierre({ ...formCierre, montoYape: e.target.value })}
-                                isLabel
-                            />
-                            <InputPro
-                                label="Plin (S/)"
-                                name="montoPlin"
-                                type="number"
-                                value={formCierre.montoPlin}
-                                onChange={(e: any) => setFormCierre({ ...formCierre, montoPlin: e.target.value })}
-                                isLabel
-                            />
-                            <InputPro
-                                label="Tarjetas (S/)"
-                                name="montoTarjeta"
-                                type="number"
-                                value={formCierre.montoTarjeta}
-                                onChange={(e: any) => setFormCierre({ ...formCierre, montoTarjeta: e.target.value })}
-                                isLabel
-                            />
-                            <InputPro
-                                label="Transferencias (S/)"
-                                name="montoTransferencia"
-                                type="number"
-                                value={formCierre.montoTransferencia}
-                                onChange={(e: any) => setFormCierre({ ...formCierre, montoTransferencia: e.target.value })}
-                                isLabel
-                            />
+                            <div>
+                                <InputPro
+                                    label="Yape (S/)"
+                                    name="montoYape"
+                                    type="number"
+                                    value={formCierre.montoYape}
+                                    onChange={(e: any) => setFormCierre({ ...formCierre, montoYape: e.target.value })}
+                                    isLabel
+                                />
+                                <HintEsperado monto={esperadoCierre.montoYape} />
+                            </div>
+                            <div>
+                                <InputPro
+                                    label="Plin (S/)"
+                                    name="montoPlin"
+                                    type="number"
+                                    value={formCierre.montoPlin}
+                                    onChange={(e: any) => setFormCierre({ ...formCierre, montoPlin: e.target.value })}
+                                    isLabel
+                                />
+                                <HintEsperado monto={esperadoCierre.montoPlin} />
+                            </div>
+                            <div>
+                                <InputPro
+                                    label="Tarjetas (S/)"
+                                    name="montoTarjeta"
+                                    type="number"
+                                    value={formCierre.montoTarjeta}
+                                    onChange={(e: any) => setFormCierre({ ...formCierre, montoTarjeta: e.target.value })}
+                                    isLabel
+                                />
+                                <HintEsperado monto={esperadoCierre.montoTarjeta} />
+                            </div>
+                            <div>
+                                <InputPro
+                                    label="Transferencias (S/)"
+                                    name="montoTransferencia"
+                                    type="number"
+                                    value={formCierre.montoTransferencia}
+                                    onChange={(e: any) => setFormCierre({ ...formCierre, montoTransferencia: e.target.value })}
+                                    isLabel
+                                />
+                                <HintEsperado monto={esperadoCierre.montoTransferencia} />
+                            </div>
                             <div className="col-span-2">
                                 <InputPro
                                     label="Observaciones"
@@ -512,8 +626,9 @@ const CajaControl: React.FC = () => {
                             </div>
                         </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                             <button onClick={() => setShowCierre(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
+                            <button type="button" onClick={usarMontosDelSistema} title="Copia los montos que calcula el sistema; úsalo solo si ya contaste y coincide" className="px-4 py-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 rounded-xl transition-colors">Usar montos del sistema</button>
                             <Button onClick={() => setConfirmCierre(true)} className="bg-amber-500 text-white hover:bg-amber-600 border-none">
                                 <Icon icon="solar:shield-warning-bold" className="mr-1" />
                                 Revisar y Cerrar
