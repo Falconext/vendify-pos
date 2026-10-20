@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
+
 export interface ITableHeaderProps {
-    columns: Array<string | { label: string; key: string }>;
+    columns: Array<string | { label: ReactNode; key: string }>;
     colorFont?: string;
     actions?: IAction[];
     onSort: (column: string) => void;
@@ -18,7 +20,7 @@ export interface ITableBodyProps {
 }
 
 export interface IDataTableProps {
-    headerColumns: Array<string | { label: string; key: string }>;
+    headerColumns: Array<string | { label: ReactNode; key: string }>;
     bodyData: any[];
     formValues?: any;
     onEditPayment?: any;
