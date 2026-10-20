@@ -99,9 +99,15 @@ const CajaControl: React.FC = () => {
         );
     }, [formCierre]);
 
-    const totalSistema = useMemo(() => {
-        return Number(estadoCaja?.ventasDelDia?.totalIngresos || 0);
-    }, [estadoCaja]);
+    // Lo que el sistema espera en total, medio por medio: la misma referencia
+    // que sale bajo cada campo. Antes leía los ingresos de HOY de `estadoCaja`:
+    // al cuadrar un turno de otro día comparaba contra las ventas de hoy, y en
+    // cualquier cierre dejaba fuera el fondo inicial que sí va en el efectivo
+    // declarado, así que un cierre exacto salía "sobrando" el fondo.
+    const totalSistema = useMemo(() => (
+        esperadoCierre.montoEfectivo + esperadoCierre.montoYape + esperadoCierre.montoPlin
+        + esperadoCierre.montoTransferencia + esperadoCierre.montoTarjeta
+    ), [esperadoCierre]);
 
     const diferencia = useMemo(() => totalDeclarado - totalSistema, [totalDeclarado, totalSistema]);
 
