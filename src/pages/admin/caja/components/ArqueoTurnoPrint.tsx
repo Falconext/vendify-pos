@@ -67,6 +67,18 @@ export interface DetalleTurno {
         total: number;
         fecha: string;
     }[];
+    /**
+     * Plata que entró al cajón sin ser venta (ingresos de caja y
+     * transferencias recibidas de otra sede). Siempre efectivo. Opcional:
+     * los servidores anteriores al 21-10 no lo mandan.
+     */
+    ingresos?: {
+        id: number;
+        fecha: string;
+        monto: number;
+        concepto: string;
+        esTransferencia: boolean;
+    }[];
     egresos: {
         id: number;
         fecha: string;
@@ -112,6 +124,8 @@ export const ArqueoTurnoPrint = React.forwardRef<HTMLDivElement, { detalle: Deta
         const { empresa, sede, turno, apertura, cierre, documentos, egresos } = detalle;
         const totalDocumentos = documentos.reduce((s, d) => s + Number(d.total || 0), 0);
         const totalEgresos = egresos.reduce((s, e) => s + Number(e.monto || 0), 0);
+        const ingresos = detalle.ingresos ?? [];
+        const totalIngresosCaja = ingresos.reduce((s, e) => s + Number(e.monto || 0), 0);
 
         // ── Lo que el SISTEMA registró, agrupado como lo pide el contador ────
         // El corte de caja que usan separa compras de gastos y abre cada lado
@@ -150,8 +164,8 @@ export const ArqueoTurnoPrint = React.forwardRef<HTMLDivElement, { detalle: Deta
         // El saldo que de verdad se cuenta: lo que debería haber en el cajón.
         // Incluye el fondo inicial, que no es una venta pero está físicamente.
         const fondoInicial = Number(apertura?.montoInicial ?? 0);
-        const saldoEfectivo = fondoInicial + ingresoEfectivo - egresoEfectivo;
-        const saldo = totalDocumentos - totalEgresos;
+        const saldoEfectivo = fondoInicial + ingresoEfectivo + totalIngresosCaja - egresoEfectivo;
+        const saldo = totalDocumentos + totalIngresosCaja - totalEgresos;
         // Diferencia positiva = sobró plata en el cajón; negativa = faltó. Se
         // dice con palabras porque un "-12.00" solo no lo interpreta nadie.
         const dif = Number(cierre.diferencia || 0);
@@ -243,6 +257,9 @@ export const ArqueoTurnoPrint = React.forwardRef<HTMLDivElement, { detalle: Deta
                         <Fila etiqueta="Ingresos − Egresos" valor={fmt(saldo)} />
                         <Fila etiqueta="Fondo inicial" valor={fmt(fondoInicial)} />
                         <Fila etiqueta="Ingresos en efectivo" valor={fmt(ingresoEfectivo)} />
+                        {totalIngresosCaja > 0 && (
+                            <Fila etiqueta="Entradas de caja (no ventas)" valor={fmt(totalIngresosCaja)} />
+                        )}
                         <Fila etiqueta="Egresos en efectivo" valor={`− ${fmt(egresoEfectivo)}`} />
                         {/* La única cifra contra la que se cuenta el cajón. */}
                         <div className="flex justify-between border-y-2 border-black py-2 text-[14px] font-extrabold">
@@ -315,6 +332,43 @@ export const ArqueoTurnoPrint = React.forwardRef<HTMLDivElement, { detalle: Deta
                             </tfoot>
                         )}
                     </table>
+
+                    {ingresos.length > 0 && (
+                        <>
+                            <h2 className="mb-1 font-extrabold uppercase">
+                                Entradas de caja ({ingresos.length})
+                            </h2>
+                            <table className="mb-4 w-full border-collapse">
+                                <thead>
+                                    <tr className="border-y border-black text-left">
+                                        <th className="py-1">Hora</th>
+                                        <th className="py-1">Concepto</th>
+                                        <th className="py-1 text-right">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ingresos.map((e) => (
+                                        <tr key={e.id} className="border-b border-gray-200">
+                                            <td className="py-1">{moment(e.fecha).format('HH:mm')}</td>
+                                            <td className="py-1">
+                                                {e.concepto || '—'}
+                                                {e.esTransferencia ? ' (transferencia entre cajas)' : ''}
+                                            </td>
+                                            <td className="py-1 text-right">{fmt(e.monto)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="border-t border-black font-extrabold">
+                                        <td className="py-1" colSpan={2}>
+                                            Total de entradas
+                                        </td>
+                                        <td className="py-1 text-right">{fmt(totalIngresosCaja)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </>
+                    )}
 
                     {egresos.length > 0 && (
                         <>

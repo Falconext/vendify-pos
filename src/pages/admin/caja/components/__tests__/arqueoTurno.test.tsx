@@ -99,4 +99,24 @@ describe('Arqueo del turno', () => {
         expect(valorDe('Saldo que debe haber en efectivo')).toBe('S/ 93.00');
         expect(valorDe('Compras pagadas de caja')).toBe('S/ 0.00');
     });
+
+    it('un ingreso de caja (sencillo del dueño) suma al efectivo que debe haber', () => {
+        // Pedido de LA DESPENSA HM: meter plata al cajón sin que sea venta.
+        const d = detalle({
+            ingresos: [
+                { id: 9, fecha: '2026-10-13T15:00:00Z', monto: 20, concepto: 'Sencillo', esTransferencia: false },
+            ],
+        });
+        const txt = pintar(d);
+        expect(valorDe('Saldo que debe haber en efectivo')).toBe('S/ 70.20');
+        expect(valorDe('Entradas de caja (no ventas)')).toBe('S/ 20.00');
+        expect(txt).toContain('Sencillo');
+    });
+
+    it('un servidor viejo sin ingresos no rompe el arqueo', () => {
+        const d = detalle();
+        delete (d as any).ingresos;
+        pintar(d);
+        expect(valorDe('Saldo que debe haber en efectivo')).toBe('S/ 50.20');
+    });
 });

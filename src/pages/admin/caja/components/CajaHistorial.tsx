@@ -316,7 +316,11 @@ const CajaHistorial: React.FC = () => {
                                         <td className="py-3 px-3">
                                             {mov.categoriaGasto ? (
                                                 <span className="inline-flex items-center gap-1.5">
-                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                                    {/* Un ingreso de caja (plata que entró sin ser venta) no es
+                                                        un gasto: va en verde para no confundirlo. */}
+                                                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold whitespace-nowrap ${mov.tipoMovimiento === 'INGRESO'
+                                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                                                        : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'}`}>
                                                         {mov.categoriaGasto}
                                                     </span>
                                                     {mov.estadoAprobacion === 'PENDIENTE' && (

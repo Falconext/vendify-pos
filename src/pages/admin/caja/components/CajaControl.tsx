@@ -9,6 +9,7 @@ import InputPro from '@/components/InputPro';
 import ModalConfirm from '@/components/ModalConfirm';
 import useEscapeKey from '@/hooks/useEscapeKey';
 import ModalRegistrarGasto from './ModalRegistrarGasto';
+import ModalRegistrarIngreso from './ModalRegistrarIngreso';
 import ModalTransferirCaja from './ModalTransferirCaja';
 
 const ACCENT = 'var(--accent, #7551FF)';
@@ -30,6 +31,7 @@ const CajaControl: React.FC = () => {
         obtenerEstadoCaja,
         abrirCaja,
         cerrarCaja,
+        eliminarIngreso,
         clearError,
     } = useCajaStore();
     const { sedes, listarSedes } = useSedesStore();
@@ -53,6 +55,8 @@ const CajaControl: React.FC = () => {
     // que es el caso de siempre.
     const [turnoPendiente, setTurnoPendiente] = useState<{ id: number; fecha: string } | null>(null);
     const [showGasto, setShowGasto] = useState(false);
+    const [showIngreso, setShowIngreso] = useState(false);
+    const [ingresoABorrar, setIngresoABorrar] = useState<number | null>(null);
     const [showTransferencia, setShowTransferencia] = useState(false);
     const [confirmCierre, setConfirmCierre] = useState(false);
     const [formApertura, setFormApertura] = useState({
@@ -178,6 +182,7 @@ const CajaControl: React.FC = () => {
     useEscapeKey(() => setShowApertura(false), showApertura);
     useEscapeKey(() => setShowCierre(false), showCierre);
     useEscapeKey(() => setShowGasto(false), showGasto);
+    useEscapeKey(() => setShowIngreso(false), showIngreso);
     useEscapeKey(() => setShowTransferencia(false), showTransferencia);
 
     if (loading && !estadoCaja) {
@@ -196,9 +201,10 @@ const CajaControl: React.FC = () => {
     /**
      * Lo que debería haber en el cajón, a partir del estado de un turno.
      *
-     * Efectivo esperado = monto inicial + ventas en efectivo − egresos (gastos
-     * del turno) + transferencias recibidas de otra sede − transferencias
-     * enviadas a otra sede.
+     * Efectivo esperado = monto inicial + ventas en efectivo + ingresos de caja
+     * (plata que se metió al cajón sin ser venta) − egresos (gastos del turno)
+     * + transferencias recibidas de otra sede − transferencias enviadas a
+     * otra sede.
      *
      * Sirve igual para el turno de hoy y para uno pendiente: la diferencia está
      * en de dónde sale el estado, no en la cuenta.
@@ -207,10 +213,11 @@ const CajaControl: React.FC = () => {
         const mediosPago = estado?.ventasDelDia?.mediosPago ?? {};
         const montoInicial = Number(estado?.movimiento?.montoInicial || 0);
         const egresos = Number(estado?.totalEgresos || 0);
+        const ingresosCaja = Number(estado?.totalIngresosCaja || 0);
         const transferenciasRecibidas = Number(estado?.totalTransferenciasRecibidas || 0);
         const transferenciasEnviadas = Number(estado?.totalTransferenciasEnviadas || 0);
         return {
-            montoEfectivo: Math.max(0, montoInicial + Number(mediosPago.EFECTIVO || 0) - egresos + transferenciasRecibidas - transferenciasEnviadas),
+            montoEfectivo: Math.max(0, montoInicial + Number(mediosPago.EFECTIVO || 0) + ingresosCaja - egresos + transferenciasRecibidas - transferenciasEnviadas),
             montoYape: Number(mediosPago.YAPE || 0),
             montoPlin: Number(mediosPago.PLIN || 0),
             montoTransferencia: Number(mediosPago.TRANSFERENCIA || 0),
@@ -321,7 +328,12 @@ const CajaControl: React.FC = () => {
                             {isAbierta && estadoCaja?.movimiento && (
                                 <p className="mt-2 text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-300 inline-flex items-center px-3 py-1 rounded-full">
                                     <Icon icon="solar:clock-circle-linear" className="mr-1.5" />
-                                    Abierto desde: {new Date(estadoCaja.movimiento.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                                    {/* El turno sigue abierto pasada la medianoche: si es de
+                                        otro día, la hora sola confundiría. */}
+                                    Abierto desde: {fechaCorta(estadoCaja.movimiento.fecha) !== fechaCorta(new Date().toISOString())
+                                        ? `${fechaCorta(estadoCaja.movimiento.fecha)} `
+                                        : ''}
+                                    {new Date(estadoCaja.movimiento.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             )}
                         </div>
@@ -337,6 +349,13 @@ const CajaControl: React.FC = () => {
                                     <Icon icon="solar:wallet-money-bold-duotone" className="text-xl" />
                                     Registrar Gasto
                                 </button>
+                                <button
+                                    onClick={() => setShowIngreso(true)}
+                                    className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 px-5 py-3 rounded-xl font-bold shadow-sm transition-all transform hover:scale-105 flex items-center gap-2"
+                                >
+                                    <Icon icon="solar:hand-money-bold-duotone" className="text-xl" />
+                                    Ingreso de Caja
+                                </button>
                                 {hayOtrasSedes && (
                                     <button
                                         onClick={() => setShowTransferencia(true)}
@@ -351,7 +370,7 @@ const CajaControl: React.FC = () => {
                                     className="h-11 px-5 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 text-sm font-bold flex items-center gap-2 transition-colors"
                                 >
                                     <Icon icon="solar:stop-circle-bold" className="text-xl" />
-                                    Cerrar Turno del Día
+                                    Cerrar Turno
                                 </button>
                             </div>
                         ) : (
@@ -479,6 +498,49 @@ const CajaControl: React.FC = () => {
                             </p>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Ingresos de caja del turno: plata que se metió al cajón sin ser
+                venta. Aparte de "Ingresos del Turno" (que son ventas) para no
+                inflar lo vendido. */}
+            {isAbierta && (Number(estadoCaja?.totalIngresosCaja || 0) > 0 || (estadoCaja?.ingresosRecientes?.length ?? 0) > 0) && (
+                <div className="bg-white dark:bg-[#111827] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                            <Icon icon="solar:hand-money-bold-duotone" className="text-3xl" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Ingresos de Caja del Turno</p>
+                            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-0.5">
+                                {formatCurrency(Number(estadoCaja?.totalIngresosCaja || 0))}
+                            </p>
+                        </div>
+                    </div>
+                    <ul className="mt-4 divide-y divide-gray-100 dark:divide-slate-800">
+                        {(estadoCaja?.ingresosRecientes ?? []).map((ing) => (
+                            <li key={ing.id} className="flex items-center justify-between gap-3 py-2" data-testid={`ingreso-caja-${ing.id}`}>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{ing.descripcionGasto || 'Ingreso de caja'}</p>
+                                    <p className="text-[11px] text-gray-400">
+                                        {new Date(ing.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                                        {ing.usuario?.nombre ? ` · ${ing.usuario.nombre}` : ''}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+ {formatCurrency(Number(ing.monto || 0))}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIngresoABorrar(ing.id)}
+                                        title="Eliminar ingreso"
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                        <Icon icon="solar:trash-bin-minimalistic-linear" className="text-base" />
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
 
@@ -659,6 +721,26 @@ const CajaControl: React.FC = () => {
                 isOpen={showGasto}
                 onClose={() => setShowGasto(false)}
                 onSuccess={() => obtenerEstadoCaja()}
+            />
+
+            <ModalRegistrarIngreso
+                isOpen={showIngreso}
+                onClose={() => setShowIngreso(false)}
+                onSuccess={() => obtenerEstadoCaja()}
+            />
+
+            <ModalConfirm
+                isOpenModal={ingresoABorrar != null}
+                setIsOpenModal={(v: boolean) => { if (!v) setIngresoABorrar(null); }}
+                title="Eliminar ingreso de caja"
+                information="¿Eliminar este ingreso? Deja de sumar al efectivo esperado del cierre."
+                confirmText="Eliminar"
+                confirmLoading={loading}
+                confirmSubmit={async () => {
+                    if (ingresoABorrar == null) return;
+                    await eliminarIngreso(ingresoABorrar);
+                    setIngresoABorrar(null);
+                }}
             />
 
             <ModalTransferirCaja
