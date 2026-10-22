@@ -43,6 +43,7 @@ import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
 import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
+import { montoACredito } from './montoACredito';
 
 import { afectacionPorDefecto } from '@/utils/afectacionIgv';
 type EnvioDespachoFormData = {
@@ -2358,8 +2359,16 @@ export const useFacturacionViewModel = () => {
     const adelantoBruto = esCreditoNV
         ? inicialCreditoMonto
         : (esInformal && (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") ? Number(adelanto) : 0);
-    const adelantoCreditoCalculado = adelantoBruto > 0 ? Math.min(adelantoBruto, totalAdjusted) : 0;
-    const totalCredito = Number(Math.max(0, totalAdjusted - adelantoCreditoCalculado).toFixed(2));
+    // El envío cobrado al cliente también va al crédito: ver montoACredito.
+    const { inicial: adelantoCreditoCalculado, totalCredito } = montoACredito({
+        totalProductos: totalAdjusted,
+        envioActivo,
+        costoEnvio: envioData.costoEnvio,
+        aplicacionGuardada: envioData.aplicacionMontoCliente,
+        esInformal,
+        esPropio: envioData.transportista === 'PROPIOS',
+        inicial: adelantoBruto,
+    });
     const buildPaymentDetails = () => {
         const normalizeLine = (line: PaymentLine): PaymentLine => {
             const method = normalizePaymentMethod(line.method);
