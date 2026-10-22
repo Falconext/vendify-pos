@@ -114,6 +114,18 @@ export interface EstadoCaja {
     turno: string | null;
     sedeId: number | null;
     sede: string | null;
+    usuarioId?: number;
+    usuario: string | null;
+  }[];
+  // Turnos que OTROS usuarios de la sede tienen abiertos ahora (la caja es por
+  // usuario: sin esto el dueño ve "Caja cerrada" mientras su cajera vende).
+  turnosAbiertosEquipo?: {
+    id: number;
+    fecha: string;
+    turno: string | null;
+    sedeId: number | null;
+    sede: string | null;
+    usuarioId: number;
     usuario: string | null;
   }[];
   totalEgresos?: number;

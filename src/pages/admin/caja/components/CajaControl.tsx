@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCajaStore } from '../../../../zustand/caja';
 import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
+import { desdeCuando, etiquetaTurno, nombreCajero } from '@/utils/turnosCaja';
 import { Icon } from '@iconify/react';
 import apiClient from '@/utils/apiClient';
 import Button from '@/components/Button';
@@ -53,7 +54,7 @@ const CajaControl: React.FC = () => {
     const [showCierre, setShowCierre] = useState(false);
     // Turno de un día anterior que se está cuadrando. null = el turno de hoy,
     // que es el caso de siempre.
-    const [turnoPendiente, setTurnoPendiente] = useState<{ id: number; fecha: string } | null>(null);
+    const [turnoPendiente, setTurnoPendiente] = useState<{ id: number; fecha: string; turno?: string | null; usuario?: string | null } | null>(null);
     const [showGasto, setShowGasto] = useState(false);
     const [showIngreso, setShowIngreso] = useState(false);
     const [ingresoABorrar, setIngresoABorrar] = useState<number | null>(null);
@@ -245,7 +246,7 @@ const CajaControl: React.FC = () => {
      * ventas de HOY, y mostrarlas como referencia de un turno del viernes sería
      * mentirle a quien está contando el cajón.
      */
-    const handleOpenCierrePendiente = async (t: { id: number; fecha: string }) => {
+    const handleOpenCierrePendiente = async (t: { id: number; fecha: string; turno?: string | null; usuario?: string | null }) => {
         setTurnoPendiente(t);
         setEsperadoCierre(EN_CERO);
         setFormCierre(FORM_VACIO);
@@ -397,24 +398,24 @@ const CajaControl: React.FC = () => {
                         <div className="min-w-0">
                             <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
                                 {estadoCaja!.pendientesDeCierre!.length === 1
-                                    ? 'Tienes 1 turno anterior sin cerrar'
-                                    : `Tienes ${estadoCaja!.pendientesDeCierre!.length} turnos anteriores sin cerrar`}
+                                    ? 'Hay 1 turno anterior sin cerrar'
+                                    : `Hay ${estadoCaja!.pendientesDeCierre!.length} turnos anteriores sin cerrar`}
                             </p>
                             <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">
-                                Sus ventas y gastos sí están contabilizados, pero esos días quedaron sin arqueo: nadie contó el efectivo del cajón. Toca una fecha para cuadrarla.
+                                Sus ventas y gastos sí están contabilizados, pero esos turnos quedaron sin arqueo: nadie contó el efectivo del cajón. Cada uno dice quién lo abrió; toca uno para cuadrarlo.
                             </p>
                             <div className="flex flex-wrap gap-1.5 mt-2">
                                 {estadoCaja!.pendientesDeCierre!.slice(0, 6).map((t) => (
                                     <button
                                         key={t.id}
                                         type="button"
-                                        onClick={() => handleOpenCierrePendiente({ id: t.id, fecha: t.fecha })}
+                                        onClick={() => handleOpenCierrePendiente({ id: t.id, fecha: t.fecha, turno: t.turno, usuario: t.usuario })}
                                         title={`Cuadrar este turno · ${[t.sede, t.usuario, t.turno].filter(Boolean).join(' · ')}`}
                                         data-testid={`cerrar-turno-${t.id}`}
                                         className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white shadow-sm transition-colors hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500"
                                     >
                                         <Icon icon="solar:safe-circle-bold" className="text-sm" />
-                                        Cerrar turno del {fechaCorta(t.fecha)}
+                                        Cerrar turno del {etiquetaTurno(t)}
                                     </button>
                                 ))}
                                 {estadoCaja!.pendientesDeCierre!.length > 6 && (
@@ -423,6 +424,37 @@ const CajaControl: React.FC = () => {
                                     </span>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Turnos que otros tienen abiertos ahora. La caja es por usuario:
+                sin esto el dueño ve "Caja cerrada" mientras su cajera vende. */}
+            {(estadoCaja?.turnosAbiertosEquipo?.length ?? 0) > 0 && (
+                <div data-testid="turnos-equipo" className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+                    <div className="flex items-start gap-3">
+                        <Icon icon="solar:users-group-rounded-bold-duotone" className="text-2xl text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                                {estadoCaja!.turnosAbiertosEquipo!.length === 1
+                                    ? 'Otra persona tiene su caja abierta'
+                                    : `${estadoCaja!.turnosAbiertosEquipo!.length} personas tienen su caja abierta`}
+                            </p>
+                            <p className="text-xs text-emerald-700/80 dark:text-emerald-300/70 mt-0.5">
+                                Cada usuario abre y cierra su propio turno. Estos siguen en curso y los cierra quien los abrió.
+                            </p>
+                            <ul className="mt-2 space-y-1">
+                                {estadoCaja!.turnosAbiertosEquipo!.map((t) => (
+                                    <li key={t.id} className="flex items-center gap-2 text-xs text-emerald-900 dark:text-emerald-200">
+                                        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                                        <span className="font-bold">{nombreCajero(t.usuario) || 'Usuario'}</span>
+                                        <span className="text-emerald-700/80 dark:text-emerald-300/70">
+                                            abierta desde el {desdeCuando(t.fecha)}{t.sede ? ` · ${t.sede}` : ''}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -599,7 +631,7 @@ const CajaControl: React.FC = () => {
                         <div className="bg-slate-50 p-6 border-b border-slate-100">
                             <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                                 <Icon icon="solar:safe-circle-bold" className="text-rose-500" />
-                                {turnoPendiente ? `Cuadrar el turno del ${fechaCorta(turnoPendiente.fecha)}` : 'Cierre de Turno'}
+                                {turnoPendiente ? `Cuadrar el turno del ${etiquetaTurno(turnoPendiente)}` : 'Cierre de Turno'}
                             </h3>
                             <p className="text-sm text-slate-400 mt-1">
                                 {turnoPendiente
