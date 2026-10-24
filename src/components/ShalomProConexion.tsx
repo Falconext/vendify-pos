@@ -28,6 +28,7 @@ export default function ShalomProConexion({ nombreSugerido, className, sinTitulo
         agenciaOrigenId: '',
         agenciaOrigenNombre: '',
         clavesRetiro: '',
+        claveEnRotulo: false,
         tamanoDefault: 'XS',
     });
 
@@ -42,6 +43,7 @@ export default function ShalomProConexion({ nombreSugerido, className, sinTitulo
             agenciaOrigenNombre: data.agenciaOrigenNombre ?? '',
             // Se guarda "1010,1011"; se muestra con espacio para que se lea como lista.
             clavesRetiro: String(data.clavesRetiro ?? '').split(',').filter(Boolean).join(', '),
+            claveEnRotulo: Boolean(data.claveEnRotulo),
             tamanoDefault: data.tamanoDefault || 'XS',
         }));
     }, []);
@@ -99,6 +101,7 @@ export default function ShalomProConexion({ nombreSugerido, className, sinTitulo
                 agenciaOrigenId: form.agenciaOrigenId,
                 agenciaOrigenNombre: form.agenciaOrigenNombre,
                 clavesRetiro: form.clavesRetiro.trim(),
+                claveEnRotulo: form.claveEnRotulo,
                 tamanoDefault: form.tamanoDefault,
                 ...(form.securityCode.trim() ? { securityCode: form.securityCode.trim() } : {}),
             }),
@@ -221,6 +224,18 @@ export default function ShalomProConexion({ nombreSugerido, className, sinTitulo
                             distinta por envío; y en cada guía puedes escribir otra a mano.
                         </p>
                     </div>
+                    <label className="flex items-start gap-2.5 sm:col-span-2">
+                        <input type="checkbox" checked={form.claveEnRotulo}
+                            onChange={(e) => setForm((prev) => ({ ...prev, claveEnRotulo: e.target.checked }))}
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-red-500" data-testid="clave-en-rotulo" />
+                        <span>
+                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Imprimir la clave de retiro en el rótulo</span>
+                            <span className="mt-0.5 block text-xs leading-5 text-gray-500 dark:text-gray-400">
+                                No lo recomendamos: el rótulo va pegado por fuera del paquete junto al DNI del cliente, y
+                                cualquiera que lo vea tendría los dos datos para retirarlo. La clave ya le llega al cliente por WhatsApp.
+                            </span>
+                        </span>
+                    </label>
                 </div>
 
                 <div className="flex flex-wrap gap-2">

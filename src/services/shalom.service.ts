@@ -32,6 +32,7 @@ export interface ShalomInstancia {
     autoGuiaActivo?: boolean;
     /** Claves de retiro propias, separadas por coma ("1010,1011"); vacío = aleatoria. */
     clavesRetiro?: string;
+    claveEnRotulo?: boolean;
     /** Tamaño de paquete por defecto (SOBRE|XXS|XS|S|M|L). */
     tamanoDefault?: string;
 }
@@ -55,6 +56,7 @@ export interface ConectarInstanciaPayload {
     agenciaOrigenNombre?: string;
     autoGuiaActivo?: boolean;
     clavesRetiro?: string;
+    claveEnRotulo?: boolean;
     tamanoDefault?: string;
 }
 
