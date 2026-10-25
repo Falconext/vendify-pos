@@ -80,9 +80,11 @@ const ReprecioMasivo = () => {
     const resumen = useMemo(() => {
         if (!filas) return null;
         const aplican = filas.filter(f => f.seAplica);
-        const sinCosto = filas.filter(f => f.sinCosto).length;
+        // Los packs repiten el costo de su unidad: se cuentan una sola vez.
+        const sinCosto = filas.filter(f => f.sinCosto && !f.presentacionCodigo).length;
         const enPerdida = aplican.filter(f => f.utilidadNueva != null && f.utilidadNueva < 0).length;
-        return { total: filas.length, aplican: aplican.length, sinCosto, enPerdida };
+        const packs = aplican.filter(f => !!f.presentacionCodigo).length;
+        return { total: filas.length, aplican: aplican.length, sinCosto, enPerdida, packs };
     }, [filas]);
 
     const handlePrevisualizar = async () => {
@@ -203,6 +205,16 @@ const ReprecioMasivo = () => {
                         Los productos sin costo cargado se quedan como están.
                     </p>
                 )}
+                {operacion === 'REEMPLAZAR' && modo === 'MONTO' && (
+                    <p className="mt-3 text-xs text-violet-600 dark:text-violet-400">
+                        El precio fijo es para la unidad: los packs con precio propio en la lista (six pack, caja) no cambian.
+                    </p>
+                )}
+                {operacion !== 'REEMPLAZAR' && modo === 'MONTO' && (
+                    <p className="mt-3 text-xs text-violet-600 dark:text-violet-400">
+                        El monto es por unidad: un pack de 6 con precio propio en la lista se mueve 6 veces ese monto.
+                    </p>
+                )}
             </div>
 
             {/* Vista previa */}
@@ -212,7 +224,10 @@ const ReprecioMasivo = () => {
                         <div className="text-sm text-gray-600 dark:text-gray-300">
                             {resumen?.aplican === 0
                                 ? <span className="font-semibold text-amber-600">Ningún precio cambia con esos valores.</span>
-                                : <>Van a cambiar <b className="text-gray-900 dark:text-white">{resumen?.aplican}</b> de {resumen?.total} productos.</>}
+                                : <>Van a cambiar <b className="text-gray-900 dark:text-white">{resumen?.aplican}</b> de {resumen?.total} precios.</>}
+                            {!!resumen?.packs && (
+                                <span className="ml-2 text-xs text-violet-600">· incluye {resumen.packs} pack(s)</span>
+                            )}
                             {!!resumen?.sinCosto && (
                                 <span className="ml-2 text-xs text-gray-400">· {resumen.sinCosto} sin costo cargado</span>
                             )}
@@ -222,7 +237,7 @@ const ReprecioMasivo = () => {
                         </div>
                         <button type="button" onClick={() => setConfirmar(true)} disabled={!resumen?.aplican || cargando}
                             className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-40 transition-all">
-                            Aplicar a {resumen?.aplican} producto(s)
+                            Aplicar a {resumen?.aplican} precio(s)
                         </button>
                     </div>
                     <div className="overflow-x-auto max-h-[480px]">
@@ -236,16 +251,26 @@ const ReprecioMasivo = () => {
                             </thead>
                             <tbody>
                                 {filas.map(f => (
-                                    <tr key={f.productoId} className={`border-b border-gray-50 dark:border-slate-800/60 ${f.seAplica ? '' : 'opacity-45'}`}>
-                                        <td className="px-3 py-2 text-xs text-gray-500 tabular-nums">{f.codigo}</td>
-                                        <td className="px-3 py-2 text-sm text-gray-800 dark:text-white max-w-[260px] truncate">{f.descripcion}</td>
+                                    <tr key={`${f.productoId}|${f.presentacionCodigo || ''}`} className={`border-b border-gray-50 dark:border-slate-800/60 ${f.seAplica ? '' : 'opacity-45'}`}>
+                                        <td className="px-3 py-2 text-xs text-gray-500 tabular-nums">{f.presentacionCodigo ? '' : f.codigo}</td>
+                                        <td className="px-3 py-2 text-sm text-gray-800 dark:text-white max-w-[260px] truncate">
+                                            {f.presentacionCodigo ? (
+                                                <span className="pl-4 inline-flex items-center gap-1.5">
+                                                    <span className="text-gray-300">↳</span>
+                                                    <span className="rounded-md bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 text-[11px] font-bold text-violet-700 dark:text-violet-300">
+                                                        {f.presentacion}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400">{f.unidades} unid.</span>
+                                                </span>
+                                            ) : f.descripcion}
+                                        </td>
                                         <td className="px-3 py-2 text-xs tabular-nums text-gray-500">
                                             {f.sinCosto ? <span className="text-amber-600 font-semibold">sin costo</span> : soles(f.costoConIgv)}
                                         </td>
                                         <td className="px-3 py-2 text-sm tabular-nums text-gray-500">{soles(f.precioActual)}</td>
                                         <td className="px-3 py-2 text-sm tabular-nums font-bold">
                                             {f.precioNuevo == null
-                                                ? <span className="text-gray-300">no cambia</span>
+                                                ? <span className="text-gray-300">{f.packPrecioFijo ? 'no cambia (precio fijo)' : 'no cambia'}</span>
                                                 : <span className={f.precioNuevo > f.precioActual ? 'text-emerald-600' : 'text-rose-600'}>{soles(f.precioNuevo)}</span>}
                                         </td>
                                         <td className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
@@ -284,7 +309,7 @@ const ReprecioMasivo = () => {
                                         {l.operacion.toLowerCase()} {l.modo === 'MONTO' ? `S/ ${l.valor}` : `${l.valor}%`}
                                     </span>
                                     <span className="mx-2 text-gray-400">·</span>
-                                    <span className="text-xs text-gray-500">{l.totalItems} productos</span>
+                                    <span className="text-xs text-gray-500">{l.totalItems} precios</span>
                                     <span className="ml-2 text-xs text-gray-400">{new Date(l.creadoEn).toLocaleString('es-PE')}</span>
                                 </div>
                                 {l.revertidoEn ? (
@@ -310,7 +335,7 @@ const ReprecioMasivo = () => {
             {aDeshacer && (
                 <ModalConfirm isOpenModal={!!aDeshacer} setIsOpenModal={() => setADeshacer(null)}
                     title="Deshacer el reprecio"
-                    information={`Los ${aDeshacer.totalItems} productos vuelven al precio que tenían antes de este cambio.`}
+                    information={`Los ${aDeshacer.totalItems} precios vuelven a como estaban antes de este cambio.`}
                     confirmSubmit={handleDeshacer} />
             )}
         </div>

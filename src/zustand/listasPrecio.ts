@@ -55,6 +55,13 @@ export interface IFilaReprecio {
   utilidadNueva: number | null;
   sinCosto: boolean;
   seAplica: boolean;
+  /** '' = la unidad. Con valor, es un pack con precio propio en la lista. */
+  presentacionCodigo?: string;
+  /** Nombre del pack ("PACK X6") y cuántas unidades trae. */
+  presentacion?: string;
+  unidades?: number;
+  /** Con "fijar precio S/" el pack no cambia a propósito. */
+  packPrecioFijo?: boolean;
 }
 
 export interface ILoteReprecio {
@@ -206,7 +213,7 @@ export const useListasPrecioStore = create<IListasPrecioState>()(
         if (resp.code === 1) {
           const d = resp.data;
           useAlertStore.getState().alert(
-            `Se repreciaron ${d.aplicados} producto(s) en "${d.lista}".` +
+            `Se repreciaron ${d.aplicados} precio(s) en "${d.lista}".` +
             (d.omitidos ? ` ${d.omitidos} sin cambios.` : ''),
             'success',
           );
