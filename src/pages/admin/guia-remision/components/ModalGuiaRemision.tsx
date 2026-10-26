@@ -369,10 +369,12 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
     };
 
     useEffect(() => {
-        if (siguienteCorrelativo) {
-            // Parse correlativo if it's an object
+        // Solo al crear: una guía guardada ya tiene su número, y el backend
+        // ignora el correlativo al editar. El endpoint responde `{ data: N }`;
+        // leer `.correlativo` daba 0 y la guía salía como T001-00000000.
+        if (siguienteCorrelativo && !guiaToEdit?.id) {
             const correlativoValue = typeof siguienteCorrelativo === 'object'
-                ? (siguienteCorrelativo as any).correlativo || 0
+                ? Number((siguienteCorrelativo as any).data ?? (siguienteCorrelativo as any).correlativo ?? 0)
                 : siguienteCorrelativo;
             setFormValues(prev => ({ ...prev, correlativo: correlativoValue }));
         }
