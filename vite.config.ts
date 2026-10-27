@@ -71,7 +71,22 @@ export default defineConfig(({ mode }) => {
     sourcemap: false,
   },
   optimizeDeps: {
-    include: ['@monaco-editor/react'],
+    // Librerías que usan React y solo se importan desde pantallas perezosas:
+    // si Vite las descubre al navegar, las empaqueta con OTRA copia de React y
+    // la pantalla cae con "Invalid hook call" (p. ej. Kardex → react-to-print).
+    // Listarlas aquí las empaqueta al arrancar, junto con el resto.
+    include: [
+      '@monaco-editor/react',
+      'react-to-print',
+      '@react-pdf/renderer',
+      'react-quill-new',
+      'react-modal',
+      'rc-slider',
+      '@react-google-maps/api',
+      'styled-components',
+      'recharts',
+      'react-hook-form',
+    ],
   },
   }
 })
