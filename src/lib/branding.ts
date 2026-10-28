@@ -78,13 +78,22 @@ const LEGACY_BRANDS = new Set(['falconext', 'krezka']);
 const esMarcaLegacy = (b: any): boolean =>
   LEGACY_BRANDS.has(String(b?.key ?? '').toLowerCase());
 
+// La API respondía favicon "/favicon.ico", que este front no publica (la ruta
+// devuelve el index.html): el ícono del sidebar salía roto en producción. Ese
+// valor se ignora y queda el ícono de la marca estática.
+const conIconoValido = (remoto: Partial<BrandConfig>): BrandConfig => {
+  const { favicon, ...resto } = remoto;
+  const usable = favicon && !/^\/?favicon\.ico$/i.test(favicon.trim());
+  return { ...envDefaultBrand, ...resto, ...(usable ? { favicon } : {}) } as BrandConfig;
+};
+
 const getRuntimeBranding = (): BrandConfig | null => {
   if (typeof window === 'undefined') return null;
   if (isPublicBrandingFetchDisabled) return null;
 
   const runtime = (window as any).__VENDIFY_PUBLIC_BRAND__;
   if (runtime && typeof runtime === 'object' && runtime.name) {
-    return esMarcaLegacy(runtime) ? null : { ...envDefaultBrand, ...runtime };
+    return esMarcaLegacy(runtime) ? null : conIconoValido(runtime);
   }
 
   const host = window.location.host;
@@ -96,7 +105,7 @@ const getRuntimeBranding = (): BrandConfig | null => {
     if (parsed && typeof parsed === 'object' && parsed.name) {
       if (esMarcaLegacy(parsed)) return null;
       if (hostDefaultIsWhiteLabel && !parsed.isWhiteLabel) return envDefaultBrand;
-      return { ...envDefaultBrand, ...parsed };
+      return conIconoValido(parsed);
     }
   } catch {
     return null;
