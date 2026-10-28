@@ -4,6 +4,9 @@ import ModalConfirm from '@/components/ModalConfirm';
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCuentasBancariasStore } from "@/zustand/cuentasBancarias";
+import useAlertStore from "@/zustand/alert";
+import { useDebounce } from "@/hooks/useDebounce";
+import { get } from "@/utils/fetch";
 import EmitidoContent from "@/pages/admin/facturacion/modalResponseInvoice/EmitidoContent";
 import { descripcionParaImpresion } from "@/utils/descripcion-vehiculo";
 import type { PaymentLine } from "../useFacturacionViewModel";
@@ -27,10 +30,108 @@ const METODO_LOGOS: Record<string, string> = {
  * lenguaje visual de las tarjetas de método: el cambio es un clic y no se pierde
  * ni el carrito ni el cobro. Factura solo si el cliente tiene RUC.
  */
+/**
+ * RUC para la factura, escrito en la misma ventana de pago. Mientras se escribe
+ * (RUC o razón social) se sugieren los clientes con RUC ya guardados; Enter o
+ * un clic en la sugerencia deja la venta en Factura con ese cliente. Un RUC
+ * nuevo de 11 dígitos se trae de SUNAT y se registra. No se pierde el cobro.
+ */
+function RucParaFactura({ vm, onCancelar }: { vm: any; onCancelar?: () => void }) {
+    const [texto, setTexto] = useState('');
+    const [sugeridos, setSugeridos] = useState<any[]>([]);
+    const [activo, setActivo] = useState(0);
+    const q = useDebounce(texto.trim(), 250);
+
+    useEffect(() => {
+        if (q.length < 3) { setSugeridos([]); return; }
+        let vigente = true;
+        get(`clientes?search=${encodeURIComponent(q)}&limit=8`).then((resp: any) => {
+            if (!vigente) return;
+            const lista = resp?.data?.clientes ?? resp?.data?.data ?? [];
+            const conRuc = (Array.isArray(lista) ? lista : [])
+                .filter((c: any) => String(c?.nroDoc || '').replace(/\D/g, '').length === 11)
+                .slice(0, 5);
+            setSugeridos(conRuc);
+            setActivo(0);
+        });
+        return () => { vigente = false; };
+    }, [q]);
+
+    const elegir = (ruc: string) => { if (!vm.rucFacturaLoading) vm.facturarConRuc(ruc); };
+    const enviar = () => {
+        const soloDigitos = texto.replace(/\D/g, '');
+        // Un RUC completo manda sobre la sugerencia (la lista busca "contiene").
+        if (/^\d{11}$/.test(texto.trim())) return elegir(soloDigitos);
+        if (sugeridos[activo]) return elegir(sugeridos[activo].nroDoc);
+        useAlertStore.getState().alert('Escribe el RUC (11 dígitos) o elige un cliente de la lista', 'warning');
+    };
+
+    return (
+        <div data-enter-nativo data-testid="pos-ruc-factura" className="mt-2.5">
+            <div className="flex gap-1.5">
+                <input
+                    autoFocus
+                    aria-label="RUC o razón social del cliente"
+                    value={texto}
+                    onChange={(e) => setTexto(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); enviar(); }
+                        else if (e.key === 'ArrowDown' && sugeridos.length) { e.preventDefault(); setActivo((i) => Math.min(i + 1, sugeridos.length - 1)); }
+                        else if (e.key === 'ArrowUp' && sugeridos.length) { e.preventDefault(); setActivo((i) => Math.max(i - 1, 0)); }
+                        else if (e.key === 'Escape' && onCancelar) { e.preventDefault(); e.stopPropagation(); onCancelar(); }
+                    }}
+                    placeholder="RUC o razón social del cliente"
+                    className="min-w-0 flex-1 rounded-lg border border-violet-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-400"
+                />
+                <button
+                    type="button"
+                    onClick={enviar}
+                    disabled={vm.rucFacturaLoading || !texto.trim()}
+                    title="Buscar"
+                    className="grid w-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <Icon icon={vm.rucFacturaLoading ? 'svg-spinners:180-ring' : 'solar:magnifer-linear'} width={15} />
+                </button>
+            </div>
+            {sugeridos.length > 0 && (
+                <ul role="listbox" className="mt-1 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                    {sugeridos.map((c, i) => (
+                        <li key={c.id ?? c.nroDoc} role="option" aria-selected={i === activo}>
+                            <button
+                                type="button"
+                                onMouseEnter={() => setActivo(i)}
+                                onClick={() => elegir(c.nroDoc)}
+                                className={`flex w-full items-baseline gap-2 px-2.5 py-1.5 text-left text-xs ${i === activo ? 'bg-violet-50 dark:bg-violet-900/30' : ''}`}
+                            >
+                                <span className="shrink-0 font-bold tabular-nums text-gray-900 dark:text-white">{c.nroDoc}</span>
+                                <span className="truncate text-gray-500 dark:text-gray-400">{c.nombre}</span>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Factura elegida pero el cliente no tiene RUC (p. ej. "Cliente por definir"):
+ * en vez de emitir una factura sin cliente, se pide el RUC acá mismo.
+ */
+function FacturaSinRucCard({ vm }: { vm: any }) {
+    return (
+        <div data-testid="pos-factura-sin-ruc" className="mt-3 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 px-3 py-2.5">
+            <p className="text-xs font-extrabold text-gray-900 dark:text-white">Falta el RUC para la factura</p>
+            <RucParaFactura vm={vm} />
+        </div>
+    );
+}
+
 function CpeRequeridoCard({ vm }: { vm: any }) {
     const medios: string = vm.cpeRequeridoMedios || 'este medio';
     const actual: string = String(vm.formValues?.comprobante || 'comprobante interno').toLowerCase();
     const tieneRuc = String(vm.selectedClient?.nroDoc || '').length === 11;
+    const [pidiendoRuc, setPidiendoRuc] = useState(false);
     return (
         <div data-testid="pos-cpe-requerido" className="mt-4 rounded-2xl border border-violet-200 dark:border-violet-800/60 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/30 p-4">
             <div className="flex items-start gap-3">
@@ -56,8 +157,9 @@ function CpeRequeridoCard({ vm }: { vm: any }) {
                 </button>
                 <button
                     type="button"
-                    onClick={() => vm.cambiarComprobanteA('FACTURA')}
+                    onClick={() => (tieneRuc ? vm.cambiarComprobanteA('FACTURA') : setPidiendoRuc(true))}
                     disabled={vm.esRUS}
+                    data-testid="pos-cpe-factura"
                     title={vm.esRUS ? 'Régimen RUS: solo Boleta' : (!tieneRuc ? 'El cliente elegido no tiene RUC' : undefined)}
                     className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition-all active:scale-[0.98] ${vm.esRUS
                         ? 'border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed'
@@ -65,9 +167,10 @@ function CpeRequeridoCard({ vm }: { vm: any }) {
                 >
                     <Icon icon="solar:document-text-bold" width={22} />
                     <span className="text-sm font-extrabold">Factura</span>
-                    <span className={`text-[10px] ${tieneRuc ? 'opacity-70' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>{tieneRuc ? 'Cliente con RUC' : 'Requiere cliente con RUC'}</span>
+                    <span className={`text-[10px] ${tieneRuc ? 'opacity-70' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>{tieneRuc ? 'Cliente con RUC' : 'Escribe el RUC'}</span>
                 </button>
             </div>
+            {pidiendoRuc && !tieneRuc && <RucParaFactura vm={vm} onCancelar={() => setPidiendoRuc(false)} />}
         </div>
     );
 }
@@ -334,6 +437,8 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
         autoImpresionHecha.current = true;
         handleOpenNewTab(getFormatoImpresionDefault(vm.auth?.empresa));
     }, [emitStep, vm.auth?.empresa?.imprimirAutomatico, handleOpenNewTab, vm.auth?.empresa]);
+    const facturaSinRuc = !vm.isQuotationRoute && String(vm.formValues?.tipoDoc || '') === '01'
+        && String(vm.selectedClient?.nroDoc || '').replace(/\D/g, '').length !== 11;
     // Mismas condiciones que deshabilitan el botón EMITIR/ACTUALIZAR.
     const emitirBloqueado = vm.cpeRequeridoPorMedioPago || (!isCreditoPreview && ((vm.isMixedPayment && !splitValid) || faltanteEfectivo > 0));
 
@@ -368,6 +473,95 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [showPago, emitStep, emitirBloqueado, vm.addInvoiceReceipt]);
+
+    const continuarPago = () => {
+        if (!hayProductos) return;
+        if (esNotaCredito) {
+            setConfirmarNota(true);
+        } else if (emiteSinPasoDePago) {
+            vm.addInvoiceReceipt();
+        } else {
+            // Incluye la EDICIÓN de una nota de venta: pasa por el paso de
+            // pago para poder registrar/actualizar el cobro (parcial/mixto).
+            setShowPago(true);
+        }
+    };
+
+    // Atajos del mostrador (pedido DEMENVER): Enter en la venta abre "Continuar
+    // pago" y Esc en "emitido" cierra para la siguiente venta (Esc en el pago
+    // vuelve al carrito). Solo el paso de pago: cotización y nota de crédito
+    // emiten directo y no deben salir de una tecla.
+    const hayOtraVentana = () => Boolean(document.querySelector('[data-krk-modal], .fixed.inset-0[class*="z-[9999"]'));
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.defaultPrevented || e.repeat || e.isComposing) return;
+            if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            const el = e.target as HTMLElement | null;
+            if (e.key === 'Escape') {
+                if (hayOtraVentana()) return;
+                if (emitStep === 'emitido') {
+                    e.preventDefault();
+                    closeEmitido();
+                    setTimeout(() => vm.barcodeRef?.current?.focus(), 80);
+                } else if (showPago && emitStep === 'pago') {
+                    e.preventDefault();
+                    setShowPago(false);
+                }
+                return;
+            }
+            if (e.key !== 'Enter' || showPago || isEmitPhase) return;
+            if (emiteSinPasoDePago || hayRecetasPendientes || !hayProductos) return;
+            if (hayOtraVentana()) return;
+            const tag = el?.tagName;
+            if (tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+            // En un campo con texto, Enter es de ese campo (buscar, escanear,
+            // cantidad…); vacío, ya no tiene nada que hacer y pasa a cobrar.
+            if (tag === 'INPUT' && String((el as HTMLInputElement).value || '').trim() !== '') return;
+            if (el?.closest('[role="listbox"], [role="combobox"], [role="menu"]')) return;
+            e.preventDefault();
+            continuarPago();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
+
+    const elegirMetodo = (m: string) => {
+        vm.setPaymentMethod(m);
+        vm.setPaymentDetail((curr: PaymentLine) => ({
+            ...curr,
+            method: m,
+            cuentaBancariaId: needsBankAccount(m) ? (curr.cuentaBancariaId || cuentasActivas[0]?.id || null) : null,
+            cuentaBancariaLabel: needsBankAccount(m) ? accountLabel(curr.cuentaBancariaId || cuentasActivas[0]?.id) : '',
+            referencia: '',
+            tarjetaTipo: m === 'Tarjeta' ? (curr.tarjetaTipo || 'Débito') : '',
+            tarjetaUltimos4: '',
+        }));
+    };
+
+    // Flechas para recorrer los métodos de pago (pedido DEMENVER): la grilla es
+    // de 3 columnas, así que ←/→ avanzan de a uno y ↑/↓ de a una fila. En un
+    // campo de texto o número las flechas son del campo (cursor, monto).
+    const metodoActual = vm.paymentMethod;
+    useEffect(() => {
+        if (!showPago || emitStep !== 'pago' || vm.isMixedPayment) return;
+        if (vm.formValues?.medioPago === 'Crédito') return;
+        const PASO: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 };
+        const onKey = (e: KeyboardEvent) => {
+            const paso = PASO[e.key];
+            if (!paso || e.defaultPrevented || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            const el = e.target as HTMLElement | null;
+            if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.tagName === 'SELECT' || el?.isContentEditable) return;
+            if (!document.querySelector('[data-metodo-pago]')) return;
+            const actual = Math.max(0, METODOS.indexOf(metodoActual));
+            const destino = actual + paso;
+            if (destino < 0 || destino >= METODOS.length) return;
+            e.preventDefault();
+            elegirMetodo(METODOS[destino]);
+            (document.querySelector(`[data-metodo-pago="${METODOS[destino]}"]`) as HTMLElement | null)?.focus();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
 
     const handleModalOverlay = () => {
         if (emitStep === 'pago') setShowPago(false);
@@ -495,18 +689,8 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                     </button>
                 )}
                 <button
-                    onClick={() => {
-                        if (!hayProductos) return;
-                        if (esNotaCredito) {
-                            setConfirmarNota(true);
-                        } else if (emiteSinPasoDePago) {
-                            vm.addInvoiceReceipt();
-                        } else {
-                            // Incluye la EDICIÓN de una nota de venta: pasa por el paso de
-                            // pago para poder registrar/actualizar el cobro (parcial/mixto).
-                            setShowPago(true);
-                        }
-                    }}
+                    data-testid="pos-continuar-pago"
+                    onClick={continuarPago}
                     disabled={hayRecetasPendientes || !hayProductos}
                     className={`flex-1 py-3 md:py-3.5 text-white rounded-xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm ${hayRecetasPendientes
                         ? 'bg-gray-400 cursor-not-allowed'
@@ -649,18 +833,8 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                 {METODOS.map((m) => (
                                     <button
                                         key={m}
-                                        onClick={() => {
-                                            vm.setPaymentMethod(m);
-                                            vm.setPaymentDetail((curr: PaymentLine) => ({
-                                                ...curr,
-                                                method: m,
-                                                cuentaBancariaId: m === 'Transferencia' ? (curr.cuentaBancariaId || cuentasActivas[0]?.id || null) : null,
-                                                cuentaBancariaLabel: m === 'Transferencia' ? accountLabel(curr.cuentaBancariaId || cuentasActivas[0]?.id) : '',
-                                                referencia: '',
-                                                tarjetaTipo: m === 'Tarjeta' ? (curr.tarjetaTipo || 'Débito') : '',
-                                                tarjetaUltimos4: '',
-                                            }));
-                                        }}
+                                        data-metodo-pago={m}
+                                        onClick={() => elegirMetodo(m)}
                                         className={`flex flex-col items-center justify-center gap-2 p-4 aspect-square rounded-2xl text-xs md:text-sm font-bold transition-all border ${vm.paymentMethod === m
                                             ? '!bg-emerald-500 text-white border-none shadow-md shadow-emerald-200/50'
                                             : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
@@ -780,6 +954,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                 </div>
                                 )}
                                 {vm.cpeRequeridoPorMedioPago && <CpeRequeridoCard vm={vm} />}
+                                {facturaSinRuc && <FacturaSinRucCard vm={vm} />}
                             </div>{/* /IZQUIERDA métodos de pago */}
 
                             {/* DERECHA: preview del comprobante — mismo formato que el ticket impreso */}
@@ -792,6 +967,9 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                 )}
                                 {vm.formValues?.medioPago === 'Crédito' && vm.cpeRequeridoPorMedioPago && (
                                     <div className="mx-auto mb-3 max-w-[300px]"><CpeRequeridoCard vm={vm} /></div>
+                                )}
+                                {vm.formValues?.medioPago === 'Crédito' && facturaSinRuc && (
+                                    <div className="mx-auto mb-3 max-w-[300px]"><FacturaSinRucCard vm={vm} /></div>
                                 )}
                                 <div className="mb-3 flex items-center justify-between gap-2">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Vista previa del comprobante</h4>

@@ -2461,6 +2461,62 @@ export const useFacturacionViewModel = () => {
         setFechaVencimientoCredito('');
     };
 
+    // Factura desde la ventana de pago: se escribe el RUC ahí mismo y queda
+    // lista para emitir, sin cerrar la venta (pedido DEMENVER: el cliente pide
+    // boleta y a último momento cambia a factura). Busca el cliente en la
+    // empresa; si no existe lo trae del padrón SUNAT y lo registra.
+    const [rucFacturaLoading, setRucFacturaLoading] = useState(false);
+    const facturarConRuc = async (rucRaw: string): Promise<boolean> => {
+        const ruc = String(rucRaw || '').replace(/\D/g, '');
+        if (ruc.length !== 11) {
+            useAlertStore.getState().alert('El RUC tiene 11 dígitos', 'warning');
+            return false;
+        }
+        if (rucFacturaLoading) return false;
+        setRucFacturaLoading(true);
+        try {
+            const resp: any = await get(`clientes?search=${ruc}&limit=5`);
+            const lista = resp?.data?.clientes ?? resp?.data?.data ?? [];
+            let cliente: any = Array.isArray(lista) ? lista.find((c: any) => String(c.nroDoc) === ruc) : null;
+            if (!cliente) {
+                const info: any = await getClientFromDoc(ruc, 'RUC');
+                const nombre = info?.nombre_o_razon_social || info?.nombre_completo || '';
+                if (!nombre) {
+                    useAlertStore.getState().alert('SUNAT no devolvió datos para ese RUC. Revisa el número.', 'warning');
+                    return false;
+                }
+                const datos = {
+                    tipoDoc: 'RUC',
+                    nroDoc: ruc,
+                    nombre,
+                    direccion: info.direccion || info.direccion_completa || '',
+                    departamento: info.departamento || '',
+                    provincia: info.provincia || '',
+                    distrito: info.distrito || '',
+                    ubigeo: info.ubigeo_sunat || '',
+                    persona: 'CLIENTE',
+                    estado: 'ACTIVO',
+                };
+                const creado: any = await addClients(datos as any);
+                if (!creado) {
+                    useAlertStore.getState().alert('No se pudo registrar el cliente', 'error');
+                    return false;
+                }
+                cliente = { ...creado, ...datos };
+            }
+            // El efecto que limpia el cliente al pasar a FACTURA respeta esta marca
+            // (mismo blindaje que al cargar una guía o una nota de venta).
+            fromNVComprobanteRef.current = 'FACTURA';
+            setFormValues(prev => ({ ...prev, comprobante: 'FACTURA', tipoDoc: '01' }));
+            setFechaVencimientoCredito('');
+            handleClienteCreado(cliente);
+            useAlertStore.getState().alert(`Factura para ${cliente.nombre}`, 'success');
+            return true;
+        } finally {
+            setRucFacturaLoading(false);
+        }
+    };
+
     const validatePaymentDetails = () => {
         if (isQuotationRoute) return true;
         if (cpeRequeridoPorMedioPago) {
@@ -3107,7 +3163,7 @@ export const useFacturacionViewModel = () => {
 
         // Form & Selections
         formValues, setFormValues,
-        cpeRequeridoPorMedioPago, cpeRequeridoMensaje, cpeRequeridoMedios, cambiarComprobanteA, esRUS, comprobanteInicialConfigurado,
+        cpeRequeridoPorMedioPago, cpeRequeridoMensaje, cpeRequeridoMedios, cambiarComprobanteA, facturarConRuc, rucFacturaLoading, esRUS, comprobanteInicialConfigurado,
         paymentMethod, setPaymentMethod,
         paymentDetail, setPaymentDetail,
         buildPaymentDetails,
