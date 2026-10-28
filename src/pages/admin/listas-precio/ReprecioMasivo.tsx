@@ -9,6 +9,7 @@ import {
     type OperacionReprecio,
 } from '@/zustand/listasPrecio';
 import { useCategoriesStore } from '@/zustand/categories';
+import ReprecioExcel from './ReprecioExcel';
 
 /**
  * Reprecio masivo de una lista.
@@ -45,6 +46,8 @@ const ReprecioMasivo = () => {
     const [search, setSearch] = useState('');
     const [operacion, setOperacion] = useState<OperacionReprecio>('AUMENTAR');
     const [modo, setModo] = useState<ModoReprecio>('PORCENTAJE');
+    // Con Excel se cambia el precio normal del Kardex; la otra vista, una lista.
+    const [vista, setVista] = useState<'LISTA' | 'EXCEL'>('LISTA');
     const [valor, setValor] = useState('');
 
     const [filas, setFilas] = useState<IFilaReprecio[] | null>(null);
@@ -128,12 +131,23 @@ const ReprecioMasivo = () => {
                     Reprecio masivo
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-3xl">
-                    Cambia el precio de muchos productos de una sola vez en una lista.
-                    Primero ves el antes y el después de cada uno; nada se guarda hasta que lo confirmes,
-                    y cualquier reprecio se puede deshacer.
+                    Cambia el precio de muchos productos de una sola vez: por porcentaje o monto en una lista,
+                    o subiendo un Excel con los precios nuevos. Primero ves el antes y el después de cada uno;
+                    nada se guarda hasta que lo confirmes, y se puede deshacer.
                 </p>
             </div>
 
+            <div className="mb-4 inline-flex rounded-xl bg-white dark:bg-[#111827] border border-gray-100 dark:border-slate-800 p-1" role="tablist">
+                {([['LISTA', 'Por porcentaje o monto', 'solar:calculator-minimalistic-linear'], ['EXCEL', 'Con Excel', 'solar:file-text-linear']] as const).map(([v, t, ic]) => (
+                    <button key={v} type="button" role="tab" aria-selected={vista === v} onClick={() => setVista(v)}
+                        data-testid={`reprecio-tab-${v}`}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition-colors ${vista === v ? 'bg-violet-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
+                        <Icon icon={ic} width={16} /> {t}
+                    </button>
+                ))}
+            </div>
+
+            {vista === 'EXCEL' ? <ReprecioExcel /> : (<>
             {/* Parámetros */}
             <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-slate-800 p-4 mb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -332,6 +346,8 @@ const ReprecioMasivo = () => {
                     information={`Se van a cambiar ${resumen?.aplican} precios en "${listas.find(l => l.id === listaPrecioId)?.nombre}". Podrás deshacerlo desde el historial.`}
                     confirmSubmit={handleAplicar} />
             )}
+            </>)}
+
             {aDeshacer && (
                 <ModalConfirm isOpenModal={!!aDeshacer} setIsOpenModal={() => setADeshacer(null)}
                     title="Deshacer el reprecio"
