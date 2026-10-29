@@ -12,7 +12,13 @@ import {
   usePedidosViewModel,
 } from '@/features/admin/tienda/usePedidosViewModel';
 import { PedidoDetalleDrawer } from './PedidoDetalleDrawer';
-import { useNavigate } from 'react-router-dom';
+import ModalNotaVentaPedido from './ModalNotaVentaPedido';
+import ModalDetalleComprobante from '@/pages/admin/facturacion/ModalDetalleComprobante';
+import TableActionMenu from '@/components/TableActionMenu';
+import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
+import { get } from '@/utils/fetch';
+import useAlertStore from '@/zustand/alert';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const money = (value: number) => `S/ ${value.toFixed(2)}`;
 
@@ -22,7 +28,7 @@ const formatDate = (value: string) => new Date(value).toLocaleString('es-PE', {
 
 const inputBase = 'h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-[#0F172A] dark:text-white';
 
-const HEADER_COLS = ['#', 'Fecha', 'Cliente', 'Vendedor', 'Estado entrega', 'Agencia envío', 'Estado envío', 'Total', 'Pagado', 'Por pagar', 'Estado pago', 'Pagos', 'Acciones'];
+const HEADER_COLS = ['#', 'Fecha', 'Cliente', 'Vendedor', 'Estado entrega', 'Agencia envío', 'Estado envío', 'Total', 'Pagado', 'Por pagar', 'Estado pago', 'Acciones'];
 
 const selCls = '!h-9 !rounded-xl !border-gray-200 dark:!border-slate-700 !bg-white dark:!bg-slate-800 !px-2 !py-0 !text-xs !shadow-none !text-gray-700 dark:!text-white';
 
@@ -127,6 +133,13 @@ export default function PedidosTienda() {
   const navigate = useNavigate();
   const [selectedPedido, setSelectedPedido] = useState<PedidoTiendaAdmin | null>(null);
   const [confirmPago, setConfirmPago] = useState<PedidoTiendaAdmin | null>(null);
+  const [nvPedido, setNvPedido] = useState<PedidoTiendaAdmin | null>(null);
+  const [verNotaId, setVerNotaId] = useState<number | null>(null);
+  // Cobro de un pedido que ya es nota de venta: se registra en la nota (caja,
+  // historial de pagos) y el backend actualiza el pedido.
+  const [cobroNota, setCobroNota] = useState<any | null>(null);
+  // Menú de acciones: un solo menú abierto, anclado al botón ⋮ de la fila.
+  const [menu, setMenu] = useState<{ pedido: PedidoTiendaAdmin; anchor: HTMLElement } | null>(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Llegada desde el Panel de ventas ("Ver / gestionar pedido"): ?codigo=PT-… →
@@ -163,6 +176,89 @@ export default function PedidosTienda() {
       },
     });
   };
+
+  const abrirCobroNota = async (comprobanteId: number) => {
+    const resp: any = await get(`comprobante/${comprobanteId}`);
+    const comp = resp?.success === false ? null : (resp?.data ?? null);
+    if (!comp) {
+      useAlertStore.getState().alert('No se pudo abrir la nota de venta para cobrar.', 'error');
+      return;
+    }
+    setCobroNota(comp);
+  };
+
+  /**
+   * Todas las acciones de un pedido, en el orden en que se usan. La tabla y
+   * las tarjetas del celular muestran este mismo menú (antes eran hasta 9
+   * botones sueltos por fila, más la columna Pagos).
+   */
+  const accionesDe = (pedido: PedidoTiendaAdmin) => {
+    type Accion = { key: string; label: string; icon: string; tone?: 'primary' | 'danger'; onClick?: () => void; href?: string | null; separador?: boolean };
+    const acciones: Accion[] = [];
+    if (pedidoPuedeNotaVenta(pedido)) {
+      acciones.push({
+        key: 'nv',
+        label: pedido.tipoEntrega === 'ENVIO' ? 'Nota de venta y despacho' : 'Nota de venta',
+        icon: 'solar:document-add-bold',
+        tone: 'primary',
+        onClick: () => setNvPedido(pedido),
+      });
+    }
+    if (pedido.comprobanteId) {
+      acciones.push({ key: 'ver-nv', label: 'Ver comprobante', icon: 'solar:document-text-bold', onClick: () => setVerNotaId(Number(pedido.comprobanteId)) });
+    }
+    if (pedido.saldoPendiente > 0.01) {
+      acciones.push({
+        key: 'pago',
+        label: 'Registrar pago',
+        icon: 'solar:wallet-money-bold',
+        onClick: () => (pedido.comprobanteId ? void abrirCobroNota(Number(pedido.comprobanteId)) : setConfirmPago(pedido)),
+      });
+    }
+    if (pedidoPuedeDocumentarse(pedido)) {
+      acciones.push({ key: 'boleta', label: 'Hacer boleta', icon: 'solar:bill-list-bold', onClick: () => navegarComprobantePedido(pedido, 'BOLETA'), separador: true });
+      acciones.push({ key: 'factura', label: 'Hacer factura', icon: 'solar:document-add-linear', onClick: () => navegarComprobantePedido(pedido, 'FACTURA') });
+      if (pedido.tipoEntrega === 'ENVIO') {
+        acciones.push({ key: 'guia', label: 'Hacer guía de remisión', icon: 'solar:route-bold-duotone', onClick: () => navegarGuiaPedido(pedido) });
+      }
+    }
+    if (pedido.clienteTelefono) {
+      acciones.push({ key: 'wsp', label: 'WhatsApp al cliente', icon: 'mdi:whatsapp', href: vm.buildWhatsappUrl(pedido, pedido.estadoEntrega), separador: true });
+    }
+    const resena = vm.buildReviewWhatsappUrl(pedido);
+    if (resena) acciones.push({ key: 'resena', label: 'Pedir reseña', icon: 'solar:star-bold', href: resena });
+    acciones.push({ key: 'detalle', label: 'Ver detalle', icon: 'solar:eye-bold', onClick: () => setSelectedPedido(pedido), separador: true });
+    if (pedido.tipoEntrega === 'ENVIO') {
+      acciones.push({
+        key: 'despacho',
+        label: 'Ver en despacho',
+        icon: 'solar:delivery-bold-duotone',
+        onClick: () => navigate(`/administrador/ventas?fecha=${pedido.creadoEn.slice(0, 10)}&pedidoId=${pedido.id}`),
+      });
+    }
+    return acciones;
+  };
+
+  // Función y no componente: un componente declarado aquí adentro se re-monta
+  // en cada render (parpadeo, ver memoria del proyecto).
+  const botonAcciones = (pedido: PedidoTiendaAdmin, grande = false) => (
+    <button
+      type="button"
+      data-testid={`pedido-acciones-${pedido.id}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        const anchor = e.currentTarget;
+        setMenu((m) => (m?.pedido.id === pedido.id ? null : { pedido, anchor }));
+      }}
+      className={grande
+        ? 'inline-flex h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700'
+        : 'inline-flex h-8 w-8 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-slate-700'}
+      title="Acciones"
+      aria-label="Acciones del pedido"
+    >
+      {grande ? <>Acciones <Icon icon="solar:alt-arrow-down-linear" className="h-3.5 w-3.5" /></> : <Icon icon="solar:menu-dots-bold" className="h-5 w-5 rotate-90" />}
+    </button>
+  );
 
   if (vm.loading) {
     return (
@@ -235,97 +331,9 @@ export default function PedidosTienda() {
       'Pagado': <span className="text-xs text-gray-500 dark:text-gray-400">{money(pedido.montoPagado)}</span>,
       'Por pagar': <span className="text-xs text-gray-500 dark:text-gray-400">{money(pedido.saldoPendiente)}</span>,
       'Estado pago': <PagoBadge pedido={pedido} />,
-      'Pagos': (
-        <button
-          onClick={(e) => { e.stopPropagation(); setConfirmPago(pedido); }}
-          disabled={pedido.saldoPendiente <= 0.01}
-          className="inline-flex h-8 w-10 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm transition hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
-          title={pedido.saldoPendiente <= 0.01 ? 'Ya está pagado' : 'Marcar como pagado'}
-        >
-          <Icon icon="solar:wallet-money-bold" className="h-4 w-4" />
-        </button>
-      ),
       'Acciones': (
-        <div className="flex items-center gap-2">
-              {pedidoPuedeNotaVenta(pedido) && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'NV'); }}
-                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-gray-900 px-2.5 text-[11px] font-semibold text-white transition hover:bg-black"
-                  title={pedido.envioCourier ? 'Nota de venta con el envío por agencia ya armado' : 'Hacer nota de venta'}
-                >
-                  <Icon icon="solar:document-text-bold" className="h-4 w-4" /> NV
-                </button>
-              )}
-          {pedidoPuedeDocumentarse(pedido) && (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'BOLETA'); }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500 text-white transition hover:bg-violet-600"
-                title="Hacer boleta"
-              >
-                <Icon icon="solar:bill-list-bold" className="h-4 w-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'FACTURA'); }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700"
-                title="Hacer factura"
-              >
-                <Icon icon="solar:document-add-bold" className="h-4 w-4" />
-              </button>
-              {pedido.tipoEntrega === 'ENVIO' && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); navegarGuiaPedido(pedido); }}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white transition hover:bg-amber-600"
-                  title="Hacer guía de remisión"
-                >
-                  <Icon icon="solar:route-bold-duotone" className="h-4 w-4" />
-                </button>
-              )}
-            </>
-          )}
-          {pedido.clienteTelefono && (
-            <a
-              href={vm.buildWhatsappUrl(pedido, pedido.estadoEntrega) || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white transition hover:bg-emerald-600"
-              title="WhatsApp"
-            >
-              <Icon icon="mdi:whatsapp" className="h-4 w-4" />
-            </a>
-          )}
-          {vm.buildReviewWhatsappUrl(pedido) && (
-            <a
-              href={vm.buildReviewWhatsappUrl(pedido) || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 text-white transition hover:bg-amber-500"
-              title="Solicitar reseña"
-            >
-              <Icon icon="solar:star-bold" className="h-4 w-4" />
-            </a>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); setSelectedPedido(pedido); }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-600 transition hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
-            title="Ver detalle"
-          >
-            <Icon icon="solar:eye-bold" className="h-4 w-4" />
-          </button>
-          {pedido.tipoEntrega === 'ENVIO' && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/administrador/ventas?fecha=${pedido.creadoEn.slice(0, 10)}&pedidoId=${pedido.id}`);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500 text-white transition hover:bg-indigo-600"
-              title="Ver en despacho"
-            >
-              <Icon icon="solar:delivery-bold-duotone" className="h-4 w-4" />
-            </button>
-          )}
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {botonAcciones(pedido)}
         </div>
       ),
     };
@@ -508,101 +516,8 @@ export default function PedidosTienda() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setConfirmPago(pedido); }}
-                    disabled={pedido.saldoPendiente <= 0.01}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-500 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
-                    title={pedido.saldoPendiente <= 0.01 ? 'Ya está pagado' : 'Marcar como pagado'}
-                  >
-                    <Icon icon="solar:wallet-money-bold" className="h-4 w-4" />
-                  </button>
-                  {pedidoPuedeNotaVenta(pedido) && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'NV'); }}
-                      className="inline-flex h-10 items-center justify-center gap-1 rounded-xl bg-gray-900 px-3 text-xs font-semibold text-white transition hover:bg-black"
-                      title={pedido.envioCourier ? 'Nota de venta con el envío por agencia ya armado' : 'Hacer nota de venta'}
-                    >
-                      <Icon icon="solar:document-text-bold" className="h-4 w-4" /> NV
-                    </button>
-                  )}
-                  {pedidoPuedeDocumentarse(pedido) && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'BOLETA'); }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-violet-500 text-white transition hover:bg-violet-600"
-                        title="Hacer boleta"
-                      >
-                        <Icon icon="solar:bill-list-bold" className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'FACTURA'); }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700"
-                        title="Hacer factura"
-                      >
-                        <Icon icon="solar:document-add-bold" className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setSelectedPedido(pedido); }}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-gray-100 text-gray-600 transition hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
-                    title="Ver detalle"
-                  >
-                    <Icon icon="solar:eye-bold" className="h-4 w-4" />
-                  </button>
-                  {pedido.tipoEntrega === 'ENVIO' && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/administrador/ventas?fecha=${pedido.creadoEn.slice(0, 10)}&pedidoId=${pedido.id}`);
-                      }}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-500 text-white transition hover:bg-indigo-600"
-                      title="Ver en despacho"
-                    >
-                      <Icon icon="solar:delivery-bold-duotone" className="h-4 w-4" />
-                    </button>
-                  )}
-                  {pedido.clienteTelefono && (
-                    <a
-                      href={vm.buildWhatsappUrl(pedido, pedido.estadoEntrega) || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500 text-white transition hover:bg-emerald-600"
-                      title="WhatsApp"
-                    >
-                      <Icon icon="mdi:whatsapp" className="h-4 w-4" />
-                    </a>
-                  )}
-                  {vm.buildReviewWhatsappUrl(pedido) && (
-                    <a
-                      href={vm.buildReviewWhatsappUrl(pedido) || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-400 text-white transition hover:bg-amber-500"
-                      title="Solicitar reseña"
-                    >
-                      <Icon icon="solar:star-bold" className="h-4 w-4" />
-                    </a>
-                  )}
-                  {pedidoPuedeDocumentarse(pedido) && pedido.tipoEntrega === 'ENVIO' && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); navegarGuiaPedido(pedido); }}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 text-white transition hover:bg-amber-600"
-                      title="Hacer guía de remisión"
-                    >
-                      <Icon icon="solar:route-bold-duotone" className="h-4 w-4" />
-                    </button>
-                  )}
+                <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                  {botonAcciones(pedido, true)}
                 </div>
               </article>
             );
@@ -634,6 +549,42 @@ export default function PedidosTienda() {
             setConfirmPago(null);
           }}
           onCancel={() => setConfirmPago(null)}
+        />
+      )}
+
+      {/* Menú de acciones del pedido */}
+      <TableActionMenu isOpen={!!menu} anchorEl={menu?.anchor ?? null} onClose={() => setMenu(null)} className="w-60">
+        {menu && accionesDe(menu.pedido).map((a) => {
+          const clase = `flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition hover:bg-gray-100 dark:hover:bg-slate-700 ${a.separador ? 'border-t border-gray-100 dark:border-slate-700' : ''} ${a.tone === 'primary' ? 'font-semibold text-violet-700 dark:text-violet-300' : 'text-gray-700 dark:text-gray-200'}`;
+          const icono = <Icon icon={a.icon} className={`h-4 w-4 flex-none ${a.tone === 'primary' ? 'text-violet-600' : a.key === 'wsp' ? 'text-emerald-500' : a.key === 'resena' ? 'text-amber-400' : 'text-gray-400'}`} />;
+          return a.href !== undefined ? (
+            <a key={a.key} href={a.href || undefined} target="_blank" rel="noopener noreferrer" onClick={() => setMenu(null)} className={clase} data-testid={`accion-${a.key}`}>
+              {icono} {a.label}
+            </a>
+          ) : (
+            <button key={a.key} type="button" onClick={() => { setMenu(null); a.onClick?.(); }} className={clase} data-testid={`accion-${a.key}`}>
+              {icono} {a.label}
+            </button>
+          );
+        })}
+      </TableActionMenu>
+
+      {/* Pedido → nota de venta con despacho en un clic */}
+      <ModalNotaVentaPedido
+        pedido={nvPedido}
+        onClose={() => setNvPedido(null)}
+        onRevisarEnPos={(p) => { setNvPedido(null); navegarComprobantePedido(p, 'NV'); }}
+        onVerNota={(id) => { setNvPedido(null); setVerNotaId(id); }}
+        onGenerada={() => void vm.recargar()}
+      />
+
+      <ModalDetalleComprobante comprobanteId={verNotaId} isOpen={verNotaId !== null} onClose={() => setVerNotaId(null)} />
+
+      {cobroNota && (
+        <ModalRegistrarPago
+          comprobante={cobroNota}
+          onClose={() => setCobroNota(null)}
+          onSuccess={() => { setCobroNota(null); void vm.recargar(); }}
         />
       )}
     </div>
