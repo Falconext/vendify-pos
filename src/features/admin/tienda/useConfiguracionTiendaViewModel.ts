@@ -10,6 +10,8 @@ const defaultForm = {
     yapeQrUrl: '', yapeNumero: '', plinQrUrl: '', plinNumero: '',
     aceptaEfectivo: true, costoEnvioFijo: 0, envioGratisDesdeSoles: 0, minimoCompra: 0,
     aceptaRecojo: true, aceptaEnvio: true, tiendaVentaSinStock: false, direccionRecojo: '', tiempoPreparacionMin: 30,
+    // Agencias que ofrece el checkout (Shalom / Olva). Vacío = solo domicilio.
+    couriersTienda: [] as string[],
     bancoNombre: '', numeroCuenta: '', cci: '', monedaCuenta: 'SOLES',
 };
 
@@ -128,6 +130,7 @@ export const useConfiguracionTiendaViewModel = (): any => {
                 costoEnvioFijo: Number(data.data.costoEnvioFijo || 0), aceptaRecojo: data.data.aceptaRecojo ?? true,
                 tiendaVentaSinStock: data.data.tiendaVentaSinStock ?? false,
                 aceptaEnvio: data.data.aceptaEnvio ?? true, direccionRecojo: data.data.direccionRecojo || '',
+                couriersTienda: Array.isArray(data.data.couriersTienda) ? data.data.couriersTienda : [],
                 tiempoPreparacionMin: data.data.tiempoPreparacionMin || 30, bancoNombre: data.data.bancoNombre || '',
                 numeroCuenta: data.data.numeroCuenta || '', cci: data.data.cci || '', monedaCuenta: data.data.monedaCuenta || 'SOLES',
                 envioGratisDesdeSoles: Number(data.data.envioGratisDesdeSoles || 0), minimoCompra: Number(data.data.minimoCompra || 0),

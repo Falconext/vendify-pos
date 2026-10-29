@@ -60,8 +60,20 @@ export function PedidoDetalleDrawer({ open, pedido, onClose }: Props) {
                                 {[
                                     { label: 'Vendedor', value: pedido.vendedorNombre },
                                     { label: 'Método de pago', value: pedido.medioPago },
-                                    { label: 'Tipo entrega', value: pedido.tipoEntrega === 'ENVIO' ? 'Envío a domicilio' : 'Recojo en tienda' },
-                                    { label: 'Dirección', value: pedido.clienteDireccion || '—' },
+                                    {
+                                        label: 'Tipo entrega',
+                                        value: pedido.tipoEntrega !== 'ENVIO'
+                                            ? 'Recojo en tienda'
+                                            : pedido.envioCourier
+                                                ? `Recoge en agencia ${pedido.envioCourier === 'OLVA' ? 'Olva' : 'Shalom'}`
+                                                : 'Envío a domicilio',
+                                    },
+                                    ...(pedido.envioCourier
+                                        ? [
+                                            { label: 'Agencia', value: pedido.envioAgenciaNombre || '—' },
+                                            { label: 'DNI', value: pedido.clienteDocumento || '—' },
+                                        ]
+                                        : [{ label: 'Dirección', value: pedido.clienteDireccion || '—' }]),
                                     { label: 'Referencia', value: pedido.clienteReferencia || '—' },
                                     { label: 'Observaciones', value: pedido.observaciones || '—' },
                                     { label: 'Notas internas', value: pedido.notasInternas || '—' },

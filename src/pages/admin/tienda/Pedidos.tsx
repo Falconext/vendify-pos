@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { Calendar } from '@/components/Date';
 import { Button } from '@/components/ui/button';
@@ -109,7 +109,17 @@ function SellerCell({ nombre }: { nombre: string }) {
 }
 
 const pedidoPuedeDocumentarse = (pedido: PedidoTiendaAdmin) => (
-  pedido.saldoPendiente <= 0.01 || pedido.estadoEntrega === 'ENTREGADO_COMPLETADO' || pedido.estadoEnvio === 'ENTREGADO'
+  !pedido.comprobanteId &&
+  (pedido.saldoPendiente <= 0.01 || pedido.estadoEntrega === 'ENTREGADO_COMPLETADO' || pedido.estadoEnvio === 'ENTREGADO')
+);
+
+/**
+ * La nota de venta no espera el pago: el pedido de la tienda se pasa a nota
+ * apenas llega (con su envío por agencia) y se cobra después, como cualquier
+ * nota con saldo. Una sola vez por pedido.
+ */
+const pedidoPuedeNotaVenta = (pedido: PedidoTiendaAdmin) => (
+  !pedido.comprobanteId && pedido.estado !== 'CANCELADO'
 );
 
 export default function PedidosTienda() {
@@ -119,7 +129,22 @@ export default function PedidosTienda() {
   const [confirmPago, setConfirmPago] = useState<PedidoTiendaAdmin | null>(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  const navegarComprobantePedido = (pedido: PedidoTiendaAdmin, defaultType: 'BOLETA' | 'FACTURA') => {
+  // Llegada desde el Panel de ventas ("Ver / gestionar pedido"): ?codigo=PT-… →
+  // se filtra por ese código y se abre su detalle en cuanto carguen los pedidos.
+  const [searchParams] = useSearchParams();
+  const codigoParam = searchParams.get('codigo');
+  const codigoAbiertoRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!codigoParam || vm.loading) return;
+    if (codigoAbiertoRef.current === codigoParam) return;
+    const pedido = vm.pedidos.find((p) => p.codigoSeguimiento === codigoParam);
+    if (!pedido) return;
+    codigoAbiertoRef.current = codigoParam;
+    vm.setBusqueda(codigoParam);
+    setSelectedPedido(pedido);
+  }, [codigoParam, vm.loading, vm.pedidos, vm.setBusqueda]);
+
+  const navegarComprobantePedido = (pedido: PedidoTiendaAdmin, defaultType: 'BOLETA' | 'FACTURA' | 'NV') => {
     navigate('/administrador/facturacion/nuevo', {
       state: {
         defaultType,
@@ -222,6 +247,15 @@ export default function PedidosTienda() {
       ),
       'Acciones': (
         <div className="flex items-center gap-2">
+              {pedidoPuedeNotaVenta(pedido) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'NV'); }}
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-gray-900 px-2.5 text-[11px] font-semibold text-white transition hover:bg-black"
+                  title={pedido.envioCourier ? 'Nota de venta con el envío por agencia ya armado' : 'Hacer nota de venta'}
+                >
+                  <Icon icon="solar:document-text-bold" className="h-4 w-4" /> NV
+                </button>
+              )}
           {pedidoPuedeDocumentarse(pedido) && (
             <>
               <button
@@ -484,6 +518,16 @@ export default function PedidosTienda() {
                   >
                     <Icon icon="solar:wallet-money-bold" className="h-4 w-4" />
                   </button>
+                  {pedidoPuedeNotaVenta(pedido) && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); navegarComprobantePedido(pedido, 'NV'); }}
+                      className="inline-flex h-10 items-center justify-center gap-1 rounded-xl bg-gray-900 px-3 text-xs font-semibold text-white transition hover:bg-black"
+                      title={pedido.envioCourier ? 'Nota de venta con el envío por agencia ya armado' : 'Hacer nota de venta'}
+                    >
+                      <Icon icon="solar:document-text-bold" className="h-4 w-4" /> NV
+                    </button>
+                  )}
                   {pedidoPuedeDocumentarse(pedido) && (
                     <>
                       <button
