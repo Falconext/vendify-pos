@@ -165,6 +165,40 @@ export default function TrasladoSedesView() {
         }));
     };
 
+    // Mismo traslado, pero documentado con guía de remisión (motivo 04): la
+    // guía es la que mueve el stock al guardarse, así que aquí no se mueve nada.
+    const trasladarConGuia = () => {
+        if (!destinationSedeId) {
+            alert('Debe seleccionar una sede de destino', 'error');
+            return;
+        }
+        if (selectedProducts.length === 0) {
+            alert('Debe agregar al menos un producto', 'error');
+            return;
+        }
+        const sinStock = selectedProducts.find(p => p.cantidad > p.stockActual);
+        if (sinStock) {
+            alert(`Stock insuficiente para ${sinStock.descripcion}. Disponible: ${sinStock.stockActual}`, 'error');
+            return;
+        }
+        navigate('/administrador/facturacion/guia-remision', {
+            state: {
+                trasladoConGuia: {
+                    sedeOrigenId: sedeActiva?.id,
+                    sedeDestinoId: destinationSedeId,
+                    observacion,
+                    items: selectedProducts.map(p => ({
+                        productoId: p.id,
+                        codigo: p.codigo,
+                        descripcion: p.descripcion,
+                        cantidad: p.cantidad,
+                        unidadMedida: p.unidadMedida,
+                    })),
+                },
+            },
+        });
+    };
+
     const handleTraslado = async () => {
         if (!destinationSedeId) {
             alert('Debe seleccionar una sede de destino', 'error');
@@ -593,6 +627,19 @@ export default function TrasladoSedesView() {
                                         </>
                                     )}
                                 </button>
+                                <button
+                                    type="button"
+                                    data-testid="traslado-con-guia"
+                                    onClick={trasladarConGuia}
+                                    disabled={isSubmitting || selectedProducts.length === 0}
+                                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white dark:bg-transparent py-2.5 text-sm font-semibold text-violet-700 dark:text-violet-300 transition hover:bg-violet-50 dark:hover:bg-violet-950/30 disabled:opacity-50"
+                                >
+                                    <Icon icon="solar:document-add-bold-duotone" width={16} />
+                                    Trasladar con guía de remisión
+                                </button>
+                                <p className="mt-1 text-center text-[11px] text-gray-400 dark:text-gray-500">
+                                    Abre la guía ya armada; el stock se mueve al guardarla.
+                                </p>
                             </div>
                         </div>
                     </div>

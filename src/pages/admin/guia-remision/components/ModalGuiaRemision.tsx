@@ -15,6 +15,7 @@ import DataTable from "@/components/Datatable";
 import { useGuiaRemisionStore, IGuiaRemision, IDetalleGuiaRemision } from "@/zustand/guia-remision";
 import { useExtentionsStore } from "@/zustand/extentions";
 import { useAuthStore } from "@/zustand/auth";
+import { useSedesStore } from "@/zustand/sedes";
 import { useClientsStore } from "@/zustand/clients";
 import { useProductsStore } from "@/zustand/products";
 import useAlertStore from "@/zustand/alert";
@@ -124,7 +125,8 @@ const TIPOS_DOC_RELACIONADO = [
 ];
 
 const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComprobante }: ModalGuiaRemisionProps) => {
-    const { auth } = useAuthStore();
+    const { auth, sedeActiva } = useAuthStore();
+    const { sedes, listarSedes } = useSedesStore();
     const { createGuiaRemision, updateGuiaRemision, getSiguienteCorrelativo, siguienteCorrelativo, prefillDesdeComprobante, importarItemsExcel, descargarPlantillaItems } = useGuiaRemisionStore();
     const { getUbigeos, ubigeos } = useExtentionsStore();
     const { getClientFromDoc } = useClientsStore();
@@ -168,6 +170,33 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
     const isGuiaTransportista = formValues.tipoGuia === "TRANSPORTISTA";
     const isCompra = formValues.tipoTraslado === "02";
     const isTrasladoMismaEmpresa = formValues.tipoTraslado === "04";
+
+    // ── Traslado entre sedes propias (motivo 04) ─────────────────────────────
+    // Con sede de origen y de destino, al guardar la guía el stock pasa de una
+    // a la otra (y vuelve si se elimina). Sin destino, la guía no toca stock.
+    const sedesActivas = (sedes || []).filter((x: any) => x.activo !== false);
+    const puntoDesdeSede = (punto: 'partida' | 'llegada', sede: any) => {
+        const updates: any = { [punto === 'partida' ? 'sedeOrigenId' : 'sedeDestinoId']: sede.id };
+        if (sede.direccion) updates[`${punto}Direccion`] = sede.direccion;
+        if (sede.ubigeo) updates[`${punto}Ubigeo`] = String(sede.ubigeo).padStart(6, '0');
+        if (/^\d{4}$/.test(String(sede.codigo || '').trim())) updates[`${punto}CodigoEstablecimiento`] = String(sede.codigo).trim();
+        return updates;
+    };
+    const elegirSede = (punto: 'partida' | 'llegada', idTexto: string) => {
+        const id = Number(idTexto);
+        const sede = sedesActivas.find(x => x.id === id);
+        setFormValues(prev => ({
+            ...prev,
+            ...(sede
+                ? puntoDesdeSede(punto, sede)
+                : { [punto === 'partida' ? 'sedeOrigenId' : 'sedeDestinoId']: null }),
+        }));
+    };
+    const sedeOrigenSel = sedesActivas.find(x => x.id === Number(formValues.sedeOrigenId));
+    const sedeDestinoSel = sedesActivas.find(x => x.id === Number(formValues.sedeDestinoId));
+    const mueveStock = isTrasladoMismaEmpresa && !!sedeOrigenSel && !!sedeDestinoSel;
+    const editandoTrasladoHecho = !!guiaToEdit?.id && !!(guiaToEdit as any)?.stockTrasladado;
+
     const selectedMotivoHelp = MOTIVO_HELP[formValues.tipoTraslado] || {
         title: "Motivo seleccionado",
         description: "Completa los datos del traslado según el motivo elegido.",
@@ -216,6 +245,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
     useEffect(() => {
         if (isOpen) {
             getUbigeos();
+            listarSedes();
             resetProducts();
             setCurrentStep(1);
             setImportedRef(null);
@@ -355,11 +385,13 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
             // Asegurar fechas con UTC
             fechaEmision: fullGuia.fechaEmision ? moment.utc(fullGuia.fechaEmision).format("YYYY-MM-DD") : prev.fechaEmision,
             fechaInicioTraslado: fullGuia.fechaInicioTraslado ? moment.utc(fullGuia.fechaInicioTraslado).format("YYYY-MM-DD") : prev.fechaInicioTraslado,
+            // 0000 es un anexo válido (el del local principal): solo si la guía
+            // no trae código se usa el 0700 de siempre para el motivo 04.
             partidaCodigoEstablecimiento: esTrasladoMismaEmpresa
-                ? (fullGuia.partidaCodigoEstablecimiento && fullGuia.partidaCodigoEstablecimiento !== '0000' ? fullGuia.partidaCodigoEstablecimiento : '0700')
+                ? (fullGuia.partidaCodigoEstablecimiento || '0700')
                 : (fullGuia.partidaCodigoEstablecimiento || prev.partidaCodigoEstablecimiento || "0000"),
             llegadaCodigoEstablecimiento: esTrasladoMismaEmpresa
-                ? (fullGuia.llegadaCodigoEstablecimiento && fullGuia.llegadaCodigoEstablecimiento !== '0000' ? fullGuia.llegadaCodigoEstablecimiento : '0700')
+                ? (fullGuia.llegadaCodigoEstablecimiento || '0700')
                 : (fullGuia.llegadaCodigoEstablecimiento || prev.llegadaCodigoEstablecimiento || "0000"),
             detalles: (fullGuia.detalles || []).map((d: any) => ({
                 ...d,
@@ -443,11 +475,16 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                 updates.destinatarioRazonSocial = auth?.empresa?.razonSocial || '';
                 updates.partidaCodigoEstablecimiento = '0700';
                 updates.llegadaCodigoEstablecimiento = '0700';
+                // Por defecto sale de la sede en la que estás trabajando.
+                const origen = sedesActivas.find(x => x.id === sedeActiva?.id);
+                if (origen) Object.assign(updates, puntoDesdeSede('partida', origen));
             } else if (formValues.tipoTraslado === '04') {
                 updates.destinatarioNumDoc = '';
                 updates.destinatarioRazonSocial = '';
                 updates.partidaCodigoEstablecimiento = '0000';
                 updates.llegadaCodigoEstablecimiento = '0000';
+                updates.sedeOrigenId = null;
+                updates.sedeDestinoId = null;
             }
             setFormValues(prev => ({ ...prev, ...updates }));
             return;
@@ -695,6 +732,22 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
         },
     ];
 
+    // Guía nueva que llega con sedes (desde Kardex → Traslados): en cuanto
+    // cargan las sedes, partida y llegada toman sus datos. Va después del
+    // efecto que precarga `guiaToEdit` para no ser pisado por la dirección fiscal.
+    useEffect(() => {
+        if (!isOpen || guiaToEdit?.id || !sedesActivas.length) return;
+        const o = sedesActivas.find(x => x.id === Number((guiaToEdit as any)?.sedeOrigenId));
+        const d = sedesActivas.find(x => x.id === Number((guiaToEdit as any)?.sedeDestinoId));
+        if (!o && !d) return;
+        setFormValues(prev => ({
+            ...prev,
+            ...(o ? puntoDesdeSede('partida', o) : {}),
+            ...(d ? puntoDesdeSede('llegada', d) : {}),
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, guiaToEdit, sedes]);
+
     const getUbigeoText = (code: string) => {
         if (!code || !ubigeos) return "";
         const targetCode = String(code).padStart(6, '0');
@@ -804,6 +857,22 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
             }
         }
 
+        if (isTrasladoMismaEmpresa && formValues.sedeDestinoId && !formValues.sedeOrigenId) {
+            useAlertStore.getState().alert("Elige la sede de origen del traslado.", "warning");
+            return;
+        }
+        if (mueveStock) {
+            if (sedeOrigenSel!.id === sedeDestinoSel!.id) {
+                useAlertStore.getState().alert("La sede de origen y la de destino no pueden ser la misma.", "warning");
+                return;
+            }
+            const libre = formValues.detalles.find((d: any) => !Number(d.productoId));
+            if (libre) {
+                useAlertStore.getState().alert(`"${libre.descripcion}" no es un producto del inventario. En un traslado entre sedes todos los ítems deben elegirse del catálogo para mover su stock.`, "warning");
+                return;
+            }
+        }
+
         if (!formValues.partidaUbigeo || !formValues.partidaDireccion || !formValues.llegadaUbigeo || !formValues.llegadaDireccion) {
             useAlertStore.getState().alert("Complete los datos de partida y llegada (ubigeo y dirección)", "warning");
             return;
@@ -831,8 +900,11 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                 conductorLicencia: licenciaNormalizada || formValues.conductorLicencia,
                 vehiculoPlaca: placaNormalizada || formValues.vehiculoPlaca,
                 vehiculoAutorizacion: numeroTucNormalizado || formValues.vehiculoAutorizacion,
-                partidaCodigoEstablecimiento: isTrasladoMismaEmpresa ? '0700' : formValues.partidaCodigoEstablecimiento,
-                llegadaCodigoEstablecimiento: isTrasladoMismaEmpresa ? '0700' : formValues.llegadaCodigoEstablecimiento,
+                // El código que trae la sede (o el que escribió el usuario) se respeta.
+                partidaCodigoEstablecimiento: isTrasladoMismaEmpresa ? (String(formValues.partidaCodigoEstablecimiento || '').trim() || '0700') : formValues.partidaCodigoEstablecimiento,
+                llegadaCodigoEstablecimiento: isTrasladoMismaEmpresa ? (String(formValues.llegadaCodigoEstablecimiento || '').trim() || '0700') : formValues.llegadaCodigoEstablecimiento,
+                sedeOrigenId: isTrasladoMismaEmpresa ? (formValues.sedeOrigenId || null) : null,
+                sedeDestinoId: isTrasladoMismaEmpresa ? (formValues.sedeDestinoId || null) : null,
                 // Un campo de fecha que el usuario no llenó vale "" en el form, y
                 // "" no es una fecha ISO: el backend rechazaba la guía entera por
                 // un dato opcional. Vacío significa "no lo mando".
@@ -1214,6 +1286,55 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Puntos de partida/llegada y datos del transportista o conductor</p>
                                     </div>
                                 </div>
+
+                                {isTrasladoMismaEmpresa && !isGuiaTransportista && (
+                                    <div className="p-4 rounded-xl border border-violet-200 dark:border-violet-900/50 bg-violet-50/60 dark:bg-violet-950/20">
+                                        <h4 className="text-sm font-bold text-violet-800 dark:text-violet-300 mb-1 flex items-center gap-2">
+                                            <Icon icon="solar:transfer-horizontal-bold-duotone" className="text-base" />
+                                            Traslado entre tus sedes
+                                        </h4>
+                                        <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mb-3">
+                                            Elige de qué sede sale y a cuál llega: la partida y la llegada se llenan con los datos de cada sede y, al guardar la guía, el stock pasa de una a la otra.
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {([
+                                                { punto: 'partida', label: 'Sede de origen', valor: formValues.sedeOrigenId, vacio: 'Elige la sede de origen' },
+                                                { punto: 'llegada', label: 'Sede de destino', valor: formValues.sedeDestinoId, vacio: 'Otro local (no mueve stock)' },
+                                            ] as const).map(({ punto, label, valor, vacio }) => (
+                                                <label key={punto} className="block">
+                                                    <span className="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300">{label}</span>
+                                                    <select
+                                                        data-testid={`guia-sede-${punto}`}
+                                                        value={valor ? String(valor) : ''}
+                                                        disabled={editandoTrasladoHecho && guiaToEdit?.estadoSunat === 'EMITIDO'}
+                                                        onChange={(e) => elegirSede(punto, e.target.value)}
+                                                        className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0F1117] px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:border-violet-400"
+                                                    >
+                                                        <option value="">{vacio}</option>
+                                                        {sedesActivas
+                                                            .filter(x => x.id !== Number(punto === 'partida' ? formValues.sedeDestinoId : formValues.sedeOrigenId))
+                                                            .map(x => (
+                                                                <option key={x.id} value={x.id}>{x.nombre}{x.esPrincipal ? ' (principal)' : ''}</option>
+                                                            ))}
+                                                    </select>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${mueveStock ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'}`}>
+                                            <Icon icon={mueveStock ? 'solar:box-minimalistic-bold' : 'solar:info-circle-bold'} className="mt-0.5 flex-none text-sm" />
+                                            {mueveStock ? (
+                                                <span>Al guardar, los productos de la guía salen de <b>{sedeOrigenSel!.nombre}</b> y entran a <b>{sedeDestinoSel!.nombre}</b>. Si eliminas la guía, el stock vuelve.</span>
+                                            ) : (
+                                                <span>Sin sede de destino la guía no mueve stock (por ejemplo, si llevas la mercadería a un local que no está registrado como sede).</span>
+                                            )}
+                                        </div>
+                                        {mueveStock && (!sedeOrigenSel!.ubigeo || !sedeDestinoSel!.ubigeo) && (
+                                            <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                                Tip: registra el ubigeo y el código SUNAT de cada sede en Sedes y Almacenes para que la ruta se llene sola.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 rounded-xl border border-gray-100 dark:border-transparent bg-white dark:bg-[#111827]">

@@ -6,6 +6,8 @@ export interface Sede {
     nombre: string;
     direccion: string | null;
     codigo: string | null;
+    /** Ubigeo SUNAT (6 dígitos): partida/llegada de la guía de traslado. */
+    ubigeo?: string | null;
     tipo: TipoSede;
     esPrincipal: boolean;
     /** Permite facturar aunque la sede sea tipo ALMACEN. */
@@ -20,6 +22,7 @@ export interface CreateSedeDto {
     nombre: string;
     direccion?: string;
     codigo?: string;
+    ubigeo?: string;
     tipo?: TipoSede;
     esPrincipal?: boolean;
     permiteFacturacion?: boolean;
