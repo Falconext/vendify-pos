@@ -195,6 +195,32 @@ export default function ModalClient({
         setFormValues({ ...formValues, [name]: value, [id]: idValue });
     };
 
+    // El ubigeo se guarda en cuatro campos (código + departamento/provincia/
+    // distrito) y el selector se muestra con los tres nombres. Antes solo se
+    // cambiaba el código: el selector volvía a mostrar el distrito anterior (o
+    // vacío) y al guardar los nombres viejos pisaban el cambio.
+    const textoUbigeo = (() => {
+        if (formValues?.departamento) {
+            return [formValues.departamento, formValues.provincia, formValues.distrito].map((x) => String(x ?? '').trim()).join('/');
+        }
+        const codigo = String(formValues?.ubigeo ?? '').trim();
+        if (!codigo) return '';
+        const u: any = (ubigeos as any[])?.find((x: any) => String(x.codigo).padStart(6, '0') === codigo.padStart(6, '0'));
+        return u ? `${u.departamento}/${String(u.provincia).trim()}/${u.distrito}` : '';
+    })();
+
+    const handleUbigeoChange = (codigo: any, texto: string) => {
+        const u: any = (ubigeos as any[])?.find((x: any) => String(x.codigo) === String(codigo));
+        const [dep = '', prov = '', dist = ''] = String(texto || '').split('/');
+        setFormValues({
+            ...formValues,
+            ubigeo: String(codigo ?? '').padStart(6, '0'),
+            departamento: String(u?.departamento ?? dep).trim(),
+            provincia: String(u?.provincia ?? prov).trim(),
+            distrito: String(u?.distrito ?? dist).trim(),
+        });
+    };
+
     const inputPlaceholder = activeDocType.key === 'DNI' ? 'Nro. de DNI'
         : activeDocType.key === 'RUC' ? 'Nro. de RUC'
             : activeDocType.key === 'CE' ? 'Nro. de Carnet de Extranjería'
@@ -294,12 +320,13 @@ export default function ModalClient({
 
                         {/* Ubigeo */}
                         <SelectUbigeo
-                            value={formValues?.departamento ? `${formValues?.departamento}/${formValues?.provincia}/${formValues?.distrito}` : ''}
+                            value={textoUbigeo}
+                            defaultValue={textoUbigeo}
                             isSearch
                             options={ubigeos}
                             name="nombreUbigeo"
                             id="ubigeo"
-                            onChange={handleChangeSelect}
+                            onChange={(codigo: any, texto: string) => handleUbigeoChange(codigo, texto)}
                             label="Seleccionar ubigeo"
                         />
 
