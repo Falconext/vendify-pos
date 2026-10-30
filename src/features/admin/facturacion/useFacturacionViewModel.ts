@@ -1031,6 +1031,13 @@ export const useFacturacionViewModel = () => {
                 if (Array.isArray(pedido.items) && pedido.items.length > 0) {
                     resetProductInvoice();
                     pedido.items.forEach((item: any) => {
+                        // El pedido no trae la afectación del producto: se toma del
+                        // catálogo. Con '10' fijo un exonerado salía gravado (FRUTA
+                        // PURA en mype, 30-10).
+                        const enCatalogo = Array.isArray(products)
+                            ? products.find((p: any) => p.id === (item.productoId || item.producto?.id))
+                            : null;
+                        const afectacionPedido = String(item.producto?.tipoAfectacionIGV || enCatalogo?.tipoAfectacionIGV || '10');
                         addProductsInvoice({
                             productoId: item.productoId || item.producto?.id || 0,
                             id: item.productoId || item.producto?.id || 0,
@@ -1042,8 +1049,8 @@ export const useFacturacionViewModel = () => {
                             descuento: 0,
                             unidadMedidaId: 1,
                             unidadMedidaNombre: 'NIU',
-                            afectacionNombre: 'Gravado – Operación Onerosa',
-                            tipoAfectacionIGV: '10',
+                            afectacionNombre: NOMBRE_AFECTACION[afectacionPedido] || 'Gravado – Operación Onerosa',
+                            tipoAfectacionIGV: afectacionPedido,
                             stock: 999,
                             estado: 'ACTIVO',
                             atributosTecnicos: item.producto?.atributosTecnicos || undefined,
