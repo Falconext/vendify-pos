@@ -1210,7 +1210,8 @@ export const useFacturacionViewModel = () => {
                     // Ítem libre (producto externo, sin fila en el catálogo): viaja
                     // con productoId null para que el backend lo emita como línea
                     // libre. Forzar un id acá era lo que tumbaba la conversión.
-                    const afectacion = String(mapped.tipoAfectacionIGV ?? '10');
+                    // La de la nota de venta; si no vino, la de la empresa (Amazonía exonera), no '10' fijo.
+                    const afectacion = String(mapped.tipoAfectacionIGV ?? afectacionPorDefecto(auth?.empresa as any));
                     addProductsInvoice({
                         ...mapped,
                         productoId: mapped.productoId ?? null,
