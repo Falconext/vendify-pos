@@ -141,6 +141,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
           { codigo: 'kardex:libro-control', nombre: 'Libro Control', ruta: '/administrador/kardex/libro-control' },
         );
       }
+      // Entradas y salidas: varios productos de una vez cuando no es compra ni venta.
+      items.push({ codigo: 'kardex:entradas-salidas', nombre: 'Entradas y salidas', ruta: '/administrador/kardex/entradas-salidas' });
       // Mermas: cuánto se perdió por producto roto, vencido o extraviado.
       items.push({ codigo: 'kardex:mermas', nombre: 'Mermas', ruta: '/administrador/kardex/mermas' });
       // Listas de Precio: gestión de precios por sede/usuario (multi-local).

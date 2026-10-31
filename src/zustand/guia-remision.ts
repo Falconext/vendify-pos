@@ -42,6 +42,10 @@ export interface IGuiaRemision {
 
     // Shipment
     tipoTraslado: string;
+    /** Motivo 04: sedes propias entre las que se mueve el stock al guardar. */
+    sedeOrigenId?: number | null;
+    sedeDestinoId?: number | null;
+    stockTrasladado?: boolean;
     modoTransporte: string;
     pesoTotal: number;
     unidadPeso: string;

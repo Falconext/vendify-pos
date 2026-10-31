@@ -1,4 +1,5 @@
 import { usePerfilViewModel } from '@/features/admin/perfil/usePerfilViewModel';
+import AlertasStockConfig from '@/features/admin/perfil/AlertasStockConfig';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
 import Loading from '@/components/Loading';
@@ -1200,6 +1201,12 @@ export default function PerfilIndex() {
                     <div className={`${cardCls} p-5 lg:order-7 ${configTab}`}>
                         <CuentasBancariasConfig />
                     </div>
+                    {/* Resumen diario de stock bajo por correo/WhatsApp (solo administradores) */}
+                    {(perfil?.rol === 'ADMIN_EMPRESA' || perfil?.rol === 'ADMIN_SISTEMA') && (
+                        <div className={`${cardCls} p-5 lg:order-8 ${configTab}`}>
+                            <AlertasStockConfig />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

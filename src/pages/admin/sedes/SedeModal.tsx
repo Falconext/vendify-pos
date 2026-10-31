@@ -6,6 +6,8 @@ import Button from '@/components/Button';
 import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
 import { Sede, TipoSede } from '@/interfaces/Sede';
+import SelectUbigeo from '@/components/Select/SelectUbigeo';
+import { useExtentionsStore } from '@/zustand/extentions';
 
 interface Props {
     isOpen: boolean;
@@ -17,6 +19,7 @@ interface Props {
 const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
     const { crearSede, actualizarSede, loading, sedes } = useSedesStore();
     const { auth } = useAuthStore();
+    const { getUbigeos, ubigeos } = useExtentionsStore();
 
     // Leer maxSedes desde el plan del usuario autenticado
     // Usamos ?? para que si es 0 (ilimitado) no se reemplace por 1
@@ -30,6 +33,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
         nombre: '',
         direccion: '',
         codigo: '',
+        ubigeo: '',
         tipo: 'PUNTO_DE_VENTA' as TipoSede,
         esPrincipal: false,
         permiteFacturacion: false,
@@ -43,6 +47,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                 nombre: sede.nombre,
                 direccion: sede.direccion || '',
                 codigo: sede.codigo || '',
+                ubigeo: sede.ubigeo || '',
                 tipo: sede.tipo ?? 'PUNTO_DE_VENTA',
                 esPrincipal: sede.esPrincipal,
                 permiteFacturacion: sede.permiteFacturacion ?? false,
@@ -52,6 +57,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                 nombre: '',
                 direccion: '',
                 codigo: '',
+                ubigeo: '',
                 tipo: 'PUNTO_DE_VENTA',
                 esPrincipal: false,
                 permiteFacturacion: false,
@@ -59,6 +65,16 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
         }
         setErrors({});
     }, [sede, isEdit, isOpen]);
+
+    useEffect(() => {
+        if (isOpen && !(ubigeos as any[])?.length) getUbigeos();
+    }, [isOpen, ubigeos, getUbigeos]);
+
+    const textoUbigeo = (code: string) => {
+        if (!code) return '';
+        const u: any = (ubigeos as any[]).find((item: any) => String(item.codigo).padStart(6, '0') === code);
+        return u ? `${u.departamento}/${u.provincia}/${u.distrito}` : '';
+    };
 
     const handleInputChange = (e: any) => {
         const { name, value } = e.target;
@@ -69,6 +85,7 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
         if (!formData.nombre.trim()) newErrors.nombre = 'El nombre es obligatorio';
+        if (formData.codigo.trim() && !/^\d{4}$/.test(formData.codigo.trim())) newErrors.codigo = 'El código SUNAT (anexo) tiene 4 dígitos, p. ej. 0000 o 0001';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -152,7 +169,24 @@ const SedeModal: React.FC<Props> = ({ isOpen, onClose, sede, isEdit }) => {
                             isLabel
                             placeholder="0000"
                             maxLength={4}
+                            error={errors.codigo}
                         />
+
+                        <div>
+                            <SelectUbigeo
+                                label="Ubigeo (distrito)"
+                                name="ubigeo"
+                                id="ubigeo"
+                                options={ubigeos}
+                                onChange={(codigo: any) => setFormData(prev => ({ ...prev, ubigeo: String(codigo).padStart(6, '0') }))}
+                                value={textoUbigeo(formData.ubigeo)}
+                                defaultValue={textoUbigeo(formData.ubigeo)}
+                                isSearch
+                            />
+                            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                Con la dirección, el código y el ubigeo, la guía de traslado entre sedes se llena sola.
+                            </p>
+                        </div>
 
                         {/* Tipo de sede */}
                         <div>

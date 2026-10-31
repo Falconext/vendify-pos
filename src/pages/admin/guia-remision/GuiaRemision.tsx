@@ -138,6 +138,40 @@ const GuiaRemision = () => {
             return;
         }
 
+        // Kardex → Traslados → "Trasladar con guía": la guía (motivo 04) es la
+        // que mueve el stock al guardarse; el modal llena partida y llegada.
+        if (state?.trasladoConGuia) {
+            const t = state.trasladoConGuia;
+            setGuiaToEdit({
+                tipoGuia: "REMITENTE",
+                serie: "T001",
+                tipoDocumento: "09",
+                destinatarioTipoDoc: "6",
+                destinatarioNumDoc: auth?.empresa?.ruc || "",
+                destinatarioRazonSocial: auth?.empresa?.razonSocial || "",
+                tipoTraslado: "04",
+                sedeOrigenId: t.sedeOrigenId,
+                sedeDestinoId: t.sedeDestinoId,
+                partidaCodigoEstablecimiento: "0700",
+                llegadaCodigoEstablecimiento: "0700",
+                modoTransporte: "02",
+                pesoTotal: 1,
+                unidadPeso: "KGM",
+                fechaInicioTraslado: moment().format("YYYY-MM-DD"),
+                observaciones: t.observacion || "",
+                detalles: (t.items || []).map((item: any) => ({
+                    productoId: item.productoId,
+                    codigoProducto: item.codigo || "",
+                    descripcion: item.descripcion || "Producto",
+                    cantidad: Number(item.cantidad || 1),
+                    unidadMedida: item.unidadMedida || "NIU",
+                })),
+            });
+            setIsModalOpen(true);
+            window.history.replaceState({}, document.title);
+            return;
+        }
+
         if (!state?.fromPedidoTienda || !state?.pedidoTiendaGuia) return;
 
         const pedido = state.pedidoTiendaGuia;
@@ -261,7 +295,14 @@ const GuiaRemision = () => {
         fechaEmision: `${moment.utc(guia.fechaEmision).format("DD/MM/YYYY")} ${guia.horaEmision || ''}`,
         documento: `${guia.serie}-${guia.correlativo}`,
         destinatario: guia.destinatarioRazonSocial,
-        motivo: MOTIVOS_TRASLADO[guia.tipoTraslado] || guia.tipoTraslado,
+        motivo: guia.stockTrasladado ? (
+            <span className="inline-flex flex-col">
+                <span>{MOTIVOS_TRASLADO[guia.tipoTraslado] || guia.tipoTraslado}</span>
+                <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" title="Esta guía movió stock entre tus sedes">
+                    <Icon icon="solar:transfer-horizontal-bold" width={11} /> Stock trasladado
+                </span>
+            </span>
+        ) : (MOTIVOS_TRASLADO[guia.tipoTraslado] || guia.tipoTraslado),
         estadoSunat: (() => {
             // EMITIDO es el estado de éxito real de una guía (el enum no tiene
             // 'ACEPTADO' — ese es propio de Comprobante), por eso antes una guía
@@ -510,7 +551,9 @@ const GuiaRemision = () => {
                     setIsOpenModal={setIsDeleteConfirmOpen}
                     confirmSubmit={confirmEliminar}
                     title="Eliminar guía de remisión"
-                    information="¿Está seguro de eliminar esta guía? Esta acción no se puede deshacer."
+                    information={(selectedRow as any)?.stockTrasladado
+                        ? "¿Eliminar esta guía? El stock que trasladó vuelve a la sede de origen. Esta acción no se puede deshacer."
+                        : "¿Está seguro de eliminar esta guía? Esta acción no se puede deshacer."}
                     confirmText="Eliminar"
                     confirmLoading={isProcessingDelete}
                     confirmDisabled={isProcessingSend}
