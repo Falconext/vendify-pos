@@ -2,7 +2,7 @@ import { mensajeEstadoCuenta, nombreDePila, motivoNoCobrar, resumirSeleccion, te
 
 const nota = (x: Partial<NotaElegida>): NotaElegida => ({
     id: 1, documento: 'NV01-00000085', tipoDoc: 'NV', clienteId: 7, cliente: 'ANA TORRES', telefono: '',
-    total: 45, saldo: 45, moneda: 'PEN', fecha: '2026-10-19T15:00:00Z', ...x,
+    total: 45, saldo: 45, moneda: 'PEN', fecha: '2026-10-19T15:00:00Z', nroDoc: '', convertidoA: null, ...x,
 });
 
 describe('notas elegidas', () => {

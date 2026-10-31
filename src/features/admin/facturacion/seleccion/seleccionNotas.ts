@@ -13,6 +13,11 @@ export interface NotaElegida {
     saldo: number;
     moneda: 'PEN' | 'USD';
     fecha: string;
+    nroDoc: string;
+    /** Boleta/factura en que ya terminó (null = sin convertir). */
+    convertidoA: string | null;
+    /** La nota tal como vino de la lista (detalles, pago…), para facturarla. */
+    origen?: any;
 }
 
 export const notaElegidaDe = (item: any): NotaElegida => ({
@@ -26,6 +31,9 @@ export const notaElegidaDe = (item: any): NotaElegida => ({
     saldo: Number(item.saldo) || 0,
     moneda: String(item.tipoMoneda ?? 'PEN').toUpperCase() === 'USD' ? 'USD' : 'PEN',
     fecha: String(item.fechaEmision ?? ''),
+    nroDoc: String(item.cliente?.nroDoc ?? '').trim(),
+    convertidoA: item.convertidoA ?? null,
+    origen: item,
 });
 
 /** "NV01-00000085" → "NV01-85", como se dice en el mostrador. */

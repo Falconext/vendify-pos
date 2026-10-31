@@ -409,6 +409,8 @@ export const useFacturacionViewModel = () => {
     // ID del comprobante informal de origen (cuando se convierte NV/Ticket → Formal)
     // Cuando está presente, el backend NO descuenta el stock (ya fue descontado por el informal)
     const [origenComprobanteId, setOrigenComprobanteId] = useState<number | null>(null);
+    // Varias notas facturadas juntas (Notas de venta → elegir → Emitir boleta/factura).
+    const [origenComprobanteIds, setOrigenComprobanteIds] = useState<number[] | null>(null);
 
     // Fecha de emisión manual (backdating SUNAT): YYYY-MM-DD, default hoy
     const todayStr = (() => {
@@ -1068,8 +1070,9 @@ export const useFacturacionViewModel = () => {
 
             window.history.replaceState({}, document.title);
         } else if (state?.fromNotaDeVenta && state?.notaDeVentaData) {
-            const { cliente, clienteId, productos, observaciones, origenComprobanteId } = state.notaDeVentaData;
+            const { cliente, clienteId, productos, observaciones, origenComprobanteId, origenComprobanteIds } = state.notaDeVentaData;
             if (origenComprobanteId) setOrigenComprobanteId(Number(origenComprobanteId));
+            setOrigenComprobanteIds(Array.isArray(origenComprobanteIds) && origenComprobanteIds.length > 1 ? origenComprobanteIds.map(Number) : null);
 
             // Modo EDICIÓN de una NV existente (in-place): guardamos el id a editar.
             if (state.isEditNV && state.notaVentaId) {
@@ -2795,6 +2798,7 @@ export const useFacturacionViewModel = () => {
             paymentDetails: paymentDetailsFinal,
             splitPayments: pagoEdicion ? pagoEdicion.splitPayments : (isMixedPayment ? paymentDetails.splitPayments : undefined),
             ...(origenComprobanteId != null ? { comprobanteOrigenId: origenComprobanteId } : {}),
+            ...(origenComprobanteId != null && origenComprobanteIds ? { comprobanteOrigenIds: origenComprobanteIds } : {}),
             vuelto: vueltoCalculado,
             clienteId: Number(formValues?.clienteId) || invoiceData?.cliente?.id,
             clienteName: selectedClient?.nombre,
@@ -3126,6 +3130,7 @@ export const useFacturacionViewModel = () => {
         setEditNotaVentaId(null);
         setEditQuotationId(null);
         setOrigenComprobanteId(null);
+        setOrigenComprobanteIds(null);
         const ventaInterna = tiposOperacion.find((op: any) => op.codigo === '0101');
         // Tipo de la siguiente venta: el configurado por la empresa o, si es
         // MANTENER_ULTIMO, el que se acaba de usar.
