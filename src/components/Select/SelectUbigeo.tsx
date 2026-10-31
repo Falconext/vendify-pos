@@ -55,7 +55,6 @@ const SelectUbigeo = ({
     value
 }: IProps) => {
 
-    console.log(options)
 
     const [, setShowOptions] = useState(false);
     const [valueOptions, setValueOptions] = useState<string>(defaultValue || value || "");
@@ -63,7 +62,6 @@ const SelectUbigeo = ({
     const [searching,] = useState(!isSearch);
     const [isOpen, setIsOpen, ref] = useOutsideClick(false);
 
-    console.log(valueOptions)
 
     const heightDropdown: CSSProperties = {
         height: "170px"
@@ -99,22 +97,31 @@ const SelectUbigeo = ({
         setIsOpen(false);
     }
 
-    const results = !search ? options : options.filter((option: IUbigeum) => (typeof option.departamento === "string") && `${option.departamento}/${option.provincia}/${option.distrito}`.toLowerCase().includes(search.toLocaleLowerCase()))
+    // Sin tildes ni mayúsculas: "villa maria" encuentra "Villa María del Triunfo".
+    const sinTildes = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const results = !search ? options : options.filter((option: IUbigeum) => (typeof option.departamento === "string") && sinTildes(`${option.departamento}/${option.provincia}/${option.distrito}`).includes(sinTildes(search)))
 
     const searchOptions = (e: any) => {
+        // Con un ubigeo ya elegido, lo que se escribe se pegaba al final
+        // ("…del Triunfocomas") y la búsqueda no encontraba nada: se busca solo
+        // lo nuevo.
+        const texto = String(e.target.value ?? '');
+        const nuevo = valueOptions && texto.startsWith(valueOptions) ? texto.slice(valueOptions.length) : texto;
         setValueOptions("");
         setShowOptions(true)
         setIsOpen(true)
-        setSearch(e.target.value);
+        setSearch(nuevo);
     }
 
-    console.log(search)
-    console.log(valueOptions)
 
     return (
         <>
             <div ref={ref} className={styles.wrapper__select}>
-                <div className={disabled ? `${styles.input__select} ${styles.disabled__select}` : `${styles.input__select}`} onClick={() => setIsOpen(!isOpen)}>
+                <div className={disabled ? `${styles.input__select} ${styles.disabled__select}` : `${styles.input__select}`} onClick={() => {
+                    setIsOpen(!isOpen);
+                    // Al entrar se selecciona el texto: escribir reemplaza el ubigeo actual.
+                    (ref.current as HTMLElement | null)?.querySelector('input')?.select();
+                }}>
                     <div className={styles.selected__valueUbigeo}>
                         {/* {valueOptions && <span className=''>{valueOptions}</span>} */}
                     </div>

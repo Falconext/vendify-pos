@@ -34,6 +34,7 @@ import ModaCartModal from '@/components/tienda/ModaCartModal';
 import MayeCatalogoPage from '@/templates/maye/MayeCatalogoPage';
 import { templateRegistry } from '@/templates/registry';
 
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -45,6 +46,9 @@ export default function Catalogo() {
     useStorePreviewNavigation(previewPlantillaId);
 
     const [tienda, setTienda] = useState<any>(null);
+    // Sin la tienda no se sabe la plantilla: si los productos llegan antes,
+    // se pintaba el catálogo por defecto y luego saltaba al de la tienda.
+    const [estadoTienda, setEstadoTienda] = useState<'cargando' | 'error' | 'no-existe'>('cargando');
     const [productos, setProductos] = useState<any[]>([]);
     // Lista completa (sin filtros) para círculos de categoría y mega-menú del header,
     // que deben mostrar TODAS las categorías aunque haya un filtro activo.
@@ -150,10 +154,13 @@ export default function Catalogo() {
     }, [search, selectedMarcas, selectedCategorías, priceRange, minPrice, maxPrice, sortBy, setSearchParams]);
 
     const cargarTienda = async () => {
+        setEstadoTienda('cargando');
         try {
             const { data } = await axios.get(`${BASE_URL}/public/store/${slug}`);
             setTienda(recordarVentaSinStock(data.data || data));
-        } catch { }
+        } catch (error) {
+            setEstadoTienda(axios.isAxiosError(error) && error.response?.status === 404 ? 'no-existe' : 'error');
+        }
     };
 
     const cargarMarcas = async () => {
@@ -336,11 +343,16 @@ export default function Catalogo() {
         }
     }
 
-    if (!tienda && loading) {
+    if (!tienda && slug !== 'preview' && estadoTienda !== 'no-existe') {
         return (
-            <div className="flex items-center justify-center h-screen bg-white">
-                <Icon icon="eos-icons:loading" className="w-12 h-12 text-[#FF9500]" />
-            </div>
+            <CargandoTienda
+                error={estadoTienda === 'error'}
+                // Si cayó la tienda cayó todo: se reintenta todo, no solo la ficha.
+                onReintentar={() => {
+                    cargarTienda(); cargarMarcas(); cargarCategorias(); cargarRangoPrecios(); cargarTodosProductos();
+                    setCargaError(false); setLoading(true); cargarProductos(1, true);
+                }}
+            />
         );
     }
 

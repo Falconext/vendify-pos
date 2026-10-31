@@ -573,6 +573,16 @@ export default function AdminLayout() {
                   const dbSubItems = getModuleSubItems(modulo);
                   const extraItems = meta?.extraItems?.(auth) ?? [];
                   const allSubItems = [...dbSubItems, ...extraItems];
+                  // Solo UNA opción del submenú puede estar marcada. Con
+                  // `startsWith` suelto, "/listas-precio/reprecio" encendía
+                  // también a "/listas-precio" y se veían dos seleccionadas.
+                  // Gana la coincidencia más específica; el `/` final evita que
+                  // "/listas-precioXYZ" cuente como hija de "/listas-precio".
+                  const rutaSubActiva = allSubItems
+                    .filter((item) => item.end
+                      ? location.pathname === item.ruta
+                      : (location.pathname === item.ruta || location.pathname.startsWith(item.ruta + '/')))
+                    .sort((a, b) => b.ruta.length - a.ruta.length)[0]?.ruta;
 
                   if (allSubItems.length === 0) {
                     return (
@@ -615,10 +625,7 @@ export default function AdminLayout() {
                           <div className="mb-1 border-b border-[#e5e5e5] px-4 py-2 text-xs font-semibold text-neutral-500 dark:border-[#262626] dark:text-neutral-400">{label}</div>
                           {allSubItems.map(item => (
                             <NavLink key={item.codigo} onClick={() => setIsSidebarOpen(false)} to={item.ruta} end={item.end}
-                              className={() => {
-                                const active = item.end ? location.pathname === item.ruta : location.pathname.startsWith(item.ruta);
-                                return active ? theme.submenuActiveLink : theme.submenuInactiveLink;
-                              }}
+                              className={() => (item.ruta === rutaSubActiva ? theme.submenuActiveLink : theme.submenuInactiveLink)}
                             >{item.nombre}</NavLink>
                           ))}
                         </div>
@@ -635,10 +642,7 @@ export default function AdminLayout() {
                           >
                             {allSubItems.map(item => (
                               <NavLink key={item.codigo} onClick={() => setIsSidebarOpen(false)} to={item.ruta} end={item.end}
-                                className={() => {
-                                  const active = item.end ? location.pathname === item.ruta : location.pathname.startsWith(item.ruta);
-                                  return active ? theme.submenuActiveLink : theme.submenuInactiveLink;
-                                }}
+                                className={() => (item.ruta === rutaSubActiva ? theme.submenuActiveLink : theme.submenuInactiveLink)}
                               >{item.nombre}</NavLink>
                             ))}
                           </motion.div>

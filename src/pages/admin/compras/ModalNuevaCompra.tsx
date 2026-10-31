@@ -188,16 +188,18 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         }));
     };
 
-    // Al cambiar el modo IGV de la compra, CONVERTIR las líneas ya agregadas
-    // (neto ↔ con IGV) para preservar el precio REAL pagado: el Total a Pagar
-    // no debe moverse por tocar el checkbox. Antes solo se reinterpretaban los
-    // números (y en paquetes se pisaban los ajustes manuales del usuario).
+    // El checkbox dice cómo leer los costos que el empresario TECLEÓ: marcar
+    // "incluyen IGV" después de escribir 9.60 (lo que dice la factura) debe
+    // dejar 9.60 y bajar el total a 192, no subir la línea a 11.328 (reclamo
+    // minimarket 31-10). Solo se convierten las líneas que salieron del bloque
+    // de paquete, cuyo costo de caja se ingresó siempre CON IGV.
     const prevIncluyeIgv = useRef(incluyeIgv);
     useEffect(() => {
         if (prevIncluyeIgv.current === incluyeIgv) return;
         prevIncluyeIgv.current = incluyeIgv;
         const factor = incluyeIgv ? 1.18 : 1 / 1.18;
         setItems(prev => prev.map((it: any) => {
+            if (it._pkgCajas == null) return it;
             // Exonerado/inafecto: su precio no lleva IGV, no se convierte.
             if (!esGravadoItem(it)) return it;
             const raw = Number(it.precioUnitario || 0) * factor;

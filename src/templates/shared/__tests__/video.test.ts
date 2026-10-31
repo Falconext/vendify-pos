@@ -11,11 +11,14 @@ describe('Video del producto · qué sabemos reproducir', () => {
     const v = resolverVideo(
       'https://www.tiktok.com/@aprende.negocio.oro/video/7694320615390723380?is_from_webapp=1',
     );
-    expect(v).toEqual({
+    expect(v).toMatchObject({
       tipo: 'embed',
       plataforma: 'tiktok',
       src: 'https://www.tiktok.com/embed/v2/7694320615390723380',
     });
+    // Se conserva el enlace original: es el que se le ofrece al cliente cuando
+    // TikTok corta el reproductor.
+    expect((v as any).original).toContain('tiktok.com/@');
   });
 
   it('acepta YouTube en sus formas habituales', () => {

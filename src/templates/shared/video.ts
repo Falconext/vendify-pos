@@ -12,7 +12,13 @@ export type VideoProducto =
   /** Se reproduce con <video>: archivo propio (S3, mp4). */
   | { tipo: 'archivo'; src: string }
   /** Se reproduce con <iframe>: plataforma con reproductor embebible. */
-  | { tipo: 'embed'; src: string; plataforma: 'youtube' | 'tiktok' | 'vimeo' }
+  | {
+      tipo: 'embed';
+      src: string;
+      plataforma: 'youtube' | 'tiktok' | 'vimeo';
+      /** La URL que pegó el empresario, para ofrecerla si el embed no carga. */
+      original: string;
+    }
   /** Hay URL pero no sabemos reproducirla: se ofrece como enlace. */
   | { tipo: 'enlace'; src: string };
 
@@ -49,6 +55,7 @@ export function resolverVideo(url?: string | null): VideoProducto | null {
         tipo: 'embed',
         plataforma: 'youtube',
         src: `https://www.youtube.com/embed/${m[1]}`,
+        original: limpio,
       };
     }
   }
@@ -59,6 +66,7 @@ export function resolverVideo(url?: string | null): VideoProducto | null {
       tipo: 'embed',
       plataforma: 'tiktok',
       src: `https://www.tiktok.com/embed/v2/${tk[1]}`,
+      original: limpio,
     };
   }
 
@@ -68,6 +76,7 @@ export function resolverVideo(url?: string | null): VideoProducto | null {
       tipo: 'embed',
       plataforma: 'vimeo',
       src: `https://player.vimeo.com/video/${vm[1]}`,
+      original: limpio,
     };
   }
 

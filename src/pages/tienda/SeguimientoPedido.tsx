@@ -9,6 +9,7 @@ import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 const TERMINAL_STATES = ['ENTREGADO', 'ENTREGADO_COMPLETADO', 'CANCELADO', 'CANCELADO_INTERNO', 'CANCELADO_CLIENTE'];
@@ -30,13 +31,20 @@ export default function SeguimientoPedido() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    useEffect(() => {
-        if (slug) {
-            axios.get(`${BASE_URL}/public/store/${slug}`)
-                .then(({ data }) => setTienda(recordarVentaSinStock(data.data || data)))
-                .catch(console.error);
-        }
+    // Sin la tienda no se sabe la plantilla: se espera en una pantalla neutra
+    // en vez de pintar el seguimiento por defecto y luego saltar al real.
+    const [estadoTienda, setEstadoTienda] = useState<'cargando' | 'error' | 'no-existe'>('cargando');
+    const cargarTienda = useCallback(() => {
+        if (!slug) return;
+        setEstadoTienda('cargando');
+        axios.get(`${BASE_URL}/public/store/${slug}`)
+            .then(({ data }) => setTienda(recordarVentaSinStock(data.data || data)))
+            .catch((e) => {
+                console.error(e);
+                setEstadoTienda(axios.isAxiosError(e) && e.response?.status === 404 ? 'no-existe' : 'error');
+            });
     }, [slug]);
+    useEffect(() => { cargarTienda(); }, [cargarTienda]);
 
     useEffect(() => {
         if (codigoParam) {
@@ -215,6 +223,10 @@ export default function SeguimientoPedido() {
         };
         return labels[estado] || estado;
     };
+
+    if (!tienda && estadoTienda !== 'no-existe') {
+        return <CargandoTienda error={estadoTienda === 'error'} onReintentar={cargarTienda} />;
+    }
 
     // ── Template Dispatcher ───────────────────────────────────────────────────
     if (tienda && diseno.plantillaId) {

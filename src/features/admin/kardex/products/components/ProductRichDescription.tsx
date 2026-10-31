@@ -6,9 +6,39 @@ import { useProductModalViewModel } from '../useProductModalViewModel';
 
 type ViewProps = ReturnType<typeof useProductModalViewModel>;
 
+// Fuera del componente: si la barra se arma en cada render, Quill la ve como
+// configuración nueva y se reinicia.
+const MODULOS_QUILL = {
+    toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'clean'],
+    ],
+};
+
+// Quill 2 guarda cada espacio doble como &nbsp;: en la tienda el párrafo no se
+// corta en líneas y se sale de la pantalla. Se guardan espacios normales.
+const sinNbsp = (html: string) => html.replace(/&nbsp;/g, ' ');
+
 export const ProductRichDescription: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const { productSections, formValues, setFormValues } = vm;
     const [descTiendaOpen, setDescTiendaOpen] = useState(false);
+
+    // El editor trabaja con su propio HTML y al formulario solo pasa lo que
+    // escribe la persona, ya limpio. Antes el valor limpio volvía al editor como
+    // `value`; Quill lo veía distinto del suyo (volvía a poner &nbsp;), lo
+    // recargaba, avisaba de un cambio y se limpiaba otra vez: con una
+    // descripción con espacios dobles el modal entraba en bucle y colgaba la
+    // página (22-10, "editar producto se congela").
+    const guardada = String((formValues as any)?.descripcionLarga || '');
+    const [html, setHtml] = useState(guardada);
+    useEffect(() => {
+        // Llegó otro texto de afuera (otro producto, o el detalle completo que se
+        // carga después de abrir): se muestra. Lo que salió del propio editor ya
+        // coincide y no se toca.
+        setHtml((actual) => (sinNbsp(actual) === guardada ? actual : guardada));
+    }, [guardada]);
 
     const autoOpenedForRef = useRef<number | null>(null);
     useEffect(() => {
@@ -76,18 +106,18 @@ export const ProductRichDescription: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                         <div className="quill-container bg-white dark:bg-[#1E293B] rounded-xl overflow-hidden">
                             <ReactQuill
                                 theme="snow"
-                                value={(formValues as any)?.descripcionLarga || ''}
-                                onChange={(value: string) => setFormValues({ ...formValues, descripcionLarga: value } as any)}
+                                value={html}
+                                onChange={(value: string, _delta: unknown, source: string) => {
+                                    setHtml(value);
+                                    // Solo lo que tecleó la persona: los cambios que hace
+                                    // Quill al cargar un texto no son ediciones.
+                                    if (source !== 'user') return;
+                                    const limpio = sinNbsp(value);
+                                    if (limpio !== guardada) setFormValues({ ...formValues, descripcionLarga: limpio } as any);
+                                }}
                                 placeholder="Escribe la descripción completa del producto: especificaciones, garantía, compatibilidad, características..."
                                 className="dark:text-gray-200"
-                                modules={{
-                                    toolbar: [
-                                        [{ header: [2, 3, false] }],
-                                        ['bold', 'italic', 'underline'],
-                                        [{ list: 'ordered' }, { list: 'bullet' }],
-                                        ['link', 'clean'],
-                                    ],
-                                }}
+                                modules={MODULOS_QUILL}
                             />
                         </div>
                         <div className="flex items-center justify-between mt-3">

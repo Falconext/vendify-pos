@@ -43,6 +43,7 @@ import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
 import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
+import { montoACredito } from './montoACredito';
 
 import { afectacionPorDefecto } from '@/utils/afectacionIgv';
 type EnvioDespachoFormData = {
@@ -2358,8 +2359,16 @@ export const useFacturacionViewModel = () => {
     const adelantoBruto = esCreditoNV
         ? inicialCreditoMonto
         : (esInformal && (formValues.tipoDoc === "NP" || formValues.tipoDoc === "OT") ? Number(adelanto) : 0);
-    const adelantoCreditoCalculado = adelantoBruto > 0 ? Math.min(adelantoBruto, totalAdjusted) : 0;
-    const totalCredito = Number(Math.max(0, totalAdjusted - adelantoCreditoCalculado).toFixed(2));
+    // El envío cobrado al cliente también va al crédito: ver montoACredito.
+    const { inicial: adelantoCreditoCalculado, totalCredito } = montoACredito({
+        totalProductos: totalAdjusted,
+        envioActivo,
+        costoEnvio: envioData.costoEnvio,
+        aplicacionGuardada: envioData.aplicacionMontoCliente,
+        esInformal,
+        esPropio: envioData.transportista === 'PROPIOS',
+        inicial: adelantoBruto,
+    });
     const buildPaymentDetails = () => {
         const normalizeLine = (line: PaymentLine): PaymentLine => {
             const method = normalizePaymentMethod(line.method);
@@ -2450,6 +2459,62 @@ export const useFacturacionViewModel = () => {
         }
         setFormValues(prev => ({ ...prev, comprobante: tipo, tipoDoc: tipo === 'BOLETA' ? '03' : '01' }));
         setFechaVencimientoCredito('');
+    };
+
+    // Factura desde la ventana de pago: se escribe el RUC ahí mismo y queda
+    // lista para emitir, sin cerrar la venta (pedido DEMENVER: el cliente pide
+    // boleta y a último momento cambia a factura). Busca el cliente en la
+    // empresa; si no existe lo trae del padrón SUNAT y lo registra.
+    const [rucFacturaLoading, setRucFacturaLoading] = useState(false);
+    const facturarConRuc = async (rucRaw: string): Promise<boolean> => {
+        const ruc = String(rucRaw || '').replace(/\D/g, '');
+        if (ruc.length !== 11) {
+            useAlertStore.getState().alert('El RUC tiene 11 dígitos', 'warning');
+            return false;
+        }
+        if (rucFacturaLoading) return false;
+        setRucFacturaLoading(true);
+        try {
+            const resp: any = await get(`clientes?search=${ruc}&limit=5`);
+            const lista = resp?.data?.clientes ?? resp?.data?.data ?? [];
+            let cliente: any = Array.isArray(lista) ? lista.find((c: any) => String(c.nroDoc) === ruc) : null;
+            if (!cliente) {
+                const info: any = await getClientFromDoc(ruc, 'RUC');
+                const nombre = info?.nombre_o_razon_social || info?.nombre_completo || '';
+                if (!nombre) {
+                    useAlertStore.getState().alert('SUNAT no devolvió datos para ese RUC. Revisa el número.', 'warning');
+                    return false;
+                }
+                const datos = {
+                    tipoDoc: 'RUC',
+                    nroDoc: ruc,
+                    nombre,
+                    direccion: info.direccion || info.direccion_completa || '',
+                    departamento: info.departamento || '',
+                    provincia: info.provincia || '',
+                    distrito: info.distrito || '',
+                    ubigeo: info.ubigeo_sunat || '',
+                    persona: 'CLIENTE',
+                    estado: 'ACTIVO',
+                };
+                const creado: any = await addClients(datos as any);
+                if (!creado) {
+                    useAlertStore.getState().alert('No se pudo registrar el cliente', 'error');
+                    return false;
+                }
+                cliente = { ...creado, ...datos };
+            }
+            // El efecto que limpia el cliente al pasar a FACTURA respeta esta marca
+            // (mismo blindaje que al cargar una guía o una nota de venta).
+            fromNVComprobanteRef.current = 'FACTURA';
+            setFormValues(prev => ({ ...prev, comprobante: 'FACTURA', tipoDoc: '01' }));
+            setFechaVencimientoCredito('');
+            handleClienteCreado(cliente);
+            useAlertStore.getState().alert(`Factura para ${cliente.nombre}`, 'success');
+            return true;
+        } finally {
+            setRucFacturaLoading(false);
+        }
     };
 
     const validatePaymentDetails = () => {
@@ -2549,7 +2614,22 @@ export const useFacturacionViewModel = () => {
         return Object.values(newErrors).every((error) => !error);
     };
 
+    // Una sola emisión a la vez. Clic en EMITIR y luego Enter (el foco queda en
+    // el botón) mandaba la misma venta dos o tres veces mientras la primera
+    // seguía en camino: DEMENVER NV01-8514/8515, B0A1-1951/52/53 (31-10). Los
+    // estados de React no alcanzan a bloquear porque se actualizan después.
+    const emitiendoRef = useRef(false);
     const addInvoiceReceipt = async () => {
+        if (emitiendoRef.current) return;
+        emitiendoRef.current = true;
+        try {
+            return await emitirComprobante();
+        } finally {
+            emitiendoRef.current = false;
+        }
+    };
+
+    const emitirComprobante = async () => {
         if (!validateForm()) return;
         const selectedOperacion = tiposOperacion.find(op => op.id === formValues.tipoOperacionId);
         // Operaciones de exportación (Catálogo 51: 0102/0113/0200/0201/0202…): el receptor
@@ -3098,7 +3178,7 @@ export const useFacturacionViewModel = () => {
 
         // Form & Selections
         formValues, setFormValues,
-        cpeRequeridoPorMedioPago, cpeRequeridoMensaje, cpeRequeridoMedios, cambiarComprobanteA, esRUS, comprobanteInicialConfigurado,
+        cpeRequeridoPorMedioPago, cpeRequeridoMensaje, cpeRequeridoMedios, cambiarComprobanteA, facturarConRuc, rucFacturaLoading, esRUS, comprobanteInicialConfigurado,
         paymentMethod, setPaymentMethod,
         paymentDetail, setPaymentDetail,
         buildPaymentDetails,

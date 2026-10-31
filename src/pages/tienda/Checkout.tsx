@@ -7,6 +7,7 @@ import Footer from '@/components/tienda/Footer';
 import ProductCardPio from '@/components/tienda/ProductCardPio';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { templateRegistry } from '@/templates/registry';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import { clearTiendaCart, persistTiendaCart, tiendaCartKey } from '@/utils/tiendaCart';
@@ -96,12 +97,16 @@ export default function Checkout() {
     const [searchResults, setSearchResults] = useState<any[]>([]);
 
     // Mejora 1: cargar tienda desde API si no está disponible por navigation state
+    const [tiendaError, setTiendaError] = useState(false);
+    const cargarTienda = () => {
+        if (!slug) return;
+        setTiendaError(false);
+        axios.get(`${BASE_URL}/public/store/${slug}`)
+            .then(({ data }) => setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data))))
+            .catch((e) => { console.error(e); setTiendaError(true); });
+    };
     useEffect(() => {
-        if (!tienda && slug) {
-            axios.get(`${BASE_URL}/public/store/${slug}`)
-                .then(({ data }) => setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data))))
-                .catch(console.error);
-        }
+        if (!tienda) cargarTienda();
     }, [slug]);
 
     useEffect(() => {
@@ -439,6 +444,12 @@ export default function Checkout() {
             culqi.open();
         });
     };
+
+    // Hasta tener la tienda no se sabe su plantilla: pintar algo antes muestra
+    // el checkout por defecto y luego "salta" al de la tienda. Pantalla neutra.
+    if (!tienda || !isLoaded) {
+        return <CargandoTienda error={tiendaError} onReintentar={cargarTienda} />;
+    }
 
     const disenoBase = tienda?.diseno || {};
     const diseno = previewPlantillaId ? {

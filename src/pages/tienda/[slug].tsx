@@ -34,6 +34,7 @@ import { withStorePurchaseWhatsapp } from '@/utils/storeWhatsapp';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
 import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 export default function TiendaPublica() {
@@ -47,6 +48,9 @@ export default function TiendaPublica() {
   const [carrito, setCarrito] = useState<any[]>([]);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  // La tienda y sus productos llegan por separado: sin esto, si los productos
+  // llegan primero se ve "Tienda no encontrada" un instante.
+  const [estadoTienda, setEstadoTienda] = useState<'cargando' | 'error' | 'no-existe'>('cargando');
   const [loadingMore, setLoadingMore] = useState(false);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -229,11 +233,13 @@ export default function TiendaPublica() {
   };
 
   const cargarTienda = async () => {
+    setEstadoTienda('cargando');
     try {
       const { data } = await axios.get(`${BASE_URL}/public/store/${slug}`);
       setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data)));
     } catch (error) {
       console.error('Error al cargar tienda:', error);
+      setEstadoTienda(axios.isAxiosError(error) && error.response?.status === 404 ? 'no-existe' : 'error');
     }
   };
 
@@ -278,17 +284,23 @@ export default function TiendaPublica() {
   const filteredProductos = productos; // Filtering is now done on server
 
 
+  // Los filtros tal como se mandan al servidor. Al llegar el rango de precios
+  // cambia priceRange pero no la consulta: sin comparar esto la grilla se
+  // vaciaba y volvía a cargar los mismos productos (parpadeo al entrar).
+  const filtrosProductos = () => ({
+    search: search.trim() || undefined,
+    category: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
+    minPrice: priceRange[0] !== minPrice ? priceRange[0] : undefined,
+    maxPrice: priceRange[1] !== maxPrice ? priceRange[1] : undefined,
+  });
+  const ultimaConsulta = useRef<string | null>(null);
+
   const cargarProductos = async (p = page, reset = false) => {
+    const filtros = filtrosProductos();
+    if (p === 1) ultimaConsulta.current = JSON.stringify(filtros);
     try {
       const { data } = await axios.get(`${BASE_URL}/public/store/${slug}/products`, {
-        params: {
-          page: p,
-          limit,
-          search: search.trim() || undefined,
-          category: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
-          minPrice: priceRange[0] !== minPrice ? priceRange[0] : undefined,
-          maxPrice: priceRange[1] !== maxPrice ? priceRange[1] : undefined,
-        },
+        params: { page: p, limit, ...filtros },
       });
 
       // Normalizar posibles formatos de respuesta
@@ -335,6 +347,7 @@ export default function TiendaPublica() {
   // Debounce búsqueda, categorías y precios
   useEffect(() => {
     const t = setTimeout(() => {
+      if (JSON.stringify(filtrosProductos()) === ultimaConsulta.current) return;
       setLoading(true);
       setProductos([]);
       setPage(1);
@@ -458,43 +471,8 @@ export default function TiendaPublica() {
     navigate(`/tienda/${slug}/checkout`, { state: { carrito, tienda } });
   };
 
-  if (loading && !tienda) {
-    return (
-      <div className="min-h-screen bg-white">
-        {/* Header Skeleton */}
-        <div className="h-20 border-b border-gray-100 flex items-center justify-between px-8 bg-white">
-          <div className="animate-pulse bg-gray-100 rounded-lg w-32 h-8" />
-          <div className="flex gap-4">
-            <div className="animate-pulse bg-gray-100 rounded-full w-10 h-10" />
-            <div className="animate-pulse bg-gray-100 rounded-full w-10 h-10" />
-          </div>
-        </div>
-        {/* Banner Skeleton */}
-        <div className="max-w-screen-xl mx-auto px-5 md:px-8 mt-8 mb-12">
-          <div className="animate-pulse bg-gray-100 rounded-[2.5rem] w-full h-[300px] md:h-[450px]" />
-        </div>
-        {/* Grid Skeleton */}
-        <div className="max-w-screen-xl mx-auto px-5 md:px-8 pb-10">
-          <div className="flex justify-between items-center mb-6">
-            <div className="animate-pulse bg-gray-100 rounded-lg w-48 h-8" />
-            <div className="animate-pulse bg-gray-100 rounded-lg w-24 h-5" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-[1.5rem] border border-gray-100 p-4 h-[340px] flex flex-col shadow-sm">
-                <div className="animate-pulse bg-gray-100 rounded-xl w-full h-48 mb-4" />
-                <div className="animate-pulse bg-gray-100 rounded w-3/4 h-4 mb-2" />
-                <div className="animate-pulse bg-gray-100 rounded w-1/2 h-3 mb-4" />
-                <div className="mt-auto flex justify-between items-end">
-                  <div className="animate-pulse bg-gray-100 rounded w-1/3 h-6" />
-                  <div className="animate-pulse bg-gray-100 rounded-full w-9 h-9" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  if (!tienda && estadoTienda !== 'no-existe') {
+    return <CargandoTienda error={estadoTienda === 'error'} onReintentar={cargarTienda} />;
   }
 
   if (!tienda) {
