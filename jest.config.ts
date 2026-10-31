@@ -8,8 +8,7 @@ export default {
         '^@/(.*)$': '<rootDir>/src/$1',
     },
     transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
-            tsconfig: 'tsconfig.json', // Adjust if you use a different config for app
-        }],
+        // ts-jest envuelto para que entienda `import.meta.env` de Vite.
+        '^.+\\.tsx?$': '<rootDir>/jest/viteEnvTransformer.cjs',
     },
 };
