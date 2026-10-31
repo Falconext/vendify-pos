@@ -1,3 +1,4 @@
+import apiClient from '@/utils/apiClient';
 import { create } from 'zustand';
 import { get } from '../utils/fetch';
 import { devtools } from 'zustand/middleware';
@@ -70,7 +71,11 @@ export const useDashboardStore = create<IDashboardState>()(devtools((set, _get) 
             let resp: any = null;
             for (let intento = 0; intento < 2; intento++) {
                 try {
-                    resp = await get(`dashboard/overview?${params}`);
+                    // El resumen junta todo el mes (ventas, compras, stock bajo):
+                    // en empresas grandes pasa los 12 s por defecto del cliente y
+                    // en el celular se cortaba siempre (DEMENVER 31-10).
+                    const r = await apiClient.get(`dashboard/overview?${params}`, { timeout: 60_000 });
+                    resp = r.data;
                     if (resp?.code === 1) break;
                 } catch {
                     resp = null;
