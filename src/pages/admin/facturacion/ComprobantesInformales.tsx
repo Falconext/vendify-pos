@@ -36,7 +36,15 @@ import { mapDetalleToInvoiceProduct } from "@/features/admin/facturacion/utils/c
 import ModalImportarNotaVentaLote from "./ModalImportarNotaVentaLote";
 import ModalConfigCotizacion from "@/features/admin/cotizaciones/ModalConfigCotizacion";
 import apiClient from "@/utils/apiClient";
-import { EditarDespachoModal } from "@/pages/admin/despacho/EditarDespachoModal";
+import { EditarDespachoModal, type NotasDelEnvio } from "@/pages/admin/despacho/EditarDespachoModal";
+import { hasPermission } from "@/utils/permissions";
+import CasillaSeleccion from "@/components/CasillaSeleccion";
+import BarraSeleccionNotas from "@/features/admin/facturacion/seleccion/BarraSeleccionNotas";
+import ModalCobrarVarias from "@/features/admin/facturacion/seleccion/ModalCobrarVarias";
+import { clienteConRuc, motivoNoFacturar, notaDeVentaDataConjunta } from "@/features/admin/facturacion/seleccion/facturarJuntas";
+import ModalEstadoCuentaWhatsApp from "@/features/admin/facturacion/seleccion/ModalEstadoCuentaWhatsApp";
+import { documentoCorto, envioConjunto, motivoNoCobrar, notaElegidaDe, resumirSeleccion, type NotaElegida } from "@/features/admin/facturacion/seleccion/seleccionNotas";
+import { notaPorSaldo, totalDelSaldo } from "@/features/admin/facturacion/utils/notaPorSaldo";
 
 // Informales que sí se despachan (las cotizaciones no: se convierten primero).
 const TIPOS_ENVIABLES = new Set(['NV', 'TICKET', 'NP', 'OT', 'RH', 'CP']);
@@ -148,10 +156,14 @@ const ComprobantesInformales = () => {
     // modal de despacho para elegir courier/agencia/motorizado y generar la guía.
     const [editDespachoId, setEditDespachoId] = useState<number | null>(null);
     const [creandoDespachoId, setCreandoDespachoId] = useState<number | null>(null);
+    // Envío de varias notas del mismo cliente (barra de selección → Un solo envío).
+    const [envioVarias, setEnvioVarias] = useState<NotasDelEnvio | null>(null);
     const coordinarEnvio = async (item: IInvoices) => {
         if (!item?.id || creandoDespachoId) return;
+        setEnvioVarias(null);
         if (item.envioDespacho?.id) {
-            setEditDespachoId(item.id);
+            // Nota que va en el paquete de otra: se edita ESE envío, no se crea otro.
+            setEditDespachoId(Number((item as any).envioDespacho?.comprobanteId ?? item.id));
             return;
         }
         setCreandoDespachoId(item.id);
@@ -207,6 +219,69 @@ const ComprobantesInformales = () => {
             setSelectedSedeId(null);
         }
     }, [canFilterBySede]);
+
+    // Notas elegidas en la lista (orden de compra, facturar juntas, cobrar,
+    // exportar, WhatsApp, un solo envío). Se guardan con sus datos para que la
+    // elección sobreviva al paginar.
+    const puedeArmarOrden = hasPermission(auth as any, 'compras');
+    const [seleccionOrden, setSeleccionOrden] = useState<Map<number, NotaElegida>>(new Map());
+    const alternarSeleccion = (item: any) => {
+        setSeleccionOrden((prev) => {
+            const next = new Map(prev);
+            if (next.has(item.id)) next.delete(item.id); else next.set(item.id, notaElegidaDe(item));
+            return next;
+        });
+    };
+    const notasElegidas = [...seleccionOrden.values()];
+    const resumenElegidas = resumirSeleccion(notasElegidas);
+    const [modalSeleccion, setModalSeleccion] = useState<null | 'cobrar' | 'whatsapp'>(null);
+    const [exportandoElegidas, setExportandoElegidas] = useState<null | string>(null);
+    const armarOrdenDeCompra = () => {
+        navigate('/administrador/compras/ordenes', { state: { desdeVentas: [...seleccionOrden.keys()] } });
+    };
+    // Un solo envío: el despacho vive en la nota principal (la que ya tenga
+    // envío, o la más antigua) y las demás se enlazan al guardar.
+    const coordinarEnvioConjunto = async () => {
+        const { principal } = envioConjunto(notasElegidas);
+        if (!principal) return;
+        if (principal.envioEn == null) {
+            try {
+                await apiClient.post(`/envio-despacho/comprobante/${principal.id}`, {
+                    transportista: 'SHALOM_PRO',
+                    tipoEnvio: 'AGENCIA',
+                    nroPaquetes: 1,
+                });
+            } catch (e: any) {
+                const msg: string = e?.response?.data?.message || '';
+                if (!/ya tiene un seguimiento/i.test(msg)) {
+                    useAlertStore.getState().alert(msg || 'No se pudo crear la coordinación de envío', 'error');
+                    return;
+                }
+            }
+        }
+        const ordenadas = [principal, ...notasElegidas.filter((n) => n.id !== principal.id)];
+        setEnvioVarias({ ids: ordenadas.map((n) => n.id), documentos: ordenadas.map((n) => documentoCorto(n.documento)), total: resumenElegidas.total, saldo: resumenElegidas.saldo });
+        setEditDespachoId(principal.id);
+    };
+
+    // "Marcar todas" solo actúa sobre las notas de ESTA página que se pueden elegir.
+    const pediblesDePagina: any[] = (invoices ?? [])
+        .filter((it: any) => ['NV', 'NP', 'TICKET'].includes(String(it.tipoDoc)) && it.estadoEnvioSunat !== 'ANULADO');
+    const marcadasDePagina = pediblesDePagina.filter((it) => seleccionOrden.has(it.id)).length;
+    const todasMarcadas = pediblesDePagina.length > 0 && marcadasDePagina === pediblesDePagina.length;
+    const casillaTodas = pediblesDePagina.length > 0 ? (
+        <CasillaSeleccion
+            marcada={todasMarcadas}
+            parcial={marcadasDePagina > 0 && !todasMarcadas}
+            etiqueta={todasMarcadas ? 'Quitar las notas de esta página' : 'Elegir todas las notas de esta página'}
+            onCambiar={() => setSeleccionOrden((prev) => {
+                const next = new Map(prev);
+                if (todasMarcadas) pediblesDePagina.forEach((it) => next.delete(it.id));
+                else pediblesDePagina.forEach((it) => next.set(it.id, notaElegidaDe(it)));
+                return next;
+            })}
+        />
+    ) : '';
 
     const productsTable = invoices?.map((item: IInvoices) => {
         const despachoCompleto = item.comprobante === 'NOTA DE VENTA' && hasDespachoCompleto(item);
@@ -270,8 +345,34 @@ const ComprobantesInformales = () => {
                 <Icon icon="mdi:dots-vertical" width={18} height={18} />
             </button>
         );
+        const ordenesDeCompra: string[] = ((item as any).ordenesCompra ?? [])
+            .map((o: any) => `OC-${String(o.ordenCompra?.numero ?? '').padStart(6, '0')}`);
+        const documento = `${item.serie}-${String(item.correlativo).padStart(8, '0')}`;
+        const sePuedePedir = ['NV', 'NP', 'TICKET'].includes(String((item as any).tipoDoc)) && item.estadoEnvioSunat !== 'ANULADO';
+        // Solo la casilla: el sello de la orden de compra va junto al comprobante,
+        // así todas las casillas quedan a la misma altura.
+        const seleccion = sePuedePedir ? (
+            <CasillaSeleccion
+                marcada={seleccionOrden.has(item.id)}
+                onCambiar={() => alternarSeleccion(item)}
+                etiqueta={`Elegir ${documento}`}
+            />
+        ) : null;
+        const selloOrden = ordenesDeCompra.length > 0 ? (
+            <span title={`Ya se pidió al proveedor en ${ordenesDeCompra.join(', ')}`} className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-800">
+                <Icon icon="solar:clipboard-check-bold" className="text-[11px]" />
+                {ordenesDeCompra.map((o) => o.replace(/^OC-0+/, 'OC-')).join(', ')}
+            </span>
+        ) : null;
         return {
+            seleccion,
             ...rowBase,
+            comprobanteBadge: selloOrden ? (
+                <span className="inline-flex items-center gap-1.5">{rowBase.comprobanteBadge}{selloOrden}</span>
+            ) : rowBase.comprobanteBadge,
+            selloOrden,
+            sePuedePedir,
+            documentoOrden: documento,
             acciones,
         };
     });
@@ -437,6 +538,30 @@ const ComprobantesInformales = () => {
 
     // Exporta el listado filtrado (rango de fechas/estado/sede/vendedor) en PDF o Excel
     const [exportando, setExportando] = useState<'pdf' | 'excel' | null>(null);
+    // Exportar solo las notas elegidas (pueden venir de varias páginas).
+    const exportarElegidas = async (tipo: 'notas' | 'pdf' | 'excel') => {
+        if (exportandoElegidas || seleccionOrden.size === 0) return;
+        setExportandoElegidas(tipo);
+        try {
+            const params = new URLSearchParams({ tipoComprobante: 'INFORMAL', ids: [...seleccionOrden.keys()].join(',') });
+            if (tipo === 'notas') params.set('formato', 'pdf');
+            else params.set('formato', tipo);
+            const ruta = tipo === 'notas' ? 'exportar-pdf' : 'exportar-resumen';
+            const resp = await apiClient.get(`/comprobante/${ruta}?${params.toString()}`, { responseType: 'blob', timeout: 120_000 });
+            const url = window.URL.createObjectURL(new Blob([resp.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${tipo === 'notas' ? 'notas' : 'resumen_notas'}_elegidas_${seleccionOrden.size}.${tipo === 'excel' ? 'xlsx' : 'pdf'}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            useAlertStore.getState().alert('No se pudo exportar las notas elegidas', 'error');
+        } finally {
+            setExportandoElegidas(null);
+        }
+    };
     const handleExportarResumen = async (formato: 'pdf' | 'excel') => {
         if (exportando) return;
         setExportando(formato);
@@ -616,7 +741,7 @@ const ComprobantesInformales = () => {
     }
 
     return (
-        <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta">
+        <div className={`min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0B1120] font-jakarta ${seleccionOrden.size > 0 ? 'pb-36' : ''}`}>
             <ComprobantePrintPage
                 company={auth}
                 componentRef={componentRef}
@@ -713,6 +838,90 @@ const ComprobantesInformales = () => {
                 </div>
             </div>
 
+            <BarraSeleccionNotas
+                // Con un modal abierto la barra se esconde: quedaba asomando por encima del fondo.
+                notas={editDespachoId || modalSeleccion ? [] : notasElegidas}
+                onQuitar={() => setSeleccionOrden(new Map())}
+                principal={{
+                    key: 'orden',
+                    label: 'Orden de compra',
+                    descripcion: 'Pedir al proveedor lo vendido en estas notas',
+                    icon: 'solar:clipboard-list-bold-duotone',
+                    onClick: armarOrdenDeCompra,
+                    deshabilitada: puedeArmarOrden ? null : 'Tu plan o usuario no tiene Compras',
+                }}
+                acciones={[
+                    {
+                        key: 'boleta', grupo: 'Facturar', label: 'Emitir una boleta con estas notas', icon: 'solar:bill-list-bold-duotone',
+                        descripcion: 'Una sola boleta por todo lo de las notas',
+                        deshabilitada: motivoNoFacturar(notasElegidas, 'BOLETA'),
+                        onClick: () => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'BOLETA', fromNotaDeVenta: true, notaDeVentaData: notaDeVentaDataConjunta(notasElegidas) } }),
+                    },
+                    {
+                        key: 'factura', grupo: 'Facturar', label: 'Emitir una factura con estas notas', icon: 'solar:document-text-bold-duotone',
+                        descripcion: clienteConRuc(notasElegidas)
+                            ? 'Una sola factura por todo lo de las notas'
+                            : 'Una sola factura; en el POS eliges el cliente con RUC',
+                        deshabilitada: motivoNoFacturar(notasElegidas, 'FACTURA'),
+                        onClick: () => navigate('/administrador/facturacion/nuevo', { state: { defaultType: 'FACTURA', fromNotaDeVenta: true, notaDeVentaData: notaDeVentaDataConjunta(notasElegidas, 'FACTURA') } }),
+                    },
+                    {
+                        key: 'envio', grupo: 'Envío', label: 'Coordinar un solo envío', icon: 'solar:box-bold-duotone',
+                        descripcion: 'Un paquete y una guía para todas las notas',
+                        deshabilitada: envioConjunto(notasElegidas).motivo,
+                        onClick: coordinarEnvioConjunto,
+                    },
+                    {
+                        key: 'cobrar', grupo: 'Cobranza', label: 'Cobrar', icon: 'solar:wallet-money-bold-duotone',
+                        descripcion: `Registrar el pago de lo pendiente (${resumenElegidas.moneda === 'USD' ? 'US$' : 'S/'} ${resumenElegidas.saldo.toFixed(2)})`,
+                        deshabilitada: motivoNoCobrar(resumenElegidas),
+                        onClick: () => setModalSeleccion('cobrar'),
+                    },
+                    {
+                        key: 'whatsapp', grupo: 'Cobranza', label: 'Estado de cuenta por WhatsApp', icon: 'ic:baseline-whatsapp',
+                        descripcion: 'Mensaje con las notas y lo que falta pagar',
+                        onClick: () => setModalSeleccion('whatsapp'),
+                    },
+                    {
+                        key: 'pdf-notas', grupo: 'Exportar e imprimir', label: 'Notas en PDF', icon: 'solar:printer-minimalistic-bold-duotone',
+                        descripcion: 'Cada nota completa, lista para imprimir',
+                        cargando: exportandoElegidas === 'notas',
+                        onClick: () => exportarElegidas('notas'),
+                    },
+                    {
+                        key: 'resumen-pdf', grupo: 'Exportar e imprimir', label: 'Resumen en PDF', icon: 'solar:file-text-bold-duotone',
+                        descripcion: 'Una lista con fecha, cliente, importe y saldo',
+                        cargando: exportandoElegidas === 'pdf',
+                        onClick: () => exportarElegidas('pdf'),
+                    },
+                    {
+                        key: 'resumen-excel', grupo: 'Exportar e imprimir', label: 'Resumen en Excel', icon: 'solar:document-add-bold-duotone',
+                        descripcion: 'La misma lista para trabajarla en Excel',
+                        cargando: exportandoElegidas === 'excel',
+                        onClick: () => exportarElegidas('excel'),
+                    },
+                ]}
+            />
+            {modalSeleccion === 'cobrar' && (
+                <ModalCobrarVarias
+                    notas={notasElegidas}
+                    onClose={() => setModalSeleccion(null)}
+                    onCobrado={(mensaje) => {
+                        setModalSeleccion(null);
+                        setSeleccionOrden(new Map());
+                        useAlertStore.getState().alert(mensaje, 'success');
+                        recargarLista();
+                    }}
+                />
+            )}
+            {modalSeleccion === 'whatsapp' && (
+                <ModalEstadoCuentaWhatsApp
+                    notas={notasElegidas}
+                    negocio={String((auth as any)?.empresa?.nombreComercial || (auth as any)?.empresa?.razonSocial || '')}
+                    onClose={() => setModalSeleccion(null)}
+                />
+            )}
+
             {/* Card contenedora */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
                 {/* Filtros */}
@@ -784,7 +993,7 @@ const ComprobantesInformales = () => {
                             {productsTable.map((row: any) => {
                                 const pill = estadoPill(row.estado);
                                 return (
-                                    <article key={row.id} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)]">
+                                    <article key={row.id} className={`rounded-3xl border bg-white dark:bg-[#111827] p-4 shadow-[0_2px_20px_rgba(15,23,42,0.05)] transition-colors ${seleccionOrden.has(row.id) ? 'border-blue-500 ring-1 ring-blue-500/40 dark:border-blue-500' : 'border-slate-100 dark:border-slate-800'}`}>
                                         <div className="mb-3 flex items-start justify-between gap-3">
                                             <div className="min-w-0">
                                                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{row.sede}</p>
@@ -793,6 +1002,17 @@ const ComprobantesInformales = () => {
                                                     <span className="font-mono text-sm font-bold text-slate-800 dark:text-white">{row.serie}-{row.correlativo}</span>
                                                 </div>
                                                 <p className="text-xs font-medium text-slate-400 mt-0.5">{row.fechaEmisión}</p>
+                                                {row.sePuedePedir && (
+                                                    <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                        <CasillaSeleccion
+                                                            marcada={seleccionOrden.has(row.id)}
+                                                            onCambiar={() => alternarSeleccion(row._item)}
+                                                            etiqueta={`Elegir ${row.documentoOrden}`}
+                                                        />
+                                                        <button type="button" onClick={() => alternarSeleccion(row._item)}>Elegir</button>
+                                                        {row.selloOrden}
+                                                    </div>
+                                                )}
                                             </div>
                                             <button
                                                 type="button"
@@ -839,6 +1059,7 @@ const ComprobantesInformales = () => {
                             <DataTable
                                 bodyData={productsTable}
                                 headerColumns={[
+                                    { label: casillaTodas, key: 'seleccion' },
                                     'Fecha',
                                     'Serie',
                                     'Nro.',
@@ -968,8 +1189,12 @@ const ComprobantesInformales = () => {
             {editDespachoId && (
                 <EditarDespachoModal
                     comprobanteId={editDespachoId}
-                    onClose={() => setEditDespachoId(null)}
-                    onSuccess={() => { setEditDespachoId(null); recargarLista(); }}
+                    notasIncluidas={envioVarias}
+                    onClose={() => { setEditDespachoId(null); setEnvioVarias(null); }}
+                    onSuccess={() => {
+                        if (envioVarias) setSeleccionOrden(new Map());
+                        setEditDespachoId(null); setEnvioVarias(null); recargarLista();
+                    }}
                 />
             )}
 
@@ -1091,6 +1316,36 @@ const ComprobantesInformales = () => {
                                     </button>
                                 </>
                             )}
+                            {/* Convertida solo en parte (p. ej. 3 productos con factura y 2 con
+                                boleta): lo que falta se emite desde la misma nota, así no
+                                vuelve a descontar stock ni a cobrarse. El backend solo deja
+                                pasar las líneas pendientes. */}
+                            {['NV', 'NP'].includes(String(item?.tipoDoc))
+                                && row.estadoEnvioSunat !== 'ANULADO'
+                                && item?.convertidoA && item?.porConvertir && (() => {
+                                const saldoNota = notaPorSaldo(item);
+                                const ir = (defaultType: 'FACTURA' | 'BOLETA') => {
+                                    const conCliente = defaultType === 'BOLETA' || item.cliente?.nroDoc?.length === 11;
+                                    navigate('/administrador/facturacion/nuevo', { state: { defaultType, fromNotaDeVenta: true, notaDeVentaData: { origenComprobanteId: item.id, origenReferencia: `${item.serie}-${String(item.correlativo).padStart(8, '0')}`, cliente: conCliente ? item.cliente : null, clienteId: conCliente ? item.clienteId : null, observaciones: saldoNota.observaciones, ...datosPagoDeNota(saldoNota), productos: (saldoNota.detalles || []).map(mapDetalleToInvoiceProduct) } } });
+                                    handleCloseMenu();
+                                };
+                                return (
+                                    <>
+                                        <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                                        <div className="px-3 pt-1 pb-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                            Falta convertir S/ {totalDelSaldo(item).toFixed(2)}
+                                        </div>
+                                        <button type="button" onClick={() => ir('FACTURA')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                            <Icon icon="mdi:file-document-edit-outline" width={16} height={16} />
+                                            <span>Saldo a Factura</span>
+                                        </button>
+                                        <button type="button" onClick={() => ir('BOLETA')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20">
+                                            <Icon icon="mdi:receipt-outline" width={16} height={16} />
+                                            <span>Saldo a Boleta</span>
+                                        </button>
+                                    </>
+                                );
+                            })()}
                         </>
                     );
                 })()}

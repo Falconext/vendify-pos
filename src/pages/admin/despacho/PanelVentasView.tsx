@@ -1522,7 +1522,7 @@ export default function PanelVentasView() {
                 confirmText="Sí, editar despacho"
                 confirmSubmit={() => {
                     if (confirmDespachoItem?.comprobanteId) {
-                        setEditDespachoId(confirmDespachoItem.comprobanteId);
+                        setEditDespachoId(confirmDespachoItem.despachoEnComprobanteId ?? confirmDespachoItem.comprobanteId);
                     }
                     setConfirmDespachoItem(null);
                 }}
@@ -1634,7 +1634,7 @@ export default function PanelVentasView() {
                                             if (it.estadoDespacho === 'ENTREGADO') {
                                                 setConfirmDespachoItem(it);
                                             } else {
-                                                setEditDespachoId(it.comprobanteId);
+                                                setEditDespachoId(it.despachoEnComprobanteId ?? it.comprobanteId);
                                             }
                                         }}
                                         className={`w-full flex items-center gap-2 px-3 py-2 text-xs ${

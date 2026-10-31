@@ -69,7 +69,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export { TIPOS_VENTA_REPARTO, FORMAS_PAGO_COBRO } from './repartoPropio';
-export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { comprobanteId: number; onClose: () => void; onSuccess: () => void }) {
+/**
+ * Un solo envío para varias notas del mismo cliente: el despacho se guarda en
+ * `comprobanteId` y estas otras notas quedan enlazadas a él (un paquete, una
+ * guía). Los montos de la venta pasan a ser la suma de todas.
+ */
+export interface NotasDelEnvio {
+    ids: number[];
+    documentos: string[];
+    total: number;
+    saldo: number;
+}
+
+export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIncluidas }: { comprobanteId: number; onClose: () => void; onSuccess: () => void; notasIncluidas?: NotasDelEnvio | null }) {
     const [envioData, setEnvioData] = useState<any>({
         transportista: '',
         codigoGuia: '',
@@ -138,14 +150,15 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                 const tipoComp = comprobantePayload?.tipoDoc ?? comprobantePayload?.tipoComprobante ?? comprobantePayload?.tipo ?? '';
                 const FORMALES = ['01', '03', '07', '08'];
                 setEsNV(!FORMALES.includes(tipoComp) || tipoComp === '');
-                setSaldoVenta(Number(comprobantePayload?.saldo ?? 0));
+                const extra = notasIncluidas?.ids.length ? notasIncluidas : null;
+                setSaldoVenta(extra ? extra.saldo : Number(comprobantePayload?.saldo ?? 0));
                 const adelantoComprobante = Number(comprobantePayload?.adelanto ?? 0);
                 setClienteNombreFicha(String(comprobantePayload?.cliente?.nombre ?? '').trim());
                 if (payload) {
                     setEnvioData({
                         transportista: payload.transportista || '',
                         codigoGuia: payload.codigoGuia || '',
-                        observaciones: payload.observaciones || '',
+                        observaciones: payload.observaciones || (notasIncluidas?.ids.length ? `Un solo paquete: ${notasIncluidas.documentos.join(', ')}` : ''),
                         tipoEnvio: payload.tipoEnvio || 'DOMICILIO',
                         agenciaDestino: payload.agenciaDestino || '',
                         celularDest: payload.celularDest || '',
@@ -224,6 +237,13 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
             revisarProducto: !!envioData.revisarProducto,
             sedeOrigenNombre: undefined,
         });
+        await enlazarNotas();
+    };
+
+    // Envío de varias notas: las demás quedan enlazadas al despacho de esta.
+    const enlazarNotas = async () => {
+        const otras = (notasIncluidas?.ids ?? []).filter((id) => id !== comprobanteId);
+        if (otras.length) await apiClient.post(`/envio-despacho/comprobante/${comprobanteId}/notas`, { comprobanteIds: otras });
     };
 
     // Genera la guía en Shalom Pro con los datos ya cargados y trae de vuelta el
@@ -309,7 +329,13 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
                 // Solo lectura (viene del comprobante), no es parte del DTO.
                 sedeOrigenNombre: undefined,
             };
-            await apiClient.put(`/envio-despacho/comprobante/${comprobanteId}`, payload);
+            // Un envío de varias notas puede ser nuevo: `upsert` crea el seguimiento.
+            if (notasIncluidas?.ids.length) {
+                await apiClient.patch(`/envio-despacho/comprobante/${comprobanteId}/upsert`, payload);
+                await enlazarNotas();
+            } else {
+                await apiClient.put(`/envio-despacho/comprobante/${comprobanteId}`, payload);
+            }
             alert('Despacho actualizado correctamente', 'success');
             onSuccess();
         } catch (error) {
@@ -369,6 +395,13 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess }: { com
 
                 {/* Body — scrollable */}
                 <div className="overflow-y-auto p-6 space-y-4 flex-1">
+
+                    {notasIncluidas && notasIncluidas.ids.length > 1 && (
+                        <p className="flex items-start gap-2 rounded-2xl border border-violet-200 bg-violet-50/70 px-4 py-2.5 text-xs text-violet-800 dark:border-violet-900/50 dark:bg-violet-950/20 dark:text-violet-200" data-testid="envio-varias-notas">
+                            <Icon icon="solar:box-bold-duotone" className="mt-px shrink-0 text-base" />
+                            <span><b>Un solo envío para {notasIncluidas.ids.length} notas:</b> {notasIncluidas.documentos.join(', ')}. Se genera una sola guía y las demás notas quedan dentro de este paquete.</span>
+                        </p>
+                    )}
 
                     {/* Código de Guía (Importante para la vista de edición) */}
                     <div>
