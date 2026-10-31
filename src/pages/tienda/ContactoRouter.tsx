@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 import StoreWhatsAppButton from '@/components/tienda/StoreWhatsAppButton';
 import ApiculturaContactPage from '@/templates/apicultura/ApiculturaContactPage';
 import ConstruccionContactPage from '@/templates/construccion/ConstruccionContactPage';
@@ -18,16 +19,22 @@ export default function ContactoRouter() {
   const [carrito, setCarrito] = useState<any[]>([]);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errorTienda, setErrorTienda] = useState(false);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
     const load = async () => {
       setLoading(true);
+      setErrorTienda(false);
       try {
         const storeRes = await axios.get(`${BASE_URL}/public/store/${slug}`);
         setTienda(recordarVentaSinStock(storeRes.data?.data || storeRes.data));
         const catRes = await axios.get(`${BASE_URL}/public/store/${slug}/categories`);
         setCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);
+      } catch (e) {
+        // Sin tienda no hay plantilla: reintentar en vez de pintar el contacto por defecto.
+        if (!(axios.isAxiosError(e) && e.response?.status === 404)) setErrorTienda(true);
       } finally {
         setLoading(false);
       }
@@ -37,7 +44,7 @@ export default function ContactoRouter() {
       const saved = localStorage.getItem(`tienda:${slug}:carrito`);
       if (saved) setCarrito(JSON.parse(saved));
     } catch {}
-  }, [slug]);
+  }, [slug, intento]);
 
   useEffect(() => {
     if (!slug) return;
@@ -50,12 +57,8 @@ export default function ContactoRouter() {
       : current.map((item) => String(item.cartId || item.id) === String(itemId) ? { ...item, cantidad } : item));
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <Icon icon="eos-icons:loading" className="h-12 w-12 animate-spin text-gray-300" />
-      </div>
-    );
+  if (loading || (errorTienda && !tienda)) {
+    return <CargandoTienda error={!loading} onReintentar={() => setIntento((n) => n + 1)} />;
   }
 
   const diseno = tienda?.diseno || {};

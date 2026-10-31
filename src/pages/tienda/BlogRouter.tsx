@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import axios from 'axios';
 import FalconBlog from './FalconBlog';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
+import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -21,6 +22,8 @@ export default function BlogRouter() {
   useStorePreviewNavigation(previewPlantillaId);
   const [plantillaId, setPlantillaId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorTienda, setErrorTienda] = useState(false);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     if (previewPlantillaId) {
@@ -34,15 +37,19 @@ export default function BlogRouter() {
         const tienda = res.data.data || res.data;
         setPlantillaId(tienda?.diseno?.plantillaId || '');
       })
-      .catch(() => setPlantillaId(''))
+      .catch((e) => {
+        setPlantillaId('');
+        setErrorTienda(!(axios.isAxiosError(e) && e.response?.status === 404));
+      })
       .finally(() => setLoading(false));
-  }, [slug, previewPlantillaId]);
+  }, [slug, previewPlantillaId, intento]);
 
-  if (loading) {
+  if (loading || errorTienda) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <Icon icon="eos-icons:loading" className="h-12 w-12 animate-spin text-gray-300" />
-      </div>
+      <CargandoTienda
+        error={!loading && errorTienda}
+        onReintentar={() => { setErrorTienda(false); setLoading(true); setIntento((n) => n + 1); }}
+      />
     );
   }
 
