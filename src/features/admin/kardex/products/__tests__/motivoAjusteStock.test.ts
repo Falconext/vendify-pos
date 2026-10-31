@@ -91,14 +91,20 @@ describe('Front y backend hablan el mismo idioma', () => {
      */
     it('cada motivo del POS existe en la tabla del backend', () => {
         // El backend vive al lado del POS, pero no se llama igual en todos los
-        // repos: `backend/` en falconext-mype, `vendify-api/` en vendify.
+        // repos: `backend/` en falconext-mype, `vendify-api/` en vendify. Se
+        // busca subiendo carpetas: desde una copia de trabajo aparte
+        // (`frontend/.worktrees/x`) el hermano no está un nivel arriba.
         const raizProyecto = path.join(__dirname, '..', '..', '..', '..', '..', '..');
-        // Desde `__tests__`, seis niveles arriba es la carpeta del POS; el
-        // backend es su hermano.
-        const candidatos = ['backend', 'vendify-api'].map((n) => '..' + path.sep + n);
-        const tabla = candidatos
-            .map((c) => path.join(raizProyecto, c, 'src', 'producto', 'motivo-ajuste-stock.ts'))
-            .find((ruta) => fs.existsSync(ruta));
+        const candidatos = ['backend', 'vendify-api'];
+        const tabla = (() => {
+            for (let dir = path.dirname(raizProyecto); dir !== path.dirname(dir); dir = path.dirname(dir)) {
+                for (const n of candidatos) {
+                    const ruta = path.join(dir, n, 'src', 'producto', 'motivo-ajuste-stock.ts');
+                    if (fs.existsSync(ruta)) return ruta;
+                }
+            }
+            return undefined;
+        })();
         if (!tabla) {
             throw new Error(
                 'No encontré la tabla de motivos del backend. Se buscó en: ' +
