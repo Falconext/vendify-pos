@@ -1,26 +1,55 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
-import type { ICategory } from '@/interfaces/categories';
+
+interface Opcion {
+    id?: number;
+    nombre: string;
+    _count?: { productos?: number };
+}
+
+/** Textos del selector; por defecto los de categoría. */
+interface Textos {
+    vacio: string;
+    titulo: string;
+    buscar: string;
+    sinOpciones: string;
+    icono: string;
+}
+
+const TEXTOS_CATEGORIA: Textos = {
+    vacio: 'Sin categoría',
+    titulo: 'Clic para cambiar la categoría',
+    buscar: 'Buscar categoría…',
+    sinOpciones: 'Aún no tienes categorías',
+    icono: 'solar:tag-linear',
+};
+
+export const TEXTOS_MARCA: Textos = {
+    vacio: 'Sin marca',
+    titulo: 'Clic para cambiar la marca',
+    buscar: 'Buscar marca…',
+    sinOpciones: 'Aún no tienes marcas',
+    icono: 'solar:star-linear',
+};
 
 interface Props {
     productoId: number;
     categoriaId: number | null;
     nombre: string;
     color: { bg: string; text: string };
-    categories: ICategory[];
+    categories: Opcion[];
     onChange: (productoId: number, categoriaId: number | null) => Promise<boolean>;
+    textos?: Textos;
 }
 
-const SIN_CATEGORIA = 'Sin categoría';
-
 /**
- * Badge de categoría editable en la propia tabla de inventario: clic → lista
+ * Badge de categoría (o de marca, con `textos`) editable en la propia tabla de inventario: clic → lista
  * de categorías con buscador → se guarda al elegir (PATCH puntual). El menú
  * va por portal con posición fija porque la tabla vive dentro de un contenedor
  * con overflow (AutoScrollTable) que lo recortaría.
  */
-export default function CategoriaInlineSelect({ productoId, categoriaId, nombre, color, categories, onChange }: Props) {
+export default function CategoriaInlineSelect({ productoId, categoriaId, nombre, color, categories, onChange, textos = TEXTOS_CATEGORIA }: Props) {
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState('');
@@ -96,7 +125,7 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
                 disabled={saving}
-                title="Clic para cambiar la categoría"
+                title={textos.titulo}
                 style={{ backgroundColor: color.bg, color: color.text }}
                 className={`group inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap uppercase transition-all hover:ring-2 hover:ring-offset-1 hover:ring-violet-300 dark:hover:ring-offset-slate-900 ${open ? 'ring-2 ring-offset-1 ring-violet-400 dark:ring-offset-slate-900' : ''} ${saving ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
             >
@@ -132,7 +161,7 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && opciones.length > 0) { e.preventDefault(); elegir(opciones[0].id!); }
                                 }}
-                                placeholder="Buscar categoría…"
+                                placeholder={textos.buscar}
                                 className="w-full h-8 pl-8 pr-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-transparent focus:border-violet-300 focus:bg-white dark:focus:bg-slate-900 text-xs text-slate-700 dark:text-slate-200 outline-none"
                             />
                         </div>
@@ -144,7 +173,7 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
                             className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${categoriaId == null ? 'text-violet-600 dark:text-violet-300 font-bold' : 'text-slate-500 dark:text-slate-400'}`}
                         >
                             <Icon icon="solar:close-circle-linear" width={14} />
-                            <span className="flex-1">{SIN_CATEGORIA}</span>
+                            <span className="flex-1">{textos.vacio}</span>
                             {categoriaId == null && <Icon icon="solar:check-circle-bold" width={14} />}
                         </button>
                         {opciones.map(c => {
@@ -156,7 +185,7 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
                                     onClick={() => elegir(c.id!)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-violet-50 dark:hover:bg-violet-900/20 ${activa ? 'text-violet-600 dark:text-violet-300 font-bold bg-violet-50/60 dark:bg-violet-900/10' : 'text-slate-700 dark:text-slate-200'}`}
                                 >
-                                    <Icon icon="solar:tag-linear" width={14} className="shrink-0 opacity-70" />
+                                    <Icon icon={textos.icono} width={14} className="shrink-0 opacity-70" />
                                     <span className="flex-1 truncate uppercase">{c.nombre}</span>
                                     {c._count?.productos != null && (
                                         <span className="text-[10px] text-slate-400 tabular-nums">{c._count.productos}</span>
@@ -167,7 +196,7 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
                         })}
                         {opciones.length === 0 && (
                             <p className="px-3 py-3 text-center text-xs text-slate-400">
-                                {categories?.length ? 'Sin coincidencias' : 'Aún no tienes categorías'}
+                                {categories?.length ? 'Sin coincidencias' : textos.sinOpciones}
                             </p>
                         )}
                     </div>

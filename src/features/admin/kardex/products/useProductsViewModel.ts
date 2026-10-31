@@ -756,6 +756,31 @@ export const useProductsViewModel = () => {
         }
     };
 
+    /** Cambio rápido de marca desde la tabla, igual que la categoría. */
+    const cambiarMarca = async (productoId: number, marcaId: number | null): Promise<boolean> => {
+        try {
+            const resp: any = await patch(`productos/${productoId}/marca`, { marcaId });
+            if (resp?.code === 1 || resp?.success) {
+                const nueva = resp?.data?.marca ?? null;
+                setProducts(prev => prev.map(p =>
+                    p.id === productoId
+                        ? ({ ...p, marcaId: nueva?.id ?? null, marca: nueva } as IProduct)
+                        : p
+                ));
+                useAlertStore.getState().alert(
+                    nueva ? `Marca "${nueva.nombre}" asignada` : 'Producto sin marca',
+                    'success',
+                );
+                return true;
+            }
+            useAlertStore.getState().alert(resp?.error || resp?.message || 'No se pudo cambiar la marca', 'error');
+            return false;
+        } catch (e: any) {
+            useAlertStore.getState().alert(e?.message || 'No se pudo cambiar la marca', 'error');
+            return false;
+        }
+    };
+
     const confirmToggleroduct = async () => {
         const productoId = Number(state.formValues?.productoId);
         // Determine the new state from local products (not from Zustand store which may be stale)
@@ -951,6 +976,8 @@ export const useProductsViewModel = () => {
         categories,
         localizaciones,
         cambiarCategoria,
+        brands,
+        cambiarMarca,
         actions,
         // Sede filtering
         isAdmin,

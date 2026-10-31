@@ -11,7 +11,7 @@ import { tieneVariantes } from './stockPorVariante';
 import { detalleEnCamino, enCaminoDe } from './stockEnCamino';
 import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
-import CategoriaInlineSelect from './components/CategoriaInlineSelect';
+import CategoriaInlineSelect, { TEXTOS_MARCA } from './components/CategoriaInlineSelect';
 import ModalAsignarSedes from './components/ModalAsignarSedes';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
@@ -273,7 +273,20 @@ export default function ProductsView() {
                         />
                     );
                 })(),
-                'Marca': ((item as any)?.marca?.nombre || 'Sin marca').toUpperCase(),
+                'Marca': (() => {
+                    const nombre = (item as any)?.marca?.nombre || 'Sin marca';
+                    return (
+                        <CategoriaInlineSelect
+                            productoId={Number(item.id)}
+                            categoriaId={(item as any)?.marca?.id ?? (item as any)?.marcaId ?? null}
+                            nombre={nombre}
+                            color={getCatColor(nombre)}
+                            categories={vm.brands}
+                            onChange={vm.cambiarMarca}
+                            textos={TEXTOS_MARCA}
+                        />
+                    );
+                })(),
                 categoriaId: item?.categoriaId !== null ? "" : item?.categoria?.id,
                 unidadMedidaId: item?.unidadMedida?.id || item?.unidadMedidaId,
                 marcaId: (item as any)?.marca?.id || (item as any)?.marcaId || null,

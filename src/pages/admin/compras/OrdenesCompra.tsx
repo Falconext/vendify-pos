@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ModalCurvaTallas from './ModalCurvaTallas';
+import ModalPedidoPorMarca from './ModalPedidoPorMarca';
+import { fusionarLineas, type LineaPedidoMarca } from './pedidoPorMarca';
 import { sePideEnCurva } from './curvaDeTallas';
 import { precioOrdenConFactorIgv } from '@/features/admin/compras/utils/igvLinea';
 import { Icon } from '@iconify/react';
@@ -503,6 +505,27 @@ export function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenComp
         setModeloEnCurva(null);
     };
 
+    // Pedido de toda una marca (Ésika, Avon…) con cantidades sugeridas.
+    const [pidiendoPorMarca, setPidiendoPorMarca] = useState(false);
+    const agregarPedidoMarca = (lineas: LineaPedidoMarca[], proveedor: { id: number; nombre: string } | null, marca: string) => {
+        setDetalles((prev) => fusionarLineas(prev, lineas));
+        if (proveedor && !proveedorId) {
+            setProveedorId(proveedor.id);
+            setProveedorQuery(proveedor.nombre);
+            setShowProvOpts(false);
+        }
+        // Varias marcas en un mismo pedido: "Pedido ÉSIKA, AVON".
+        if (marca) {
+            setObservaciones((prev) => {
+                const actual = prev.trim();
+                if (!actual) return `Pedido ${marca}`;
+                if (/^Pedido /.test(actual) && !actual.split(/,\s*|^Pedido /).includes(marca)) return `${actual}, ${marca}`;
+                return prev;
+            });
+        }
+        setPidiendoPorMarca(false);
+    };
+
     const agregarLibre = () => {
         if (!libreDesc.trim()) { alert('Escribe la descripción del ítem', 'warning'); return; }
         setDetalles((prev) => [...prev, {
@@ -646,15 +669,24 @@ export function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenComp
                 <div className="rounded-2xl border border-gray-100 p-3 dark:border-slate-800">
                     <p className="mb-2 text-xs font-black uppercase tracking-wide text-gray-500 dark:text-gray-400">Ítems del pedido</p>
 
-                    <div className="relative">
+                    <div className="relative flex gap-2">
                         <input
                             value={prodQuery}
                             onChange={(e) => setProdQuery(e.target.value)}
                             placeholder="🔍 Buscar producto del catálogo para pedir..."
                             className={inputCls}
                         />
+                        <button
+                            type="button"
+                            onClick={() => setPidiendoPorMarca(true)}
+                            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300"
+                            data-testid="oc-pedir-marca"
+                        >
+                            <Icon icon="solar:star-bold-duotone" width={16} />
+                            Pedir por marca
+                        </button>
                         {prodOpts.length > 0 && (
-                            <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                            <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
                                 {prodOpts.map((p) => (
                                     <button
                                         key={p.id}
@@ -736,6 +768,14 @@ export function ModalOrdenCompra({ orden, onClose, onSaved }: { orden: OrdenComp
                     onAgregar={agregarCurva}
                     factorCosto={aplicaIgv && igvIncluido ? 1.18 : 1}
                 />
+
+                {pidiendoPorMarca && (
+                    <ModalPedidoPorMarca
+                        onCancelar={() => setPidiendoPorMarca(false)}
+                        onAgregar={agregarPedidoMarca}
+                        factorCosto={aplicaIgv && igvIncluido ? 1.18 : 1}
+                    />
+                )}
 
                 <div>
                     <label className={lblCls}>Observaciones para el proveedor</label>

@@ -21,6 +21,15 @@ import ModalConfirm from "@/components/ModalConfirm";
 import { usaLotesFarmaciaRubro } from "@/utils/rubro-features";
 import { hasPlanFeature } from "@/utils/permissions";
 import { tipoCambioService } from "@/services/tipoCambio.service";
+import { errorDePagoMixto, montoDelResto, pagosParaEnviar, parteVacia, type ParteDePago } from "@/features/admin/compras/utils/pagoMixto";
+
+const METODOS_PAGO_COMPRA = [
+    { id: 'EFECTIVO', value: 'Efectivo' },
+    { id: 'TRANSFERENCIA', value: 'Transferencia' },
+    { id: 'YAPE', value: 'Yape / Plin' },
+    { id: 'TARJETA', value: 'Tarjeta' },
+];
+const nombreMetodo = (id: string) => METODOS_PAGO_COMPRA.find((m) => m.id === String(id).toUpperCase())?.value || id;
 
 const PROV_DOC_TYPES = [
     { key: 'RUC', label: 'RUC', digits: 11 },
@@ -115,6 +124,12 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
         numeroOperacion: ''
     });
 
+    // Pago mixto al contado: la primera parte es "el resto" (ver utils/pagoMixto).
+    const [pagoMixto, setPagoMixto] = useState(false);
+    const [partes, setPartes] = useState<ParteDePago[]>([]);
+    // Pagos de una compra ya guardada: si fueron varios, al editar se muestran
+    // en vez del selector de un solo método.
+    const [pagosExistentes, setPagosExistentes] = useState<any[]>([]);
     const [cuotas, setCuotas] = useState<any[]>([]);
 
     // Item entry state
@@ -270,6 +285,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 cuentaBancariaId: 0,
                 numeroOperacion: ''
             });
+            setPagoMixto(false);
+            setPartes([]);
+            setPagosExistentes([]);
             listarCuentas();
             setItems([]);
             setIncluyeIgv(false);
@@ -332,6 +350,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 }
                 const esCredito = Array.isArray(cuotasGuardadas) && cuotasGuardadas.length > 0;
                 const primerPago = Array.isArray(d.pagos) && d.pagos.length > 0 ? d.pagos[0] : null;
+                setPagosExistentes(Array.isArray(d.pagos) ? d.pagos : []);
                 setPayment((p) => ({
                     ...p,
                     condicionPago: esCredito ? 'CREDITO' : 'CONTADO',
@@ -1043,6 +1062,15 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             return;
         }
 
+        const usaPagoMixto = pagoMixto && payment.condicionPago === 'CONTADO' && !isEdit;
+        if (usaPagoMixto) {
+            const problema = errorDePagoMixto(total, partes);
+            if (problema) {
+                alert(problema, "error");
+                return;
+            }
+        }
+
         // Sin marcar a mano, la compra es gasto cuando ninguna línea es un producto del catálogo.
         const esGastoAuto = items.length > 0 && items.every((i: any) => !i.productoId);
         const esGastoEfectivo = esGasto === null ? esGastoAuto : esGasto;
@@ -1073,6 +1101,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             formaPago: payment.condicionPago,
             montoPagadoInicial: payment.condicionPago === 'CONTADO' ? total : Number(payment.montoPagadoInicial),
             metodoPagoInicial: payment.metodoPagoInicial,
+            // Pago mixto: cada parte con su método; solo el efectivo sale de la caja.
+            pagosIniciales: usaPagoMixto ? pagosParaEnviar(total, partes) : undefined,
             cuentaBancariaIdInicial: payment.metodoPagoInicial === 'TRANSFERENCIA' ? (payment.cuentaBancariaId || undefined) : undefined,
             referenciaInicial: payment.metodoPagoInicial === 'TRANSFERENCIA' ? (payment.numeroOperacion || undefined) : undefined,
             // Siempre se envía (url o null) para que también se pueda quitar la
@@ -1893,16 +1923,24 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                     error={null}
                                 />
 
-                                {payment.condicionPago === 'CONTADO' && (
+                                {/* Compra ya pagada con varios métodos: se muestra el desglose. */}
+                                {isEdit && pagosExistentes.length > 1 && (
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/40" data-testid="pagos-existentes">
+                                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Pagada con</p>
+                                        {pagosExistentes.map((pg: any) => (
+                                            <div key={pg.id} className="flex justify-between text-gray-700 dark:text-gray-200">
+                                                <span>{nombreMetodo(pg.metodoPago)}{pg.referencia ? ` · Op. ${pg.referencia}` : ''}</span>
+                                                <span className="tabular-nums">{Number(pg.monto || 0).toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {payment.condicionPago === 'CONTADO' && !pagoMixto && !(isEdit && pagosExistentes.length > 1) && (
                                     <Select
                                         label="Método de Pago"
                                         name="metodoPago"
-                                        options={[
-                                            { id: 'EFECTIVO', value: 'Efectivo' },
-                                            { id: 'TRANSFERENCIA', value: 'Transferencia' },
-                                            { id: 'YAPE', value: 'Yape / Plin' },
-                                            { id: 'TARJETA', value: 'Tarjeta' }
-                                        ]}
+                                        options={METODOS_PAGO_COMPRA}
                                         onChange={(id, val) => setPayment({ ...payment, metodoPagoInicial: String(id) })}
                                         value={payment.metodoPagoInicial}
                                         withLabel
@@ -1910,11 +1948,141 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                     />
                                 )}
 
+                                {payment.condicionPago === 'CONTADO' && !isEdit && !pagoMixto && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPartes([parteVacia(payment.metodoPagoInicial || 'EFECTIVO'), parteVacia(payment.metodoPagoInicial === 'YAPE' ? 'EFECTIVO' : 'YAPE')]);
+                                            setPagoMixto(true);
+                                        }}
+                                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                                    >
+                                        <Icon icon="solar:wallet-money-linear" width={14} />
+                                        Dividir el pago en varios métodos
+                                    </button>
+                                )}
+
+                                {payment.condicionPago === 'CONTADO' && !isEdit && pagoMixto && (
+                                    <div className="space-y-2.5 rounded-lg border border-blue-100 bg-blue-50/40 p-3 dark:border-blue-900/30 dark:bg-blue-900/10" data-testid="pago-mixto">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Pago mixto</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setPagoMixto(false); setPayment((p) => ({ ...p, metodoPagoInicial: partes[0]?.metodo || p.metodoPagoInicial })); }}
+                                                className="text-xs font-medium text-gray-500 hover:text-gray-800 hover:underline dark:text-gray-400"
+                                            >
+                                                Un solo método
+                                            </button>
+                                        </div>
+                                        {partes.map((parte, idx) => {
+                                            const cambiar = (c: Partial<ParteDePago>) => setPartes((ps) => ps.map((x, j) => (j === idx ? { ...x, ...c } : x)));
+                                            const activas = (cuentas || []).filter((c) => c.activo);
+                                            const resto = montoDelResto(total, partes);
+                                            return (
+                                                <div key={idx} className="space-y-2 rounded-md bg-white p-2.5 dark:bg-slate-900/60">
+                                                    <div className="grid grid-cols-12 items-end gap-2">
+                                                        <div className="col-span-6">
+                                                            <Select
+                                                                label={idx === 0 ? 'Método (el resto)' : `Método ${idx + 1}`}
+                                                                name={`metodoMixto_${idx}`}
+                                                                options={METODOS_PAGO_COMPRA}
+                                                                onChange={(id) => cambiar({
+                                                                    metodo: String(id),
+                                                                    cuentaBancariaId: String(id) === 'TRANSFERENCIA' && !parte.cuentaBancariaId ? (activas[0]?.id || 0) : parte.cuentaBancariaId,
+                                                                })}
+                                                                value={parte.metodo}
+                                                                withLabel
+                                                                error={null}
+                                                            />
+                                                        </div>
+                                                        <div className={idx === 0 ? 'col-span-6' : 'col-span-5'}>
+                                                            {idx === 0 ? (
+                                                                <div>
+                                                                    <span className="mb-1.5 block text-[13px] font-semibold uppercase text-gray-700 dark:text-gray-300">Monto</span>
+                                                                    <div className={`flex h-[42px] items-center rounded-lg border px-3 text-sm font-semibold tabular-nums ${resto < 0 ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-gray-200 bg-gray-50 text-gray-800 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100'}`} data-testid="monto-resto">
+                                                                        {resto.toFixed(2)}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <InputPro
+                                                                    type="number"
+                                                                    label="Monto"
+                                                                    name={`montoMixto_${idx}`}
+                                                                    value={parte.monto}
+                                                                    onChange={(e) => cambiar({ monto: e.target.value })}
+                                                                    isLabel
+                                                                    placeholder="0.00"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        {idx > 0 && (
+                                                            <div className="col-span-1 pb-2">
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Quitar este método"
+                                                                    onClick={() => {
+                                                                        const quedan = partes.filter((_, j) => j !== idx);
+                                                                        if (quedan.length < 2) { setPagoMixto(false); setPayment((p) => ({ ...p, metodoPagoInicial: quedan[0]?.metodo || p.metodoPagoInicial })); }
+                                                                        setPartes(quedan);
+                                                                    }}
+                                                                    className="text-gray-400 hover:text-rose-600"
+                                                                >
+                                                                    <Icon icon="solar:trash-bin-minimalistic-linear" width={16} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {parte.metodo === 'TRANSFERENCIA' && (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {activas.length === 0 ? (
+                                                                <p className="col-span-2 text-[11px] text-amber-600 dark:text-amber-400">
+                                                                    No hay cuentas bancarias registradas. Agrégalas en <strong>Mi Negocio → Cuentas Bancarias</strong>.
+                                                                </p>
+                                                            ) : (
+                                                                <Select
+                                                                    label="Banco / Cuenta"
+                                                                    name={`cuentaMixto_${idx}`}
+                                                                    options={activas.map((c) => ({ id: c.id, value: `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` }))}
+                                                                    onChange={(id) => cambiar({ cuentaBancariaId: Number(id) })}
+                                                                    value={(() => { const c = activas.find((x) => x.id === parte.cuentaBancariaId); return c ? `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` : ''; })()}
+                                                                    withLabel
+                                                                    error={null}
+                                                                />
+                                                            )}
+                                                            <InputPro
+                                                                autocomplete="off"
+                                                                label="N° de Operación"
+                                                                name={`operacionMixto_${idx}`}
+                                                                value={parte.numeroOperacion}
+                                                                onChange={(e) => cambiar({ numeroOperacion: e.target.value })}
+                                                                isLabel
+                                                                placeholder="Ej: 00123456"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="flex items-center justify-between pt-0.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPartes((ps) => [...ps, parteVacia('TARJETA')])}
+                                                className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                            >
+                                                + Agregar método
+                                            </button>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                Solo lo de <strong>Efectivo</strong> sale de la caja.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Pago por banco: cuenta + N° de operación.
                                     Al editar una compra ya inscrita también se muestra
                                     (aunque sea a crédito) para poder corregir el N° de
                                     operación del pago inicial con el del estado de cuenta. */}
-                                {(payment.condicionPago === 'CONTADO' || isEdit) && payment.metodoPagoInicial === 'TRANSFERENCIA' && (
+                                {(payment.condicionPago === 'CONTADO' || isEdit) && !pagoMixto && !(isEdit && pagosExistentes.length > 1) && payment.metodoPagoInicial === 'TRANSFERENCIA' && (
                                     <div className="space-y-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3">
                                         {(cuentas || []).filter((c) => c.activo).length === 0 ? (
                                             <p className="text-[11px] text-amber-600 dark:text-amber-400">
