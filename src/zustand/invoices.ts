@@ -101,7 +101,8 @@ async function postVenta(endpoint: string, payload: any, claveVenta?: string): P
             if (result?.code === 0) return { success: false, error: result.message || 'Error desconocido' };
             return { ...result, success: true };
         } catch (e: any) {
-            const enCurso = e?.response?.status === 409 && e?.response?.data?.code === 'idempotency_request_in_progress';
+            // El filtro global de errores deja { code: 0, message }: se reconoce por el 409 y el texto.
+            const enCurso = e?.response?.status === 409 && /sigue en proceso/i.test(String(e?.response?.data?.message ?? ''));
             if (claveVenta && enCurso && intento < 20) {
                 await new Promise((r) => setTimeout(r, 1500));
                 continue;
