@@ -92,7 +92,7 @@ export interface IInvoicesState {
  * la primera sigue en proceso el servidor responde 409: se espera y se vuelve
  * a pedir con el mismo código, y llega la respuesta de la primera.
  */
-async function postVenta(endpoint: string, payload: any, claveVenta?: string): Promise<any> {
+export async function postVenta(endpoint: string, payload: any, claveVenta?: string): Promise<any> {
     const config: any = { timeout: 40000, ...(claveVenta ? { headers: { 'Idempotency-Key': claveVenta } } : {}) };
     for (let intento = 0; ; intento++) {
         try {
