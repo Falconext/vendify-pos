@@ -39,6 +39,43 @@ export interface IListaConItemProducto {
   items: { presentacionCodigo: string; precioUnitario: number; precioOferta: number | null }[];
 }
 
+// Reprecio masivo
+export type OperacionReprecio = 'AUMENTAR' | 'DISMINUIR' | 'REEMPLAZAR';
+export type ModoReprecio = 'MONTO' | 'PORCENTAJE';
+
+export interface IFilaReprecio {
+  productoId: number;
+  codigo: string;
+  descripcion: string;
+  costoNeto: number;
+  costoConIgv: number;
+  precioActual: number;
+  precioNuevo: number | null;
+  utilidadActual: number | null;
+  utilidadNueva: number | null;
+  sinCosto: boolean;
+  seAplica: boolean;
+  /** '' = la unidad. Con valor, es un pack con precio propio en la lista. */
+  presentacionCodigo?: string;
+  /** Nombre del pack ("PACK X6") y cuántas unidades trae. */
+  presentacion?: string;
+  unidades?: number;
+  /** Con "fijar precio S/" el pack no cambia a propósito. */
+  packPrecioFijo?: boolean;
+}
+
+export interface ILoteReprecio {
+  id: number;
+  listaPrecioId: number;
+  listaNombre: string;
+  operacion: string;
+  modo: string;
+  valor: number;
+  totalItems: number;
+  creadoEn: string;
+  revertidoEn: string | null;
+}
+
 interface IListasPrecioState {
   listas: IListaPrecio[];
   loading: boolean;
@@ -53,6 +90,11 @@ interface IListasPrecioState {
     productoId: number,
     entradas: { listaPrecioId: number; presentacionCodigo?: string; precioUnitario: number; precioOferta?: number | null }[],
   ) => Promise<boolean>;
+  // Reprecio masivo:
+  previsualizarReprecio: (filtro: any, operacion: any) => Promise<IFilaReprecio[]>;
+  aplicarReprecio: (filtro: any, operacion: any) => Promise<{ aplicados: number; omitidos: number } | null>;
+  lotesReprecio: () => Promise<ILoteReprecio[]>;
+  revertirReprecio: (loteId: number) => Promise<boolean>;
 }
 
 export const useListasPrecioStore = create<IListasPrecioState>()(
@@ -151,6 +193,56 @@ export const useListasPrecioStore = create<IListasPrecioState>()(
         throw new Error(resp.message || resp.error || 'Error al guardar');
       } catch (e: any) {
         useAlertStore.getState().alert(e.message || 'Error al guardar precios por lista', 'error');
+        return false;
+      }
+    },
+
+    previsualizarReprecio: async (filtro, operacion) => {
+      try {
+        const resp: any = await post('lista-precio/reprecio-masivo/previsualizar', { filtro, operacion });
+        return resp.code === 1 ? (resp.data?.filas ?? []) : [];
+      } catch (e: any) {
+        useAlertStore.getState().alert(e.message || 'No se pudo previsualizar', 'error');
+        return [];
+      }
+    },
+
+    aplicarReprecio: async (filtro, operacion) => {
+      try {
+        const resp: any = await post('lista-precio/reprecio-masivo/aplicar', { filtro, operacion });
+        if (resp.code === 1) {
+          const d = resp.data;
+          useAlertStore.getState().alert(
+            `Se repreciaron ${d.aplicados} precio(s) en "${d.lista}".` +
+            (d.omitidos ? ` ${d.omitidos} sin cambios.` : ''),
+            'success',
+          );
+          return d;
+        }
+        throw new Error(resp.error || resp.message || 'No se pudo aplicar');
+      } catch (e: any) {
+        useAlertStore.getState().alert(e.message || 'No se pudo aplicar el reprecio', 'error');
+        return null;
+      }
+    },
+
+    lotesReprecio: async () => {
+      try {
+        const resp: any = await get('lista-precio/reprecio-masivo/lotes?limit=10');
+        return resp.code === 1 ? resp.data : [];
+      } catch { return []; }
+    },
+
+    revertirReprecio: async (loteId) => {
+      try {
+        const resp: any = await post(`lista-precio/reprecio-masivo/revertir/${loteId}`, {});
+        if (resp.code === 1) {
+          useAlertStore.getState().alert('Reprecio deshecho: los precios volvieron a como estaban.', 'success');
+          return true;
+        }
+        throw new Error(resp.error || resp.message || 'No se pudo deshacer');
+      } catch (e: any) {
+        useAlertStore.getState().alert(e.message || 'No se pudo deshacer', 'error');
         return false;
       }
     },

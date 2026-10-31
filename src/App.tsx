@@ -8,6 +8,7 @@ import { RoleRoute } from './app/RoleRoute'
 import { ProduccionRoute } from './app/ProduccionRoute'
 import AdminIndex from './pages/admin/Index'
 import ListasPrecioIndex from './pages/admin/listas-precio/Index'
+import ReprecioMasivo from './pages/admin/listas-precio/ReprecioMasivo'
 import AdminLayout from './layouts/AdminLayout'
 import ClientesPage from './pages/admin/Clientes'
 import DoctorsPage from './pages/admin/Doctors'
@@ -187,6 +188,7 @@ function App() {
           <Route path="kardex/entradas-salidas" element={<KardexEntradasSalidas />} />
           <Route path="kardex/series-garantias" element={<SeriesGarantias />} />
           <Route path="kardex/listas-precio" element={<ListasPrecioIndex />} />
+          <Route path="kardex/listas-precio/reprecio" element={<ReprecioMasivo />} />
           <Route path="reservas" element={<ReservasPage />} />
           <Route path="kardex/combos" element={<CombosTienda />} />
           <Route path="kardex/dashboard" element={<InventarioDashboard />} />
