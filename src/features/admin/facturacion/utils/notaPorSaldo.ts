@@ -9,11 +9,24 @@
  */
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * El total como lo va a calcular el POS: precio unitario × cantidad. El de
+ * las líneas guardadas puede diferir en centavos por redondeo, y entonces una
+ * nota ya pagada mostraba un vuelto de S/ 0.05 al cobrar el saldo.
+ */
+export const totalDelSaldo = (item: any): number =>
+    r2((item?.porConvertir?.detalles || []).reduce(
+        (a: number, d: any) => a + Number(d?.mtoPrecioUnitario || 0) * Number(d?.cantidad || 0),
+        0,
+    ));
+
 export function notaPorSaldo<T extends Record<string, any>>(item: T): T {
     const pc = item?.porConvertir;
     if (!pc) return item;
-    const total = Number(pc.total || 0);
-    const saldo = r2(Math.max(0, total - Number(pc.yaCobrado || 0)));
+    const total = totalDelSaldo(item);
+    // Nota cobrada entera (el backend manda yaCobrado = total): el saldo también.
+    const pagada = Number(pc.yaCobrado || 0) >= Number(pc.total || 0) - 0.01;
+    const saldo = pagada ? 0 : r2(Math.max(0, total - Number(pc.yaCobrado || 0)));
     return {
         ...item,
         detalles: pc.detalles || [],
