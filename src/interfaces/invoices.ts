@@ -41,6 +41,8 @@ export type IInvoices = {
   estadoEnvioSunat: string
   /** "SERIE-CORRELATIVO" del comprobante formal en que se convirtió este informal, si ya ocurrió. */
   convertidoA?: string | null
+  /** Si se convirtió solo en parte: las líneas que faltan, su total y lo cobrado aún sin aplicar. */
+  porConvertir?: { detalles: any[]; total: number; yaCobrado: number } | null
   envioDespacho?: {
     id: number
     comprobanteId: number
