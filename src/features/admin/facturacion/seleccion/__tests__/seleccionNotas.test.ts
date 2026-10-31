@@ -1,4 +1,4 @@
-import { mensajeEstadoCuenta, nombreDePila, motivoNoCobrar, resumirSeleccion, telefonoWhatsApp, type NotaElegida } from '../seleccionNotas';
+import { envioConjunto, mensajeEstadoCuenta, nombreDePila, motivoNoCobrar, resumirSeleccion, telefonoWhatsApp, type NotaElegida } from '../seleccionNotas';
 
 const nota = (x: Partial<NotaElegida>): NotaElegida => ({
     id: 1, documento: 'NV01-00000085', tipoDoc: 'NV', clienteId: 7, cliente: 'ANA TORRES', telefono: '',
@@ -38,5 +38,19 @@ describe('notas elegidas', () => {
         expect(m).toContain('• NV01-90 (20/10): S/ 11.00 — pagada');
         expect(m.indexOf('NV01-85')).toBeLessThan(m.indexOf('NV01-90'));
         expect(m).toContain('*Pendiente de pago: S/ 40.00*');
+    });
+});
+
+describe('un solo envío para varias notas', () => {
+    it('lo guarda en la nota que ya tiene envío, o en la más antigua', () => {
+        const a = nota({ id: 1, fecha: '2026-10-20T10:00:00Z' });
+        const b = nota({ id: 2, fecha: '2026-10-18T10:00:00Z' });
+        expect(envioConjunto([a, b]).principal?.id).toBe(2);
+        expect(envioConjunto([a, { ...b, envioEn: null }, { ...nota({ id: 3 }), envioEn: 3 }]).principal?.id).toBe(3);
+    });
+    it('no junta clientes distintos ni dos envíos ya hechos', () => {
+        expect(envioConjunto([nota({ id: 1 }), nota({ id: 2, clienteId: 9 })]).motivo).toMatch(/un solo cliente/);
+        expect(envioConjunto([{ ...nota({ id: 1 }), envioEn: 1 }, { ...nota({ id: 2 }), envioEn: 2 }]).motivo).toMatch(/envíos distintos/);
+        expect(envioConjunto([nota({ id: 1 })]).motivo).toMatch(/al menos 2/);
     });
 });

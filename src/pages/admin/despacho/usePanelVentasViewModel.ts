@@ -30,6 +30,9 @@ export interface VentaPanelItem {
     metodoPago: string;
     estadoSunat: EstadoSunat;
     estadoDespacho: EstadoDespacho;
+    /** Va en el paquete de otra nota: su envío vive en esa nota (un solo despacho). */
+    despachoEnComprobanteId?: number | null;
+    envioAgrupadoEn?: string | null;
     repartidorId: number | null;
     repartidor: string;
     tipoEnvio: string;

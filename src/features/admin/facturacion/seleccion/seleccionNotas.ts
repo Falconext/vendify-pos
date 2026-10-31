@@ -16,6 +16,8 @@ export interface NotaElegida {
     nroDoc: string;
     /** Boleta/factura en que ya terminó (null = sin convertir). */
     convertidoA: string | null;
+    /** Nota en la que vive su envío (la propia, o la del paquete en que va). null = sin envío. */
+    envioEn?: number | null;
     /** La nota tal como vino de la lista (detalles, pago…), para facturarla. */
     origen?: any;
 }
@@ -33,6 +35,7 @@ export const notaElegidaDe = (item: any): NotaElegida => ({
     fecha: String(item.fechaEmision ?? ''),
     nroDoc: String(item.cliente?.nroDoc ?? '').trim(),
     convertidoA: item.convertidoA ?? null,
+    envioEn: item.envioDespacho ? Number(item.envioDespacho.comprobanteId ?? item.id) : null,
     origen: item,
 });
 
@@ -128,4 +131,20 @@ export function mensajeEstadoCuenta(notas: NotaElegida[], negocio: string): stri
         `Total: ${s} ${r.total.toFixed(2)}`,
         r.saldo > 0 ? `*Pendiente de pago: ${s} ${r.saldo.toFixed(2)}*` : '*Todo está pagado. ¡Gracias!*',
     ].join('\n');
+}
+
+/**
+ * Un solo envío para varias notas: en qué nota se guarda el despacho (la que
+ * ya tenga envío, o la más antigua) y por qué no se puede (null = sí).
+ */
+export function envioConjunto(notas: NotaElegida[]): { principal: NotaElegida | null; motivo: string | null } {
+    if (notas.length < 2) return { principal: null, motivo: 'Elige al menos 2 notas (para una sola usa su menú ⋮)' };
+    const r = resumirSeleccion(notas);
+    if (!r.mismoCliente) return { principal: null, motivo: 'Un envío es para un solo cliente' };
+    const envios = new Set(notas.map((n) => n.envioEn).filter((v): v is number => v != null));
+    if (envios.size > 1) return { principal: null, motivo: 'Algunas ya tienen envíos distintos' };
+    const conEnvio = envios.size === 1 ? [...envios][0] : null;
+    const ordenadas = [...notas].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+    const principal = (conEnvio != null ? notas.find((n) => n.id === conEnvio) : null) ?? ordenadas[0];
+    return { principal, motivo: null };
 }
