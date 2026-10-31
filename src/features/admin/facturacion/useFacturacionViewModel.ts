@@ -2614,7 +2614,22 @@ export const useFacturacionViewModel = () => {
         return Object.values(newErrors).every((error) => !error);
     };
 
+    // Una sola emisión a la vez. Clic en EMITIR y luego Enter (el foco queda en
+    // el botón) mandaba la misma venta dos o tres veces mientras la primera
+    // seguía en camino: DEMENVER NV01-8514/8515, B0A1-1951/52/53 (31-10). Los
+    // estados de React no alcanzan a bloquear porque se actualizan después.
+    const emitiendoRef = useRef(false);
     const addInvoiceReceipt = async () => {
+        if (emitiendoRef.current) return;
+        emitiendoRef.current = true;
+        try {
+            return await emitirComprobante();
+        } finally {
+            emitiendoRef.current = false;
+        }
+    };
+
+    const emitirComprobante = async () => {
         if (!validateForm()) return;
         const selectedOperacion = tiposOperacion.find(op => op.id === formValues.tipoOperacionId);
         // Operaciones de exportación (Catálogo 51: 0102/0113/0200/0201/0202…): el receptor
