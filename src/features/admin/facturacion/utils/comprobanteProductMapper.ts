@@ -108,5 +108,9 @@ export const mapDetalleToInvoiceProduct = (detalle: any) => {
           afectacionNombre: nombreAfectacion(afectacionDeDetalle(detalle) as string),
         }
       : {}),
+    // La del producto en catálogo, para el candado de Ley de Amazonía al cargar.
+    ...(firstValue(producto?.tipoAfectacionIGV, detalle?.afectacionProducto) != null
+      ? { afectacionProducto: String(firstValue(producto?.tipoAfectacionIGV, detalle?.afectacionProducto)) }
+      : {}),
   };
 };
