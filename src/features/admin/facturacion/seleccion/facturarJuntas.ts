@@ -18,7 +18,6 @@ export function motivoNoFacturar(notas: NotaElegida[], tipo: 'BOLETA' | 'FACTURA
     if (!r.mismaMoneda) return 'Hay notas en soles y en dólares';
     const convertida = notas.find((n) => n.convertidoA);
     if (convertida) return `${documentoCorto(convertida.documento)} ya está en ${convertida.convertidoA}`;
-    if (tipo === 'FACTURA' && !/^\d{11}$/.test(notas[0].nroDoc)) return 'La factura necesita un cliente con RUC';
     return null;
 }
 
@@ -77,8 +76,16 @@ export function lineasDeNotas(notas: NotaElegida[]): any[] {
 
 const mayus = (v: unknown) => String(v ?? '').toUpperCase();
 
-/** `notaDeVentaData` para el POS (ver useFacturacionViewModel, rama fromNotaDeVenta). */
-export function notaDeVentaDataConjunta(notas: NotaElegida[]) {
+/** ¿El cliente de las notas sirve para una factura (tiene RUC)? */
+export const clienteConRuc = (notas: NotaElegida[]) => /^\d{11}$/.test(String(notas[0]?.nroDoc ?? ''));
+
+/**
+ * `notaDeVentaData` para el POS (ver useFacturacionViewModel, rama fromNotaDeVenta).
+ * Para FACTURA con un cliente sin RUC (p. ej. "Clientes Varios") se manda sin
+ * cliente, igual que "Convertir a factura" de una sola nota: el POS lo pide y
+ * se escribe el RUC ahí.
+ */
+export function notaDeVentaDataConjunta(notas: NotaElegida[], tipo: 'BOLETA' | 'FACTURA' = 'BOLETA') {
     const ordenadas = [...notas].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
     const primera = ordenadas[0];
     const r = resumirSeleccion(ordenadas);
@@ -98,8 +105,8 @@ export function notaDeVentaDataConjunta(notas: NotaElegida[]) {
         origenComprobanteId: primera.id,
         origenComprobanteIds: ordenadas.map((n) => n.id),
         origenReferencia: referencias,
-        cliente: o(primera).cliente,
-        clienteId: o(primera).clienteId,
+        cliente: tipo === 'FACTURA' && !clienteConRuc(ordenadas) ? null : o(primera).cliente,
+        clienteId: tipo === 'FACTURA' && !clienteConRuc(ordenadas) ? null : o(primera).clienteId,
         observaciones,
         // Cobro: la suma de lo pagado en todas. El pago mixto de cada nota no se
         // puede juntar en uno, así que va el medio común (o el de la primera).

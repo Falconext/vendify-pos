@@ -15,7 +15,8 @@ describe('facturar varias notas juntas', () => {
         expect(motivoNoFacturar([nota(1), nota(2, { clienteId: 9 })], 'BOLETA')).toMatch(/mismo cliente/);
         expect(motivoNoFacturar([nota(1), nota(2, { moneda: 'USD' })], 'BOLETA')).toMatch(/dólares/);
         expect(motivoNoFacturar([nota(1), nota(2, { convertidoA: 'B001-00000007' })], 'BOLETA')).toMatch(/NV01-2 ya está en B001-00000007/);
-        expect(motivoNoFacturar([nota(1), nota(2)], 'FACTURA')).toMatch(/RUC/);
+        // Sin RUC la factura NO se bloquea: el POS abre sin cliente para escribir el RUC.
+        expect(motivoNoFacturar([nota(1), nota(2)], 'FACTURA')).toBeNull();
         expect(motivoNoFacturar([nota(1), nota(2)], 'BOLETA')).toBeNull();
     });
 
@@ -41,6 +42,15 @@ describe('facturar varias notas juntas', () => {
         expect(d.observaciones).toBe('Notas: NV01-3, NV01-5\nEntregar martes');
         expect(d.productos).toHaveLength(1);
         expect(d.productos[0].cantidad).toBe(4);
+    });
+
+    it('factura con cliente sin RUC: el POS abre sin cliente; con RUC, lo lleva', () => {
+        const sinRuc = notaDeVentaDataConjunta([nota(1), nota(2)], 'FACTURA');
+        expect(sinRuc.cliente).toBeNull();
+        expect(sinRuc.clienteId).toBeNull();
+        const conRuc = notaDeVentaDataConjunta([nota(1, { nroDoc: '20601811333' }), nota(2, { nroDoc: '20601811333' })], 'FACTURA');
+        expect(conRuc.clienteId).toBe(173);
+        expect(notaDeVentaDataConjunta([nota(1), nota(2)], 'BOLETA').clienteId).toBe(173);
     });
 
     it('hereda el crédito solo si todas eran a crédito', () => {
