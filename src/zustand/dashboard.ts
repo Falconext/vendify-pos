@@ -25,6 +25,8 @@ export interface IDashboardState {
     getTotalAmountByDatePayment: (fechaInicio: string, fechaFin: string, sedeId?: number | null) => void
     getNewClientsByDate: (fechaInicio: string, fechaFin: string, sedeId?: number | null) => void
     overviewData: any;
+    /** Falló la carga del resumen (red del celular, sesión vencida…): sin esto la pantalla giraba para siempre. */
+    overviewError: string | null;
     getOverview: (fechaInicio: string, fechaFin: string, sedeId?: number | null) => void
     topPorCategoria: any;
     getTopPorCategoria: (fechaInicio: string, fechaFin: string, opts?: { sedeId?: number | null; moneda?: string; categoriaId?: number | null; limit?: number }) => void
@@ -39,6 +41,7 @@ export const useDashboardStore = create<IDashboardState>()(devtools((set, _get) 
     totalAttendancePatients: 0,
     totalPaymentsMonth: 0,
     overviewData: null,
+    overviewError: null,
     topPorCategoria: null,
     getTopPorCategoria: async (fechaInicio, fechaFin, opts) => {
         try {
@@ -61,14 +64,27 @@ export const useDashboardStore = create<IDashboardState>()(devtools((set, _get) 
         try {
             const params = new URLSearchParams({ fechaInicio, fechaFin });
             if (sedeId) params.append('sedeId', String(sedeId));
-            const resp: any = await get(`dashboard/overview?${params}`);
-            if (resp.code === 1) {
-                set({ overviewData: resp.data }, false, "GET_OVERVIEW");
-            } else {
-                set({ overviewData: null });
+            set({ overviewError: null });
+            // Un reintento: en el celular la primera llamada se corta seguido
+            // (cambio de red, la pestaña vuelve desde WhatsApp).
+            let resp: any = null;
+            for (let intento = 0; intento < 2; intento++) {
+                try {
+                    resp = await get(`dashboard/overview?${params}`);
+                    if (resp?.code === 1) break;
+                } catch {
+                    resp = null;
+                }
+                if (intento === 0) await new Promise((r) => setTimeout(r, 1500));
             }
-        } catch (error) {
-            set({ overviewData: null });
+            if (resp?.code === 1) {
+                set({ overviewData: resp.data, overviewError: null }, false, "GET_OVERVIEW");
+            } else {
+                // Se conserva lo último que cargó: mejor datos de hace un rato que nada.
+                set({ overviewError: resp?.message || 'No se pudo cargar el resumen del negocio.' });
+            }
+        } catch {
+            set({ overviewError: 'No se pudo cargar el resumen del negocio.' });
         }
     },
     getNewClientsByDate: async (fechaInicio: string, fechaFin: string, sedeId?: number | null) => {
