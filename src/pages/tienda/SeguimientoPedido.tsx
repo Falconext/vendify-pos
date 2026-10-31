@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import LineaTiempoEstados from '@/components/LineaTiempoEstados';
 import Footer from '@/components/tienda/Footer';
 import { templateRegistry } from '@/templates/registry';
@@ -27,7 +28,12 @@ export default function SeguimientoPedido() {
     const [pedido, setPedido] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [tienda, setTienda] = useState<any>(null);
+    // Si la tienda ya se cargó en otra página, se arranca con ella: navegar
+    // dentro de la tienda no vuelve a mostrar la pantalla de carga.
+    const [tienda, setTienda] = useState<any>(() => {
+        const t = tiendaPublicaEnCache(slug);
+        return t ? recordarVentaSinStock(t) : null;
+    });
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -37,7 +43,7 @@ export default function SeguimientoPedido() {
     const cargarTienda = useCallback(() => {
         if (!slug) return;
         setEstadoTienda('cargando');
-        axios.get(`${BASE_URL}/public/store/${slug}`)
+        obtenerTiendaPublica(slug)
             .then(({ data }) => setTienda(recordarVentaSinStock(data.data || data)))
             .catch((e) => {
                 console.error(e);

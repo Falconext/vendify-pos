@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import ModaHeader from '@/components/tienda/ModaHeader';
 import ModaFooter from '@/components/tienda/ModaFooter';
 import ModaCartModal from '@/components/tienda/ModaCartModal';
@@ -222,7 +223,7 @@ export default function ModaProductoDetalle() {
         setLoading(true);
         const [prodRes, tiendaRes] = await Promise.all([
           axios.get(`${BASE_URL}/public/store/${slug}/products/${id}`),
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
         ]);
         const prod = withPricing(prodRes.data.data || prodRes.data);
         const tiendaData = tiendaRes.data.data || tiendaRes.data;

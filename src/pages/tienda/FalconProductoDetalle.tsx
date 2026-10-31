@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import { getProductPricing, withPricing, withPricingList } from '@/templates/shared/pricing';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
@@ -385,7 +386,7 @@ export default function FalconProductoDetalle() {
       setLoading(true);
       try {
         const [storeRes, catRes, productRes] = await Promise.all([
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
           axios.get(`${BASE_URL}/public/store/${slug}/categories`),
           axios.get(`${BASE_URL}/public/store/${slug}/products/${id}`),
         ]);

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import TiendaFloatingButtons from '@/components/tienda/TiendaFloatingButtons';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
 import { getProductPricing, withPricing, withPricingList } from '@/templates/shared/pricing';
@@ -479,7 +480,7 @@ export default function ConstruccionProductoDetalle() {
       setLoading(true);
       try {
         const [storeRes, catRes, productRes] = await Promise.all([
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
           axios.get(`${BASE_URL}/public/store/${slug}/categories`),
           axios.get(`${BASE_URL}/public/store/${slug}/products/${id}`),
         ]);

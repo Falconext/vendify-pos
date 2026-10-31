@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import TecnologiaCartModal from '@/components/tienda/TecnologiaCartModal';
 import TiendaFloatingButtons from '@/components/tienda/TiendaFloatingButtons';
 import { onTiendaCartCleared } from '@/utils/tiendaCart';
@@ -51,7 +52,7 @@ export default function ApiculturaProductoDetalle() {
     if (!slug) return;
     const loadBase = async () => {
       try {
-        const storeRes = await axios.get(`${BASE_URL}/public/store/${slug}`);
+        const storeRes = await obtenerTiendaPublica(slug);
         setTienda(recordarVentaSinStock(storeRes.data?.data || storeRes.data));
         const catRes = await axios.get(`${BASE_URL}/public/store/${slug}/categories`);
         setAllCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);

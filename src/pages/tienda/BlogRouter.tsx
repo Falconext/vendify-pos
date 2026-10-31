@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import FalconBlog from './FalconBlog';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import CargandoTienda from '@/components/tienda/CargandoTienda';
@@ -20,8 +21,10 @@ export default function BlogRouter() {
   const [searchParams] = useSearchParams();
   const previewPlantillaId = searchParams.get('previewPlantilla');
   useStorePreviewNavigation(previewPlantillaId);
-  const [plantillaId, setPlantillaId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Con la tienda ya en memoria (vino de otra página) la plantilla se sabe al instante.
+  const [enCache] = useState(() => (previewPlantillaId ? null : tiendaPublicaEnCache(slug)));
+  const [plantillaId, setPlantillaId] = useState<string | null>(enCache ? enCache.diseno?.plantillaId || '' : null);
+  const [loading, setLoading] = useState(!enCache);
   const [errorTienda, setErrorTienda] = useState(false);
   const [intento, setIntento] = useState(0);
 
@@ -32,7 +35,7 @@ export default function BlogRouter() {
       return;
     }
     if (!slug) return;
-    axios.get(`${BASE_URL}/public/store/${slug}`)
+    obtenerTiendaPublica(slug)
       .then((res) => {
         const tienda = res.data.data || res.data;
         setPlantillaId(tienda?.diseno?.plantillaId || '');

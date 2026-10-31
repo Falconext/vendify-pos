@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import XtraHeader from '@/components/tienda/XtraHeader';
 import ProductCardXtra from '@/components/tienda/ProductCardXtra';
 import Footer from '@/components/tienda/Footer';
@@ -227,7 +228,7 @@ export default function GadgetsProductoDetalle() {
         setLoading(true);
         const [prodRes, tiendaRes] = await Promise.all([
           axios.get(`${BASE_URL}/public/store/${slug}/products/${id}`),
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
         ]);
         const prod = withPricing(prodRes.data.data || prodRes.data);
         const tiendaData = tiendaRes.data.data || tiendaRes.data;

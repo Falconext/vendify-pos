@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import { motion } from 'framer-motion';
 import MayeHeader from '@/components/tienda/MayeHeader';
 import MayeFooter from '@/components/tienda/MayeFooter';
@@ -69,7 +70,7 @@ export default function MayeProductoDetalle() {
 
     const loadTienda = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/public/store/${slug}`);
+        const res = await obtenerTiendaPublica(slug);
         const data = res.data.data || res.data;
         setTienda(recordarVentaSinStock(data));
 

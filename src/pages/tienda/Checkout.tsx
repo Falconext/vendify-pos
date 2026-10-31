@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent } from 'react';
 import { useParams, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import StoreHeader from '@/components/tienda/StoreHeader';
 import Footer from '@/components/tienda/Footer';
 import ProductCardPio from '@/components/tienda/ProductCardPio';
@@ -74,10 +75,22 @@ export default function Checkout() {
     const previewPlantillaId = searchParams.get('previewPlantilla');
     useStorePreviewNavigation(previewPlantillaId);
     const { carrito: carritoStateInitial, tienda: tiendaFromState } = location.state || {};
-    const [carritoState, setCarritoState] = useState<any[]>(carritoStateInitial || []);
+    // El carrito guardado se lee al crear la página, no después de pintarla:
+    // si no, el checkout mostraba la pantalla de carga al llegar desde la tienda.
+    const [carritoState, setCarritoState] = useState<any[]>(() => {
+        if (carritoStateInitial?.length) return carritoStateInitial;
+        try {
+            const guardado = JSON.parse(localStorage.getItem(tiendaCartKey(slug || '')) || '[]');
+            return Array.isArray(guardado) ? guardado : [];
+        } catch { return []; }
+    });
 
     // Mejora 1: tienda como estado — se carga desde API si no viene por navegación
-    const [tienda, setTienda] = useState<any>(withStorePurchaseWhatsapp(tiendaFromState) || null);
+    const [tienda, setTienda] = useState<any>(() => {
+        // La que trae la navegación o, si ya se cargó en otra página, la de memoria.
+        const t = tiendaFromState || tiendaPublicaEnCache(slug);
+        return t ? withStorePurchaseWhatsapp(t) : null;
+    });
 
     const [configPago, setConfigPago] = useState<PaymentConfig | null>(null);
     const [configEnvio, setConfigEnvio] = useState<any>(null);
@@ -112,7 +125,7 @@ export default function Checkout() {
     const cargarTienda = () => {
         if (!slug) return;
         setTiendaError(false);
-        axios.get(`${BASE_URL}/public/store/${slug}`)
+        obtenerTiendaPublica(slug)
             .then(({ data }) => setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data))))
             .catch((e) => { console.error(e); setTiendaError(true); });
     };
@@ -173,20 +186,9 @@ export default function Checkout() {
     };
 
     useEffect(() => {
-        if ((!carritoState || carritoState.length === 0) && slug) {
-            try {
-                const saved = localStorage.getItem(tiendaCartKey(slug));
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setCarritoState(parsed);
-                        refrescarImagenesCarrito(parsed);
-                    } else { navigate(`/tienda/${slug}`); return; }
-                } else { navigate(`/tienda/${slug}`); return; }
-            } catch { navigate(`/tienda/${slug}`); return; }
-        } else if (carritoStateInitial?.length > 0) {
-            refrescarImagenesCarrito(carritoStateInitial);
-        }
+        // Sin nada que pagar, de vuelta a la tienda.
+        if (carritoState.length === 0) { if (slug) navigate(`/tienda/${slug}`); return; }
+        refrescarImagenesCarrito(carritoState);
         setIsLoaded(true);
         cargarConfigPago();
         cargarConfigEnvio();
@@ -486,7 +488,7 @@ export default function Checkout() {
 
     // Hasta tener la tienda no se sabe su plantilla: pintar algo antes muestra
     // el checkout por defecto y luego "salta" al de la tienda. Pantalla neutra.
-    if (!tienda || !isLoaded) {
+    if (!tienda || (!isLoaded && carritoState.length === 0)) {
         return <CargandoTienda error={tiendaError} onReintentar={cargarTienda} />;
     }
 

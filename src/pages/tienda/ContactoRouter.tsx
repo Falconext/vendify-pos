@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import CargandoTienda from '@/components/tienda/CargandoTienda';
 import StoreWhatsAppButton from '@/components/tienda/StoreWhatsAppButton';
@@ -14,7 +15,12 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 export default function ContactoRouter() {
   const { slug } = useParams();
-  const [tienda, setTienda] = useState<any>(null);
+  // Si la tienda ya se cargó en otra página, se arranca con ella: navegar
+  // dentro de la tienda no vuelve a mostrar la pantalla de carga.
+  const [tienda, setTienda] = useState<any>(() => {
+    const t = tiendaPublicaEnCache(slug);
+    return t ? recordarVentaSinStock(t) : null;
+  });
   const [categories, setCategories] = useState<any[]>([]);
   const [carrito, setCarrito] = useState<any[]>([]);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
@@ -28,7 +34,7 @@ export default function ContactoRouter() {
       setLoading(true);
       setErrorTienda(false);
       try {
-        const storeRes = await axios.get(`${BASE_URL}/public/store/${slug}`);
+        const storeRes = await obtenerTiendaPublica(slug);
         setTienda(recordarVentaSinStock(storeRes.data?.data || storeRes.data));
         const catRes = await axios.get(`${BASE_URL}/public/store/${slug}/categories`);
         setCategories(Array.isArray(catRes.data?.data) ? catRes.data.data : []);
@@ -57,7 +63,7 @@ export default function ContactoRouter() {
       : current.map((item) => String(item.cartId || item.id) === String(itemId) ? { ...item, cantidad } : item));
   };
 
-  if (loading || (errorTienda && !tienda)) {
+  if ((loading && !tienda) || (errorTienda && !tienda)) {
     return <CargandoTienda error={!loading} onReintentar={() => setIntento((n) => n + 1)} />;
   }
 
