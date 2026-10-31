@@ -213,6 +213,12 @@ const buildEnvioDespachoPayload = (data: EnvioDespachoFormData) => {
     };
 };
 
+/** Código único por venta; `randomUUID` no existe fuera de https/localhost. */
+const nuevaClaveVenta = (): string =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
 export const useFacturacionViewModel = () => {
     const { receipt, importReference, addInformalInvoice, addProductsInvoice: addProductsInvoiceStore, updateProductInvoice, productsInvoice, getInvoiceBySerieCorrelative, resetProductInvoice, invoiceData, deleteProductInvoice, deleteProductInvoiceByIndex, addInvoice, dataReceipt, resetInvoice, getSerieAndCorrelativeByReceipt, updateQuotation, updateNotaVenta }: IInvoicesState = useInvoiceStore();
     const { zoomLevel } = useThemeStore();
@@ -2620,6 +2626,7 @@ export const useFacturacionViewModel = () => {
     // seguía en camino: DEMENVER NV01-8514/8515, B0A1-1951/52/53 (31-10). Los
     // estados de React no alcanzan a bloquear porque se actualizan después.
     const emitiendoRef = useRef(false);
+    const ventaPendienteRef = useRef<{ firma: string; clave: string } | null>(null);
     const addInvoiceReceipt = async () => {
         if (emitiendoRef.current) return;
         emitiendoRef.current = true;
@@ -2922,7 +2929,18 @@ export const useFacturacionViewModel = () => {
         setIsOpenModalSuccessInvoice(true);
         setIsLoading(true);
 
-        let result: { success: boolean; error?: string };
+        // Código único de esta venta (Idempotency-Key): si la misma venta llega
+        // dos veces al servidor, se registra una sola. Un reintento de la MISMA
+        // venta (se cortó la red sin respuesta) reusa el código y recibe la
+        // primera; si el carrito cambió, es otra venta y lleva otro código.
+        const { fechaEmision: _fecha, ...sinFecha } = finalData;
+        const firmaVenta = JSON.stringify(sinFecha);
+        if (ventaPendienteRef.current?.firma !== firmaVenta) {
+            ventaPendienteRef.current = { firma: firmaVenta, clave: nuevaClaveVenta() };
+        }
+        const claveVenta = ventaPendienteRef.current.clave;
+
+        let result: { success: boolean; error?: string; sinRespuesta?: boolean };
         if (isEditMode && editNotaVentaId) {
             result = await updateNotaVenta(editNotaVentaId, finalData);
             // Editar la nota y elegir Boleta/Factura en "Cambiar" es convertirla.
@@ -2932,7 +2950,7 @@ export const useFacturacionViewModel = () => {
             // Primero se guardan los productos nuevos en la nota (kardex y cobro)
             // y luego se emite el formal desde ella, igual que "Hacer Boleta".
             if (result.success && editaHaciaFormal) {
-                result = await addInvoice({ ...finalData, comprobanteOrigenId: editNotaVentaId });
+                result = await addInvoice({ ...finalData, comprobanteOrigenId: editNotaVentaId }, claveVenta);
                 if (!result.success) {
                     useAlertStore.getState().alert(
                         `La nota se actualizó, pero la ${String(formValues?.comprobante || 'boleta').toLowerCase()} no se emitió: ${result.error || 'error desconocido'}. Emítala desde Notas de venta → "Hacer Boleta".`,
@@ -2943,10 +2961,13 @@ export const useFacturacionViewModel = () => {
         } else if (isEditMode && editQuotationId) {
             result = await updateQuotation(editQuotationId, finalData);
         } else if (tiposInformales.includes(formValues.tipoDoc)) {
-            result = await addInformalInvoice(finalData);
+            result = await addInformalInvoice(finalData, claveVenta);
         } else {
-            result = await addInvoice(finalData);
+            result = await addInvoice(finalData, claveVenta);
         }
+        // Solo se guarda el código si no hubo respuesta: el servidor pudo haberla
+        // registrado y el reintento debe recibir esa misma venta.
+        if (result.success || !result.sinRespuesta) ventaPendienteRef.current = null;
 
         if (result.success === true) {
             const r = result as any;
