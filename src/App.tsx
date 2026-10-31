@@ -95,6 +95,8 @@ import VehiculosPage from './pages/admin/vehiculos/Vehiculos'
 import ContratosVehicularesPage from './pages/admin/vehiculos/ContratosVehiculares'
 import DashboardPreviewPage from './features/admin/dashboard-preview/DashboardPreviewPage'
 
+import PorTienda from './components/tienda/PorTienda'
+
 function App() {
   console.log('App initialized - Checkpoint')
   return (
@@ -311,16 +313,16 @@ function App() {
         <Route path="/tienda/home" element={<TiendaHome />} />
         <Route path="/tienda/preview/:previewPage" element={<StorePreviewPage />} />
         {/* Rutas públicas de tienda para clientes finales */}
-        <Route path="/tienda/:slug" element={<TiendaPublica />} />
-        <Route path="/tienda/:slug/catalogo" element={<Catalogo />} />
-        <Route path="/tienda/:slug/producto/:id" element={<ProductoDetalleRouter />} />
-        <Route path="/tienda/:slug/checkout" element={<Checkout />} />
-        <Route path="/tienda/:slug/seguimiento" element={<SeguimientoPedido />} />
-        <Route path="/tienda/:slug/contacto" element={<ContactoRouter />} />
-        <Route path="/tienda/:slug/blog" element={<BlogRouter />} />
-        <Route path="/tienda/:slug/blog/:blogId" element={<BlogRouter />} />
+        <Route path="/tienda/:slug" element={<PorTienda><TiendaPublica /></PorTienda>} />
+        <Route path="/tienda/:slug/catalogo" element={<PorTienda><Catalogo /></PorTienda>} />
+        <Route path="/tienda/:slug/producto/:id" element={<PorTienda><ProductoDetalleRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/checkout" element={<PorTienda><Checkout /></PorTienda>} />
+        <Route path="/tienda/:slug/seguimiento" element={<PorTienda><SeguimientoPedido /></PorTienda>} />
+        <Route path="/tienda/:slug/contacto" element={<PorTienda><ContactoRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/blog" element={<PorTienda><BlogRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/blog/:blogId" element={<PorTienda><BlogRouter /></PorTienda>} />
         {/* Catch-all para tienda pública: Evita que links rotos en banners manden al login/admin */}
-        <Route path="/tienda/:slug/*" element={<TiendaPublica />} />
+        <Route path="/tienda/:slug/*" element={<PorTienda><TiendaPublica /></PorTienda>} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
