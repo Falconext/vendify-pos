@@ -23,6 +23,12 @@ export interface RegistrarEgresoData {
   metodoPago?: string;
 }
 
+/** Plata que entra al cajón durante el turno sin ser una venta (siempre efectivo). */
+export interface RegistrarIngresoCajaData {
+  monto: number;
+  descripcion: string;
+}
+
 export interface TransferenciaCajaData {
   sedeDestinoId: number;
   monto: number;
@@ -108,9 +114,25 @@ export interface EstadoCaja {
     turno: string | null;
     sedeId: number | null;
     sede: string | null;
+    usuarioId?: number;
+    usuario: string | null;
+  }[];
+  // Turnos que OTROS usuarios de la sede tienen abiertos ahora (la caja es por
+  // usuario: sin esto el dueño ve "Caja cerrada" mientras su cajera vende).
+  turnosAbiertosEquipo?: {
+    id: number;
+    fecha: string;
+    turno: string | null;
+    sedeId: number | null;
+    sede: string | null;
+    usuarioId: number;
     usuario: string | null;
   }[];
   totalEgresos?: number;
+  // Ingresos de caja del turno (sencillo, aporte del dueño...): suman al
+  // efectivo esperado del cierre.
+  totalIngresosCaja?: number;
+  ingresosRecientes?: MovimientoCaja[];
   totalTransferenciasEnviadas?: number;
   totalTransferenciasRecibidas?: number;
   movimiento?: MovimientoCaja;
@@ -202,6 +224,8 @@ interface CajaState {
   abrirCaja: (data: AperturaCaja) => Promise<{ success: boolean; message: string }>;
   cerrarCaja: (data: CierreCaja) => Promise<{ success: boolean; message: string }>;
   registrarEgreso: (data: RegistrarEgresoData) => Promise<{ success: boolean; message: string }>;
+  registrarIngreso: (data: RegistrarIngresoCajaData) => Promise<{ success: boolean; message: string }>;
+  eliminarIngreso: (id: number) => Promise<{ success: boolean; message: string }>;
   transferirCaja: (data: TransferenciaCajaData) => Promise<{ success: boolean; message: string }>;
   obtenerCierresPendientesDeposito: (sedeId?: number) => Promise<void>;
   obtenerDepositosRealizados: (sedeId?: number, fechaInicio?: string, fechaFin?: string) => Promise<void>;
@@ -321,6 +345,46 @@ export const useCajaStore = create<CajaState>()(
         } catch (error) {
           const axiosError = error as AxiosError<any>;
           const errorMessage = axiosError.response?.data?.message || 'Error al registrar gasto';
+          set({ loading: false, error: errorMessage });
+          return { success: false, message: errorMessage };
+        }
+      },
+
+      registrarIngreso: async (data: RegistrarIngresoCajaData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await apiClient.post('caja/ingreso', data);
+          const resp: any = response.data;
+          if (resp?.code === 1) {
+            await get().obtenerEstadoCaja();
+            set({ loading: false });
+            return { success: true, message: resp.message || 'Ingreso registrado' };
+          }
+          set({ loading: false, error: 'Error al registrar ingreso' });
+          return { success: false, message: resp?.message || 'Error al registrar ingreso' };
+        } catch (error) {
+          const axiosError = error as AxiosError<any>;
+          const errorMessage = axiosError.response?.data?.message || 'Error al registrar ingreso';
+          set({ loading: false, error: errorMessage });
+          return { success: false, message: errorMessage };
+        }
+      },
+
+      eliminarIngreso: async (id: number) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await apiClient.delete(`caja/ingreso/${id}`);
+          const resp: any = response.data;
+          if (resp?.code === 1) {
+            await get().obtenerEstadoCaja();
+            set({ loading: false });
+            return { success: true, message: resp.message || 'Ingreso eliminado' };
+          }
+          set({ loading: false, error: 'Error al eliminar ingreso' });
+          return { success: false, message: resp?.message || 'Error al eliminar ingreso' };
+        } catch (error) {
+          const axiosError = error as AxiosError<any>;
+          const errorMessage = axiosError.response?.data?.message || 'Error al eliminar ingreso';
           set({ loading: false, error: errorMessage });
           return { success: false, message: errorMessage };
         }
