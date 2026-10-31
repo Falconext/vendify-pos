@@ -337,7 +337,7 @@ export default function ConstruccionCatalogoPage({
 
         <section>
           <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-[13px] font-semibold text-gray-500">{editable(diseno?.construccionCatalogShowingLabel, 'Mostrando')} 1-{sortedProductos.length} de {total} resultados</p>
+            <p className="text-[13px] font-semibold text-gray-500">{loading && sortedProductos.length === 0 ? 'Cargando productos…' : <>{editable(diseno?.construccionCatalogShowingLabel, 'Mostrando')} 1-{sortedProductos.length} de {total} resultados</>}</p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
