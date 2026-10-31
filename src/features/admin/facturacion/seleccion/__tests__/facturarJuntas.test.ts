@@ -1,4 +1,4 @@
-import { lineasDeNotas, motivoNoFacturar, notaDeVentaDataConjunta } from '../facturarJuntas';
+import { lineasDeNotas, motivoNoFacturar, notaDeVentaDataConjunta, precioExactoDeLinea } from '../facturarJuntas';
 import type { NotaElegida } from '../seleccionNotas';
 
 const det = (x: any) => ({ productoId: 8415, descripcion: 'YOGURT', cantidad: 1, mtoPrecioUnitario: 11, unidad: 'NIU', ...x });
@@ -49,5 +49,17 @@ describe('facturar varias notas juntas', () => {
         expect(a.fechaVencimientoCredito).toBe('2026-11-15');
         const b = notaDeVentaDataConjunta([nota(1, { saldo: 22 }, { formaPagoTipo: 'Credito' }), nota(2)]);
         expect(b.formaPagoTipo).toBe('Contado');
+    });
+});
+
+describe('el total de la boleta cuadra con el de la nota', () => {
+    it('un six-pack guardado a 8.33 × 6 se rearma a 8.3333 (S/ 50.00, no 49.98)', () => {
+        const det = { cantidad: 6, mtoPrecioUnitario: 8.33, mtoValorVenta: 42.37, igv: 7.63 };
+        expect(precioExactoDeLinea(det)).toBe(8.3333);
+        const [l] = lineasDeNotas([{ ...nota(1), origen: { detalles: [{ productoId: 5, descripcion: 'SIXPACK', unidad: 'NIU', ...det }] } }]);
+        expect(Math.round(l.cantidad * l.precioUnitario * 100) / 100).toBe(50);
+    });
+    it('si el precio ya cuadra, no lo toca', () => {
+        expect(precioExactoDeLinea({ cantidad: 1, mtoPrecioUnitario: 8, mtoValorVenta: 6.78, igv: 1.22 })).toBeNull();
     });
 });

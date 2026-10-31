@@ -22,6 +22,27 @@ export function motivoNoFacturar(notas: NotaElegida[], tipo: 'BOLETA' | 'FACTURA
     return null;
 }
 
+/**
+ * Precio por unidad que reproduce el total guardado de la línea.
+ *
+ * Un six-pack vendido como 6 unidades queda guardado a S/ 8.33 (redondeado),
+ * pero su total es 42.37 + IGV 7.63 = S/ 50.00. Rearmar la línea con 8.33 da
+ * 49.98 y la boleta no cuadra con la nota. Con 4 decimales (8.3333) sí.
+ * null = no hay datos para calcularlo o el redondeado ya cuadra.
+ */
+export function precioExactoDeLinea(det: any): number | null {
+    const cantidad = Number(det?.cantidad);
+    const valor = Number(det?.mtoValorVenta);
+    const igv = Number(det?.igv ?? 0);
+    const unitario = Number(det?.mtoPrecioUnitario);
+    if (!(cantidad > 0) || !Number.isFinite(valor) || !(valor > 0) || !Number.isFinite(unitario)) return null;
+    const total = Math.round((valor + (Number.isFinite(igv) ? igv : 0)) * 100) / 100;
+    if (Math.abs(unitario * cantidad - total) < 0.005) return null;
+    const exacto = Math.round((total / cantidad) * 10000) / 10000;
+    // Solo corrige redondeos, no reprecia: si la diferencia es grande, algo más pasa.
+    return Math.abs(exacto - unitario) < 0.01 ? exacto : null;
+}
+
 const clave = (d: any) =>
     [d.productoId, Number(d.precioUnitario).toFixed(4), d.unidad, d.unidadesPorPaquete ?? '', d.comboId ?? ''].join('|');
 
@@ -36,6 +57,8 @@ export function lineasDeNotas(notas: NotaElegida[]): any[] {
     for (const n of notas) {
         for (const det of n.origen?.detalles ?? []) {
             const m = mapDetalleToInvoiceProduct(det);
+            const exacto = precioExactoDeLinea(det);
+            if (exacto != null) m.precioUnitario = exacto;
             const unible = Number(m.productoId) > 0 && !m.numerosSerie && !det.loteId;
             const k = unible ? clave({ ...m, unidadesPorPaquete: det.unidadesPorPaquete, comboId: det.comboId }) : '';
             const previa = k ? porClave.get(k) : undefined;
