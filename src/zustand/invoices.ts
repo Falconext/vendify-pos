@@ -1,3 +1,4 @@
+import apiClient from '@/utils/apiClient';
 import { create } from 'zustand';
 import { get, patch, post } from '../utils/fetch';
 import { IFormInvoice, IInvoices } from '../interfaces/invoices';
@@ -66,8 +67,8 @@ export interface IInvoicesState {
     getReceipt: (receipt: string) => void;
     getSerieAndCorrelativeByReceipt: (empresaId: number, receipt: string, receiptNote?: string) => Promise<{ success: boolean, error?: string }>;
     getInvoiceBySerieCorrelative: (serie: string, correlative?: string, motivoId?: number) => Promise<{ success: boolean, error?: string }>;
-    addInvoice: (data: IFormInvoice) => Promise<{ success: boolean, error?: string }>;
-    addInformalInvoice: (data: IFormInvoice) => Promise<any>;
+    addInvoice: (data: IFormInvoice, claveVenta?: string) => Promise<{ success: boolean, error?: string, sinRespuesta?: boolean }>;
+    addInformalInvoice: (data: IFormInvoice, claveVenta?: string) => Promise<any>;
     getAllInvoices: (params: any, callback?: Function, allProperties?: boolean) => Promise<{ success: boolean, error?: string }>;
     deleteProductInvoice: (data: any) => void;
     deleteProductInvoiceByIndex: (index: number) => void;
@@ -83,6 +84,32 @@ export interface IInvoicesState {
     updateQuotation: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     updateNotaVenta: (id: number, data: any) => Promise<{ success: boolean, error?: string, serie?: string, correlativo?: number, id?: number, mtoImpVenta?: number, isUpdate?: boolean }>;
     importReference: number
+}
+
+/**
+ * POST de una venta con su código único (Idempotency-Key). Si la misma venta
+ * llega dos veces al servidor, se registra una sola (DEMENVER 31-10). Mientras
+ * la primera sigue en proceso el servidor responde 409: se espera y se vuelve
+ * a pedir con el mismo código, y llega la respuesta de la primera.
+ */
+export async function postVenta(endpoint: string, payload: any, claveVenta?: string): Promise<any> {
+    const config: any = { timeout: 40000, ...(claveVenta ? { headers: { 'Idempotency-Key': claveVenta } } : {}) };
+    for (let intento = 0; ; intento++) {
+        try {
+            const resp = await apiClient.post(endpoint, payload, config);
+            const result: any = resp.data;
+            if (result?.code === 0) return { success: false, error: result.message || 'Error desconocido' };
+            return { ...result, success: true };
+        } catch (e: any) {
+            // El filtro global de errores deja { code: 0, message }: se reconoce por el 409 y el texto.
+            const enCurso = e?.response?.status === 409 && /sigue en proceso/i.test(String(e?.response?.data?.message ?? ''));
+            if (claveVenta && enCurso && intento < 20) {
+                await new Promise((r) => setTimeout(r, 1500));
+                continue;
+            }
+            return { success: false, error: e?.response?.data?.message || e?.message, sinRespuesta: !e?.response };
+        }
+    }
 }
 
 export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => ({
@@ -253,13 +280,13 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
         }
     },
 
-    addInvoice: async (data: any) => {
+    addInvoice: async (data: any, claveVenta?: string) => {
         try {
             const sedeActivaId = useAuthStore.getState().sedeActiva?.id;
             const payload = data?.sedeId ? data : { ...data, ...(sedeActivaId ? { sedeId: sedeActivaId } : {}) };
             // Emisión a SUNAT puede tardar más que el timeout global (12s). Damos 40s
             // para esperar la respuesta real y evitar el "timeout" y estados falsos.
-            const resp: any = await post(`comprobante/${data.tipoDoc === "01" ? "factura" : data.tipoDoc === "03" ? "boleta" : data.tipoDoc === "07" ? "nota-credito" : "nota-debito"}`, payload, { timeout: 40000 });
+            const resp: any = await postVenta(`comprobante/${data.tipoDoc === "01" ? "factura" : data.tipoDoc === "03" ? "boleta" : data.tipoDoc === "07" ? "nota-credito" : "nota-debito"}`, payload, claveVenta);
             console.log(resp);
             if (resp.code === 1) {
                 const isPendiente = (resp.data?.status ?? resp.status) === 'PENDIENTE';
@@ -278,7 +305,7 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
                 };
             } else {
                 useAlertStore.getState().alert(resp.error || "Error al crear el recibo", "error");
-                return { success: false, error: resp.error || "Error al crear el recibo" };
+                return { success: false, error: resp.error || "Error al crear el recibo", sinRespuesta: !!resp.sinRespuesta };
             }
         } catch (error: any) {
             console.log(error);
@@ -286,12 +313,12 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
             return { success: false, error: error.message || "Error al crear el recibo" };
         }
     },
-    addInformalInvoice: async (data) => {
+    addInformalInvoice: async (data, claveVenta) => {
         console.log(data);
         try {
             const sedeActivaId = useAuthStore.getState().sedeActiva?.id;
             const payload = data?.sedeId ? data : { ...data, ...(sedeActivaId ? { sedeId: sedeActivaId } : {}) };
-            const resp: any = await post('/comprobante/informal', payload, { timeout: 40000 });
+            const resp: any = await postVenta('/comprobante/informal', payload, claveVenta);
             if (resp.code === 1) {
                 useAlertStore.setState({ success: true });
                 useAlertStore.setState({ loading: false });
@@ -306,7 +333,7 @@ export const useInvoiceStore = create<IInvoicesState>()(devtools((set, _get) => 
                 };
             }
             useAlertStore.getState().alert(resp.error || 'Error al crear comprobante informal', 'error');
-            return { success: false, error: resp.error };
+            return { success: false, error: resp.error, sinRespuesta: !!resp.sinRespuesta };
         } catch (error) {
             useAlertStore.getState().alert('Error al crear comprobante informal', 'error');
             return { success: false, error: 'Error al crear comprobante informal' };
