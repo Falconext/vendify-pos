@@ -238,6 +238,35 @@ export default function CombosAdmin() {
                   <p className="text-sm font-medium">{vm.calcularDescuento() > 0 ? `✓ Descuento: ${vm.calcularDescuento().toFixed(1)}% (Ahorro: S/ ${(vm.calcularPrecioRegular() - vm.form.precioCombo).toFixed(2)})` : '✗ El precio del kit debe ser menor al precio regular'}</p>
                 </div>
               )}
+              {(() => {
+                const { costo, sinCosto } = vm.calcularCosto();
+                if (!vm.form.items.some((i) => i.productoId)) return null;
+                const ganancia = vm.form.precioCombo - costo;
+                const margen = vm.form.precioCombo > 0 ? (ganancia / vm.form.precioCombo) * 100 : 0;
+                const perdida = costo > 0 && vm.form.precioCombo > 0 && ganancia < 0;
+                return (
+                  <div className="rounded-lg border border-gray-100 dark:border-slate-800 p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Costo del kit</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">S/ {costo.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Tu ganancia</p>
+                        <p className={`font-semibold ${perdida ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                          {vm.form.precioCombo > 0 && costo > 0 ? `S/ ${ganancia.toFixed(2)} (${margen.toFixed(1)}%)` : '—'}
+                        </p>
+                      </div>
+                    </div>
+                    {perdida && (
+                      <p className="text-sm font-medium text-red-700 dark:text-red-400">✗ Vendes el kit por debajo de lo que te cuesta: pierdes S/ {Math.abs(ganancia).toFixed(2)} en cada uno.</p>
+                    )}
+                    {sinCosto.length > 0 && (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">Sin costo cargado: {sinCosto.join(', ')}. No se suma al costo; cárgalo en el producto para ver la ganancia real.</p>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative z-20">
                   <Calendar text="Fecha Inicio (opcional)" value={vm.form.fechaInicio ? vm.form.fechaInicio.split('T')[0].split('-').reverse().join('/') : ''} onChange={(date: string) => { const [d, m, y] = date.split('/'); vm.setForm(prev => ({ ...prev, fechaInicio: `${y}-${m}-${d}` })); }} />
