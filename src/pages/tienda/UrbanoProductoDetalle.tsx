@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import { onTiendaCartCleared, tiendaCartKey } from '@/utils/tiendaCart';
 import { withPricing, withPricingList } from '@/templates/shared/pricing';
@@ -100,7 +101,7 @@ export default function UrbanoProductoDetalle() {
 
         const [prodRes, tiendaRes] = await Promise.all([
           axios.get(`${BASE_URL}/public/store/${slug}/products/${id}`),
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
         ]);
 
         const prod = withPricing(prodRes.data.data || prodRes.data);

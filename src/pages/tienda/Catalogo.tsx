@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import StoreHeader from '@/components/tienda/StoreHeader';
 import XtraHeader from '@/components/tienda/XtraHeader';
 import Footer from '@/components/tienda/Footer';
@@ -38,6 +39,9 @@ import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
+/** Plantillas cuyo catálogo usa `allProductos` (ver `templates/shared/types.ts`). */
+const PLANTILLAS_CON_TODOS_LOS_PRODUCTOS = new Set(['falcon', 'motos', 'maye', 'bicicletas']);
+
 export default function Catalogo() {
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -45,7 +49,12 @@ export default function Catalogo() {
     const previewPlantillaId = searchParams.get('previewPlantilla');
     useStorePreviewNavigation(previewPlantillaId);
 
-    const [tienda, setTienda] = useState<any>(null);
+    // Si la tienda ya se cargó en otra página, se arranca con ella: navegar
+    // dentro de la tienda no vuelve a mostrar la pantalla de carga.
+    const [tienda, setTienda] = useState<any>(() => {
+        const t = tiendaPublicaEnCache(slug);
+        return t ? recordarVentaSinStock(t) : null;
+    });
     // Sin la tienda no se sabe la plantilla: si los productos llegan antes,
     // se pintaba el catálogo por defecto y luego saltaba al de la tienda.
     const [estadoTienda, setEstadoTienda] = useState<'cargando' | 'error' | 'no-existe'>('cargando');
@@ -97,7 +106,6 @@ export default function Catalogo() {
         cargarMarcas();
         cargarCategorias();
         cargarRangoPrecios();
-        cargarTodosProductos();
         try {
             const saved = localStorage.getItem(tiendaCartKey(slug || ''));
             if (saved) setCarrito(JSON.parse(saved));
@@ -156,7 +164,7 @@ export default function Catalogo() {
     const cargarTienda = async () => {
         setEstadoTienda('cargando');
         try {
-            const { data } = await axios.get(`${BASE_URL}/public/store/${slug}`);
+            const { data } = await obtenerTiendaPublica(slug);
             setTienda(recordarVentaSinStock(data.data || data));
         } catch (error) {
             setEstadoTienda(axios.isAxiosError(error) && error.response?.status === 404 ? 'no-existe' : 'error');
@@ -187,6 +195,15 @@ export default function Catalogo() {
 
     // Carga todos los productos (sin filtros) una sola vez, para poblar los
     // círculos de categoría y el mega-menú del header con todas las categorías.
+    // Hasta 200 productos de una vez: solo las plantillas que los usan (filtros
+    // técnicos o su propia grilla). Las demás los descargaban sin mirarlos.
+    const plantillaActual = resolveTemplateId(previewPlantillaId || tienda?.diseno?.plantillaId);
+    const necesitaTodos = tienda !== null && PLANTILLAS_CON_TODOS_LOS_PRODUCTOS.has(plantillaActual);
+    useEffect(() => {
+        if (necesitaTodos) cargarTodosProductos();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slug, necesitaTodos]);
+
     const cargarTodosProductos = async () => {
         try {
             const { data } = await axios.get(`${BASE_URL}/public/store/${slug}/products`, { params: { page: 1, limit: 200 } });
@@ -349,7 +366,7 @@ export default function Catalogo() {
                 error={estadoTienda === 'error'}
                 // Si cayó la tienda cayó todo: se reintenta todo, no solo la ficha.
                 onReintentar={() => {
-                    cargarTienda(); cargarMarcas(); cargarCategorias(); cargarRangoPrecios(); cargarTodosProductos();
+                    cargarTienda(); cargarMarcas(); cargarCategorias(); cargarRangoPrecios();
                     setCargaError(false); setLoading(true); cargarProductos(1, true);
                 }}
             />

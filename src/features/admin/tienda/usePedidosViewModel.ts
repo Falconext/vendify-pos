@@ -102,6 +102,14 @@ export interface PedidoTiendaAdmin {
     notasInternas?: string | null;
     creadoEn: string;
     items: PedidoItemTienda[];
+    /** Comprobante que salió de este pedido (nota de venta, boleta o factura). */
+    comprobanteId?: number | null;
+    /** Envío por agencia elegido en la tienda: SHALOM u OLVA. */
+    envioCourier?: 'SHALOM' | 'OLVA' | null;
+    envioAgenciaId?: string | null;
+    envioAgenciaNombre?: string | null;
+    /** DNI que dejó el comprador (lo pide la agencia). */
+    clienteDocumento?: string | null;
 }
 
 type PedidoPatch = Partial<Pick<PedidoTiendaAdmin,
@@ -138,6 +146,7 @@ const normalizeAgencia = (value: unknown, tipoEntrega: 'RECOJO' | 'ENVIO'): Agen
     const label = asString(value).toUpperCase();
     if (label.includes('SHALOM') && label.includes('COD')) return 'SHALOM_COD';
     if (label.includes('SHALOM')) return 'SHALOM_PRO';
+    if (label.includes('OLVA')) return 'OLVA';
     if (label.includes('PROPIO')) return 'PROPIOS';
     if (tipoEntrega === 'RECOJO') return 'RECOJO_TIENDA';
     return 'SIN_AGENCIA';
@@ -200,6 +209,11 @@ const normalizarPedido = (pedido: PedidoApi): PedidoTiendaAdmin => {
         notasInternas: asString(pedido.notasInternas, ''),
         creadoEn: asString(pedido.creadoEn, new Date().toISOString()),
         items: Array.isArray(pedido.items) ? pedido.items.map(normalizarItem) : [],
+        comprobanteId: pedido.comprobanteId ? toNumber(pedido.comprobanteId) : null,
+        envioCourier: pedido.envioCourier === 'SHALOM' || pedido.envioCourier === 'OLVA' ? pedido.envioCourier : null,
+        envioAgenciaId: asString(pedido.envioAgenciaId, '') || null,
+        envioAgenciaNombre: asString(pedido.envioAgenciaNombre, '') || null,
+        clienteDocumento: asString(pedido.clienteDocumento, '') || null,
     };
 };
 
@@ -437,5 +451,6 @@ export const usePedidosViewModel = () => {
         toggleOrderExpanded,
         buildWhatsappUrl,
         buildReviewWhatsappUrl,
+        recargar: cargarPedidos,
     };
 };

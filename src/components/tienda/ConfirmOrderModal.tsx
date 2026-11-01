@@ -1,5 +1,7 @@
 
+import { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { EnvioAgenciaSeccion, faltaEnvioAgencia, useEnvioAgencia } from './EnvioAgencia';
 
 interface ConfirmOrderModalProps {
     isOpen: boolean;
@@ -18,11 +20,23 @@ export default function ConfirmOrderModal({
     loading = false,
     tiendaColor = '#1E1B4B'
 }: ConfirmOrderModalProps) {
+    // Elegir agencia (Shalom/Olva) vive acá porque todas las plantillas
+    // confirman con este modal. Ver EnvioAgencia.tsx.
+    const { ctx, activo: conAgencia } = useEnvioAgencia();
+    const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
     if (!isOpen) return null;
+    const confirmar = () => {
+        if (conAgencia && ctx) {
+            const falta = faltaEnvioAgencia(ctx.valor, ctx.direccion);
+            setErrorEnvio(falta);
+            if (falta) return;
+        }
+        onConfirm();
+    };
 
     return (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60   transition-all animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full border border-gray-100 p-6 relative overflow-hidden">
+            <div className={`bg-white rounded-3xl shadow-2xl ${conAgencia ? 'max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden' : 'max-w-sm overflow-hidden'} w-full border border-gray-100 p-6 relative`}>
 
                 {/* Decorative background circle */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-gray-50 rounded-full z-0 opacity-50" />
@@ -45,6 +59,8 @@ export default function ConfirmOrderModal({
                         </span>
                     </p>
 
+                    <EnvioAgenciaSeccion color={tiendaColor} error={errorEnvio} />
+
                     <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 mb-6 flex gap-3 items-start">
                         <Icon icon="solar:info-circle-bold" className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-blue-700">
@@ -61,7 +77,7 @@ export default function ConfirmOrderModal({
                             Cancelar
                         </button>
                         <button
-                            onClick={onConfirm}
+                            onClick={confirmar}
                             disabled={loading}
                             className="flex-1 py-3 px-4 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                             style={{ backgroundColor: tiendaColor }}

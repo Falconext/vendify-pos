@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import AutopartesHeader from '@/components/tienda/AutopartesHeader';
 import Footer from '@/components/tienda/Footer';
 import AutopartesCartModal from '@/components/tienda/AutopartesCartModal';
@@ -45,7 +46,7 @@ export default function AutopartesProductoDetalle() {
         if (!slug) return;
         const loadTienda = async () => {
             try {
-                const res = await axios.get(`${BASE_URL}/public/store/${slug}`);
+                const res = await obtenerTiendaPublica(slug);
                 const data = res.data.data || res.data;
                 setTienda(recordarVentaSinStock(data));
                 

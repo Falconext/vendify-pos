@@ -197,6 +197,38 @@ export default function ConfiguracionTienda() {
                 <label className="text-sm dark:text-gray-300">Acepto pedidos de productos agotados</label>
               </div>
             </div>
+            {formData.aceptaEnvio && (
+              <div className="rounded-xl border border-gray-200 p-4 dark:border-slate-700">
+                <p className="text-sm font-medium dark:text-white">Envío por agencia</p>
+                <p className="mb-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  Tu cliente elige en la tienda la agencia donde recoge y deja su DNI. El pedido te llega listo para pasarlo a nota de venta con el envío armado.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  {[{ id: 'SHALOM', label: 'Shalom' }, { id: 'OLVA', label: 'Olva Courier' }].map((c) => {
+                    const lista: string[] = formData.couriersTienda || [];
+                    const marcado = lista.includes(c.id);
+                    return (
+                      <label key={c.id} className="flex items-center gap-2 text-sm dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={marcado}
+                          onChange={() =>
+                            handleChange({
+                              target: {
+                                name: 'couriersTienda',
+                                value: marcado ? lista.filter((x) => x !== c.id) : [...lista, c.id],
+                              },
+                            })
+                          }
+                          className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700"
+                        />
+                        {c.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {formData.aceptaEnvio && <InputPro label="Costo de envío fijo (S/)" name="costoEnvioFijo" type="number" value={formData.costoEnvioFijo} onChange={handleChange} placeholder="0.00" isLabel />}
             {formData.aceptaEnvio && <InputPro label="Envío gratis desde (S/) — 0 = nunca gratis" name="envioGratisDesdeSoles" type="number" value={formData.envioGratisDesdeSoles} onChange={handleChange} placeholder="0.00" isLabel />}
             {formData.aceptaRecojo && <InputPro label="Dirección de recojo" name="direccionRecojo" value={formData.direccionRecojo} onChange={handleChange} placeholder="Av. Principal 123, Distrito, Ciudad" isLabel />}

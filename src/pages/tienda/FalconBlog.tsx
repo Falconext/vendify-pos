@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { obtenerTiendaPublica } from '@/lib/tiendaPublica';
 import {
   GREEN, resolveFalconGreen, getName, storeNameOf, editable, withPreviewQuery,
   FalconHeader, FalconFooter, FalconBenefits,
@@ -322,7 +323,7 @@ export default function FalconBlog() {
       setLoading(true);
       try {
         const [storeRes, catRes] = await Promise.all([
-          axios.get(`${BASE_URL}/public/store/${slug}`),
+          obtenerTiendaPublica(slug),
           axios.get(`${BASE_URL}/public/store/${slug}/categories`).catch(() => ({ data: { data: [] } })),
         ]);
         setTienda(recordarVentaSinStock(storeRes.data.data || storeRes.data));

@@ -308,7 +308,7 @@ export default function ApiculturaCatalogoPage({
           <section className="min-w-0">
             <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <p className="text-sm font-bold text-gray-500">
-                Mostrando <span className="text-black">1-{sortedProductos.length}</span> de <span className="text-black">{totalLabel}</span> resultados
+                {loading && sortedProductos.length === 0 ? 'Cargando productos…' : <>Mostrando <span className="text-black">1-{sortedProductos.length}</span> de <span className="text-black">{totalLabel}</span> resultados</>}
               </p>
               <div className="flex items-center gap-3">
                 <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="h-11 min-w-[190px] rounded border border-gray-100 bg-white px-4 text-sm font-bold text-gray-500 outline-none">

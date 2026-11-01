@@ -2,12 +2,21 @@ import { useState, useEffect, type ChangeEvent } from 'react';
 import { useParams, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import axios from 'axios';
+import { obtenerTiendaPublica, tiendaPublicaEnCache } from '@/lib/tiendaPublica';
 import StoreHeader from '@/components/tienda/StoreHeader';
 import Footer from '@/components/tienda/Footer';
 import ProductCardPio from '@/components/tienda/ProductCardPio';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
 import CargandoTienda from '@/components/tienda/CargandoTienda';
+import {
+    ENVIO_AGENCIA_INICIAL,
+    EnvioAgenciaContext,
+    payloadEnvioAgencia,
+    type AgenciaTienda,
+    type CourierTienda,
+    type EnvioAgenciaValor,
+} from '@/components/tienda/EnvioAgencia';
 import { templateRegistry } from '@/templates/registry';
 import { resolveTemplateId } from '@/components/tienda/resolveTemplate';
 import { clearTiendaCart, persistTiendaCart, tiendaCartKey } from '@/utils/tiendaCart';
@@ -66,10 +75,22 @@ export default function Checkout() {
     const previewPlantillaId = searchParams.get('previewPlantilla');
     useStorePreviewNavigation(previewPlantillaId);
     const { carrito: carritoStateInitial, tienda: tiendaFromState } = location.state || {};
-    const [carritoState, setCarritoState] = useState<any[]>(carritoStateInitial || []);
+    // El carrito guardado se lee al crear la página, no después de pintarla:
+    // si no, el checkout mostraba la pantalla de carga al llegar desde la tienda.
+    const [carritoState, setCarritoState] = useState<any[]>(() => {
+        if (carritoStateInitial?.length) return carritoStateInitial;
+        try {
+            const guardado = JSON.parse(localStorage.getItem(tiendaCartKey(slug || '')) || '[]');
+            return Array.isArray(guardado) ? guardado : [];
+        } catch { return []; }
+    });
 
     // Mejora 1: tienda como estado — se carga desde API si no viene por navegación
-    const [tienda, setTienda] = useState<any>(withStorePurchaseWhatsapp(tiendaFromState) || null);
+    const [tienda, setTienda] = useState<any>(() => {
+        // La que trae la navegación o, si ya se cargó en otra página, la de memoria.
+        const t = tiendaFromState || tiendaPublicaEnCache(slug);
+        return t ? withStorePurchaseWhatsapp(t) : null;
+    });
 
     const [configPago, setConfigPago] = useState<PaymentConfig | null>(null);
     const [configEnvio, setConfigEnvio] = useState<any>(null);
@@ -95,13 +116,16 @@ export default function Checkout() {
 
     const [search, setSearch] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    // Envío por agencia: se elige en el modal de confirmación (EnvioAgencia.tsx).
+    const [envioAgencia, setEnvioAgencia] = useState<EnvioAgenciaValor>(ENVIO_AGENCIA_INICIAL);
+    const [agenciasCache] = useState(() => new Map<CourierTienda, Promise<AgenciaTienda[]>>());
 
     // Mejora 1: cargar tienda desde API si no está disponible por navigation state
     const [tiendaError, setTiendaError] = useState(false);
     const cargarTienda = () => {
         if (!slug) return;
         setTiendaError(false);
-        axios.get(`${BASE_URL}/public/store/${slug}`)
+        obtenerTiendaPublica(slug)
             .then(({ data }) => setTienda(recordarVentaSinStock(withStorePurchaseWhatsapp(data.data || data))))
             .catch((e) => { console.error(e); setTiendaError(true); });
     };
@@ -162,20 +186,9 @@ export default function Checkout() {
     };
 
     useEffect(() => {
-        if ((!carritoState || carritoState.length === 0) && slug) {
-            try {
-                const saved = localStorage.getItem(tiendaCartKey(slug));
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setCarritoState(parsed);
-                        refrescarImagenesCarrito(parsed);
-                    } else { navigate(`/tienda/${slug}`); return; }
-                } else { navigate(`/tienda/${slug}`); return; }
-            } catch { navigate(`/tienda/${slug}`); return; }
-        } else if (carritoStateInitial?.length > 0) {
-            refrescarImagenesCarrito(carritoStateInitial);
-        }
+        // Sin nada que pagar, de vuelta a la tienda.
+        if (carritoState.length === 0) { if (slug) navigate(`/tienda/${slug}`); return; }
+        refrescarImagenesCarrito(carritoState);
         setIsLoaded(true);
         cargarConfigPago();
         cargarConfigEnvio();
@@ -239,6 +252,9 @@ export default function Checkout() {
                 costoEnvio: Number(raw.costoEnvioFijo ?? raw.costoEnvio ?? 0),
                 envioGratisDesdeSoles: Number(raw.envioGratisDesdeSoles ?? 0),
                 minimoCompra: Number(raw.minimoCompra ?? 0),
+                couriers: (Array.isArray(raw.couriersTienda) ? raw.couriersTienda : []).filter(
+                    (c: string): c is CourierTienda => c === 'SHALOM' || c === 'OLVA',
+                ) as CourierTienda[],
             };
             setConfigEnvio(normalized);
             if (normalized.aceptaRecojo && !normalized.aceptaEnvio) setFormData(prev => ({ ...prev, tipoEntrega: 'RECOJO' }));
@@ -261,6 +277,28 @@ export default function Checkout() {
     };
 
     // Mejora 3: email opcional — solo nombre y teléfono son obligatorios
+    const couriersTienda: CourierTienda[] = configEnvio?.couriers ?? [];
+    const envioAgenciaCtx = {
+        couriers: couriersTienda,
+        tipoEntrega: formData.tipoEntrega,
+        valor: envioAgencia,
+        setValor: setEnvioAgencia,
+        direccion: formData.clienteDireccion,
+        setDireccion: (d: string) => setFormData((prev) => ({ ...prev, clienteDireccion: d })),
+        cargarAgencias: (c: CourierTienda) => {
+            // Una sola descarga por courier: la lista no cambia mientras compra.
+            if (!agenciasCache.has(c)) {
+                agenciasCache.set(
+                    c,
+                    axios.get(`${BASE_URL}/public/store/${slug}/agencias/${c}`).then(({ data }) => data.data || data || []),
+                );
+            }
+            const p = agenciasCache.get(c)!;
+            p.catch(() => agenciasCache.delete(c));
+            return p;
+        },
+    };
+
     const validarFormulario = (): boolean => {
         const errores: Record<string, string> = {};
         if (!formData.clienteNombre.trim()) errores.clienteNombre = 'El nombre es requerido';
@@ -271,7 +309,9 @@ export default function Checkout() {
         if (formData.medioPago === 'TARJETA' && !formData.clienteEmail.trim()) {
             errores.clienteEmail = 'Para pagar con tarjeta, el email es obligatorio';
         }
-        if (formData.tipoEntrega === 'ENVIO' && !formData.clienteDireccion.trim()) errores.clienteDireccion = 'La dirección es requerida para envío';
+        // Con agencias, la dirección (o la agencia) se pide en el modal de
+        // confirmación: el cliente que recoge en Shalom no tiene que escribirla.
+        if (formData.tipoEntrega === 'ENVIO' && !couriersTienda.length && !formData.clienteDireccion.trim()) errores.clienteDireccion = 'La dirección es requerida para envío';
         const minimo = configEnvio?.minimoCompra || 0;
         if (minimo > 0 && calcularSubtotal() < minimo) {
             errores._minimo = `Monto mínimo de pedido: S/ ${minimo.toFixed(2)}`;
@@ -319,6 +359,7 @@ export default function Checkout() {
             const items = carritoState.map((item: any) => ({ productoId: item.productoId || item.id, cantidad: item.cantidad, modificadores: item.modificadores }));
             const { data } = await axios.post(`${BASE_URL}/public/store/${slug}/orders`, {
                 ...formData,
+                ...payloadEnvioAgencia(envioAgencia, formData.tipoEntrega),
                 items,
                 total: totalPedido,
                 culqiToken: culqiTokenPayload?.token,
@@ -447,7 +488,7 @@ export default function Checkout() {
 
     // Hasta tener la tienda no se sabe su plantilla: pintar algo antes muestra
     // el checkout por defecto y luego "salta" al de la tienda. Pantalla neutra.
-    if (!tienda || !isLoaded) {
+    if (!tienda || (!isLoaded && carritoState.length === 0)) {
         return <CargandoTienda error={tiendaError} onReintentar={cargarTienda} />;
     }
 
@@ -465,6 +506,7 @@ export default function Checkout() {
     if (templateConfig?.CheckoutPage) {
         const TemplateCheckout = templateConfig.CheckoutPage;
         return (
+            <EnvioAgenciaContext.Provider value={envioAgenciaCtx}>
             <TemplateCheckout
                 slug={slug || ''}
                 tienda={tienda}
@@ -504,10 +546,12 @@ export default function Checkout() {
                 pedidoCreado={pedidoCreado}
                 enviarPedido={enviarPedido}
             />
+            </EnvioAgenciaContext.Provider>
         );
     }
 
     return (
+        <EnvioAgenciaContext.Provider value={envioAgenciaCtx}>
         <div className="min-h-screen bg-[#F6F6F6]" style={{ fontFamily: '"Mona Sans", Inter, sans-serif' }}>
             <StoreHeader
                 tienda={tienda || {}}
@@ -853,5 +897,6 @@ export default function Checkout() {
                 tiendaColor="#FF9500"
             />
         </div>
+        </EnvioAgenciaContext.Provider>
     );
 }
