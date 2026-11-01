@@ -5,6 +5,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { post } from '@/utils/fetch';
 import apiClient from '@/utils/apiClient';
 import { diasRestantesLima, formatFechaLima } from '@/utils/fechaLima';
+import { clientesNuevos, contarPorVista, masActivas, ordenarPorActividad, ordenarPorAlta, pasaVista, type OrdenEmpresas, type VistaEmpresas } from './vistaEmpresas';
 
 // Día calendario en hora de Lima — misma fórmula que backend y panel reseller
 const formatDateOnly = (value?: string | Date | null): string => formatFechaLima(value);
@@ -58,7 +59,24 @@ export const useEmpresaIndexViewModel = (): any => {
     const [tipoFiltro, setTipoFiltro] = useState<'FORMAL' | 'INFORMAL' | ''>('');
     const [estadoFiltro, setEstadoFiltro] = useState<'ACTIVO' | 'INACTIVO' | 'TODOS'>('TODOS');
     const [saludFiltro, setSaludFiltro] = useState<'' | 'EN_RIESGO'>('');
-    const [itemsPerPage, setItemsPerPage] = useState(50);
+    // Por defecto solo las vigentes: las vencidas se acumulan y tapaban a las
+    // que usan el sistema. Se recuerda la elección de quien administra.
+    const [vista, setVistaState] = useState<VistaEmpresas>(() => {
+        try {
+            const v = localStorage.getItem('admin:empresas:vista');
+            return v === 'VENCIDAS' || v === 'TODAS' ? v : 'VIGENTES';
+        } catch {
+            return 'VIGENTES';
+        }
+    });
+    const setVista = (v: VistaEmpresas) => {
+        setVistaState(v);
+        try { localStorage.setItem('admin:empresas:vista', v); } catch { /* sin almacenamiento */ }
+    };
+    // Las vistas se calculan sobre lo cargado: con 50 por página las vencidas
+    // de otras páginas no se contaban.
+    const [orden, setOrden] = useState<OrdenEmpresas>('RECIENTES');
+    const [itemsPerPage, setItemsPerPage] = useState(300);
     const [isOpenModalConfirm, setIsOpenModalConfirm] = useState(false);
     const [selectedEmpresa, setSelectedEmpresa] = useState<any>(null);
     const [currentPageState, setCurrentPageState] = useState(1);
@@ -139,6 +157,9 @@ export const useEmpresaIndexViewModel = (): any => {
             'Tienda Virtual': tiendaEstado,
             fechaExpiracion: formatDateOnly(empresa.fechaExpiracion),
             'Vence en': formatDaysUntil(diasRestantes),
+            diasRestantes,
+            fechaActivacion: empresa.fechaActivacion ?? null,
+            grupo: esClienteDemo(empresa) ? 'DEMO' : 'PAGO',
             estado: empresa.estado,
             // Uso del sistema: comprobantes emitidos (boleta / factura / nota de venta)
             comprobantes: empresa.comprobantes ?? { boletas: 0, facturas: 0, notasVenta: 0, total: 0 },
@@ -236,6 +257,8 @@ export const useEmpresaIndexViewModel = (): any => {
     // KPI de retención sobre el conjunto cargado (respeta búsqueda/estado del servidor)
     const kpis = {
         enRiesgoFuga: empresasTable.filter(estaEnRiesgoFuga).length,
+        // Clientes que pagan dados de alta este mes (la demo que pasa a producción cuenta el mes en que pasa).
+        nuevos: clientesNuevos(empresasTable),
     };
 
     const pasaSalud = (e: any) => (saludFiltro === 'EN_RIESGO' ? estaEnRiesgoFuga(e) : true);
@@ -249,7 +272,16 @@ export const useEmpresaIndexViewModel = (): any => {
         return dias >= 0 && dias <= 7;
     };
 
-    const empresasTableFiltradas = empresasTable.filter((e: any) => pasaVencimiento(e) && pasaSalud(e));
+    // Buscando por RUC o nombre se muestran todas: una vencida no puede
+    // "desaparecer" de la búsqueda por estar en otra vista.
+    const buscando = debounceSearch.trim().length > 0;
+    const vistaEfectiva: VistaEmpresas = buscando ? 'TODAS' : vista;
+    const conteoVista = contarPorVista(empresasTable);
+    const ranking = masActivas(empresasTable.filter((e: any) => e.estado === 'ACTIVO'));
 
-    return { exportando, exportarEmpresas, empresas, empresasTable: empresasTableFiltradas, kpis, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, saludFiltro, setSaludFiltro, toggleSalud, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp, handleAbrirWhatsapp, seguimientoEmpresa, openSeguimiento, closeSeguimiento, onGestionActualizada };
+    const filtradas = empresasTable.filter((e: any) => pasaVista(e, vistaEfectiva) && pasaVencimiento(e) && pasaSalud(e));
+    // La última empresa dada de alta arriba; o las que más facturan.
+    const empresasTableFiltradas = orden === 'ACTIVIDAD' ? ordenarPorActividad(filtradas) : ordenarPorAlta(filtradas);
+
+    return { vista, setVista, vistaEfectiva, buscando, conteoVista, orden, setOrden, ranking, exportando, exportarEmpresas, empresas, empresasTable: empresasTableFiltradas, kpis, totalEmpresas, loading, error, searchTerm, tipoFiltro, estadoFiltro, saludFiltro, setSaludFiltro, toggleSalud, itemsPerPage, currentPageState, setCurrentPageState, setItemsPerPage, pages, indexOfFirstItem, indexOfLastItem, isOpenModalConfirm, setIsOpenModalConfirm, selectedEmpresa, openEmpresaModal, setOpenEmpresaModal, empresaModalMode, empresaEditingId, setEmpresaEditingId, setEmpresaModalMode, handleSearch, handleEdit, handleToggleState, handleDelete, confirmAction, refreshEmpresas, setTipoFiltro, setEstadoFiltro, drawerEmpresa, setDrawerEmpresa, handleViewDetails, proximasVencer, alertasDismissed, setAlertasDismissed, filtroPorVencer, setFiltroPorVencer, getDiasRestantes, handleEnviarRecordatorioEmail, handleEnviarRecordatorioWhatsapp, handleAbrirWhatsapp, seguimientoEmpresa, openSeguimiento, closeSeguimiento, onGestionActualizada };
 };

@@ -171,7 +171,7 @@ const EmpresasIndex = () => {
       </div>
 
       {/* KPI de retención — clic para filtrar. Cruza la actividad de facturación de cada empresa. */}
-      <div className="mb-5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           onClick={vm.toggleSalud}
@@ -187,7 +187,37 @@ const EmpresasIndex = () => {
           </div>
           {vm.saludFiltro === 'EN_RIESGO' && <Icon icon="solar:close-circle-bold" className="ml-auto text-slate-400 text-lg" />}
         </button>
+
+        {/* Clientes que pagan dados de alta este mes (sin demos), contra el mes anterior. */}
+        <div
+          title="Empresas que pagan (no demo) activadas este mes. Una demo que pasa a producción cuenta el mes en que pasa."
+          className="flex w-full sm:w-auto sm:min-w-[280px] items-center gap-3 p-4 rounded-3xl bg-white dark:bg-[#111827] shadow-[0_2px_20px_rgba(15,23,42,0.05)]"
+        >
+          <div className="h-11 w-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 grid place-items-center shrink-0">
+            <Icon icon="solar:user-plus-bold-duotone" className="text-2xl text-emerald-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-white leading-none">{vm.kpis?.nuevos?.esteMes ?? 0}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Clientes nuevos este mes · {vm.kpis?.nuevos?.mesAnterior ?? 0} el anterior</p>
+          </div>
+        </div>
       </div>
+
+      {/* Las que más facturan en 30 días (solo vigentes). */}
+      {vm.ranking?.length > 0 && !vm.buscando && vm.vista !== 'VENCIDAS' && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Más activas</span>
+          {vm.ranking.map((e: any, i: number) => (
+            <button key={e.id} type="button" onClick={() => vm.handleViewDetails(e)}
+              title={`${e.salud?.ventas30 ?? 0} comprobantes en 30 días · ${e.salud?.ventas7 ?? 0} en 7`}
+              className="h-8 px-3 rounded-full bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-violet-300 flex items-center gap-1.5">
+              <span className="text-violet-500 font-extrabold">{i + 1}</span>
+              <span className="max-w-[160px] truncate">{e.nombreComercial || e['Razon Social']}</span>
+              <span className="text-slate-400">{e.salud?.ventas30 ?? 0}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Card contenedora */}
       <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] overflow-hidden">
@@ -197,6 +227,22 @@ const EmpresasIndex = () => {
             style={{ borderColor: `${ACCENT}55`, color: ACCENT }}>
             <Icon icon="solar:refresh-linear" className={vm.loading ? 'animate-spin' : ''} /> Actualizar
           </button>
+
+          {/* Vigentes por defecto; buscando se ve todo. */}
+          <div className="flex h-9 items-center rounded-xl border border-slate-200 dark:border-slate-700 p-0.5" title={vm.buscando ? 'Buscando: se muestran todas' : undefined}>
+            {([['VIGENTES', 'Vigentes', vm.conteoVista?.vigentes], ['VENCIDAS', 'Vencidas', vm.conteoVista?.vencidas], ['TODAS', 'Todas', vm.conteoVista?.todas]] as const).map(([id, label, n]) => (
+              <button key={id} type="button" onClick={() => vm.setVista(id)} disabled={vm.buscando}
+                className={`h-full px-3 rounded-[10px] text-sm font-semibold transition-colors disabled:opacity-50 ${vm.vistaEfectiva === id ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'text-slate-500 dark:text-gray-400 hover:text-slate-700'}`}>
+                {label} <span className="text-xs opacity-70">{n ?? 0}</span>
+              </button>
+            ))}
+          </div>
+
+          <select value={vm.orden} onChange={(ev) => vm.setOrden(ev.target.value)}
+            className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm font-semibold text-slate-600 dark:text-gray-300">
+            <option value="RECIENTES">Más recientes</option>
+            <option value="ACTIVIDAD">Más activas</option>
+          </select>
 
           {/* Filtro tipo */}
           <div className="relative">
