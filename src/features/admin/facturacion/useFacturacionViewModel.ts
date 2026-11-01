@@ -45,7 +45,7 @@ import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroac
 import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
 import { montoACredito } from './montoACredito';
 
-import { afectacionPorDefecto } from '@/utils/afectacionIgv';
+import { afectacionPorDefecto, afectacionConCandado } from '@/utils/afectacionIgv';
 type EnvioDespachoFormData = {
     transportista?: string;
     tipoEnvio?: string;
@@ -444,7 +444,9 @@ export const useFacturacionViewModel = () => {
     }
 
     const initialFormProduct: IFormProduct = {
-        productoId: 0, descripcion: "", categoriaId: 0, precioUnitario: 0, categoriaNombre: "", afectacionNombre: "Gravado – Operación Onerosa", tipoAfectacionIGV: "10", stock: 50, codigo: "", unidadMedidaId: 1, unidadMedidaNombre: "UNIDAD", estado: "", codigoBarras: "", disponibleParaVenta: true
+        productoId: 0, descripcion: "", categoriaId: 0, precioUnitario: 0, categoriaNombre: "",
+        // Producto creado desde el POS: nace con el default de la empresa (exonerado con Ley de Amazonía).
+        afectacionNombre: NOMBRE_AFECTACION[afectacionPorDefecto(auth?.empresa as any)] || "Gravado – Operación Onerosa", tipoAfectacionIGV: afectacionPorDefecto(auth?.empresa as any), stock: 50, codigo: "", unidadMedidaId: 1, unidadMedidaNombre: "UNIDAD", estado: "", codigoBarras: "", disponibleParaVenta: true
     }
 
     const [formValuesProduct, setFormValuesProduct] = useState<IFormProduct>(initialFormProduct);
@@ -972,7 +974,10 @@ export const useFacturacionViewModel = () => {
                         const categoriaNombre = productoEnCatalogo
                             ? (categories?.find((c: any) => c.id === productoEnCatalogo.categoriaId)?.nombre || "General")
                             : "General";
-                        const tipoAfectacionIGV = productoEnCatalogo?.tipoAfectacionIGV || "10";
+                        // `products` es la página del catálogo: el producto de la guía puede no
+                        // estar ahí. Antes caía a "10" y, con Ley de Amazonía, la factura salía
+                        // gravada; el producto de la guía o el default de la empresa va primero.
+                        const tipoAfectacionIGV = String(d.producto?.tipoAfectacionIGV || productoEnCatalogo?.tipoAfectacionIGV || afectacionPorDefecto(auth?.empresa as any));
                         addProductsInvoice({
                             productoId: d.productoId || 0,
                             descripcion: d.descripcion,
@@ -1215,12 +1220,14 @@ export const useFacturacionViewModel = () => {
             if (productos && Array.isArray(productos) && productos.length > 0) {
                 resetProductInvoice();
                 productos.forEach((d: any) => {
-                    const mapped = mapDetalleToInvoiceProduct(d);
+                    const mapped: any = mapDetalleToInvoiceProduct(d);
                     // Ítem libre (producto externo, sin fila en el catálogo): viaja
                     // con productoId null para que el backend lo emita como línea
                     // libre. Forzar un id acá era lo que tumbaba la conversión.
                     // La de la nota de venta; si no vino, la de la empresa (Amazonía exonera), no '10' fijo.
-                    const afectacion = String(mapped.tipoAfectacionIGV ?? afectacionPorDefecto(auth?.empresa as any));
+                    // Con Ley de Amazonía, una línea gravada de un producto exonerado
+                    // vuelve a exonerada (afectacionConCandado), igual que emite el backend.
+                    const afectacion = String(afectacionConCandado(mapped.tipoAfectacionIGV, mapped.afectacionProducto, auth?.empresa as any) || afectacionPorDefecto(auth?.empresa as any));
                     addProductsInvoice({
                         ...mapped,
                         productoId: mapped.productoId ?? null,

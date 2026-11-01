@@ -45,3 +45,23 @@ export const afectacionPorDefecto = (
 export const nombreAfectacionPorDefecto = (
     empresa?: EmpresaConAfectacion | null,
 ): string => NOMBRE_AFECTACION[afectacionPorDefecto(empresa)];
+
+/**
+ * Candado de Ley de Amazonía al cargar líneas de otro documento: si la línea
+ * dice gravado pero el producto es exonerado o inafecto, vale el producto.
+ *
+ * Espeja a `afectacionDeLinea` del backend, que ya emite así. Va también acá
+ * para que la pantalla muestre lo que se va a emitir: la NV01-2 de FRUTA PURA
+ * (editada antes de pos-web #98) traía líneas gravadas y el POS enseñaba IGV
+ * que la boleta no iba a llevar.
+ */
+export const afectacionConCandado = (
+    deLaLinea: string | null | undefined,
+    delProducto: string | null | undefined,
+    empresa?: EmpresaConAfectacion | null,
+): string | null | undefined => {
+    if (empresa?.leyAmazonia && String(deLaLinea) === AFECTACION_GRAVADO && ['20', '30'].includes(String(delProducto))) {
+        return String(delProducto);
+    }
+    return deLaLinea;
+};

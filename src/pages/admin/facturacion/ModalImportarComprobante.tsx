@@ -11,6 +11,11 @@ import { useProductsStore } from "@/zustand/products";
 import { useClientsStore } from "@/zustand/clients";
 import { post } from "@/utils/fetch";
 import apiClient from "@/utils/apiClient";
+import { useAuthStore } from "@/zustand/auth";
+import { afectacionPorDefecto } from "@/utils/afectacionIgv";
+
+/** Sin afectación en el documento: el default de la empresa (exonerado con Ley de Amazonía). */
+const afectacionEmpresa = () => afectacionPorDefecto(useAuthStore.getState().auth?.empresa as any);
 import ModalImportarLote from "./ModalImportarLote";
 
 interface ModalImportarComprobanteProps {
@@ -47,7 +52,7 @@ const emptyItem = (): ImportItem => ({
     cantidad: 1,
     nuevoValorUnitario: 0,
     unidadVenta: 'NIU',
-    tipoAfectacionIGV: '10',
+    tipoAfectacionIGV: afectacionEmpresa(),
 });
 
 const ModalImportarComprobante = ({ isOpen, onClose, onSuccess }: ModalImportarComprobanteProps) => {
@@ -168,7 +173,7 @@ const ModalImportarComprobante = ({ isOpen, onClose, onSuccess }: ModalImportarC
                 cantidad: Number(d.cantidad) || 1,
                 nuevoValorUnitario: Number(d.nuevoValorUnitario) || 0,
                 unidadVenta: d.unidadVenta || 'NIU',
-                tipoAfectacionIGV: d.tipoAfectacionIGV || '10',
+                tipoAfectacionIGV: d.tipoAfectacionIGV || afectacionEmpresa(),
             }));
             setItems(importedItems.length > 0 ? importedItems : [emptyItem()]);
             setParsedTotales(data.totales || null);
@@ -296,7 +301,7 @@ const ModalImportarComprobante = ({ isOpen, onClose, onSuccess }: ModalImportarC
                     cantidad: Number(it.cantidad),
                     nuevoValorUnitario: Number(it.nuevoValorUnitario),
                     unidadVenta: it.unidadVenta || undefined,
-                    tipoAfectacionIGV: it.tipoAfectacionIGV || '10',
+                    tipoAfectacionIGV: it.tipoAfectacionIGV || afectacionEmpresa(),
                 })),
             };
             const resp: any = await post('/comprobante/importar', payload);
