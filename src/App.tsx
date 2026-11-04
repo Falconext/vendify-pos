@@ -58,6 +58,7 @@ import SeguimientoPedido from './pages/tienda/SeguimientoPedido'
 import ContactoRouter from './pages/tienda/ContactoRouter'
 import BlogRouter from './pages/tienda/BlogRouter'
 import TiendaLogin from './pages/TiendaLogin'
+import DatosEnvioClientePage from './pages/datos-envio/DatosEnvioClientePage'
 import TiendaHome from './pages/TiendaHome'
 
 import CatalogoGlobal from './pages/admin/sistema/CatalogoGlobal'
@@ -123,6 +124,8 @@ function App() {
           }
         />
         {/* Login específico para tienda (mismo backend, layout invertido) */}
+        {/* El cliente llena sus datos de envío desde un enlace, sin cuenta. */}
+        <Route path="/datos-envio/:token" element={<DatosEnvioClientePage />} />
         <Route path="/tienda/login" element={<TiendaLogin />} />
         {/* <Route
           path="/dashboard"

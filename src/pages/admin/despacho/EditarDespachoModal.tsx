@@ -4,6 +4,7 @@ import { Calendar } from "@/components/Date";
 import Select from "@/components/Select";
 import moment from "moment";
 import apiClient from "@/utils/apiClient";
+import { enviarEnlaceDatosCliente } from './enlaceDatosCliente';
 import useAlertStore from "@/zustand/alert";
 import { useExtentionsStore } from '@/zustand/extentions';
 import { TIPOS_VENTA_REPARTO, FORMAS_PAGO_COBRO, filtrarDistritos, cobraEnDestinoReparto } from './repartoPropio';
@@ -128,6 +129,23 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
     const [saving, setSaving] = useState(false);
     const [generandoGuia, setGenerandoGuia] = useState(false);
     const { alert } = useAlertStore();
+    const [pidiendoDatos, setPidiendoDatos] = useState(false);
+
+    // Lo que llene el cliente llega al despacho guardado, no a este
+    // formulario abierto: se cierra para que al reabrir se vea lo suyo y no
+    // se pise con lo que había acá.
+    const pedirDatosCliente = async () => {
+        setPidiendoDatos(true);
+        const error = await enviarEnlaceDatosCliente(comprobanteId);
+        setPidiendoDatos(false);
+        if (error) {
+            alert(error, 'error');
+            return;
+        }
+        alert('Enlace listo para enviar por WhatsApp. Cuando el cliente lo llene te llegará un aviso.', 'success');
+        onSuccess();
+        onClose();
+    };
     const { repartidores, fetchRepartidores } = useRepartidoresStore();
     // Distritos (ubigeo) para el reparto propio: se cargan una sola vez.
     const { ubigeos, getUbigeos } = useExtentionsStore();
@@ -364,10 +382,23 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
                                 <p className="text-indigo-200 text-xs mt-0.5">Actualizar datos de envío o agregar número de guía</p>
                             </div>
                         </div>
-                        <button type="button" onClick={onClose}
-                            className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors">
-                            <Icon icon="solar:close-circle-bold" className="text-lg" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Que el cliente llene sus datos él mismo (provincia):
+                                se le manda un enlace por WhatsApp. Solo mientras
+                                no hay guía; ver enlaceDatosCliente.ts. */}
+                            {!envioData.nroOrden && !envioData.codigoGuia && (!envioData.estado || envioData.estado === 'PREPARANDO' || envioData.estado === 'CONFIRMADO') && (
+                                <button type="button" onClick={pedirDatosCliente} disabled={pidiendoDatos}
+                                    className="h-8 px-3 rounded-xl bg-white/15 hover:bg-white/25 flex items-center gap-1.5 text-white text-xs font-bold transition-colors disabled:opacity-60"
+                                    title="El cliente llena su nombre, DNI, celular y agencia desde un enlace">
+                                    <Icon icon={pidiendoDatos ? 'svg-spinners:180-ring-with-bg' : 'mdi:whatsapp'} className="text-base" />
+                                    <span className="hidden sm:inline">Pedir datos al cliente</span>
+                                </button>
+                            )}
+                            <button type="button" onClick={onClose}
+                                className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors">
+                                <Icon icon="solar:close-circle-bold" className="text-lg" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Courier chips */}

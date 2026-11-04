@@ -5,6 +5,20 @@ import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
+import type { MensajeEstadoPendiente } from './ModalMensajeEstado';
+
+const ETIQUETA_ESTADO: Record<string, string> = {
+    PREPARANDO: 'Preparando',
+    CONFIRMADO: 'Confirmado',
+    EN_CAMINO: 'En camino',
+    EN_AGENCIA: 'En agencia',
+    EN_DESTINO: 'En destino',
+    ENTREGADO: 'Entregado',
+    DEVUELTO: 'Devuelto',
+};
+
+// Estados internos: no se le avisa al cliente, no se abre el mensaje.
+const ESTADOS_SIN_AVISO = new Set(['PREPARANDO', 'CONFIRMADO']);
 
 export type TipoVenta =
     | 'BOLETA' | 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO'
@@ -13,7 +27,7 @@ export type TipoVenta =
 
 export type EstadoPago = 'PAGADO' | 'PENDIENTE' | 'PARCIAL';
 export type EstadoSunat = 'ACEPTADO' | 'PENDIENTE' | 'RECHAZADO' | 'NO_APLICA' | 'ANULADO';
-export type EstadoDespacho = 'PREPARANDO' | 'EN_CAMINO' | 'EN_DESTINO' | 'ENTREGADO' | 'DEVUELTO' | 'NO_APLICA';
+export type EstadoDespacho = 'PREPARANDO' | 'CONFIRMADO' | 'EN_CAMINO' | 'EN_DESTINO' | 'ENTREGADO' | 'DEVUELTO' | 'NO_APLICA';
 
 export interface VentaPanelItem {
     id: number;
@@ -35,6 +49,8 @@ export interface VentaPanelItem {
     envioAgrupadoEn?: string | null;
     repartidorId: number | null;
     repartidor: string;
+    /** Color de la etiqueta del repartidor (#RRGGBB), si la empresa le puso uno. */
+    repartidorColor?: string | null;
     tipoEnvio: string;
     agenciaDestino: string;
     celularDest: string;
@@ -81,6 +97,7 @@ const esCuentaPorCobrar = (item: VentaPanelItem) => esDocumentoVisible(item) && 
 
 const DESPACHO_TO_PEDIDO: Record<string, { estadoEntrega: string; estadoEnvio: string }> = {
     PREPARANDO: { estadoEntrega: 'CONFIRMADO',           estadoEnvio: 'POR_COORDINAR' },
+    CONFIRMADO: { estadoEntrega: 'CONFIRMADO',           estadoEnvio: 'POR_COORDINAR' },
     EN_CAMINO:  { estadoEntrega: 'EN_TRANSITO',          estadoEnvio: 'EN_REPARTO' },
     EN_DESTINO: { estadoEntrega: 'EN_TRANSITO',          estadoEnvio: 'EN_REPARTO' },
     ENTREGADO:  { estadoEntrega: 'ENTREGADO_COMPLETADO', estadoEnvio: 'ENTREGADO' },
@@ -128,6 +145,9 @@ export function usePanelVentasViewModel() {
     const [filtroSerie, setFiltroSerie] = useState('');
     const [filtroDni, setFiltroDni] = useState('');
     const [filtroProducto, setFiltroProducto] = useState('');
+    // Courier (SHALOM_PRO, PROPIOS…) y estado de entrega: filtros en el navegador.
+    const [filtroCourier, setFiltroCourier] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('');
     const [filtroRepartidorId, setFiltroRepartidorId] = useState<number | null | undefined>(() => {
         const id = Number(searchParams.get('repartidorId'));
         return Number.isFinite(id) && id > 0 ? id : undefined;
@@ -211,6 +231,9 @@ export function usePanelVentasViewModel() {
         else if (tab === 'CON_DESPACHO') base = base.filter((i) => i.estadoDespacho !== 'NO_APLICA');
         else if (tab === 'POR_COBRAR') base = base.filter(esCuentaPorCobrar);
 
+        if (filtroCourier) base = base.filter((i) => i.estadoDespacho !== 'NO_APLICA' && i.courier === filtroCourier);
+        if (filtroEstado) base = base.filter((i) => i.estadoDespacho === filtroEstado);
+
         if (filtroRepartidorId !== undefined) {
             base = base.filter((i) =>
                 filtroRepartidorId === null
@@ -235,9 +258,92 @@ export function usePanelVentasViewModel() {
         }
 
         return base;
-    }, [items, tab, busqueda, filtroSerie, filtroDni, filtroProducto, filtroRepartidorId]);
+    }, [items, tab, busqueda, filtroSerie, filtroDni, filtroProducto, filtroRepartidorId, filtroCourier, filtroEstado]);
+
+    // El aviso al cliente se revisa y edita antes de salir: al cambiar el estado
+    // se abre el mensaje armado en vez de mandarlo solo.
+    const [mensajeEstado, setMensajeEstado] = useState<{
+        item: VentaPanelItem;
+        estado: string;
+        pendiente: MensajeEstadoPendiente;
+    } | null>(null);
+    const [procesandoMensaje, setProcesandoMensaje] = useState(false);
+
+    /**
+     * Rótulos impresos → "Confirmado": así el próximo lote solo trae los pedidos
+     * nuevos y nadie reimprime ni se confunde. Solo cambian los que seguían en
+     * Preparando; no le avisa al cliente.
+     *
+     * Se pregunta antes: el diálogo de impresión no dice si se imprimió o se
+     * canceló, y quien solo quería ver cómo sale el rótulo terminaba con sus
+     * pedidos fuera de "Por preparar".
+     */
+    const [rotulosPorConfirmar, setRotulosPorConfirmar] = useState<number[]>([]);
+    const preguntarRotulosImpresos = useCallback((comprobanteIds: number[]) => {
+        const ids = new Set(comprobanteIds);
+        setRotulosPorConfirmar(
+            items
+                .filter((i) => i.comprobanteId && ids.has(i.comprobanteId) && i.estadoDespacho === 'PREPARANDO')
+                .map((i) => i.comprobanteId as number),
+        );
+    }, [items]);
+
+    const marcarRotulosImpresos = useCallback(async (comprobanteIds: number[]) => {
+        if (!comprobanteIds.length) return;
+        try {
+            const r = await apiClient.post('/envio-despacho/rotulos-impresos', { comprobanteIds });
+            const n = Number((r.data?.data ?? r.data)?.confirmados ?? 0);
+            if (!n) return;
+            const ids = new Set(comprobanteIds);
+            setItems((prev) =>
+                prev.map((i) =>
+                    i.comprobanteId && ids.has(i.comprobanteId) && i.estadoDespacho === 'PREPARANDO'
+                        ? { ...i, estadoDespacho: 'CONFIRMADO' as EstadoDespacho }
+                        : i,
+                ),
+            );
+            alert(n === 1 ? '1 pedido pasó a Confirmado (rótulo impreso)' : `${n} pedidos pasaron a Confirmado (rótulo impreso)`, 'success');
+        } catch {
+            // Si falla, solo no se marcan: el rótulo ya salió impreso.
+        }
+    }, [alert]);
+
+    const marcarEstadoLocal = useCallback((item: VentaPanelItem, nuevoEstado: string) => {
+        setItems((prev) =>
+            prev.map((i) =>
+                i.id === item.id && i.tipo === item.tipo
+                    ? { ...i, estadoDespacho: nuevoEstado as EstadoDespacho }
+                    : i,
+            ),
+        );
+    }, []);
 
     const actualizarEstado = useCallback(async (item: VentaPanelItem, nuevoEstado: string) => {
+        if (item.comprobanteId && !ESTADOS_SIN_AVISO.has(nuevoEstado)) {
+            try {
+                const r = await apiClient.get(
+                    `/envio-despacho/comprobante/${item.comprobanteId}/mensaje-estado`,
+                    { params: { estado: nuevoEstado } },
+                );
+                const data = r.data?.data ?? r.data;
+                if (data?.texto) {
+                    setMensajeEstado({
+                        item,
+                        estado: nuevoEstado,
+                        pendiente: {
+                            referencia: item.referencia,
+                            cliente: item.cliente,
+                            estadoLabel: ETIQUETA_ESTADO[nuevoEstado] ?? nuevoEstado,
+                            telefono: data.telefono ?? item.clienteTelefono ?? '',
+                            texto: data.texto,
+                        },
+                    });
+                    return;
+                }
+            } catch {
+                // Sin vista previa sigue el cambio de siempre (con su aviso automático).
+            }
+        }
         try {
             if (item.comprobanteId) {
                 await apiClient.put(`/envio-despacho/comprobante/${item.comprobanteId}`, { estado: nuevoEstado });
@@ -260,6 +366,36 @@ export function usePanelVentasViewModel() {
             alert('Error al actualizar estado', 'error');
         }
     }, [alert]);
+
+    /** Cierra el modal del mensaje: cambia el estado sin aviso automático y, si se pidió, manda el texto revisado. */
+    const confirmarMensajeEstado = useCallback(async (enviar: boolean, telefono?: string, texto?: string) => {
+        if (!mensajeEstado?.item.comprobanteId) return;
+        const { item, estado } = mensajeEstado;
+        setProcesandoMensaje(true);
+        try {
+            await apiClient.put(`/envio-despacho/comprobante/${item.comprobanteId}`, { estado, notificar: false });
+            marcarEstadoLocal(item, estado);
+        } catch {
+            setProcesandoMensaje(false);
+            alert('Error al actualizar estado', 'error');
+            return;
+        }
+        if (!enviar) {
+            setProcesandoMensaje(false);
+            setMensajeEstado(null);
+            alert('Estado actualizado (sin aviso al cliente)', 'success');
+            return;
+        }
+        try {
+            await apiClient.post(`/envio-despacho/comprobante/${item.comprobanteId}/mensaje`, { telefono, texto });
+            alert('Estado actualizado y mensaje enviado al cliente', 'success');
+        } catch (e: any) {
+            alert(`Estado actualizado, pero el mensaje no salió: ${e?.response?.data?.message || 'error'}`, 'warning');
+        } finally {
+            setProcesandoMensaje(false);
+            setMensajeEstado(null);
+        }
+    }, [mensajeEstado, marcarEstadoLocal, alert]);
 
     const itemsVisibles = useMemo(() => items.filter(esDocumentoVisible), [items]);
     const countTodo = itemsVisibles.length;
@@ -414,6 +550,9 @@ export function usePanelVentasViewModel() {
         exportando, exportarResumen,
         repartoResumen, exportandoReparto, exportarReparto,
         items, filtrados,
+        marcarRotulosImpresos,
+        rotulosPorConfirmar, setRotulosPorConfirmar, preguntarRotulosImpresos,
+        mensajeEstado, setMensajeEstado, procesandoMensaje, confirmarMensajeEstado,
         loading,
         tab, setTab,
         busqueda, setBusqueda,
@@ -421,6 +560,8 @@ export function usePanelVentasViewModel() {
         filtroDni, setFiltroDni,
         filtroProducto, setFiltroProducto,
         filtroRepartidorId, setFiltroRepartidorId,
+        filtroCourier, setFiltroCourier,
+        filtroEstado, setFiltroEstado,
         filtroUsuarioId, setFiltroUsuarioId,
         canFilterByUsuario,
         esPrincipalAdmin,

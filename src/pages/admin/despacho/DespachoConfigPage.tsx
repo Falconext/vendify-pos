@@ -3,12 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { get, put } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import {
+    type CampoProvincia,
+    type ProvinciaActiva,
+    MENSAJES_PROVINCIA_DEFAULT,
+    VARIABLES_PROVINCIA,
+    errorProvincia,
+    payloadProvincia,
+    provinciaActivaDesde,
+} from './despachoMensajes';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
 interface DespachoConfig {
     mensajeEnCamino: string;
     mensajeEntregado: string;
+    /** Opcional: "en camino" para provincia (agencia). Vacío = el general. */
+    mensajeEnCaminoAgencia: string;
+    /** Opcional: "entregado" para provincia (recogió en agencia). */
+    mensajeEntregadoAgencia: string;
     notificarEnCamino: boolean;
     notificarEntregado: boolean;
 }
@@ -16,18 +29,22 @@ interface DespachoConfig {
 const DEFAULTS: DespachoConfig = {
     mensajeEnCamino: 'Hola {{nombre}}, tu pedido {{pedido}} ya está en camino 🚚. Repartidor: {{repartidor}}.',
     mensajeEntregado: 'Hola {{nombre}}, tu pedido {{pedido}} fue entregado exitosamente ✅. ¡Gracias por preferir {{empresa}}!',
+    mensajeEnCaminoAgencia: '',
+    mensajeEntregadoAgencia: '',
     notificarEnCamino: true,
     notificarEntregado: true,
 };
 
-const EJEMPLO = { nombre: 'Juan Pérez', pedido: 'B001-00000123', repartidor: 'Carlos Quispe', empresa: 'Mi Empresa' };
+const EJEMPLO = { nombre: 'Juan Pérez', pedido: 'B001-00000123', repartidor: 'Carlos Quispe', empresa: 'Mi Empresa', agencia: 'Shalom Cusco Centro', clave: '4321' };
 
 function interpolar(template: string) {
     return template
         .replace(/\{\{nombre\}\}/g, EJEMPLO.nombre)
         .replace(/\{\{pedido\}\}/g, EJEMPLO.pedido)
         .replace(/\{\{repartidor\}\}/g, EJEMPLO.repartidor)
-        .replace(/\{\{empresa\}\}/g, EJEMPLO.empresa);
+        .replace(/\{\{empresa\}\}/g, EJEMPLO.empresa)
+        .replace(/\{\{agencia\}\}/g, EJEMPLO.agencia)
+        .replace(/\{\{clave\}\}/g, EJEMPLO.clave);
 }
 
 interface SectionProps {
@@ -40,9 +57,20 @@ interface SectionProps {
     placeholder: string;
     onToggle: (v: boolean) => void;
     onMensaje: (v: string) => void;
+    provincia?: VarianteProvincia;
 }
 
-function SeccionTemplate({ title, icon, color, estadoLabel, habilitado, mensaje, placeholder, onToggle, onMensaje }: SectionProps) {
+/** Variante opcional del aviso para envíos a provincia (agencia Shalom/Olva). */
+interface VarianteProvincia {
+    activa: boolean;
+    onActiva: (v: boolean) => void;
+    mensaje: string;
+    onMensaje: (v: string) => void;
+    placeholder: string;
+    variables: string[];
+}
+
+function SeccionTemplate({ title, icon, color, estadoLabel, habilitado, mensaje, placeholder, onToggle, onMensaje, provincia }: SectionProps) {
     const preview = interpolar(mensaje || placeholder);
 
     return (
@@ -97,6 +125,53 @@ function SeccionTemplate({ title, icon, color, estadoLabel, habilitado, mensaje,
                         </p>
                         <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">{preview}</p>
                     </div>
+
+                    {provincia && (
+                        <div className="space-y-3 border-t border-dashed border-slate-200 dark:border-slate-700 pt-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Mensaje distinto cuando recoge en agencia</p>
+                                    <p className="text-xs text-slate-400 dark:text-gray-400 mt-0.5">Para envíos a provincia. Apagado, sale el mensaje de arriba.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={provincia.activa}
+                                    aria-label={`Mensaje de agencia: ${title}`}
+                                    onClick={() => provincia.onActiva(!provincia.activa)}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${provincia.activa ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${provincia.activa ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                            {provincia.activa && (
+                                <>
+                                    <textarea
+                                        value={provincia.mensaje}
+                                        onChange={e => provincia.onMensaje(e.target.value)}
+                                        placeholder={provincia.placeholder}
+                                        aria-label={`Texto para agencia: ${title}`}
+                                        maxLength={1000}
+                                        rows={3}
+                                        className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 outline-none focus:border-[var(--accent)] transition-colors resize-none"
+                                    />
+                                    <p className="text-[11px] text-slate-400 dark:text-gray-400 flex flex-wrap items-center gap-1">
+                                        <span className="font-semibold text-slate-500 dark:text-gray-400">Variables:</span>
+                                        {provincia.variables.map(v => (
+                                            <code key={v} className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-md font-mono">{`{{${v}}}`}</code>
+                                        ))}
+                                    </p>
+                                    <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-3.5">
+                                        <p className="text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                            <Icon icon="mdi:whatsapp" className="text-sm" />
+                                            Vista previa (agencia)
+                                        </p>
+                                        <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">{interpolar(provincia.mensaje || provincia.placeholder)}</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -113,6 +188,7 @@ export default function DespachoConfigPage() {
     const [config, setConfig] = useState<DespachoConfig>(DEFAULTS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [provinciaActiva, setProvinciaActiva] = useState<ProvinciaActiva>({ mensajeEnCaminoAgencia: false, mensajeEntregadoAgencia: false });
 
     const cargar = useCallback(async () => {
         setLoading(true);
@@ -122,9 +198,12 @@ export default function DespachoConfigPage() {
                 setConfig({
                     mensajeEnCamino: res.data.mensajeEnCamino ?? DEFAULTS.mensajeEnCamino,
                     mensajeEntregado: res.data.mensajeEntregado ?? DEFAULTS.mensajeEntregado,
+                    mensajeEnCaminoAgencia: res.data.mensajeEnCaminoAgencia ?? '',
+                    mensajeEntregadoAgencia: res.data.mensajeEntregadoAgencia ?? '',
                     notificarEnCamino: res.data.notificarEnCamino ?? true,
                     notificarEntregado: res.data.notificarEntregado ?? true,
                 });
+                setProvinciaActiva(provinciaActivaDesde(res.data));
             }
         } catch {
             alert('Error al cargar configuración', 'error');
@@ -136,9 +215,14 @@ export default function DespachoConfigPage() {
     useEffect(() => { cargar(); }, [cargar]);
 
     const guardar = async () => {
+        const errorTexto = errorProvincia(config, provinciaActiva);
+        if (errorTexto) {
+            alert(errorTexto, 'error');
+            return;
+        }
         setSaving(true);
         try {
-            await put('/envio-despacho/config', config);
+            await put('/envio-despacho/config', { ...config, ...payloadProvincia(config, provinciaActiva) });
             alert('Configuración guardada', 'success');
         } catch {
             alert('Error al guardar configuración', 'error');
@@ -149,6 +233,19 @@ export default function DespachoConfigPage() {
 
     const set = <K extends keyof DespachoConfig>(key: K, value: DespachoConfig[K]) =>
         setConfig(prev => ({ ...prev, [key]: value }));
+
+    /** Al prender la variante se propone un texto de partida, para no empezar en blanco. */
+    const varianteProvincia = (campo: CampoProvincia): VarianteProvincia => ({
+        activa: provinciaActiva[campo],
+        onActiva: (v) => {
+            setProvinciaActiva(prev => ({ ...prev, [campo]: v }));
+            if (v && !config[campo].trim()) set(campo, MENSAJES_PROVINCIA_DEFAULT[campo]);
+        },
+        mensaje: config[campo],
+        onMensaje: (t) => set(campo, t),
+        placeholder: MENSAJES_PROVINCIA_DEFAULT[campo],
+        variables: VARIABLES_PROVINCIA[campo],
+    });
 
     return (
         <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
@@ -234,6 +331,7 @@ export default function DespachoConfigPage() {
                         placeholder={DEFAULTS.mensajeEnCamino}
                         onToggle={v => set('notificarEnCamino', v)}
                         onMensaje={v => set('mensajeEnCamino', v)}
+                        provincia={varianteProvincia('mensajeEnCaminoAgencia')}
                     />
                     <SeccionTemplate
                         title="Estado: Entregado"
@@ -245,6 +343,7 @@ export default function DespachoConfigPage() {
                         placeholder={DEFAULTS.mensajeEntregado}
                         onToggle={v => set('notificarEntregado', v)}
                         onMensaje={v => set('mensajeEntregado', v)}
+                        provincia={varianteProvincia('mensajeEntregadoAgencia')}
                     />
                 </div>
             )}
