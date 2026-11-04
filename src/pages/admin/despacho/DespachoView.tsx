@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import moment from 'moment';
 import apiClient from '@/utils/apiClient';
+import { enviarEnlaceDatosCliente } from './enlaceDatosCliente';
 import useAlertStore from '@/zustand/alert';
 import DataTable from '@/components/Datatable';
 import { Calendar } from '@/components/Date';
@@ -570,6 +571,15 @@ export default function DespachoView() {
         () => queryRepartidorId ? Number(queryRepartidorId) : undefined
     );
     const [editingDespacho, setEditingDespacho] = useState<number | null>(null);
+    const [pidiendoDatos, setPidiendoDatos] = useState<number | null>(null);
+
+    /** Le manda al cliente el enlace para que llene sus datos de envío. */
+    const pedirDatosCliente = async (comprobanteId: number) => {
+        setPidiendoDatos(comprobanteId);
+        const error = await enviarEnlaceDatosCliente(comprobanteId);
+        setPidiendoDatos(null);
+        if (error) alert(error, 'error');
+    };
     const [editingPedidoTienda, setEditingPedidoTienda] = useState<DespachoItem | null>(null);
     const [trazabilidadItem, setTrazabilidadItem] = useState<DespachoItem | null>(null);
     const [trazabilidadPedidoTienda, setTrazabilidadPedidoTienda] = useState<DespachoItem | null>(null);
@@ -1022,6 +1032,20 @@ export default function DespachoView() {
                             <Icon icon="mdi:whatsapp" className="text-base" />
                         </a>
                     ) : null}
+                    {/* Mientras no haya guía, el cliente puede llenar sus datos
+                        de envío él mismo (enlaceDatosCliente.ts). */}
+                    {item.tipo === 'COMPROBANTE' && item.comprobanteId && toDespachoEstado(item.estado) === 'PREPARANDO' && !item.codigoGuia && !item.nroOrden && (
+                        <button
+                            type="button"
+                            onClick={() => pedirDatosCliente(item.comprobanteId!)}
+                            disabled={pidiendoDatos === item.comprobanteId}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition-colors disabled:opacity-50"
+                            title="Pedirle al cliente sus datos de envío (enlace por WhatsApp)"
+                            aria-label="Pedir datos de envío al cliente"
+                        >
+                            <Icon icon={pidiendoDatos === item.comprobanteId ? 'svg-spinners:180-ring-with-bg' : 'solar:user-id-bold'} className="text-base" />
+                        </button>
+                    )}
                     {item.tipo === 'COMPROBANTE' && item.comprobanteId && (
                         <button
                             type="button"

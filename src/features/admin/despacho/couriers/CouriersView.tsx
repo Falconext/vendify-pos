@@ -96,7 +96,7 @@ function CourierCard({ c }: { c: CourierResumen }) {
     const st = courierStyle(c.courier);
     // Etapas conocidas del courier + cualquier otra que traiga el dato (p. ej. envíos
     // antiguos sin rastreo, que quedan con el estado del panel: Preparando / En camino).
-    const OTRAS: Record<string, string> = { PREPARANDO: 'Preparando', EN_CAMINO: 'En camino', EN_AGENCIA: 'En agencia', EN_DESTINO: 'En destino' };
+    const OTRAS: Record<string, string> = { PREPARANDO: 'Preparando', CONFIRMADO: 'Confirmado', EN_CAMINO: 'En camino', EN_AGENCIA: 'En agencia', EN_DESTINO: 'En destino' };
     const base = ETAPAS_COURIER[c.courier] ?? [];
     const etapas = [
         ...base,

@@ -4,22 +4,12 @@ import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
 import { mensajeErrorShalom } from '@/services/shalom.service';
+import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
+import RotuloEnvio100x150 from './RotuloEnvio100x150';
 import { COURIER_LABEL, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
+import RotuloTicket, { quienLleva, type DatosRotulo } from './RotuloTicket';
 
-interface DatosRotulo {
-    nroOrden: string | null;
-    claveOrden: string | null;
-    nombreDestinatario: string;
-    dniDestinatario: string;
-    ubicacion: string;
-    agenciaNombre: string;
-    direccion: string;
-    claveEnvio?: string | null;
-    celular?: string;
-    transportista?: string | null;
-    referencia?: string;
-}
 
 /**
  * Rótulo propio (no el PDF con la marca de Shalom): solo el bloque de
@@ -31,21 +21,28 @@ export default function RotuloPrint({
     comprobanteId,
     onDone,
     formato = 'TICKET',
+    onImpreso,
 }: {
     comprobanteId: number | null;
     onDone: () => void;
-    /** Ticket 80 mm (alto variable) o etiqueta adhesiva 80×50 mm. */
+    /** Tras imprimir: el panel pregunta si pasarlo a Confirmado. */
+    onImpreso?: (comprobanteId: number) => void;
+    /** Ticket 80 mm (alto variable) o etiqueta adhesiva de 80×50 o 100×150 mm. */
     formato?: RotuloFormato;
 }) {
     const [datos, setDatos] = useState<DatosRotulo | null>(null);
     const componentRef = useRef<HTMLDivElement>(null);
     const { alert } = useAlertStore();
+    const logo = useAuthStore((st) => (st.auth as any)?.empresa?.logo);
 
     const printFn = useReactToPrint({
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: rotuloPageStyle(formato) ?? buildComprobantePrintPageStyle({ width: 80, height: 330 }),
-        onAfterPrint: onDone,
+        onAfterPrint: () => {
+            if (comprobanteId && onImpreso) onImpreso(comprobanteId);
+            onDone();
+        },
     });
 
     useEffect(() => {
@@ -74,11 +71,21 @@ export default function RotuloPrint({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [datos]);
 
+    if (formato === 'ETIQUETA_100X150') {
+        return (
+            <div className="hidden">
+                <div ref={componentRef}>
+                    {datos && <RotuloEnvio100x150 d={datos} logo={logo} courier={quienLleva(datos)} />}
+                </div>
+            </div>
+        );
+    }
+
     if (formato === 'ETIQUETA_80X50') {
         return (
             <div className="hidden">
                 <div ref={componentRef}>
-                    {datos && <RotuloEtiqueta d={{ ...datos, referencia: datos.referencia, courier: datos.transportista ? (COURIER_LABEL[datos.transportista] ?? datos.transportista) : undefined }} />}
+                    {datos && <RotuloEtiqueta d={{ ...datos, referencia: datos.referencia, courier: quienLleva(datos) || (datos.transportista ? (COURIER_LABEL[datos.transportista] ?? datos.transportista) : undefined) }} />}
                 </div>
             </div>
         );
@@ -86,17 +93,8 @@ export default function RotuloPrint({
 
     return (
         <div className="hidden">
-            <div ref={componentRef} className="p-4 text-sm" style={{ width: '80mm' }}>
-                <p className="text-xs text-gray-500">Destinatario:</p>
-                <p className="text-lg font-bold leading-tight">{datos?.nombreDestinatario || '-'}</p>
-                <p className="text-xs font-bold mt-1">
-                    N°DOC. <span className="font-normal">{datos?.dniDestinatario || '-'}</span>
-                </p>
-
-                <p className="text-xs text-gray-500 mt-3">Destino:</p>
-                {datos?.ubicacion && <p className="text-xs text-gray-600">{datos.ubicacion}</p>}
-                <p className="text-lg font-bold leading-tight">{datos?.agenciaNombre || '-'}</p>
-                {datos?.direccion && <p className="text-xs text-gray-600">{datos.direccion}</p>}
+            <div ref={componentRef}>
+                {datos && <RotuloTicket d={datos} />}
             </div>
         </div>
     );

@@ -23,6 +23,7 @@ type PrintSize = 'TICKET' | 'A4' | 'A5';
 
 const ESTADOS_DESPACHO = [
     { id: 'PREPARANDO', value: 'Preparando',   icon: 'solar:box-bold-duotone',           color: '#F59E0B', bg: 'bg-amber-50  border-amber-200  text-amber-600'   },
+    { id: 'CONFIRMADO', value: 'Confirmado',   icon: 'solar:printer-bold-duotone',       color: '#06B6D4', bg: 'bg-cyan-50  border-cyan-200  text-cyan-600'   },
     { id: 'EN_CAMINO',  value: 'En camino',    icon: 'solar:delivery-bold-duotone',      color: '#3B82F6', bg: 'bg-blue-50   border-blue-200   text-blue-600'    },
     { id: 'EN_DESTINO', value: 'En destino',   icon: 'solar:map-point-bold-duotone',     color: '#8B5CF6', bg: 'bg-violet-50 border-violet-200 text-violet-600'  },
     { id: 'ENTREGADO',  value: 'Entregado',    icon: 'solar:check-circle-bold-duotone',  color: '#10B981', bg: 'bg-emerald-50 border-emerald-200 text-emerald-600' },
@@ -103,7 +104,7 @@ const hasRealDespacho = (envio: any) => {
     if (!envio?.id) return false;
 
     const estado = String(envio.estado ?? '').trim().toUpperCase();
-    if (estado && estado !== 'PREPARANDO' && estado !== 'NO_APLICA') return true;
+    if (estado && estado !== 'PREPARANDO' && estado !== 'CONFIRMADO' && estado !== 'NO_APLICA') return true;
 
     const hasDestino = hasUsefulText(envio.direccionDestino) || hasUsefulText(envio.agenciaDestino);
     const hasCourier = hasUsefulText(envio.transportista);
