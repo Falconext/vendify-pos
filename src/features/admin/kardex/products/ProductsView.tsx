@@ -573,6 +573,7 @@ export default function ProductsView() {
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                {!vm.soloImagenes && <>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Precio venta</p>
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.precioUnitario || 0).toFixed(2)}</p>
@@ -582,6 +583,7 @@ export default function ProductsView() {
                                     {/* El costo siempre está en soles; en productos US$ se muestra el equivalente al TC del día */}
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">S/ {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' && tcHoy ? ` (≈ $ ${(Number(item?.costoUnitario || item?.costoPromedio || 0) / tcHoy).toFixed(2)})` : ''}</p>
                                 </div>
+                                </>}
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Marca</p>
                                     <p className="mt-1 truncate font-bold text-gray-700 dark:text-gray-200">{item?.marca?.nombre || 'Sin marca'}</p>
