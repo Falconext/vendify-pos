@@ -55,6 +55,17 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
         return () => { vivo = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, esUSD]);
+    // El modal siempre está montado: el monto, el N° de operación y el TC del pago
+    // anterior no pueden quedar puestos para otra compra.
+    useEffect(() => {
+        if (!isOpen) return;
+        setMonto('');
+        setMedioPago('EFECTIVO');
+        setObservacion('');
+        setReferencia('');
+        setTcPago('');
+        setTcInfo(null);
+    }, [isOpen]);
     const tcPagoNum = Number(tcPago) || 0;
     const montoSoles = esUSD ? montoNum * tcPagoNum : montoNum;
     const diferenciaCambio = esUSD && tcCompra > 0 && tcPagoNum > 0 ? (tcPagoNum - tcCompra) * montoNum : 0;

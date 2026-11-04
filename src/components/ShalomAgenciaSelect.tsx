@@ -11,6 +11,10 @@ export interface ShalomAgencia {
     distrito: string;
     ubigeo: string;
     label: string;
+    direccion?: string;
+    /** Nombre y etiqueta que se mostraban antes: despachos ya guardados los traen. */
+    nombreAnterior?: string;
+    labelAnterior?: string;
 }
 
 interface Props {
@@ -96,7 +100,7 @@ export function ShalomAgenciaSelect({ value, onChange, onSelectAgencia, invalid,
         if (!query.trim()) return agencias.slice(0, 80);
         const q = strip(query);
         return agencias
-            .filter((a) => strip(a.label + ' ' + a.distrito).includes(q))
+            .filter((a) => strip([a.label, a.distrito, a.nombreAnterior, a.direccion].filter(Boolean).join(' ')).includes(q))
             .slice(0, 60);
     }, [query, agencias])();
 
@@ -146,7 +150,8 @@ export function ShalomAgenciaSelect({ value, onChange, onSelectAgencia, invalid,
                 className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex flex-col gap-0.5"
             >
                 <span className="text-sm font-semibold text-slate-800 dark:text-white">{a.nombre}</span>
-                <span className="text-[11px] text-slate-400">{[a.provincia, a.departamento].filter(Boolean).join(' · ')}</span>
+                <span className="text-[11px] text-slate-400">{[a.distrito, a.provincia, a.departamento].filter(Boolean).join(' · ')}</span>
+                {a.direccion && <span data-testid="agencia-opcion-direccion" className="text-[11px] leading-snug text-slate-500 dark:text-slate-400">{a.direccion}</span>}
             </button>
         ));
     }
@@ -161,6 +166,8 @@ export function ShalomAgenciaSelect({ value, onChange, onSelectAgencia, invalid,
         </div>,
         document.body,
     ) : null;
+
+    const elegida = agencias.find((a) => a.label === value || a.labelAnterior === value);
 
     return (
         <div data-shalom-select="" className={`relative ${className ?? ''}`}>
@@ -183,6 +190,12 @@ export function ShalomAgenciaSelect({ value, onChange, onSelectAgencia, invalid,
                     }
                 </span>
             </div>
+            {/* El mismo nombre puede repetirse entre locales de un distrito: la dirección confirma cuál es. */}
+            {elegida?.direccion && (
+                <p data-testid="agencia-elegida-direccion" className="mt-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                    {elegida.direccion}
+                </p>
+            )}
             {dropdown}
         </div>
     );

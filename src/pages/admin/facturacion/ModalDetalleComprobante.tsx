@@ -13,6 +13,7 @@ import Select from '@/components/Select';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from './comprobanteImprimir';
 import { etiquetaMedioPago, lineasPagoMixto } from '@/utils/pagoMixto';
+import { lineasPagoConVuelto } from '@/utils/pagoConVuelto';
 import { numberToWords } from '@/utils/numberToLetters';
 import { hasPlanFeature } from '@/utils/permissions';
 import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
@@ -89,6 +90,15 @@ const getDetalleSubtotal = (detalle: any) => Number(
     detalle?.subtotal ??
     (Number(detalle?.cantidad ?? 0) * getDetallePrecio(detalle))
 );
+// Lo que paga el cliente por la línea. El impuesto es el guardado en ella: en un
+// exonerado o inafecto es 0 y el monto queda igual. Las gratuitas (Catálogo 07:
+// 11-16/21/31-37) muestran su valor referencial, sin el IGV que asume la empresa.
+const esDetalleGratuito = (detalle: any) => /^(1[1-6]|21|3[1-7])$/.test(String(detalle?.tipoAfectacionIGV ?? detalle?.tipAfeIgv ?? ''));
+const getDetalleTotal = (detalle: any) => {
+    const subtotal = getDetalleSubtotal(detalle);
+    if (esDetalleGratuito(detalle)) return subtotal;
+    return subtotal + Number(detalle?.totalImpuestos ?? detalle?.igv ?? 0);
+};
 
 const planPermiteDespacho = (auth: any) => {
     return hasPlanFeature(auth, 'tieneDeliveryGPS');
@@ -381,6 +391,10 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                     {etiquetaMedioPago(l.method)} {monedaSimbolo} {l.amount.toFixed(2)}
                                 </p>
                             ))}
+                            {/* Con cuánto pagó y el vuelto: antes solo se veía imprimiendo. */}
+                            {String(comprobante.medioPago || '').toUpperCase() !== 'MIXTO' && lineasPagoConVuelto(comprobante, monedaSimbolo).map((linea) => (
+                                <p key={linea} data-testid="detalle-pago-vuelto" className="text-xs text-gray-500 dark:text-gray-400">{linea}</p>
+                            ))}
                         </div>
                         <div>
                             <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Cliente</p>
@@ -441,7 +455,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                         </p>
                                     </div>
                                     <p className="text-sm font-bold text-gray-800 dark:text-white shrink-0">
-                                        {monedaSimbolo} {getDetalleSubtotal(det).toFixed(2)}
+                                        {monedaSimbolo} {getDetalleTotal(det).toFixed(2)}
                                     </p>
                                 </div>
                             ))}
