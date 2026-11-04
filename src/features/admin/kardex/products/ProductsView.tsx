@@ -13,6 +13,7 @@ import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
 import CategoriaInlineSelect, { TEXTOS_MARCA } from './components/CategoriaInlineSelect';
 import ModalAsignarSedes from './components/ModalAsignarSedes';
+import ModalEtiquetasBarras from './components/ModalEtiquetasBarras';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
 import CardRestaurante from '@/components/productos/CardRestaurante';
@@ -111,6 +112,8 @@ export default function ProductsView() {
     // otra llamada.
     const [desgloseProducto, setDesgloseProducto] = useState<any | null>(null);
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
+    // Etiquetas de código de barras: los productos con los que abre el modal.
+    const [etiquetasIds, setEtiquetasIds] = useState<number[]>([]);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     // Filtros activos (para el contador del botón Filtro).
     const filtrosActivos =
@@ -910,6 +913,13 @@ export default function ProductsView() {
                                                 <Icon icon="solar:file-download-bold" className="mr-2 text-amber-500" width={18} />
                                                 Descargar Modelo (Guía)
                                             </button>
+                                            <button
+                                                onClick={() => { setEtiquetasIds(productsSource.map((p: any) => p.id)); setShowOptionsDropdown(false); }}
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
+                                            >
+                                                <Icon icon="mdi:barcode" className="mr-2 text-violet-500" width={18} />
+                                                Etiquetas de código de barras
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -1064,6 +1074,9 @@ export default function ProductsView() {
                                         <Icon icon="solar:upload-minimalistic-bold" width={16} height={16} /> <span>Subir imagen</span>
                                     </button>
                                     {!vm.soloImagenes && <>
+                                    <button type="button" onClick={() => { setEtiquetasIds([rowBase.id]); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                        <Icon icon="mdi:barcode" width={16} height={16} /> <span>Etiqueta de código de barras</span>
+                                    </button>
                                     <button type="button" onClick={() => { actions.handleToggleClientState({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
                                         <Icon icon="mdi:power" width={16} height={16} /> <span>{rowBase.estado === 'INACTIVO' ? 'Activar' : 'Desactivar'}</span>
                                     </button>
@@ -1089,6 +1102,14 @@ export default function ProductsView() {
                     </TableActionMenu>
                 </div>
             </div>
+
+            {etiquetasIds.length > 0 && (
+                <ModalEtiquetasBarras
+                    isOpen
+                    onClose={() => setEtiquetasIds([])}
+                    productoIds={etiquetasIds}
+                />
+            )}
 
             {vm.isOpenModal && <ModalProduct
                 isOpenModal={vm.isOpenModal}
