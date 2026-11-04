@@ -76,7 +76,13 @@ export default function ProductsView() {
     // completo en el state de navegación para precargar todos los campos.
     const goEditProduct = (p: any) => {
         const prod = productsSource.find((x: any) => x.id === p.id) || p;
-        navigate(`/administrador/kardex/productos/editar/${p.id}`, { state: { product: prod } });
+        navigate(`/administrador/kardex/productos/editar/${p.id}`, {
+            state: {
+                product: prod,
+                // La sede que se está viendo: el stock se edita y se guarda ahí.
+                sedeStock: vm.tieneVariasSedes ? { id: vm.effectiveSedeId ?? null, nombre: vm.selectedSedeName ?? null } : undefined,
+            },
+        });
     };
 
     const [barcodeInput, setBarcodeInput] = useState('');

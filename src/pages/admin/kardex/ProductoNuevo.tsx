@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useAuthStore } from '@/zustand/auth'
 import { Icon } from '@iconify/react'
 import apiClient from '@/utils/apiClient'
 import { useProductModalViewModel } from '@/features/admin/kardex/products/useProductModalViewModel'
@@ -28,6 +29,12 @@ export default function ProductoNuevo() {
   // Producto pasado por navegación (al hacer clic en "Editar"). Si no hay
   // (refresh / deep-link), se trae por id más abajo.
   const productFromState = (location.state as any)?.product
+  // Sede cuyo stock se edita; por deep-link, la sede de la sesión (sin ella el
+  // stock llega como la suma de todas y al guardar se escribiría en una sola).
+  const sedeActiva = useAuthStore((s) => s.sedeActiva)
+  const sedeStock: { id: number | null; nombre: string | null } | undefined =
+    (location.state as any)?.sedeStock
+    ?? (sedeActiva?.id ? { id: Number(sedeActiva.id), nombre: sedeActiva.nombre ?? null } : undefined)
 
   const [formValues, setFormValues] = useState<IFormProduct>(
     isEdit && productFromState ? buildEditFormValues(productFromState) : emptyForm(),
@@ -47,6 +54,7 @@ export default function ProductoNuevo() {
     setErrors,
     closeModal: goToList,
     setIsOpenModal: (v: boolean) => { if (!v) goToList() },
+    sedeStock,
   })
 
   // Edición: enriquecer con el detalle completo del producto (descripcionLarga,
@@ -58,7 +66,7 @@ export default function ProductoNuevo() {
     if (!productId || enrichedFor.current === productId) return
     enrichedFor.current = productId
     apiClient
-      .get(`/productos/${productId}`)
+      .get(`/productos/${productId}`, { params: sedeStock?.id ? { sedeId: sedeStock.id } : undefined })
       .then((res) => {
         const full = res?.data?.data ?? res?.data
         if (!full) return
