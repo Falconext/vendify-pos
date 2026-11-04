@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
@@ -516,6 +517,7 @@ export function FalconFooter({ tienda, slug, green, categories = [], diseno }: {
         <div className="border-t border-gray-200">
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-4 py-5 text-xs text-gray-400 md:flex-row lg:px-6">
             <p>© {new Date().getFullYear()} {storeName}. {editable(diseno?.falconFooterCopyright, 'Todos los derechos reservados.')}</p>
+            <EnlaceLibroReclamaciones slug={slug} diseno={diseno} />
             <div className="flex items-center gap-3">
               <Icon icon="logos:mastercard" width={34} /><Icon icon="logos:visa" width={34} /><Icon icon="logos:paypal" width={22} /><Icon icon="logos:apple-pay" width={34} />
             </div>

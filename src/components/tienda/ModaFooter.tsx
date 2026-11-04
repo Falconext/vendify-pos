@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import { Icon } from '@iconify/react';
 import { Link } from 'react-router-dom';
 
@@ -109,6 +110,7 @@ export default function ModaFooter({ tiendaNombre, diseno }: ModaFooterProps) {
 
         <div className="mt-16 flex flex-col gap-8 lg:mt-20 lg:flex-row lg:items-center lg:justify-between">
           <p>© {tiendaNombre} Todos los derechos reservados {year}.</p>
+          <EnlaceLibroReclamaciones />
 
           <div className="flex flex-wrap items-center gap-3">
             <span className="mr-2 text-white/60">Aceptamos</span>

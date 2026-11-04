@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import React from 'react';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
@@ -188,6 +189,7 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
             <p className="text-[11px] text-gray-500">
               ©copyright {currentYear} . Diseñado Por <span className="text-white font-bold">{BRAND.name}</span>
             </p>
+            <EnlaceLibroReclamaciones slug={slug} diseno={diseno} className="text-[11px] text-gray-400 hover:text-white" />
             <div className="flex items-center gap-6">
               <Link to="#" className="text-[11px] text-gray-400 hover:text-white transition-colors">Política de Privacidad</Link>
               <Link to="#" className="text-[11px] text-gray-400 hover:text-white transition-colors">Términos de Uso</Link>

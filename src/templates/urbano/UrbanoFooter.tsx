@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import { Link } from 'react-router-dom';
 import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
 
@@ -128,6 +129,7 @@ export default function UrbanoFooter({ tienda, diseno, slug, categories = [] }: 
 
       <div className="max-w-[1600px] mx-auto mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-gray-500 uppercase tracking-widest">
         <p>&copy; {new Date().getFullYear()} {storeName}. Todos los derechos reservados.</p>
+        <EnlaceLibroReclamaciones slug={storeSlug} diseno={cfg} />
         <div className="flex gap-6">
           {socialLinks.length ? socialLinks.map((item) => (
             <a key={item.label} href={normalizeUrl(item.url)} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">

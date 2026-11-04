@@ -107,6 +107,7 @@ export const LEGACY_SUBMODULE_ROUTES: Record<string, string> = {
   'contabilidad:sire-ventas': '/administrador/sire/ventas',
   'contabilidad:sire-compras': '/administrador/sire/compras',
   'tienda:pedidos': '/administrador/tienda/pedidos',
+  'tienda:libro-reclamaciones': '/administrador/tienda/libro-reclamaciones',
   'tienda:reviews': '/administrador/tienda/reviews',
   'tienda:blog': '/administrador/tienda/blog',
   'tienda:modificadores': '/administrador/tienda/modificadores',
@@ -254,6 +255,7 @@ export const MODULE_META: Record<string, ModuleMeta> = {
     navRoute: () => '/administrador/tienda/pedidos',
     pathPrefix: () => '/administrador/tienda',
     extraItems: () => [
+      { codigo: 'tienda:libro-reclamaciones', nombre: 'Libro de Reclamaciones', ruta: '/administrador/tienda/libro-reclamaciones' },
       { codigo: 'tienda:reviews', nombre: 'Comentarios y rating', ruta: '/administrador/tienda/reviews' },
       { codigo: 'tienda:blog', nombre: 'Blog', ruta: '/administrador/tienda/blog' },
       { codigo: 'tienda:template', nombre: 'Diseño y template', ruta: '/administrador/tienda/template' },
