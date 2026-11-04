@@ -407,16 +407,17 @@ function EnlacesSection({
   );
 }
 
-const LINK_TARGET_OPTIONS: { id: LinkFieldTarget; label: string }[] = [
-  { id: 'catalog', label: 'Catálogo' },
-  { id: 'category', label: 'Categoría' },
-  { id: 'product', label: 'Producto' },
-  { id: 'search', label: 'Búsqueda' },
-  { id: 'url', label: 'URL externa' },
-  { id: 'none', label: 'Sin enlace' },
+const LINK_TARGET_OPTIONS: { id: LinkFieldTarget; label: string; icon: string }[] = [
+  { id: 'catalog', label: 'Catálogo', icon: 'mdi:view-grid-outline' },
+  { id: 'category', label: 'Categoría', icon: 'mdi:tag-outline' },
+  { id: 'product', label: 'Producto', icon: 'mdi:package-variant-closed' },
+  { id: 'search', label: 'Búsqueda', icon: 'mdi:magnify' },
+  { id: 'url', label: 'URL', icon: 'mdi:open-in-new' },
+  { id: 'none', label: 'Sin enlace', icon: 'mdi:link-off' },
 ];
+const OPCION_AUTOMATICA = { id: '' as const, label: 'Automático', icon: 'mdi:auto-fix' };
 
-function LinkActionPicker({
+export function LinkActionPicker({
   field, diseno, categories, onChange,
 }: {
   field: LinkFieldDef;
@@ -428,24 +429,34 @@ function LinkActionPicker({
   const valueKey = `${field.key}Value`;
   const productKey = `${field.key}ProductId`;
   const urlKey = `${field.key}Url`;
-  const rawType = diseno?.[typeKey] || field.defaultType || 'catalog';
-  const type = LINK_TARGET_OPTIONS.some(o => o.id === rawType) ? rawType as LinkFieldTarget : 'catalog';
+  const rawType = diseno?.[typeKey] || (field.permiteAuto ? '' : field.defaultType || 'catalog');
+  const type = rawType === '' ? '' : LINK_TARGET_OPTIONS.some(o => o.id === rawType) ? rawType as LinkFieldTarget : 'catalog';
   const value = String(diseno?.[valueKey] ?? '');
   const url = String(diseno?.[urlKey] ?? '');
 
   return (
     <div className="rounded-xl border border-gray-100 dark:border-slate-800 p-3 space-y-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{field.label}</p>
-        <select
-          value={type}
-          onChange={e => onChange({ [typeKey]: e.target.value })}
-          className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-bold text-gray-700 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
-        >
-          {LINK_TARGET_OPTIONS.map(option => (
-            <option key={option.id} value={option.id}>{option.label}</option>
-          ))}
-        </select>
+      <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{field.label}</p>
+      {/* Botones en vez de <select>: en el panel angosto el select nativo se cortaba. */}
+      <div role="radiogroup" aria-label={field.label} className="grid grid-cols-3 gap-1.5">
+        {(field.permiteAuto ? [OPCION_AUTOMATICA, ...LINK_TARGET_OPTIONS] : LINK_TARGET_OPTIONS).map(option => {
+          const activo = type === option.id;
+          return (
+            <button
+              key={option.id || 'auto'}
+              type="button"
+              role="radio"
+              aria-checked={activo}
+              onClick={() => onChange({ [typeKey]: option.id || null })}
+              className={`flex min-w-0 items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] font-semibold leading-tight transition-colors ${activo
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:bg-slate-800'}`}
+            >
+              <Icon icon={option.icon} className="shrink-0 text-[13px]" />
+              <span className="truncate">{option.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {type === 'category' && (
@@ -506,8 +517,12 @@ function LinkActionPicker({
         <p className="text-[11px] text-gray-400">Abrirá el catálogo general de la tienda.</p>
       )}
 
+      {type === '' && (
+        <p className="text-[11px] text-gray-400">Lleva a la categoría con el mismo nombre del botón; si no existe, a lo que trae la plantilla (catálogo, contacto o WhatsApp).</p>
+      )}
+
       {type === 'none' && (
-        <p className="text-[11px] text-gray-400">El bloque se verá igual, pero no navegará a otra página.</p>
+        <p className="text-[11px] text-gray-400">{field.textoSinEnlace || 'El bloque se verá igual, pero no navegará a otra página.'}</p>
       )}
     </div>
   );

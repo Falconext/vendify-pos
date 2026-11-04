@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useIrEnTienda } from '@/components/tienda/navTienda';
 import { Icon } from '@iconify/react';
 import UrbanoHeader from './UrbanoHeader';
 import UrbanoFooter from './UrbanoFooter';
@@ -41,7 +41,7 @@ export default function UrbanoSeguimientoPage({
   handleSubmit, compartirSeguimiento, copiedLink,
   getEstadoSeguimiento, lastUpdated, TERMINAL_STATES,
 }: TemplateSeguimientoPageProps) {
-  const navigate = useNavigate();
+  const navigate = useIrEnTienda(slug, diseno);
   const storeWhatsappNumber = tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda;
   const whatsappUrl = pedido
     ? buildStorePurchaseWhatsappUrl(storeWhatsappNumber, `Hola, necesito ayuda con mi pedido ${pedido.codigoSeguimiento || ''}.`)

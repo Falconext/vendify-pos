@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { useAuthStore } from '@/zustand/auth';
+import { normalizarSedePedido } from './sedePedido';
 
 export const ESTADOS = [
     { value: 'PENDIENTE', label: 'Pendiente', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'solar:clock-circle-bold' },
@@ -110,14 +111,28 @@ export interface PedidoTiendaAdmin {
     envioAgenciaNombre?: string | null;
     /** DNI que dejó el comprador (lo pide la agencia). */
     clienteDocumento?: string | null;
+    /** Sede del pedido (stock por sede). `null` = aún sin sede (modo "Todas las sedes"). */
+    sedeId: number | null;
+    sede: { id: number; nombre: string } | null;
 }
+
+/** Sede activa de la empresa (de `GET /tienda/config` → `sedesTienda`). */
+export interface SedePedidos {
+    id: number;
+    nombre: string;
+    esPrincipal: boolean;
+}
+
+/** Filtro por sede: '' = todas, 'sin-sede', o el id. */
+export type FiltroSedePedidos = '' | 'sin-sede' | `${number}`;
 
 type PedidoPatch = Partial<Pick<PedidoTiendaAdmin,
     'estado' | 'estadoEntrega' | 'agenciaEnvio' | 'estadoEnvio' | 'numeroTracking' | 'vendedorNombre' | 'notasInternas' | 'montoPagado'
 >>;
 
-type PedidoApi = Partial<Omit<PedidoTiendaAdmin, 'items'>> & {
+type PedidoApi = Partial<Omit<PedidoTiendaAdmin, 'items' | 'sede'>> & {
     items?: unknown[];
+    sede?: unknown;
 };
 
 const toNumber = (value: unknown): number => {
@@ -214,8 +229,20 @@ const normalizarPedido = (pedido: PedidoApi): PedidoTiendaAdmin => {
         envioAgenciaId: asString(pedido.envioAgenciaId, '') || null,
         envioAgenciaNombre: asString(pedido.envioAgenciaNombre, '') || null,
         clienteDocumento: asString(pedido.clienteDocumento, '') || null,
+        ...normalizarSedePedido(pedido),
     };
 };
+
+export const leerSedesPedidos = (raw: unknown): SedePedidos[] => (
+    Array.isArray(raw) ? raw : []
+).flatMap((s) => {
+    if (!isRecord(s)) return [];
+    const id = toNumber(s.id);
+    return id > 0 ? [{ id, nombre: asString(s.nombre, `Sede ${id}`), esPrincipal: s.esPrincipal === true }] : [];
+});
+
+/** Query de `GET /tienda/pedidos` para el filtro por sede. */
+export const paramsFiltroSede = (filtro: FiltroSedePedidos): { sedeId?: string } => (filtro ? { sedeId: filtro } : {});
 
 const unwrapPedidos = (payload: ApiEnvelope<PedidoApi[] | PaginatedResponse<PedidoApi>>): PedidoApi[] => {
     const responseData = payload.data;
@@ -236,6 +263,9 @@ export const usePedidosViewModel = () => {
     const [busqueda, setBusqueda] = useState('');
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
+    const [sedes, setSedes] = useState<SedePedidos[]>([]);
+    const [filtroSede, setFiltroSede] = useState<FiltroSedePedidos>('');
+    const filtroSedeRef = useRef<FiltroSedePedidos>('');
     const { alert } = useAlertStore();
     const { auth } = useAuthStore();
 
@@ -245,7 +275,7 @@ export const usePedidosViewModel = () => {
 
     const cargarPedidos = useCallback(async () => {
         try {
-            const { data } = await apiClient.get<ApiEnvelope<PedidoApi[] | PaginatedResponse<PedidoApi>>>(`/tienda/pedidos`);
+            const { data } = await apiClient.get<ApiEnvelope<PedidoApi[] | PaginatedResponse<PedidoApi>>>(`/tienda/pedidos`, { params: paramsFiltroSede(filtroSedeRef.current) });
             const normalizados = unwrapPedidos(data).map(normalizarPedido);
 
             if (isFirstLoad.current) {
@@ -300,7 +330,7 @@ export const usePedidosViewModel = () => {
 
     const fetchSilencioso = useCallback(async () => {
         try {
-            const { data } = await apiClient.get<ApiEnvelope<PedidoApi[] | PaginatedResponse<PedidoApi>>>(`/tienda/pedidos`);
+            const { data } = await apiClient.get<ApiEnvelope<PedidoApi[] | PaginatedResponse<PedidoApi>>>(`/tienda/pedidos`, { params: paramsFiltroSede(filtroSedeRef.current) });
             const normalizados = unwrapPedidos(data).map(normalizarPedido);
             const nuevos = normalizados.filter((p) => !knownIdsRef.current.has(p.id));
 
@@ -326,6 +356,21 @@ export const usePedidosViewModel = () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [cargarPedidos, fetchSilencioso]);
+
+    // Sedes de la empresa: filtro, columna y la sede de la nota de un pedido sin sede.
+    useEffect(() => {
+        apiClient.get<ApiEnvelope<Record<string, unknown>>>('/tienda/config')
+            .then(({ data }) => setSedes(leerSedesPedidos(data?.data?.sedesTienda)))
+            .catch(() => setSedes([]));
+    }, []);
+
+    const cambiarFiltroSede = useCallback((filtro: FiltroSedePedidos) => {
+        filtroSedeRef.current = filtro;
+        setFiltroSede(filtro);
+        // Otra vista de los pedidos: los que aparecen no son "nuevos".
+        isFirstLoad.current = true;
+        void cargarPedidos();
+    }, [cargarPedidos]);
 
     const actualizarPedidoOperativo = async (pedidoId: number, patch: PedidoPatch) => {
         const pedidoActual = pedidos.find((pedido) => pedido.id === pedidoId);
@@ -445,6 +490,7 @@ export const usePedidosViewModel = () => {
         busqueda, setBusqueda,
         fechaDesde, setFechaDesde,
         fechaHasta, setFechaHasta,
+        sedes, filtroSede, setFiltroSede: cambiarFiltroSede,
         expandedOrders, newOrdersCount, clearNewOrders,
         cambiarEstado, actualizarPedidoOperativo,
         getEstadoInfo, getEntregaInfo, getAgenciaInfo, getEnvioInfo,

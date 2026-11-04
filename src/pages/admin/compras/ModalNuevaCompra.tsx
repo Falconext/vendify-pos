@@ -133,14 +133,15 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const [cuotas, setCuotas] = useState<any[]>([]);
 
     // Item entry state
-    const [currentItem, setCurrentItem] = useState({
+    const itemVacio = {
         productoId: 0,
         descripcion: '',
         cantidad: 1,
         precioUnitario: 0,
         lote: '',
         fechaVencimiento: ''
-    });
+    };
+    const [currentItem, setCurrentItem] = useState(itemVacio);
 
     const [items, setItems] = useState<any[]>([]);
     // Distribución por sede: índice de la línea cuyo panel "Distribuir" está
@@ -252,6 +253,9 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     // inventario y entra al Análisis Financiero como gasto del mes, neto de IGV.
     // null = automático (true cuando ninguna línea es un producto del catálogo).
     const [esGasto, setEsGasto] = useState<boolean | null>(null);
+    // Factura que la empresa no pagó: se registra solo por su crédito de IGV
+    // (KREZKA, 02-11). Solo en compras sin productos del catálogo.
+    const [soloCreditoIgv, setSoloCreditoIgv] = useState(false);
     const [supplierDisplay, setSupplierDisplay] = useState('');
     const [xmlBanner, setXmlBanner] = useState<{ matched: number; total: number; proveedor: boolean } | null>(null);
     const [xmlSupplierInfo, setXmlSupplierInfo] = useState<{ ruc: string; nombre: string } | null>(null);
@@ -290,6 +294,16 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             setPagosExistentes([]);
             listarCuentas();
             setItems([]);
+            // También lo que quedó a medio cargar y la clasificación de la compra
+            // anterior: el producto se veía en blanco pero "Agregar" lo agregaba.
+            setCurrentItem(itemVacio);
+            setPkg(null);
+            setPkgCajas('1');
+            setPkgCosto('');
+            setPkgLineKey(null);
+            setDistribuyendoIdx(null);
+            setDistribucion({});
+            setEsGasto(null);
             setIncluyeIgv(false);
             setCuotas([]);
             setBarcodeInput('');
@@ -339,6 +353,7 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                 }
                 setFotoUrl(d.fotoUrl || null);
                 setEsGasto(typeof d.esGasto === 'boolean' ? d.esGasto : null);
+                setSoloCreditoIgv(d.soloCreditoIgv === true);
                 // Restaurar condición de pago: si la compra tiene cuotas guardadas es
                 // a CRÉDITO; de lo contrario, CONTADO. El método de pago se toma del
                 // primer pago registrado, si existe.
@@ -1109,6 +1124,8 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             // foto al editar; en edición el estado ya trae la foto existente.
             fotoUrl: fotoUrl || null,
             esGasto: esGastoEfectivo,
+            // Con un producto del catálogo deja de aplicar (el backend lo rechazaría).
+            soloCreditoIgv: soloCreditoIgv && esGastoAuto,
             cuotas: payment.condicionPago === 'CREDITO' ? cuotas : undefined,
             subtotal,
             igv,
@@ -1357,6 +1374,21 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
                                 </label>
                             );
                         })()}
+                        {/* Solo cuando ninguna línea es del catálogo: una compra con
+                            productos entró al inventario, la empresa la tiene. */}
+                        {items.length > 0 && items.every((i: any) => !i.productoId) && (
+                            <label data-testid="compra-solo-credito-igv" className={`mt-2 flex items-start gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${soloCreditoIgv ? 'border-indigo-300 bg-indigo-50/60 dark:border-indigo-800 dark:bg-indigo-900/15' : 'border-gray-200 dark:border-slate-700 hover:border-indigo-300'}`}>
+                                <input type="checkbox" className="mt-0.5 accent-indigo-500" checked={soloCreditoIgv} onChange={(e) => setSoloCreditoIgv(e.target.checked)} />
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-semibold text-gray-900 dark:text-white">Solo para crédito de IGV (la empresa no la pagó)</span>
+                                    <span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                        {soloCreditoIgv
+                                            ? 'Va al registro de compras y su IGV cuenta como crédito fiscal, pero no resta de tu ganancia ni de tu caja.'
+                                            : 'Márcalo si registras esta factura solo por su IGV y no salió dinero de la empresa.'}
+                                    </span>
+                                </span>
+                            </label>
+                        )}
                         {esUSD && (
                             <div className="mt-3 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-200">
                                 <Icon icon="solar:info-circle-bold" width={15} className="mt-px shrink-0" />

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import apiClient from '@/utils/apiClient';
 import { Repartidor, RepartidorFormData, TipoRepartidor, useRepartidoresStore } from '@/zustand/repartidores';
+import { colorDeRepartidor } from '@/pages/admin/despacho/filtrosDespacho';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,7 +22,10 @@ type FiltroEstado = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
-const EMPTY_FORM: RepartidorFormData = { nombre: '', celular: '', tipo: 'EVENTUAL', activo: true };
+const EMPTY_FORM: RepartidorFormData = { nombre: '', celular: '', tipo: 'EVENTUAL', activo: true, color: '' };
+
+/** Colores para la etiqueta del repartidor en la lista de ventas. */
+const COLORES_REPARTIDOR = ['#7c3aed', '#2563eb', '#0891b2', '#16a34a', '#ca8a04', '#ea580c', '#dc2626', '#db2777'];
 
 const INPUT_CLASS =
   'w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition focus:border-[var(--accent)]';
@@ -71,7 +75,13 @@ function RepartidorCard({ repartidor, stats, statsLoading, onEdit, onDelete, onT
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-snug">{repartidor.nombre}</p>
+            {/* Así se ve su etiqueta en la lista de ventas. */}
+            <span
+              className="inline-block max-w-full truncate rounded-full px-2 py-0.5 text-sm font-bold leading-snug"
+              style={{ color: colorDeRepartidor(repartidor.nombre, repartidor.color), backgroundColor: `${colorDeRepartidor(repartidor.nombre, repartidor.color)}1f` }}
+            >
+              {repartidor.nombre}
+            </span>
             {repartidor.sede?.nombre && (
               <div className="flex items-center gap-1 mt-0.5">
                 <Icon icon="solar:map-point-linear" className="text-slate-400 shrink-0" width={11} />
@@ -253,7 +263,7 @@ export default function RepartidoresView() {
         const s = map.get(id)!;
         s.total++;
         gTotal++;
-        if (['PREPARANDO', 'POR_COORDINAR'].includes(item.estado)) { s.preparando++; gPreparando++; }
+        if (['PREPARANDO', 'CONFIRMADO', 'POR_COORDINAR'].includes(item.estado)) { s.preparando++; gPreparando++; }
         else if (['EN_CAMINO', 'EN_REPARTO', 'ENVIADO'].includes(item.estado)) { s.enCamino++; gEnCamino++; }
         else if (['ENTREGADO', 'ENTREGADO_COMPLETADO'].includes(item.estado)) { s.entregado++; gEntregado++; }
       });
@@ -303,7 +313,7 @@ export default function RepartidoresView() {
 
   const openEdit = (item: Repartidor) => {
     setEditing(item);
-    setForm({ nombre: item.nombre, celular: item.celular ?? '', tipo: item.tipo, activo: item.activo });
+    setForm({ nombre: item.nombre, celular: item.celular ?? '', tipo: item.tipo, activo: item.activo, color: item.color ?? '' });
     setModalOpen(true);
   };
 
@@ -317,6 +327,7 @@ export default function RepartidoresView() {
         celular: form.celular?.trim() || null,
         tipo: form.tipo,
         activo: form.activo,
+        color: form.color ?? '',
       };
       if (editing) await updateRepartidor(editing.id, payload);
       else await createRepartidor(payload);
@@ -620,6 +631,30 @@ export default function RepartidoresView() {
                   className={INPUT_CLASS}
                   placeholder="9XXXXXXXX"
                 />
+              </div>
+              {/* Color de su etiqueta en la lista de ventas: quien alista ubica
+                  rápido con quién va cada pedido. Sin elegir, uno automático. */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-400">Color en la lista de ventas</label>
+                <div className="flex flex-wrap items-center gap-2" data-testid="colores-repartidor">
+                  {COLORES_REPARTIDOR.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`Color ${c}`}
+                      onClick={() => setForm((p) => ({ ...p, color: c }))}
+                      className={`h-7 w-7 rounded-full ring-offset-2 transition ${form.color === c ? 'ring-2 ring-gray-900 dark:ring-white' : ''}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, color: '' }))}
+                    className={`h-7 rounded-full border px-2.5 text-[11px] font-semibold ${!form.color ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white' : 'border-gray-200 text-gray-500 dark:border-slate-700'}`}
+                  >
+                    Automático
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

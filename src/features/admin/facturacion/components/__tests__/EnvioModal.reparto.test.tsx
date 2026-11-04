@@ -48,6 +48,27 @@ const abrirPropio = async (props: Partial<{ medioPago: string; totalCredito: num
     await screen.findByTestId('seccion-reparto-propio');
 };
 
+function HarnessConCourierConservado({ medioPago, totalCredito }: { medioPago: string; totalCredito: number }) {
+    const [envioData, setEnvioData] = useState<any>({ ...inicial, transportista: 'PROPIOS', tipoEnvio: 'DOMICILIO', tipoVentaReparto: '', formaPagoCobro: '' });
+    ultimo = envioData;
+    const vm = { envioData, setEnvioData, setEnvioActivo: jest.fn(), esInformal: true, formValues: { medioPago }, totalCredito, selectedClient: { nombre: 'ROSA QA', telefono: '957039998' } };
+    return <EnvioModal vm={vm} onClose={() => {}} />;
+}
+
+describe('Reparto propio conservado de la venta anterior', () => {
+    it('una venta a crédito abre como contraentrega sin tocar el courier', async () => {
+        render(<HarnessConCourierConservado medioPago="Crédito" totalCredito={80} />);
+        await screen.findByTestId('seccion-reparto-propio');
+        expect(ultimo).toMatchObject({ tipoVentaReparto: 'CONTRAENTREGA', formaPagoCobro: 'EFECTIVO' });
+    });
+
+    it('una venta pagada abre como solo entrega', async () => {
+        render(<HarnessConCourierConservado medioPago="Efectivo" totalCredito={0} />);
+        await screen.findByTestId('seccion-reparto-propio');
+        expect(ultimo).toMatchObject({ tipoVentaReparto: 'SOLO_ENTREGA', formaPagoCobro: 'NO_COBRAR' });
+    });
+});
+
 describe('Coordinación de Envío (POS) · Reparto propio', () => {
     beforeEach(() => { getUbigeos.mockClear(); ultimo = null; });
 

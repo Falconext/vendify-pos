@@ -13,6 +13,8 @@ import {
     EstadoDespacho,
 } from './usePanelVentasViewModel';
 import { EditarDespachoModal } from './EditarDespachoModal';
+import { ModalMensajeEstado } from './ModalMensajeEstado';
+import { OperacionesLogisticasBar } from './OperacionesLogisticasBar';
 import { ModalTrazabilidad } from './ModalTrazabilidad';
 import ShalomTrackingModal from '@/components/ShalomTrackingModal';
 import OlvaTrackingModal from '@/components/OlvaTrackingModal';
@@ -27,6 +29,7 @@ import {
     leerRotuloFormato,
     type RotuloFormato,
 } from './rotuloFormato';
+import { opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo, type Periodo } from './filtrosDespacho';
 import { elegiblesParaRotulo } from './seleccionRotulos';
 import {
     alternarRotulo,
@@ -132,6 +135,8 @@ const SUNAT_CONFIG: Record<string, { label: string; dot: string; cls: string }> 
 
 const ESTADOS_DESPACHO: { value: EstadoDespacho; label: string }[] = [
     { value: 'PREPARANDO', label: 'Preparando' },
+    // Interno: rótulo impreso, lo están alistando. No le avisa al cliente.
+    { value: 'CONFIRMADO', label: 'Confirmado' },
     { value: 'EN_CAMINO',  label: 'En camino' },
     { value: 'EN_DESTINO', label: 'En destino' },
     { value: 'ENTREGADO',  label: 'Entregado' },
@@ -140,6 +145,7 @@ const ESTADOS_DESPACHO: { value: EstadoDespacho; label: string }[] = [
 
 const DESPACHO_CLS: Record<EstadoDespacho, string> = {
     PREPARANDO: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+    CONFIRMADO: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
     EN_CAMINO:  'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
     EN_DESTINO: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300',
     ENTREGADO:  'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
@@ -314,12 +320,16 @@ export default function PanelVentasView() {
     // La sede no cuenta acá porque tiene su propio selector siempre visible.
     const filtrosActivos =
         (vm.filtroRepartidorId !== undefined ? 1 : 0) +
+        (vm.filtroCourier ? 1 : 0) +
+        (vm.filtroEstado ? 1 : 0) +
         (vm.filtroUsuarioId ? 1 : 0) +
         (vm.filtroProducto ? 1 : 0) +
         (vm.filtroSerie ? 1 : 0) +
         (vm.filtroDni ? 1 : 0);
     const limpiarFiltros = () => {
         vm.setFiltroRepartidorId(undefined);
+        vm.setFiltroCourier('');
+        vm.setFiltroEstado('');
         vm.setFiltroUsuarioId(null);
         vm.setFiltroProducto('');
         vm.setFiltroSerie('');
@@ -582,6 +592,9 @@ export default function PanelVentasView() {
                         montoPagado: item.total,
                         saldoPendiente: 0,
                         items: pedido?.items || pedido?.detalles || [],
+                        // La sede del pedido: el punto de venta avisa si es otra que la activa.
+                        sedeId: pedido?.sedeId ?? null,
+                        sede: pedido?.sede ?? null,
                     },
                 },
             });
@@ -689,6 +702,27 @@ export default function PanelVentasView() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                    {/* Periodo rápido: hoy, esta semana (lunes a hoy) o este mes. */}
+                    <div className="flex shrink-0 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800" data-testid="periodo-rapido">
+                        {([['DIA', 'Hoy'], ['SEMANA', 'Semana'], ['MES', 'Mes']] as [Periodo, string][]).map(([p, label]) => {
+                            const hoy = moment().format('YYYY-MM-DD');
+                            const activo = periodoActivo(vm.fecha, vm.fechaFin, hoy) === p;
+                            return (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => {
+                                        const r = rangoDePeriodo(p, hoy);
+                                        vm.setFecha(r.fecha);
+                                        vm.setFechaFin(r.fechaFin);
+                                    }}
+                                    className={`h-9 rounded-md px-3 text-xs font-bold transition ${activo ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700'}`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
                         data-testid="btn-dia-anterior"
@@ -848,7 +882,7 @@ export default function PanelVentasView() {
                         title="Formato con el que se imprimen los rótulos (individuales y en lote) desde esta caja"
                         aria-label="Formato del rótulo"
                         data-testid="rotulo-formato"
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                        className="h-10 rounded-lg border border-slate-200 bg-white pl-2 pr-8 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
                     >
                         {ROTULO_FORMATOS.map((f) => (
                             <option key={f.value} value={f.value} title={f.hint}>
@@ -973,6 +1007,21 @@ export default function PanelVentasView() {
                 cards={kpis.map((k) => ({ label: k.label, value: k.value, detail: k.detail }))}
             />
 
+            {/* Operaciones logísticas: picking, packing, rótulos y plantillas de courier
+                sobre los envíos de la vista. */}
+            <OperacionesLogisticasBar
+                items={vm.filtrados}
+                diaLabel={
+                    vm.fechaEnvio
+                        ? `Sale el ${moment(vm.fechaEnvio).format('DD/MM/YYYY')}`
+                        : vm.fechaFin && vm.fechaFin > vm.fecha
+                          ? `Del ${moment(vm.fecha).format('DD/MM')} al ${moment(vm.fechaFin).format('DD/MM')}`
+                          : `Ventas del ${moment(vm.fecha).format('DD/MM/YYYY')}`
+                }
+                rotulosDisponibles={rotulosAImprimir(preparandoParaRotulo, seleccionRotulos).length}
+                onRotulos={() => setRotulosLote(rotulosAImprimir(preparandoParaRotulo, seleccionRotulos))}
+            />
+
             {/* Reparto propio / motorizado: resumen del rango (solo si hay despachos propios) */}
             {vm.repartoResumen && (Number(vm.repartoResumen.totales?.pedidos ?? 0) > 0 || (vm.repartoResumen.otrasFechas?.length ?? 0) > 0) && (
                 <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/10" data-testid="reparto-resumen">
@@ -1088,6 +1137,32 @@ export default function PanelVentasView() {
                                             <button onClick={limpiarFiltros} className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline">Limpiar</button>
                                         )}
                                     </div>
+                        {/* Courier (Shalom, Olva, reparto propio…) */}
+                        {opcionesCourier(vm.items ?? []).length > 0 && (
+                            <select
+                                value={vm.filtroCourier}
+                                onChange={(e) => vm.setFiltroCourier(e.target.value)}
+                                data-testid="filtro-courier"
+                                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 w-full"
+                            >
+                                <option value="">Todos los couriers</option>
+                                {opcionesCourier(vm.items ?? []).map((c) => (
+                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                ))}
+                            </select>
+                        )}
+                        {/* Estado de entrega: los mismos de la columna Despacho */}
+                        <select
+                            value={vm.filtroEstado}
+                            onChange={(e) => vm.setFiltroEstado(e.target.value)}
+                            data-testid="filtro-estado-despacho"
+                            className="px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 w-full"
+                        >
+                            <option value="">Todos los estados de entrega</option>
+                            {ESTADOS_DESPACHO.map((e) => (
+                                <option key={e.value} value={e.value}>{e.label}</option>
+                            ))}
+                        </select>
                         {/* Filtro repartidor */}
                         {vm.repartidoresOpciones.length > 0 && (
                             <select
@@ -1438,8 +1513,23 @@ export default function PanelVentasView() {
                                                 </td>
                                             )}
                                             {col('repartidor') && (
-                                                <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap max-w-[100px] truncate" title={item.repartidor}>
-                                                    {item.estadoDespacho !== 'NO_APLICA' ? item.repartidor : '—'}
+                                                <td className="px-3 py-2.5 text-xs whitespace-nowrap" title={quienLlevaEnLista(item)?.texto}>
+                                                    {/* Etiqueta de color: quien alista ubica rápido con quién va
+                                                        (repartidor, o el courier si va por Shalom/Olva). */}
+                                                    {(() => {
+                                                        const q = quienLlevaEnLista(item);
+                                                        if (!q) return <span className="text-gray-400">—</span>;
+                                                        if (!q.color) return <span className="text-gray-400">{q.texto}</span>;
+                                                        return (
+                                                            <span
+                                                                data-testid="badge-repartidor"
+                                                                className="inline-block max-w-[110px] truncate rounded-full px-2 py-0.5 text-[11px] font-bold"
+                                                                style={{ color: q.color, backgroundColor: `${q.color}1f` }}
+                                                            >
+                                                                {q.texto}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </td>
                                             )}
                                             <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-gray-400 max-w-[100px] truncate" title={item.vendedor}>
@@ -1514,6 +1604,14 @@ export default function PanelVentasView() {
                     onSuccess={() => { setEditDespachoId(null); vm.cargar(); }}
                 />
             )}
+            <ModalConfirm
+                isOpenModal={vm.rotulosPorConfirmar.length > 0}
+                setIsOpenModal={(v) => { if (!v) vm.setRotulosPorConfirmar([]); }}
+                title="¿Se imprimieron los rótulos?"
+                information={`Si ya los imprimiste, ${vm.rotulosPorConfirmar.length === 1 ? 'el pedido pasa' : `los ${vm.rotulosPorConfirmar.length} pedidos pasan`} a Confirmado y no vuelven a salir en el próximo lote. Si solo querías ver cómo quedan, cancela: siguen en Preparando.`}
+                confirmText="Sí, marcar Confirmado"
+                confirmSubmit={() => { const ids = vm.rotulosPorConfirmar; vm.setRotulosPorConfirmar([]); void vm.marcarRotulosImpresos(ids); }}
+            />
             <ModalConfirm
                 isOpenModal={confirmDespachoItem !== null}
                 setIsOpenModal={(v) => { if (!v) setConfirmDespachoItem(null); }}
@@ -1846,8 +1944,24 @@ export default function PanelVentasView() {
                 comprobanteId={rotuloPrintComprobanteId}
                 onDone={() => setRotuloPrintComprobanteId(null)}
                 formato={rotuloFormato}
+                onImpreso={(id) => vm.preguntarRotulosImpresos([id])}
             />
-            <RotulosLotePrint items={rotulosLote} onDone={() => setRotulosLote([])} formato={rotuloFormato} />
+            <RotulosLotePrint
+                items={rotulosLote}
+                onDone={() => setRotulosLote([])}
+                formato={rotuloFormato}
+                onImpresos={vm.preguntarRotulosImpresos}
+            />
+
+            {vm.mensajeEstado && (
+                <ModalMensajeEstado
+                    pendiente={vm.mensajeEstado.pendiente}
+                    procesando={vm.procesandoMensaje}
+                    onEnviar={(telefono, texto) => vm.confirmarMensajeEstado(true, telefono, texto)}
+                    onSoloEstado={() => vm.confirmarMensajeEstado(false)}
+                    onCancelar={() => vm.setMensajeEstado(null)}
+                />
+            )}
 
             {shalomTracking && (
                 <ShalomTrackingModal

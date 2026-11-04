@@ -3,20 +3,12 @@ import { useReactToPrint } from 'react-to-print';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
+import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
+import RotuloEnvio100x150 from './RotuloEnvio100x150';
 import { COURIER_LABEL, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
+import RotuloTicket, { quienLleva, tieneDestino, type DatosRotulo } from './RotuloTicket';
 
-interface DatosRotulo {
-    nroOrden: string | null;
-    claveOrden: string | null;
-    nombreDestinatario: string;
-    dniDestinatario: string;
-    ubicacion: string;
-    agenciaNombre: string;
-    direccion: string;
-    claveEnvio?: string | null;
-    celular?: string;
-}
 
 export interface RotuloLoteItem {
     comprobanteId: number;
@@ -36,21 +28,31 @@ export default function RotulosLotePrint({
     items,
     onDone,
     formato = 'TICKET',
+    onImpresos,
 }: {
     items: RotuloLoteItem[];
     onDone: () => void;
-    /** Ticket 80 mm (una página por rótulo) o etiqueta adhesiva 80×50 mm (una etiqueta por rótulo). */
+    /** Tras imprimir: el panel pregunta si pasarlos a Confirmado. */
+    onImpresos?: (comprobanteIds: number[]) => void;
+    /** Ticket 80 mm (una página por rótulo) o etiqueta adhesiva de 80×50 o 100×150 mm (una por rótulo). */
     formato?: RotuloFormato;
 }) {
     const [datos, setDatos] = useState<Array<RotuloLoteItem & { rotulo: DatosRotulo | null }> | null>(null);
     const componentRef = useRef<HTMLDivElement>(null);
+    // Los que de verdad salieron en este lote (sin los omitidos por falta de destino).
+    const impresosRef = useRef<number[]>([]);
     const { alert } = useAlertStore();
+    const logo = useAuthStore((st) => (st.auth as any)?.empresa?.logo);
 
     const printFn = useReactToPrint({
         // @ts-ignore
         contentRef: componentRef,
         pageStyle: rotuloPageStyle(formato) ?? buildComprobantePrintPageStyle({ width: 80, height: 330 }),
-        onAfterPrint: onDone,
+        onAfterPrint: () => {
+            if (onImpresos && impresosRef.current.length) onImpresos(impresosRef.current);
+            impresosRef.current = [];
+            onDone();
+        },
     });
 
     useEffect(() => {
@@ -67,15 +69,16 @@ export default function RotulosLotePrint({
             }));
             if (!vivo) return;
             const fallidos = res.filter((r) => !r.rotulo).length;
-            // Sin N° de orden ni agencia el rótulo no dice a dónde va: se omite
-            // (típico despacho recién coordinado o cliente WSP sin destino).
-            const sinDestino = res.filter((r) => r.rotulo && !r.rotulo.nroOrden && !r.rotulo.agenciaNombre);
+            // Sin ningún destino el rótulo no dice a dónde va: se omite. Antes
+            // también se omitía el reparto en Lima (tiene dirección, no agencia
+            // ni N° de orden) y se perdía la mitad de los rótulos.
+            const sinDestino = res.filter((r) => r.rotulo && !tieneDestino(r.rotulo));
             const listos = res.filter((r) => r.rotulo && !sinDestino.includes(r));
             if (!listos.length) {
                 alert(
                     fallidos === res.length
                         ? 'No se pudo obtener los datos de ningún rótulo'
-                        : 'Ningún despacho en Preparando tiene destino (agencia u orden) para imprimir',
+                        : 'Ningún despacho en Preparando tiene destino (dirección o agencia) para imprimir',
                     'error',
                 );
                 onDone();
@@ -88,6 +91,7 @@ export default function RotulosLotePrint({
                     'warning',
                 );
             }
+            impresosRef.current = listos.map((r) => r.comprobanteId);
             setDatos(listos);
         })();
         return () => { vivo = false; };
@@ -101,6 +105,24 @@ export default function RotulosLotePrint({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [datos]);
 
+    if (formato === 'ETIQUETA_100X150') {
+        return (
+            <div className="hidden">
+                <div ref={componentRef}>
+                    {(datos ?? []).map((d, idx) => (
+                        <RotuloEnvio100x150
+                            key={d.comprobanteId}
+                            saltoDePagina={idx < (datos?.length ?? 0) - 1}
+                            logo={logo}
+                            courier={(d.rotulo && quienLleva(d.rotulo)) || (COURIER_LABEL[d.courier] ?? d.courier)}
+                            d={{ ...(d.rotulo as DatosRotulo), referencia: d.rotulo?.referencia || d.referencia, celular: d.celular || d.rotulo?.celular }}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     if (formato === 'ETIQUETA_80X50') {
         return (
             <div className="hidden">
@@ -112,7 +134,7 @@ export default function RotulosLotePrint({
                             d={{
                                 ...(d.rotulo ?? {}),
                                 referencia: d.referencia,
-                                courier: COURIER_LABEL[d.courier] ?? d.courier,
+                                courier: (d.rotulo && quienLleva(d.rotulo)) || (COURIER_LABEL[d.courier] ?? d.courier),
                                 celular: d.celular || d.rotulo?.celular,
                             }}
                         />
@@ -126,31 +148,11 @@ export default function RotulosLotePrint({
         <div className="hidden">
             <div ref={componentRef}>
                 {(datos ?? []).map((d, idx) => (
-                    <div
+                    <RotuloTicket
                         key={d.comprobanteId}
-                        className="p-4 text-sm"
-                        style={{ width: '80mm', pageBreakAfter: idx < (datos?.length ?? 0) - 1 ? 'always' : 'auto' }}
-                    >
-                        <p className="text-[10px] text-gray-500">
-                            {d.referencia} · {COURIER_LABEL[d.courier] ?? d.courier}
-                            {d.rotulo?.nroOrden ? ` · Orden ${d.rotulo.nroOrden}` : ''}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">Destinatario:</p>
-                        <p className="text-lg font-bold leading-tight">{d.rotulo?.nombreDestinatario || '-'}</p>
-                        <p className="text-xs font-bold mt-1">
-                            N°DOC. <span className="font-normal">{d.rotulo?.dniDestinatario || '-'}</span>
-                        </p>
-                        {d.celular && (
-                            <p className="text-xs font-bold">
-                                CEL. <span className="font-normal">{d.celular}</span>
-                            </p>
-                        )}
-
-                        <p className="text-xs text-gray-500 mt-3">Destino:</p>
-                        {d.rotulo?.ubicacion && <p className="text-xs text-gray-600">{d.rotulo.ubicacion}</p>}
-                        <p className="text-lg font-bold leading-tight">{d.rotulo?.agenciaNombre || '-'}</p>
-                        {d.rotulo?.direccion && <p className="text-xs text-gray-600">{d.rotulo.direccion}</p>}
-                    </div>
+                        saltoDePagina={idx < (datos?.length ?? 0) - 1}
+                        d={{ ...(d.rotulo as DatosRotulo), referencia: d.rotulo?.referencia || d.referencia, celular: d.celular || d.rotulo?.celular }}
+                    />
                 ))}
             </div>
         </div>

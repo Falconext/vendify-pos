@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useAuthStore } from '@/zustand/auth'
 import { Icon } from '@iconify/react'
 import apiClient from '@/utils/apiClient'
 import { useProductModalViewModel } from '@/features/admin/kardex/products/useProductModalViewModel'
 import { ProductFormContent } from '@/features/admin/kardex/products/components/ProductFormContent'
+import { ProductImageUploader } from '@/features/admin/kardex/products/components/ProductImageUploader'
 import { initialProductForm, IFormProduct, buildEditFormValues } from '@/features/admin/kardex/products/ProductsModel'
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme'
 
@@ -28,6 +30,12 @@ export default function ProductoNuevo() {
   // Producto pasado por navegación (al hacer clic en "Editar"). Si no hay
   // (refresh / deep-link), se trae por id más abajo.
   const productFromState = (location.state as any)?.product
+  // Sede cuyo stock se edita; por deep-link, la sede de la sesión (sin ella el
+  // stock llega como la suma de todas y al guardar se escribiría en una sola).
+  const sedeActiva = useAuthStore((s) => s.sedeActiva)
+  const sedeStock: { id: number | null; nombre: string | null } | undefined =
+    (location.state as any)?.sedeStock
+    ?? (sedeActiva?.id ? { id: Number(sedeActiva.id), nombre: sedeActiva.nombre ?? null } : undefined)
 
   const [formValues, setFormValues] = useState<IFormProduct>(
     isEdit && productFromState ? buildEditFormValues(productFromState) : emptyForm(),
@@ -47,6 +55,7 @@ export default function ProductoNuevo() {
     setErrors,
     closeModal: goToList,
     setIsOpenModal: (v: boolean) => { if (!v) goToList() },
+    sedeStock,
   })
 
   // Edición: enriquecer con el detalle completo del producto (descripcionLarga,
@@ -58,7 +67,7 @@ export default function ProductoNuevo() {
     if (!productId || enrichedFor.current === productId) return
     enrichedFor.current = productId
     apiClient
-      .get(`/productos/${productId}`)
+      .get(`/productos/${productId}`, { params: sedeStock?.id ? { sedeId: sedeStock.id } : undefined })
       .then((res) => {
         const full = res?.data?.data ?? res?.data
         if (!full) return
@@ -75,6 +84,37 @@ export default function ProductoNuevo() {
       })
       .catch(() => {})
   }, [isEdit, id])
+
+  // Delegado solo para fotos: no crea productos y aquí solo ve las imágenes.
+  useEffect(() => {
+    if (vm.soloImagenes && !isEdit) goToList()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vm.soloImagenes, isEdit])
+
+  if (vm.soloImagenes) {
+    return (
+      <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">
+        <div className="flex items-center gap-3 mb-5">
+          <button onClick={goToList} className="h-9 w-9 grid place-items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+            <Icon icon="solar:alt-arrow-left-linear" />
+          </button>
+          <div>
+            <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Fotos del producto</h1>
+            <p className="text-sm text-slate-400 dark:text-gray-500 mt-0.5">{formValues?.descripcion || 'Sube, cambia u ordena las imágenes.'}</p>
+          </div>
+        </div>
+        <div className="max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none p-5">
+          <ProductImageUploader vm={vm} />
+          <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <button onClick={goToList} className="h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300">Cancelar</button>
+            <button onClick={vm.guardarSoloImagenes} disabled={vm.loading} className="h-10 px-5 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{ background: ACCENT }}>
+              {vm.loading ? 'Guardando fotos...' : 'Guardar fotos'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen -m-5 p-5 bg-[#F7F8FB] dark:bg-[#0A0D14] font-jakarta">

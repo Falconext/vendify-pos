@@ -95,7 +95,8 @@ export default function AutopartesCatalogoPage({
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]" style={{ fontFamily: `'${diseno.tipografia || 'Inter'}', sans-serif` }}>
-      <AutopartesHeader 
+      <AutopartesHeader
+        diseno={diseno}
         tienda={tienda || {}}
         slug={slug || ''}
         cp={cp}

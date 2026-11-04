@@ -23,6 +23,21 @@
 let aceptaPedidosAgotados = false;
 
 /**
+ * Stock con el que llega lo que NO se vende en la sede elegida
+ * (`vendible: false` del servidor; lo pone `features/tiendaSede/interceptorSede`).
+ * Es el único stock negativo posible en la tienda: los vendibles con stock
+ * negativo llegan como 0. Así `sinStock()` lo bloquea aunque la tienda acepte
+ * pedidos de agotados (no vendible ≠ agotado), sin cablear `vendible` en cada
+ * tarjeta de las plantillas.
+ */
+export const STOCK_NO_VENDIBLE = -1;
+
+/** ¿El servidor dijo que esto no se vende en la sede? */
+export function noVendible(stock: unknown): boolean {
+  return Number(stock ?? 0) < 0;
+}
+
+/**
  * Registra la política de la tienda recién cargada y devuelve la misma tienda,
  * para poder envolver la llamada: `setTienda(recordarVentaSinStock(store))`.
  */
@@ -43,6 +58,7 @@ export function aceptaVentaSinStock(): boolean {
  * "rollo de 12 m" necesita 12, no 1.
  */
 export function sinStock(stock: unknown, requerido = 1): boolean {
+  if (noVendible(stock)) return true;
   if (aceptaPedidosAgotados) return false;
   return Number(stock ?? 0) < Math.max(1, Number(requerido) || 1);
 }

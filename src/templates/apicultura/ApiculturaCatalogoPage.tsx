@@ -7,6 +7,7 @@ import ProductCustomizationModal from '@/components/tienda/ProductCustomizationM
 import { getProductPricing } from '@/templates/shared/pricing';
 import { APICULTURA_BANNER, ApiculturaFooter, ApiculturaHeader, ApiculturaProductCard } from './ApiculturaParts';
 import { honeyCard, honeyHover, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from './motion';
+import { productoEnCategoria } from '@/components/tienda/navTienda';
 
 const honeyPattern = {
   backgroundImage:
@@ -19,6 +20,8 @@ function getName(item: any) {
 }
 
 function filterCount(products: any[], key: 'categoria' | 'marca', name: string) {
+  // Categoría: cuenta también los productos que la tienen como adicional.
+  if (key === 'categoria') return products.filter((product) => productoEnCategoria(product, name)).length;
   return products.filter((product) => {
     const value = product?.[key];
     const current = typeof value === 'object' ? value?.nombre : value;

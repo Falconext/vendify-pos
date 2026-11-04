@@ -49,6 +49,7 @@ interface Props {
 
 const ESTADO_CONFIG: Record<string, { label: string; icon: string; dot: string; text: string; bg: string; border: string }> = {
     PREPARANDO:  { label: 'Preparando',  icon: 'solar:box-bold-duotone',           dot: 'bg-amber-400',   text: 'text-amber-700 dark:text-amber-300',   bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800/40'   },
+    CONFIRMADO:  { label: 'Confirmado',  icon: 'solar:printer-bold-duotone',         dot: 'bg-cyan-500',   text: 'text-cyan-700 dark:text-cyan-300',   bg: 'bg-cyan-50 dark:bg-cyan-900/20',   border: 'border-cyan-200 dark:border-cyan-800/40'   },
     EN_CAMINO:   { label: 'En camino',   icon: 'solar:delivery-bold-duotone',      dot: 'bg-blue-500',    text: 'text-blue-700 dark:text-blue-300',     bg: 'bg-blue-50 dark:bg-blue-900/20',     border: 'border-blue-200 dark:border-blue-800/40'     },
     EN_DESTINO:  { label: 'En destino',  icon: 'solar:map-point-bold-duotone',     dot: 'bg-violet-500',  text: 'text-violet-700 dark:text-violet-300', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/40' },
     ENTREGADO:   { label: 'Entregado',   icon: 'solar:check-circle-bold-duotone',  dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-300',bg: 'bg-emerald-50 dark:bg-emerald-900/20',border: 'border-emerald-200 dark:border-emerald-800/40'},
@@ -62,7 +63,7 @@ const COURIER_LABEL: Record<string, string> = {
 
 const TURNO_LABEL: Record<string, string> = { MANANA: 'Mañana', TARDE: 'Tarde', NOCHE: 'Noche' };
 
-const ORDEN_ESTADOS = ['PREPARANDO', 'EN_CAMINO', 'EN_DESTINO', 'ENTREGADO'];
+const ORDEN_ESTADOS = ['PREPARANDO', 'CONFIRMADO', 'EN_CAMINO', 'EN_DESTINO', 'ENTREGADO'];
 
 function getEstadoCfg(estado: string) {
     return ESTADO_CONFIG[estado] ?? { label: estado, icon: 'solar:info-circle-bold-duotone', dot: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };

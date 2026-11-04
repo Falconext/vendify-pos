@@ -20,9 +20,11 @@ interface GastosPanelProps {
     onAgregar: () => void;
     onEditar: (gasto: GastoOperativo) => void;
     onEliminar: (id: number) => void;
+    /** Compras sin producto que cuentan como gasto: suman al total de la tarjeta de arriba. */
+    comprasConsumo?: number;
 }
 
-export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }: GastosPanelProps) {
+export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar, comprasConsumo = 0 }: GastosPanelProps) {
     // Dos orígenes distintos que suman al mismo total: los operativos se
     // registran y editan acá; los de caja chica salen del cajón y son solo
     // lectura (se corrigen en Caja, donde se registraron).
@@ -207,7 +209,7 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
             </div>
 
             {/* Footer: cada origen por separado y el total real del periodo */}
-            {listaOrdenada.length > 0 && (
+            {(listaOrdenada.length > 0 || comprasConsumo > 0) && (
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-1.5">
                     <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gastos operativos</span>
@@ -223,10 +225,19 @@ export default function GastosPanel({ gastos, onAgregar, onEditar, onEliminar }:
                             </span>
                         </div>
                     )}
+                    {comprasConsumo > 0 && (
+                        <div className="flex justify-between items-center" data-testid="gastos-compras-sin-producto">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Compras sin producto</span>
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 tabular-nums">
+                                {formatCurrency(comprasConsumo)}
+                            </span>
+                        </div>
+                    )}
+                    {/* El mismo total que la tarjeta "Gastos + compras" de arriba. */}
                     <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 dark:border-slate-800">
                         <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total del periodo</span>
-                        <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
-                            {formatCurrency(totalOperativos + totalCaja)}
+                        <span className="text-base font-bold text-gray-900 dark:text-white tabular-nums" data-testid="gastos-total-periodo">
+                            {formatCurrency(totalOperativos + totalCaja + comprasConsumo)}
                         </span>
                     </div>
                 </div>

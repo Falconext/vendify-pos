@@ -13,6 +13,7 @@ import Select from '@/components/Select';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from './comprobanteImprimir';
 import { etiquetaMedioPago, lineasPagoMixto } from '@/utils/pagoMixto';
+import { lineasPagoConVuelto } from '@/utils/pagoConVuelto';
 import { numberToWords } from '@/utils/numberToLetters';
 import { hasPlanFeature } from '@/utils/permissions';
 import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
@@ -23,6 +24,7 @@ type PrintSize = 'TICKET' | 'A4' | 'A5';
 
 const ESTADOS_DESPACHO = [
     { id: 'PREPARANDO', value: 'Preparando',   icon: 'solar:box-bold-duotone',           color: '#F59E0B', bg: 'bg-amber-50  border-amber-200  text-amber-600'   },
+    { id: 'CONFIRMADO', value: 'Confirmado',   icon: 'solar:printer-bold-duotone',       color: '#06B6D4', bg: 'bg-cyan-50  border-cyan-200  text-cyan-600'   },
     { id: 'EN_CAMINO',  value: 'En camino',    icon: 'solar:delivery-bold-duotone',      color: '#3B82F6', bg: 'bg-blue-50   border-blue-200   text-blue-600'    },
     { id: 'EN_DESTINO', value: 'En destino',   icon: 'solar:map-point-bold-duotone',     color: '#8B5CF6', bg: 'bg-violet-50 border-violet-200 text-violet-600'  },
     { id: 'ENTREGADO',  value: 'Entregado',    icon: 'solar:check-circle-bold-duotone',  color: '#10B981', bg: 'bg-emerald-50 border-emerald-200 text-emerald-600' },
@@ -89,6 +91,15 @@ const getDetalleSubtotal = (detalle: any) => Number(
     detalle?.subtotal ??
     (Number(detalle?.cantidad ?? 0) * getDetallePrecio(detalle))
 );
+// Lo que paga el cliente por la línea. El impuesto es el guardado en ella: en un
+// exonerado o inafecto es 0 y el monto queda igual. Las gratuitas (Catálogo 07:
+// 11-16/21/31-37) muestran su valor referencial, sin el IGV que asume la empresa.
+const esDetalleGratuito = (detalle: any) => /^(1[1-6]|21|3[1-7])$/.test(String(detalle?.tipoAfectacionIGV ?? detalle?.tipAfeIgv ?? ''));
+const getDetalleTotal = (detalle: any) => {
+    const subtotal = getDetalleSubtotal(detalle);
+    if (esDetalleGratuito(detalle)) return subtotal;
+    return subtotal + Number(detalle?.totalImpuestos ?? detalle?.igv ?? 0);
+};
 
 const planPermiteDespacho = (auth: any) => {
     return hasPlanFeature(auth, 'tieneDeliveryGPS');
@@ -103,7 +114,7 @@ const hasRealDespacho = (envio: any) => {
     if (!envio?.id) return false;
 
     const estado = String(envio.estado ?? '').trim().toUpperCase();
-    if (estado && estado !== 'PREPARANDO' && estado !== 'NO_APLICA') return true;
+    if (estado && estado !== 'PREPARANDO' && estado !== 'CONFIRMADO' && estado !== 'NO_APLICA') return true;
 
     const hasDestino = hasUsefulText(envio.direccionDestino) || hasUsefulText(envio.agenciaDestino);
     const hasCourier = hasUsefulText(envio.transportista);
@@ -381,6 +392,10 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                     {etiquetaMedioPago(l.method)} {monedaSimbolo} {l.amount.toFixed(2)}
                                 </p>
                             ))}
+                            {/* Con cuánto pagó y el vuelto: antes solo se veía imprimiendo. */}
+                            {String(comprobante.medioPago || '').toUpperCase() !== 'MIXTO' && lineasPagoConVuelto(comprobante, monedaSimbolo).map((linea) => (
+                                <p key={linea} data-testid="detalle-pago-vuelto" className="text-xs text-gray-500 dark:text-gray-400">{linea}</p>
+                            ))}
                         </div>
                         <div>
                             <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Cliente</p>
@@ -441,7 +456,7 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                         </p>
                                     </div>
                                     <p className="text-sm font-bold text-gray-800 dark:text-white shrink-0">
-                                        {monedaSimbolo} {getDetalleSubtotal(det).toFixed(2)}
+                                        {monedaSimbolo} {getDetalleTotal(det).toFixed(2)}
                                     </p>
                                 </div>
                             ))}

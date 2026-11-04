@@ -95,7 +95,7 @@ export default function AutopartesHero({ cp, slug, diseno, productos }: Autopart
                 ¡Colecciones!
               </h3>
               <button 
-                onClick={() => slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?q=Fluids`)}
+                onClick={() => slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?search=${encodeURIComponent('Lubricante')}`)}
                 className="text-sm font-bold text-white hover:text-[#F5B01D] flex items-center gap-1 group"
               >
                 Ver Ahora 
@@ -118,7 +118,7 @@ export default function AutopartesHero({ cp, slug, diseno, productos }: Autopart
                 Piezas de<br/>Suspensión
               </h3>
               <button 
-                onClick={() => slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?q=Suspension`)}
+                onClick={() => slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?search=${encodeURIComponent('Suspensión')}`)}
                 className="px-6 py-2.5 text-sm font-bold text-black bg-[#F5B01D] rounded hover:bg-yellow-400 transition-colors inline-block"
               >
                 Comprar Ahora

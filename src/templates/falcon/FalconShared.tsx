@@ -1,5 +1,7 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { EnlaceTienda, itemsDeMenu, productoEnCategoria, useIrEnTienda, type ItemMenu } from '@/components/tienda/navTienda';
+import { FALCON_MENU_ATENCION, FALCON_MENU_OFERTAS, FALCON_MENU_PIE } from '@/templates/falcon/menuFalcon';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { getProductPricing } from '@/templates/shared/pricing';
@@ -274,22 +276,23 @@ export function FalconHeader({
 }: {
   tienda: any; slug: string; green: string; cartCount: number; cartTotal: number; onOpenCart: () => void; diseno?: any; categories?: any[]; products?: any[];
 }) {
-  const navigate = useNavigate();
+  const ir = useIrEnTienda(slug, diseno);
   const [search, setSearch] = useState('');
   const [openMenu, setOpenMenu] = useState<'categorias' | 'productos' | 'blog' | null>(null);
   const storeName = storeNameOf(tienda);
-  const goCatalog = (extra = '') => navigate(withPreviewQuery(`/tienda/${slug}/catalogo${extra}`, diseno));
+  const goCatalog = (extra = '') => ir(`/tienda/${slug}/catalogo${extra}`);
   const doSearch = () => { const q = search.trim(); goCatalog(q ? `?search=${encodeURIComponent(q)}` : ''); };
-  const goBlog = (id?: string) => navigate(withPreviewQuery(`/tienda/${slug}/blog${id ? `/${id}` : ''}`, diseno));
+  const goBlog = (id?: string) => ir(`/tienda/${slug}/blog${id ? `/${id}` : ''}`);
   const goCategory = (name: string) => { setOpenMenu(null); goCatalog(`?category=${encodeURIComponent(name)}`); };
-  const openProduct = (p: any) => { setOpenMenu(null); navigate(withPreviewQuery(`/tienda/${slug}/producto/${p.id}`, diseno)); };
+  const openProduct = (p: any) => { setOpenMenu(null); ir(`/tienda/${slug}/producto/${p.id}`); };
+  const ofertas = useMemo(() => itemsDeMenu(FALCON_MENU_OFERTAS, { diseno, slug, categorias: categories }), [diseno, slug, categories]);
 
   // green ya llega resuelto de forma segura desde cada página.
   const accent = green;
 
   const catNames = useMemo(() => (Array.isArray(categories) ? categories.map(getName).filter(Boolean) : []), [categories]);
   const prods = Array.isArray(products) ? products : [];
-  const prodsOf = (name: string) => prods.filter((p) => catOf(p).toLowerCase() === String(name).toLowerCase());
+  const prodsOf = (name: string) => prods.filter((p) => productoEnCategoria(p, name));
   const blogPosts = getFalconBlogPosts(diseno);
   const [hoverCat, setHoverCat] = useState<string>('');
   const activeCat = hoverCat || catNames[0] || '';
@@ -301,7 +304,7 @@ export function FalconHeader({
       <div className="h-1.5 w-full" style={{ background: green }} />
       <header className="bg-white">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:gap-8 lg:px-6">
-          <button type="button" onClick={() => navigate(withPreviewQuery(`/tienda/${slug}`, diseno))} className="shrink-0">
+          <button type="button" onClick={() => ir(`/tienda/${slug}`)} className="shrink-0">
             <FalconLogo storeName={storeName} green={green} logo={tienda?.logo || tienda?.logoUrl} />
           </button>
           <div className="flex flex-1 items-center overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm">
@@ -334,7 +337,7 @@ export function FalconHeader({
             </div>
 
             <nav className="hidden items-center gap-8 text-sm font-semibold text-[#151515] lg:flex">
-              <button type="button" onClick={() => navigate(withPreviewQuery(`/tienda/${slug}`, diseno))} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70" style={{ color: accent }}>{editable(diseno?.falconNavHome, 'Inicio')}</button>
+              <button type="button" onClick={() => ir(`/tienda/${slug}`)} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70" style={{ color: accent }}>{editable(diseno?.falconNavHome, 'Inicio')}</button>
               <button type="button" onClick={() => goCatalog()} onMouseEnter={() => setOpenMenu('productos')} className="inline-flex items-center gap-1 transition-colors hover:opacity-70">{editable(diseno?.falconNavProducts, 'Productos')} <Icon icon="solar:alt-arrow-down-linear" width={14} /></button>
               <div className="relative" onMouseEnter={() => setOpenMenu('blog')}>
                 <button type="button" onClick={() => goBlog()} className="inline-flex items-center gap-1 transition-colors hover:opacity-70">{editable(diseno?.falconNavBlog, 'Blog')} <Icon icon="solar:alt-arrow-down-linear" width={14} /></button>
@@ -347,9 +350,11 @@ export function FalconHeader({
                   </div>
                 )}
               </div>
-              <button type="button" onClick={() => goCatalog()} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70">{editable(diseno?.falconNavOffers, 'Ofertas')}</button>
+              {ofertas.map((it) => (
+                <EnlaceTienda key={it.key} href={it.href!} slug={slug} diseno={diseno} target={it.externo ? '_blank' : undefined} rel={it.externo ? 'noreferrer' : undefined} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70">{it.label}</EnlaceTienda>
+              ))}
               <button type="button" onClick={() => goCatalog()} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70">{editable(diseno?.falconNavStore, 'Tienda')}</button>
-              <button type="button" onClick={() => navigate(withPreviewQuery(`/tienda/${slug}/contacto`, diseno))} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70">{editable(diseno?.falconNavContact, 'Contacto')}</button>
+              <button type="button" onClick={() => ir(`/tienda/${slug}/contacto`)} onMouseEnter={() => setOpenMenu(null)} className="transition-colors hover:opacity-70">{editable(diseno?.falconNavContact, 'Contacto')}</button>
             </nav>
 
             <div className="hidden items-center gap-2 text-sm font-semibold text-[#151515] xl:flex">
@@ -460,9 +465,21 @@ export function FalconBenefits({ green, diseno }: { green: string; diseno?: any 
 }
 
 export function FalconFooter({ tienda, slug, green, categories = [], diseno }: { tienda: any; slug: string; green: string; categories?: string[]; diseno?: any }) {
-  const navigate = useNavigate();
+  const ir = useIrEnTienda(slug, diseno);
   const storeName = storeNameOf(tienda);
-  const goCatalog = (extra = '') => navigate(withPreviewQuery(`/tienda/${slug}/catalogo${extra}`, diseno));
+  const goCatalog = (extra = '') => ir(`/tienda/${slug}/catalogo${extra}`);
+  const enlaces = useMemo(() => itemsDeMenu(FALCON_MENU_PIE, { diseno, slug, categorias: categories }), [diseno, slug, categories]);
+  const atencion = useMemo(() => itemsDeMenu(FALCON_MENU_ATENCION, { diseno, slug, categorias: categories }), [diseno, slug, categories]);
+  const redes = [
+    { icon: 'ri:twitter-x-fill', url: tienda?.twitterUrl },
+    { icon: 'ri:facebook-fill', url: tienda?.facebookUrl },
+    { icon: 'ri:pinterest-fill', url: tienda?.pinterestUrl },
+    { icon: 'ri:instagram-line', url: tienda?.instagramUrl },
+    { icon: 'ri:tiktok-fill', url: tienda?.tiktokUrl },
+  ].filter((r): r is { icon: string; url: string } => typeof r.url === 'string' && !!r.url.trim());
+  const enlace = (it: ItemMenu) => (
+    <EnlaceTienda key={it.key} href={it.href!} slug={slug} diseno={diseno} target={it.externo ? '_blank' : undefined} rel={it.externo ? 'noreferrer' : undefined} className="block hover:text-[#151515]">{it.label}</EnlaceTienda>
+  );
   return (
     <>
       <footer className="border-t border-gray-200 bg-white text-gray-500">
@@ -476,15 +493,15 @@ export function FalconFooter({ tienda, slug, green, categories = [], diseno }: {
           <div className="lg:col-span-1">
             <FalconLogo storeName={storeName} green={green} logo={tienda?.logo || tienda?.logoUrl} />
             <p className="mt-4 max-w-xs text-sm leading-relaxed">{editable(diseno?.falconFooterAbout, 'Tecnología y gadgets de última generación con envío a todo el país y soporte técnico garantizado.')}</p>
-            <p className="mt-6 text-sm font-black text-[#151515]">Síguenos</p>
-            <div className="mt-3 flex gap-2">
-              {['ri:twitter-x-fill', 'ri:facebook-fill', 'ri:pinterest-fill', 'ri:instagram-line', 'ri:tiktok-fill'].map((ic) => (
-                <a key={ic} href="#" className="flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 transition-colors" style={{ color: green }}
+            {redes.length > 0 && <p className="mt-6 text-sm font-black text-[#151515]">Síguenos</p>}
+            {redes.length > 0 && <div className="mt-3 flex gap-2">
+              {redes.map(({ icon: ic, url }) => (
+                <a key={ic} href={url} target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 transition-colors" style={{ color: green }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = green; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = green; }}>
                   <Icon icon={ic} width={18} />
                 </a>
               ))}
-            </div>
+            </div>}
           </div>
           <div>
             <p className="mb-4 text-base font-black text-[#151515]">{editable(diseno?.falconFooterFastTitle, 'Encuéntralo rápido')}</p>
@@ -495,20 +512,23 @@ export function FalconFooter({ tienda, slug, green, categories = [], diseno }: {
           <div>
             <p className="mb-4 text-base font-black text-[#151515]">{editable(diseno?.falconFooterLinksTitle, 'Enlaces')}</p>
             <div className="space-y-2.5 text-sm">
-              {['Inicio', 'Nosotros', 'Tienda', 'Ofertas', 'Novedades'].map((l) => <button key={l} type="button" onClick={() => goCatalog()} className="block hover:text-[#151515]">{l}</button>)}
+              <EnlaceTienda href={`/tienda/${slug}`} slug={slug} diseno={diseno} className="block hover:text-[#151515]">Inicio</EnlaceTienda>
+              <EnlaceTienda href={`/tienda/${slug}/contacto`} slug={slug} diseno={diseno} className="block hover:text-[#151515]">Nosotros</EnlaceTienda>
+              <EnlaceTienda href={`/tienda/${slug}/catalogo`} slug={slug} diseno={diseno} className="block hover:text-[#151515]">Tienda</EnlaceTienda>
+              {enlaces.map(enlace)}
             </div>
           </div>
           <div>
             <p className="mb-4 text-base font-black text-[#151515]">{editable(diseno?.falconFooterSupportTitle, 'Atención al cliente')}</p>
             <div className="space-y-2.5 text-sm">
-              {['Mi cuenta', 'Rastrea tu pedido', 'Productos', 'Servicio al cliente', 'Cambios/Devoluciones', 'Preguntas frecuentes'].map((l) => <button key={l} type="button" onClick={() => goCatalog()} className="block hover:text-[#151515]">{l}</button>)}
+              {atencion.map(enlace)}
             </div>
           </div>
           <div>
             <div className="flex items-start gap-3 text-sm"><Icon icon="solar:map-point-linear" width={20} style={{ color: green }} /><span>{editable(diseno?.falconFooterAddress, tienda?.direccion || 'Av. Principal 123, Lima, Perú')}</span></div>
             <div className="mt-3 flex items-center gap-3 text-sm"><Icon icon="solar:letter-linear" width={20} style={{ color: green }} /><span>{tienda?.correo || tienda?.email || 'contacto@ejemplo.com'}</span></div>
             <div className="mt-3 flex items-center gap-3 text-sm"><Icon icon="solar:phone-calling-linear" width={20} style={{ color: green }} /><span>{tienda?.whatsappTienda || tienda?.telefono || tienda?.celular || '+51 999 999 999'}</span></div>
-            <button type="button" onClick={() => navigate(withPreviewQuery(`/tienda/${slug}/contacto`, diseno))} className="mt-6 inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-black text-white transition-transform hover:scale-[1.02]" style={{ background: green }}>
+            <button type="button" onClick={() => ir(`/tienda/${slug}/contacto`)} className="mt-6 inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-black text-white transition-transform hover:scale-[1.02]" style={{ background: green }}>
               <Icon icon="solar:chat-round-dots-bold" width={18} /> {editable(diseno?.falconFooterContactButton, 'Contáctanos')}
             </button>
           </div>
@@ -516,6 +536,7 @@ export function FalconFooter({ tienda, slug, green, categories = [], diseno }: {
         <div className="border-t border-gray-200">
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-4 py-5 text-xs text-gray-400 md:flex-row lg:px-6">
             <p>© {new Date().getFullYear()} {storeName}. {editable(diseno?.falconFooterCopyright, 'Todos los derechos reservados.')}</p>
+            <EnlaceLibroReclamaciones slug={slug} diseno={diseno} />
             <div className="flex items-center gap-3">
               <Icon icon="logos:mastercard" width={34} /><Icon icon="logos:visa" width={34} /><Icon icon="logos:paypal" width={22} /><Icon icon="logos:apple-pay" width={34} />
             </div>

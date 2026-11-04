@@ -26,6 +26,12 @@ export interface SubModuleMeta {
   end?: boolean;
 }
 
+/** Mi negocio → Agenda: solo si el plan tiene la característica. */
+export const itemsAgenda = (auth: any): SidebarSubItem[] =>
+  hasPlanFeature(auth, 'tieneAgenda')
+    ? [{ codigo: 'mi-negocio:agenda', nombre: 'Agenda', ruta: '/administrador/mi-negocio/agenda' }]
+    : [];
+
 const isRestaurante = (auth: any) => {
   const r = auth?.empresa?.rubro?.nombre?.toLowerCase() || '';
   return r.includes('restaurante') || r.includes('comida') || r.includes('alimento');
@@ -107,6 +113,7 @@ export const LEGACY_SUBMODULE_ROUTES: Record<string, string> = {
   'contabilidad:sire-ventas': '/administrador/sire/ventas',
   'contabilidad:sire-compras': '/administrador/sire/compras',
   'tienda:pedidos': '/administrador/tienda/pedidos',
+  'tienda:libro-reclamaciones': '/administrador/tienda/libro-reclamaciones',
   'tienda:reviews': '/administrador/tienda/reviews',
   'tienda:blog': '/administrador/tienda/blog',
   'tienda:modificadores': '/administrador/tienda/modificadores',
@@ -208,6 +215,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   'mi-negocio': {
     navRoute: () => '/administrador/mi-negocio/resumen',
     pathPrefix: () => '/administrador/mi-negocio',
+    // El módulo "Mi negocio" del menú es `mi-negocio` (no `ecommerce`).
+    extraItems: itemsAgenda,
   },
 
   ecommerce: {
@@ -254,6 +263,7 @@ export const MODULE_META: Record<string, ModuleMeta> = {
     navRoute: () => '/administrador/tienda/pedidos',
     pathPrefix: () => '/administrador/tienda',
     extraItems: () => [
+      { codigo: 'tienda:libro-reclamaciones', nombre: 'Libro de Reclamaciones', ruta: '/administrador/tienda/libro-reclamaciones' },
       { codigo: 'tienda:reviews', nombre: 'Comentarios y rating', ruta: '/administrador/tienda/reviews' },
       { codigo: 'tienda:blog', nombre: 'Blog', ruta: '/administrador/tienda/blog' },
       { codigo: 'tienda:template', nombre: 'Diseño y template', ruta: '/administrador/tienda/template' },

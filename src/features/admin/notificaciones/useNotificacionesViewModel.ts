@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { linkAlAgenda } from '@/features/admin/agenda/AgendaModel';
 import { useNotificacionesStore } from '@/zustand/notificaciones';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export const useNotificacionesViewModel = () => {
     const { notificaciones, noLeidas, loading, obtenerNotificaciones, marcarComoLeida, marcarTodasComoLeidas } = useNotificacionesStore();
+    const navigate = useNavigate();
 
     useEffect(() => { obtenerNotificaciones(); }, [obtenerNotificaciones]);
 
@@ -23,6 +26,9 @@ export const useNotificacionesViewModel = () => {
 
     const handleNotificacionClick = async (notificacion: any) => {
         if (!notificacion.leida) await marcarComoLeida(notificacion.id);
+        // Los recordatorios de la Agenda abren ese día con el evento.
+        const agenda = linkAlAgenda(notificacion.metaData);
+        if (agenda) navigate(agenda);
     };
 
     return { notificaciones, noLeidas, loading, getTipoIcon, formatFecha, handleNotificacionClick, marcarTodasComoLeidas };

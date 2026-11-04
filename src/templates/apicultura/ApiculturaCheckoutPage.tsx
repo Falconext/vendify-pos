@@ -5,6 +5,7 @@ import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import { APICULTURA_BANNER, ApiculturaFooter, ApiculturaHeader, ApiculturaProductCard } from './ApiculturaParts';
 import { honeyCard, honeyHover, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from './motion';
+import { EnlaceTienda, useIrEnTienda } from '@/components/tienda/navTienda';
 
 const honeyPattern = {
   backgroundImage:
@@ -63,6 +64,7 @@ export default function ApiculturaCheckoutPage(props: TemplateCheckoutPageProps)
   const deliveryType = formData.tipoEntrega || 'delivery';
   // El emprendedor coordina el envío internamente: oculta la línea "Envío" y no lo suma al total.
   const ocultarEnvio = Boolean(diseno?.apiculturaOcultarEnvio);
+  const ir = useIrEnTienda(slug, diseno);
 
   return (
     <motion.div initial="hidden" animate="show" variants={honeyPage} className="min-h-screen bg-white text-black" style={{ fontFamily: `'${diseno?.tipografia || 'Inter'}', sans-serif` }}>
@@ -78,14 +80,14 @@ export default function ApiculturaCheckoutPage(props: TemplateCheckoutPageProps)
         allCategories={[]}
         onSearchSubmit={(event, value) => {
           event.preventDefault();
-          if (value?.trim()) window.location.href = `/tienda/${slug}/catalogo?search=${encodeURIComponent(value.trim())}`;
+          if (value?.trim()) ir(`/tienda/${slug}/catalogo?search=${encodeURIComponent(value.trim())}`);
         }}
       />
 
       <motion.section variants={honeySection} className="bg-[#FFD72E] px-5 pb-16 pt-8 text-center" style={honeyPattern}>
         <div className="mx-auto max-w-7xl">
           <div className="text-sm font-black text-black/70">
-            <a href={`/tienda/${slug}`} className="hover:text-black">Inicio</a>
+            <EnlaceTienda href={`/tienda/${slug}`} slug={slug} diseno={diseno} className="hover:text-black">Inicio</EnlaceTienda>
             <span className="mx-1">/</span>
             <span>Finalizar compra</span>
           </div>
@@ -207,7 +209,7 @@ export default function ApiculturaCheckoutPage(props: TemplateCheckoutPageProps)
                     <p className="font-serif text-2xl italic text-black">You may also like</p>
                     <h2 className="text-2xl font-black text-black">Productos sugeridos</h2>
                   </div>
-                  <a href={`/tienda/${slug}/catalogo`} className="text-sm font-black text-black hover:opacity-70">Ver catálogo</a>
+                  <EnlaceTienda href={`/tienda/${slug}/catalogo`} slug={slug} diseno={diseno} className="text-sm font-black text-black hover:opacity-70">Ver catálogo</EnlaceTienda>
                 </div>
                 <motion.div variants={honeyStagger} className="grid gap-5 md:grid-cols-3">
                   {suggestedProducts.slice(0, 3).map((producto) => (
@@ -217,7 +219,7 @@ export default function ApiculturaCheckoutPage(props: TemplateCheckoutPageProps)
                       slug={slug}
                       cp={cp}
                       onAddToCart={onAddToCart}
-                      onClick={() => { window.location.href = `/tienda/${slug}/producto/${producto.id}`; }}
+                      onClick={() => ir(`/tienda/${slug}/producto/${producto.id}`)}
                     />
                   ))}
                 </motion.div>
@@ -236,7 +238,7 @@ export default function ApiculturaCheckoutPage(props: TemplateCheckoutPageProps)
                 <div className="my-6 bg-[#F7F7F7] p-8 text-center">
                   <Icon icon="solar:bag-cross-bold" className="mx-auto text-4xl text-gray-300" />
                   <p className="mt-3 text-sm font-bold text-gray-500">Tu carrito está vacío.</p>
-                  <a href={`/tienda/${slug}/catalogo`} className="mt-5 inline-flex rounded-full bg-black px-5 py-3 text-xs font-black uppercase text-white">Ir al catálogo</a>
+                  <EnlaceTienda href={`/tienda/${slug}/catalogo`} slug={slug} diseno={diseno} className="mt-5 inline-flex rounded-full bg-black px-5 py-3 text-xs font-black uppercase text-white">Ir al catálogo</EnlaceTienda>
                 </div>
               ) : (
                 carritoState.map((item) => {

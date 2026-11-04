@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import { Icon } from '@iconify/react';
 import { BRAND } from '@/lib/branding';
 import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
@@ -156,6 +157,7 @@ export default function Footer({ tienda, diseno }: FooterProps) {
                     <p className="text-xs text-[#999]">
                         &copy; {tienda.nombreComercial || 'Mi Tienda'} {year} — porque tus clientes merecen lo mejor 🐾
                     </p>
+                    <EnlaceLibroReclamaciones diseno={diseno} className="text-xs text-[#999]" />
                     <p className="text-xs text-[#BBB]">
                         Powered by <span className="font-bold" style={{ color: cp }}>{BRAND.name}</span>
                     </p>

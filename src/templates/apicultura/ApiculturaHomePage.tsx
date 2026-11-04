@@ -4,6 +4,9 @@ import type { TemplateHomePageProps } from '@/templates/shared/types';
 import TecnologiaCartModal from '@/components/tienda/TecnologiaCartModal';
 import { ApiculturaFooter, ApiculturaHeader, ApiculturaProductCard, honeyAction } from './ApiculturaParts';
 import { honeyCard, honeyEase, honeyHover, honeyPage, honeyPop, honeySection, honeyStagger, honeyTap, honeyViewport } from './motion';
+import { EnlaceTienda, useIrEnTienda } from '@/components/tienda/navTienda';
+
+const MotionEnlace = motion.create(EnlaceTienda);
 
 const honeyPattern = {
   backgroundImage:
@@ -13,7 +16,8 @@ const honeyPattern = {
 
 const pickSelectedProducts = (productos: any[], ids?: any[]) => {
   if (!Array.isArray(ids) || ids.length === 0) return productos;
-  const wanted = new Set(ids.map((id) => String(id)));
+  // El editor guarda objetos `{ id, … }`; versiones viejas, solo ids.
+  const wanted = new Set(ids.map((id) => String(id && typeof id === 'object' ? id.id : id)));
   const selected = productos.filter((producto) => wanted.has(String(producto.id)));
   return selected.length ? selected : productos;
 };
@@ -89,7 +93,7 @@ export default function ApiculturaHomePage({
   const latestProducts = latestPool.slice(0, 4);
   const featuredProducts = featuredPool.slice(0, 4);
   const categoryItems = allCategories.slice(0, 4);
-  const navigate = (to: string) => { window.location.href = to; };
+  const navigate = useIrEnTienda(slug, diseno);
 
   return (
     <motion.div initial="hidden" animate="show" variants={honeyPage} className="min-h-screen bg-white" style={{ fontFamily: `'${diseno?.tipografia || 'Inter'}', sans-serif` }}>
@@ -143,7 +147,7 @@ export default function ApiculturaHomePage({
               </h1>
               <motion.button
                 type="button"
-                onClick={() => honeyAction(diseno?.apiculturaHeroAction, slug, navigate)}
+                onClick={() => honeyAction(diseno, 'apiculturaHeroAction', slug, navigate)}
                 className="mt-10 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-black uppercase tracking-wide text-black shadow-lg transition-transform hover:scale-[1.03]"
                 style={{ backgroundColor: cp }}
                 whileHover={{ scale: 1.05, y: -2 }}
@@ -166,11 +170,11 @@ export default function ApiculturaHomePage({
                 '/assets/templates/apicultura/svg/icono3.svg',
               ];
               return (
-                <motion.a key={`${name}-${index}`} variants={honeyCard} whileHover={honeyHover} href={`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`} className="group rounded-md border border-gray-100 bg-white px-8 py-10 text-center transition-shadow hover:shadow-xl hover:shadow-yellow-900/10">
+                <MotionEnlace key={`${name}-${index}`} variants={honeyCard} whileHover={honeyHover} href={`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`} slug={slug} diseno={diseno} className="group rounded-md border border-gray-100 bg-white px-8 py-10 text-center transition-shadow hover:shadow-xl hover:shadow-yellow-900/10">
                   <img src={icons[index % icons.length]} alt={name} className="mx-auto h-20 w-20 object-contain transition-transform group-hover:scale-110" />
                   <h3 className="mt-5 text-lg font-black text-black">{name}</h3>
                   <p className="mt-3 text-sm font-semibold leading-6 text-gray-500">Explora productos seleccionados de esta categoría.</p>
-                </motion.a>
+                </MotionEnlace>
               );
             })}
           </motion.div>
@@ -180,12 +184,12 @@ export default function ApiculturaHomePage({
           <PromoBanner
             image={diseno?.apiculturaPromoLeftImageUrl || '/assets/templates/apicultura/widget1.png'}
             alt="Banner promocional"
-            onClick={() => honeyAction(diseno?.apiculturaPromoLeftAction, slug, navigate)}
+            onClick={() => honeyAction(diseno, 'apiculturaPromoLeftAction', slug, navigate)}
           />
           <PromoBanner
             image={diseno?.apiculturaPromoRightImageUrl || '/assets/templates/apicultura/widget2.png'}
             alt="Banner promocional"
-            onClick={() => honeyAction(diseno?.apiculturaPromoRightAction, slug, navigate)}
+            onClick={() => honeyAction(diseno, 'apiculturaPromoRightAction', slug, navigate)}
           />
         </motion.section>
 
@@ -273,7 +277,7 @@ export default function ApiculturaHomePage({
               </p>
               <motion.button
                 type="button"
-                onClick={() => honeyAction(diseno?.apiculturaAboutAction, slug, navigate)}
+                onClick={() => honeyAction(diseno, 'apiculturaAboutAction', slug, navigate)}
                 className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-black px-8 text-sm font-black uppercase text-white"
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={honeyTap}
@@ -308,7 +312,7 @@ export default function ApiculturaHomePage({
         carrito={carrito}
         setCarrito={setCarrito}
         actualizarCantidad={actualizarCantidad}
-        onCheckout={() => { window.location.href = `/tienda/${slug}/checkout`; }}
+        onCheckout={() => navigate(`/tienda/${slug}/checkout`)}
         cp={cp}
         tienda={tienda}
       />

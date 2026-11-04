@@ -3,6 +3,7 @@ import Modal from "@/components/Modal";
 import InputPro from "@/components/InputPro";
 import Button from "@/components/Button";
 import { Icon } from "@iconify/react";
+import { precioPorCantidad, precioUnitarioDeEscala } from "@/features/admin/facturacion/mayoristaMezcla";
 
 interface IProps {
     isOpen: boolean;
@@ -10,55 +11,21 @@ interface IProps {
     item: any;
     onSave: (newData: any) => void;
     monedaSimbolo?: string;
+    /**
+     * Precio por mayor mezclando productos: unidades de las OTRAS líneas que se
+     * suman a esta. 0 = la mezcla no aplica a esta línea.
+     */
+    cantidadOtrasEnMezcla?: number;
 }
 
-const normalizeWholesaleUnitPrice = (
-    base: number,
-    rule: { cantidadMinima: number; precio: number },
-): number => {
-    const minQty = Number(rule.cantidadMinima);
-    const rulePrice = Number(rule.precio);
+// Misma regla de escalas que el carrito (y la mezcla de productos).
+const normalizeWholesaleUnitPrice = precioUnitarioDeEscala;
+const getApplicablePrice = precioPorCantidad;
 
-    if (!Number.isFinite(rulePrice) || rulePrice <= 0) return base;
-    if (Number.isFinite(base) && base > 0 && minQty > 1 && rulePrice > base) {
-        return Number((rulePrice / minQty).toFixed(6));
-    }
-    return rulePrice;
-};
-
-const getApplicablePrice = (
-    base: number,
-    rules: { cantidadMinima: number; precio: number }[],
-    qty: number,
-): number => {
-    if (!Number.isFinite(base) || base <= 0) return 0;
-    if (!rules?.length) return base;
-
-    const parsedQty = Number(qty);
-    if (!Number.isFinite(parsedQty) || parsedQty <= 0) return base;
-
-    const normalizedRules = rules
-        .map((r) => ({
-            cantidadMinima: Number(r.cantidadMinima),
-            precioUnitario: normalizeWholesaleUnitPrice(base, r),
-        }))
-        .filter((r) =>
-            Number.isFinite(r.cantidadMinima) &&
-            r.cantidadMinima > 0 &&
-            Number.isFinite(r.precioUnitario) &&
-            r.precioUnitario > 0,
-        );
-
-    if (!normalizedRules.length) return base;
-
-    const applicable = normalizedRules
-        .filter((r) => parsedQty >= r.cantidadMinima)
-        .sort((a, b) => b.cantidadMinima - a.cantidadMinima)[0];
-
-    return applicable ? applicable.precioUnitario : base;
-};
-
-const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/" }: IProps) => {
+const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/", cantidadOtrasEnMezcla = 0 }: IProps) => {
+    const otrasEnMezcla = Math.max(0, Number(cantidadOtrasEnMezcla) || 0);
+    // El precio que el sistema pone solo según la cantidad (y la mezcla).
+    const cantidadParaEscala = (qty: number) => qty + otrasEnMezcla;
     const [formValues, setFormValues] = useState<any>({
         precioUnitario: 0,
         cantidad: 0,
@@ -69,6 +36,9 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
     // backend lo leen así). "En monto" solo cambia cómo lo escribe el cajero:
     // al guardar se convierte al porcentaje exacto de esa línea.
     const [descuentoTipo, setDescuentoTipo] = useState<'PORCENTAJE' | 'MONTO'>('PORCENTAJE');
+    // El cajero escribió el precio o eligió una escala: ese precio manda y la
+    // mezcla de productos ya no lo cambia (hasta que cambie la cantidad).
+    const [precioTocado, setPrecioTocado] = useState(false);
 
     useEffect(() => {
         if (item) {
@@ -76,6 +46,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
             const pct = Number(item.descuento || 0);
             const subtotal = Number(item.precioUnitario) * Number(item.cantidad);
             setDescuentoTipo(tipo);
+            setPrecioTocado(Boolean(item.precioManual));
             setFormValues({
                 precioUnitario: Number(item.precioUnitario),
                 cantidad: Number(item.cantidad),
@@ -90,9 +61,11 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
         if (name === 'cantidad') {
             const qty = Number(value);
             const base = Number(item?.precioBase ?? item?.precioUnitario);
-            const price = getApplicablePrice(base, item?.preciosMayorista ?? [], qty);
+            const price = getApplicablePrice(base, item?.preciosMayorista ?? [], cantidadParaEscala(qty));
+            setPrecioTocado(false);
             setFormValues((prev: any) => ({ ...prev, cantidad: value, precioUnitario: price }));
         } else {
+            if (name === 'precioUnitario') setPrecioTocado(true);
             setFormValues((prev: any) => ({ ...prev, [name]: value }));
         }
     };
@@ -131,7 +104,13 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
             cantidad: Number(formValues.cantidad),
             descuento: descuentoPct,
             descuentoTipo,
-            descripcion: formValues.descripcion
+            descripcion: formValues.descripcion,
+            // Si lo que eligió es justo el precio automático, no queda "a mano":
+            // así la mezcla lo sigue ajustando si cambian las otras líneas.
+            precioManual: precioTocado && Math.abs(
+                Number(formValues.precioUnitario) -
+                getApplicablePrice(Number(item?.precioBase ?? item?.precioUnitario), item?.preciosMayorista ?? [], cantidadParaEscala(Number(formValues.cantidad) || 0)),
+            ) > 0.000001,
         });
         onClose();
     };
@@ -159,7 +138,11 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                             onChange={handleChange}
                         />
                         {hasWholesaleRules && (
-                            <p className="text-xs text-green-600 mt-1">Precio mayorista aplicado según cantidad</p>
+                            <p className="text-xs text-green-600 mt-1">
+                                {otrasEnMezcla > 0
+                                    ? `Precio por mayor según el total mezclado: ${cantidadParaEscala(Number(formValues.cantidad) || 0)} unidades`
+                                    : 'Precio mayorista aplicado según cantidad'}
+                            </p>
                         )}
                     </div>
                     <div>
@@ -235,7 +218,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                                 return (
                                     <button
                                         type="button"
-                                        onClick={() => setFormValues((prev: any) => ({ ...prev, precioUnitario: base }))}
+                                        onClick={() => { setPrecioTocado(true); setFormValues((prev: any) => ({ ...prev, precioUnitario: base })); }}
                                         className={`inline-flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-semibold border transition-all ${
                                             isActive
                                                 ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-800 dark:border-gray-200'
@@ -253,16 +236,23 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                                 .map((tier: any, i: number) => {
                                     const tierUnitPrice = normalizeWholesaleUnitPrice(Number(item?.precioBase ?? item?.precioUnitario), tier);
                                     const isActive = Math.abs(Number(formValues.precioUnitario) - tierUnitPrice) < 0.001;
-                                    const isReached = Number(formValues.cantidad) >= tier.cantidadMinima;
+                                    const isReached = cantidadParaEscala(Number(formValues.cantidad) || 0) >= tier.cantidadMinima;
                                     return (
                                         <button
                                             key={i}
                                             type="button"
-                                            onClick={() => setFormValues((prev: any) => ({
-                                                ...prev,
-                                                cantidad: Number(tier.cantidadMinima),
-                                                precioUnitario: tierUnitPrice,
-                                            }))}
+                                            onClick={() => {
+                                                setPrecioTocado(true);
+                                                setFormValues((prev: any) => ({
+                                                    ...prev,
+                                                    // Con la mezcla, las otras líneas ya aportan unidades:
+                                                    // no se le sube la cantidad a esta si ya alcanza.
+                                                    cantidad: otrasEnMezcla > 0
+                                                        ? Math.max(Number(prev.cantidad) || 1, Number(tier.cantidadMinima) - otrasEnMezcla)
+                                                        : Number(tier.cantidadMinima),
+                                                    precioUnitario: tierUnitPrice,
+                                                }));
+                                            }}
                                             title={`Aplica desde ${tier.cantidadMinima} unidades`}
                                             className={`inline-flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-semibold border transition-all ${
                                                 isActive

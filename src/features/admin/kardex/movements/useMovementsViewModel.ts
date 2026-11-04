@@ -137,7 +137,37 @@ export const useMovementsViewModel = () => {
         getKardex({ page: 1, limit: state.itemsPerPage, ...cleared });
     };
 
+    /**
+     * El producto escrito pero no elegido de la lista. WAWABB (02-11) escribió
+     * "W138PAR750M" y apretó Buscar: el filtro se ignoraba sin avisar y salían
+     * los movimientos de todos los productos. Ahora, si el código coincide
+     * exacto con uno de la lista (o la lista trae uno solo), se elige ese; si
+     * no, se avisa en vez de mostrar todo.
+     */
+    const productoEscrito = (): any | null | undefined => {
+        const texto = state.productQuery.trim();
+        if (!texto || state.filters.productoId) return undefined;
+        const lista: any[] = Array.isArray(products) ? products : [];
+        const codigo = texto.split(' - ')[0].trim().toUpperCase();
+        const exacto = lista.find((p) =>
+            String(p.codigo ?? '').trim().toUpperCase() === codigo ||
+            String(p.codigoBarras ?? '').trim().toUpperCase() === codigo);
+        if (exacto) return exacto;
+        return lista.length === 1 ? lista[0] : null;
+    };
+
     const applyFilters = () => {
+        const escrito = productoEscrito();
+        if (escrito === null) {
+            alert('Elige el producto de la lista para filtrar sus movimientos', 'warning');
+            setState(prev => ({ ...prev, showSuggestions: true }));
+            return;
+        }
+        if (escrito) {
+            // Al cambiar productoId, el efecto de filtros vuelve a pedir el kardex.
+            selectProduct(escrito);
+            return;
+        }
         setState(prev => ({ ...prev, currentPage: 1 }));
         getKardex({ page: 1, limit: state.itemsPerPage, ...state.filters });
     };
@@ -153,10 +183,13 @@ export const useMovementsViewModel = () => {
 
     const handleProductSearchChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = (e.target as HTMLInputElement).value;
-        setState(prev => ({ ...prev, productQuery: val }));
-        if (val === '') {
-            handleFilterChange('productoId', '');
-        }
+        // Cualquier cambio suelta el producto elegido: si no, se seguía
+        // filtrando por el anterior aunque el texto ya dijera otro.
+        setState(prev => ({
+            ...prev,
+            productQuery: val,
+            filters: prev.filters.productoId ? { ...prev.filters, productoId: '' } : prev.filters,
+        }));
     };
 
     const selectProduct = (p: any) => {

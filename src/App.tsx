@@ -42,6 +42,7 @@ import ConfiguracionTienda from './pages/admin/tienda/Configuracion'
 import TemplateTienda from './pages/admin/tienda/Template'
 import PedidosTienda from './pages/admin/tienda/Pedidos'
 import ReviewsTienda from './pages/admin/tienda/Reviews'
+import LibroReclamacionesPanel from './pages/admin/tienda/LibroReclamaciones'
 import BlogTienda from './pages/admin/tienda/Blog'
 import PanelVentasView from './pages/admin/despacho/PanelVentasView'
 import DespachoConfigPage from './pages/admin/despacho/DespachoConfigPage'
@@ -56,8 +57,10 @@ import Checkout from './pages/tienda/Checkout'
 import Catalogo from './pages/tienda/Catalogo'
 import SeguimientoPedido from './pages/tienda/SeguimientoPedido'
 import ContactoRouter from './pages/tienda/ContactoRouter'
+import LibroReclamacionesTienda from './pages/tienda/LibroReclamaciones'
 import BlogRouter from './pages/tienda/BlogRouter'
 import TiendaLogin from './pages/TiendaLogin'
+import DatosEnvioClientePage from './pages/datos-envio/DatosEnvioClientePage'
 import TiendaHome from './pages/TiendaHome'
 
 import CatalogoGlobal from './pages/admin/sistema/CatalogoGlobal'
@@ -67,9 +70,11 @@ import FinanceDashboard from './pages/admin/finanzas/Dashboard'
 import MisComisionesPage from './pages/admin/mis-comisiones/MisComisionesPage'
 import Campanas from './pages/admin/marketing/Campanas'
 import ResumenNegocio from './pages/admin/ecommerce/ResumenNegocio'
+import AgendaPage from './pages/admin/agenda/Agenda'
 import ComprasIndex from './pages/admin/compras/Index'
 import ProveedoresPage from './pages/admin/compras/Proveedores'
 import OrdenesCompraPage from './pages/admin/compras/OrdenesCompra'
+import DolarMargenesPage from './features/admin/compras/dolar-margenes/DolarMargenesView'
 import GuiaRemision from './pages/admin/guia-remision/GuiaRemision'
 import LibroVentas from './pages/admin/sire/LibroVentas'
 import LibroCompras from './pages/admin/sire/LibroCompras'
@@ -122,6 +127,8 @@ function App() {
           }
         />
         {/* Login específico para tienda (mismo backend, layout invertido) */}
+        {/* El cliente llena sus datos de envío desde un enlace, sin cuenta. */}
+        <Route path="/datos-envio/:token" element={<DatosEnvioClientePage />} />
         <Route path="/tienda/login" element={<TiendaLogin />} />
         {/* <Route
           path="/dashboard"
@@ -151,6 +158,7 @@ function App() {
           <Route path="compras" element={<ComprasIndex />} />
           <Route path="compras/proveedores" element={<ProveedoresPage />} />
           <Route path="compras/ordenes" element={<OrdenesCompraPage />} />
+          <Route path="compras/dolar-margenes" element={<DolarMargenesPage />} />
           <Route path="guia-remision" element={<GuiaRemision />} />
           <Route path="facturacion/guia-remision" element={<GuiaRemision />} />
           <Route path="contabilidad" element={<Navigate to="/administrador/contabilidad/reporte" replace />} />
@@ -177,6 +185,8 @@ function App() {
           <Route path="mis-comisiones" element={<MisComisionesPage />} />
           <Route path="mi-negocio/marketing/campanas" element={<Campanas />} />
           <Route path="mi-negocio/resumen" element={<ResumenNegocio />} />
+          {/* Agenda: la página misma avisa si el plan no la incluye. */}
+          <Route path="mi-negocio/agenda" element={<AgendaPage />} />
           <Route path="kardex" element={<KardexIndex />} />
           <Route path="kardex/productos" element={<KardexProductos />} />
           <Route path="kardex/productos/nuevo" element={<ProductoNuevo />} />
@@ -218,6 +228,7 @@ function App() {
           <Route path="tienda/configuracion" element={<ConfiguracionTienda />} />
           <Route path="tienda/template" element={<TemplateTienda />} />
           <Route path="tienda/pedidos" element={<PedidosTienda />} />
+          <Route path="tienda/libro-reclamaciones" element={<LibroReclamacionesPanel />} />
           <Route path="tienda/reviews" element={<ReviewsTienda />} />
           <Route path="tienda/blog" element={<BlogTienda />} />
           <Route path="ventas" element={<PanelVentasView />} />
@@ -320,11 +331,12 @@ function App() {
         <Route path="/tienda/:slug" element={<PorTienda><TiendaPublica /></PorTienda>} />
         <Route path="/tienda/:slug/catalogo" element={<PorTienda><Catalogo /></PorTienda>} />
         <Route path="/tienda/:slug/producto/:id" element={<PorTienda><ProductoDetalleRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/checkout" element={<PorTienda><Checkout /></PorTienda>} />
-        <Route path="/tienda/:slug/seguimiento" element={<PorTienda><SeguimientoPedido /></PorTienda>} />
+        <Route path="/tienda/:slug/checkout" element={<PorTienda recargarAlCambiarSede={false}><Checkout /></PorTienda>} />
+        <Route path="/tienda/:slug/seguimiento" element={<PorTienda conSede={false}><SeguimientoPedido /></PorTienda>} />
         <Route path="/tienda/:slug/contacto" element={<PorTienda><ContactoRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/blog" element={<PorTienda><BlogRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/blog/:blogId" element={<PorTienda><BlogRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/libro-reclamaciones" element={<PorTienda conSede={false}><LibroReclamacionesTienda /></PorTienda>} />
+        <Route path="/tienda/:slug/blog" element={<PorTienda conSede={false}><BlogRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/blog/:blogId" element={<PorTienda conSede={false}><BlogRouter /></PorTienda>} />
         {/* Catch-all para tienda pública: Evita que links rotos en banners manden al login/admin */}
         <Route path="/tienda/:slug/*" element={<PorTienda><TiendaPublica /></PorTienda>} />
         <Route path="/" element={<Navigate to="/login" replace />} />

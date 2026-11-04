@@ -41,6 +41,8 @@ interface Props {
     categories: Opcion[];
     onChange: (productoId: number, categoriaId: number | null) => Promise<boolean>;
     textos?: Textos;
+    /** Solo lectura (p. ej. usuario delegado solo para fotos). */
+    disabled?: boolean;
 }
 
 /**
@@ -49,7 +51,7 @@ interface Props {
  * va por portal con posición fija porque la tabla vive dentro de un contenedor
  * con overflow (AutoScrollTable) que lo recortaría.
  */
-export default function CategoriaInlineSelect({ productoId, categoriaId, nombre, color, categories, onChange, textos = TEXTOS_CATEGORIA }: Props) {
+export default function CategoriaInlineSelect({ productoId, categoriaId, nombre, color, categories, onChange, textos = TEXTOS_CATEGORIA, disabled = false }: Props) {
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState('');
@@ -117,6 +119,17 @@ export default function CategoriaInlineSelect({ productoId, categoriaId, nombre,
         setSaving(false);
         if (ok) setOpen(false);
     };
+
+    if (disabled) {
+        return (
+            <span
+                style={{ backgroundColor: color.bg, color: color.text }}
+                className="inline-flex items-center pl-2.5 pr-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap uppercase"
+            >
+                {nombre}
+            </span>
+        );
+    }
 
     return (
         <>

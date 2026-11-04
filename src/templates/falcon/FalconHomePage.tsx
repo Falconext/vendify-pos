@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { productoEnCategoria } from '@/components/tienda/navTienda';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -56,7 +57,7 @@ export default function FalconHomePage({
     return allCategories
       .map((c) => {
         const name = getName(c);
-        const inCat = productos.filter((p) => catOf(p).toLowerCase() === name.toLowerCase());
+        const inCat = productos.filter((p) => productoEnCategoria(p, name));
         const img = (typeof c === 'object' && c?.imagenUrl) || getImg(inCat[0]) || '';
         return { name, img, count: inCat.length };
       })

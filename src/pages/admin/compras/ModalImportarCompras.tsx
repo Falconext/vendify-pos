@@ -135,6 +135,11 @@ const ModalImportarCompras = ({ isOpen, onClose, onSuccess }: Props) => {
         setResultado(null);
         setAbiertas({});
         setCargando(false);
+        // "Marcar pagado" y "crear productos" no pueden quedar puestos para el próximo archivo.
+        setIncluyeIgvDefault(true);
+        setCrearProductos(false);
+        setMarcarPagado(false);
+        setMetodoPago('EFECTIVO');
     };
     const handleClose = () => {
         reset();

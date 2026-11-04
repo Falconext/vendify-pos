@@ -278,6 +278,8 @@ export const FacturacionNuevoView = () => {
         mtoOperInafectas: vm.opInafectaAdjusted,
         mtoIGV: vm.igvAdjusted,
         mtoImpVenta: vm.totalAdjusted,
+        // Editando sin cobrar: el ticket muestra lo pagado de verdad y el saldo.
+        ...(vm.sinCobrarAhora ? { saldo: vm.montoACobrar } : {}),
         mtoDescuentoGlobal: vm.finalDiscount,
         totalDescuentos: vm.finalDiscount,
         subTotal: vm.opGravadaAdjusted,
@@ -685,6 +687,7 @@ export const FacturacionNuevoView = () => {
                     item={vm.productsInvoice[vm.editingIndex]}
                     onSave={vm.handleSaveEdit}
                     monedaSimbolo={vm.monedaSimbolo}
+                    cantidadOtrasEnMezcla={vm.cantidadMezclaSinLinea(vm.editingIndex)}
                 />
             )}
 

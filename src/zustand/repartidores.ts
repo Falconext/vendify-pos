@@ -11,6 +11,8 @@ export interface Repartidor {
   celular?: string | null;
   tipo: TipoRepartidor;
   activo: boolean;
+  /** Color de su etiqueta en la lista de ventas (#RRGGBB). */
+  color?: string | null;
   sedeId?: number | null;
   sede?: { id: number; nombre: string; codigo?: string | null; esPrincipal?: boolean } | null;
 }
@@ -20,6 +22,8 @@ export interface RepartidorFormData {
   celular?: string | null;
   tipo: TipoRepartidor;
   activo?: boolean;
+  /** #RRGGBB; "" lo quita (vuelve al automático). */
+  color?: string;
 }
 
 interface RepartidoresState {

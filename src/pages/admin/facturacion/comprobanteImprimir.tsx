@@ -256,9 +256,14 @@ console.log(formValues)
     const pagoAnteriorEdicion = isCreditPayment ? 0 : parseAmount(paymentDetails?.pagoAnterior, 0);
     const recibidoEdicion = pagoAnteriorEdicion > 0 ? parseAmount(paymentDetails?.recibido, 0) : 0;
     const devolucionEdicion = pagoAnteriorEdicion > 0 ? parseAmount(paymentDetails?.devolucion, 0) : 0;
+    // Al contado con saldo (adelanto, o nota editada sin cobrar): lo pagado es lo
+    // que entró, no el total. Sin esto la nota salía como pagada completa.
+    const saldoContado = !isCreditPayment && hasSaldo ? round2(Math.max(0, parseAmount(saldoRaw, 0))) : 0;
     const displayPagado = isCreditPayment
         ? pagoInicialCredito
-        : pagoAnteriorEdicion > 0
+        : saldoContado > 0
+            ? round2(Math.max(0, mtoImpVenta - saldoContado))
+            : pagoAnteriorEdicion > 0
             ? round2(mtoImpVenta)
             : (splitPaidTotal > 0 ? splitPaidTotal : mtoImpVenta + displayVuelto);
     const splitPaymentDetails = Array.isArray(paymentDetails?.splitPayments)
@@ -554,6 +559,12 @@ console.log(formValues)
                             <span>PAGADO:</span>
                             <span>S/ {displayPagado.toFixed(2)}</span>
                         </p>
+                        {saldoContado > 0 && (
+                            <p className={`text-[16px] flex justify-between`} data-testid="ticket-saldo">
+                                <span>SALDO PENDIENTE:</span>
+                                <span>{monedaSimbolo} {saldoContado.toFixed(2)}</span>
+                            </p>
+                        )}
                         <p className={`text-[16px] flex justify-between`}>
                             <span>VENDEDOR:</span>
                             <span className="text-right">{vendedorNombre}</span>
@@ -1093,6 +1104,11 @@ console.log(formValues)
 
                                                 <span className="font-bold">PAGADO:</span>
                                                 <span>S/ {displayPagado.toFixed(2)}</span>
+
+                                                {saldoContado > 0 && (<>
+                                                    <span className="font-bold">SALDO PENDIENTE:</span>
+                                                    <span>{monedaSimbolo} {saldoContado.toFixed(2)}</span>
+                                                </>)}
 
                                                 {isCreditPayment && pagoInicialCredito > 0 && (<>
                                                     <span className="font-bold">SALDO CRÉDITO:</span>

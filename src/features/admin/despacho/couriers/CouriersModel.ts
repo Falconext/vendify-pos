@@ -101,6 +101,7 @@ export const ETAPAS_COURIER: Record<string, { key: string; label: string }[]> = 
     ],
     Propios: [
         { key: 'PREPARANDO', label: 'Preparando' },
+        { key: 'CONFIRMADO', label: 'Confirmado' },
         { key: 'EN_CAMINO', label: 'En camino' },
         { key: 'EN_DESTINO', label: 'En destino' },
     ],

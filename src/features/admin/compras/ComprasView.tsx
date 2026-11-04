@@ -15,6 +15,8 @@ import ModalNuevaCompra from '@/pages/admin/compras/ModalNuevaCompra';
 import ModalImportarCompras from '@/pages/admin/compras/ModalImportarCompras';
 import ModalConfirm from '@/components/ModalConfirm';
 import KpiHero from '@/components/ui/KpiHero';
+import { Link } from 'react-router-dom';
+import { RUTA_DOLAR_MARGENES } from '@/services/dolarMargenes.service';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -122,6 +124,13 @@ export default function ComprasView() {
                     <p className="mt-0.5 text-sm text-slate-400 dark:text-gray-400">Gestión de compras y pagos a proveedores</p>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Link
+                    to={RUTA_DOLAR_MARGENES}
+                    className="flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-700 shadow-sm transition-all hover:bg-violet-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-300 sm:w-auto"
+                >
+                    <Icon icon="solar:dollar-minimalistic-bold-duotone" className="text-lg" />
+                    Dólar y márgenes
+                </Link>
                 <button
                     onClick={actions.openImportar}
                     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-violet-200 bg-white px-4 text-sm font-bold text-violet-700 shadow-sm transition-all hover:bg-violet-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-300 sm:w-auto"

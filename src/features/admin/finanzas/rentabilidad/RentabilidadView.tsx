@@ -14,6 +14,8 @@ import {
     IngresoFormData,
 } from './RentabilidadModel';
 import PnlTable from './components/PnlTable';
+import ComprasSinProductoPanel from './components/ComprasSinProductoPanel';
+import { useAuthStore } from '@/zustand/auth';
 import GastosPanel from './components/GastosPanel';
 import IngresosPanel from './components/IngresosPanel';
 import EvolucionChart from './components/EvolucionChart';
@@ -66,6 +68,8 @@ interface RentabilidadViewProps {
     abrirModalCrearIngreso: () => void;
     abrirModalEditarIngreso: (ingreso: IngresoManual) => void;
     cerrarModalIngreso: () => void;
+    /** Marca una compra sin producto como "solo IGV" (o la devuelve a gasto). */
+    marcarCompraSoloIgv?: (compraId: number, soloCreditoIgv: boolean) => Promise<void>;
 }
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
@@ -281,8 +285,14 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
         abrirModalCrear, abrirModalEditar, cerrarModal,
         crearIngreso, actualizarIngreso, eliminarIngreso,
         abrirModalCrearIngreso, abrirModalEditarIngreso, cerrarModalIngreso,
-        sedesOptions = [], sedeIdActual = null,
+        sedesOptions = [], sedeIdActual = null, marcarCompraSoloIgv,
     } = props;
+    const rol = useAuthStore((s: any) => s.auth?.rol);
+    const esAdmin = rol === 'ADMIN_EMPRESA' || rol === 'ADMIN_SISTEMA';
+    // Gastos registrados y compras sin producto: dos cosas distintas que suman
+    // al total de la tarjeta. Antes la tarjeta decía 2,402 y el panel 1,578.
+    const comprasGasto = pnl?.comprasConsumo ?? 0;
+    const gastosRegistrados = (pnl?.gastosTotales ?? 0) - comprasGasto;
 
     const isNeta = (pnl?.gananciaNeta ?? 0) >= 0;
     const [isHistorialOpen, setIsHistorialOpen] = useState(false);
@@ -413,16 +423,21 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
 
                         {/* Total Gastos Operativos */}
                         <KpiCard
-                            title="Total Gastos Op."
+                            title="Gastos + compras"
                             value={formatCurrency(pnl?.gastosTotales ?? 0)}
                             icon="solar:bill-list-bold-duotone"
                             iconBg="bg-amber-50 dark:bg-amber-900/20"
                             iconColor="text-amber-600 dark:text-amber-400"
                             sub={pnl
                                 ? [
-                                    // Compras de consumo propio (netas) ya incluidas en el total.
-                                    (pnl.comprasConsumo ?? 0) > 0 ? `Compras ${formatCurrency(pnl.comprasConsumo ?? 0)}` : null,
-                                    `Publicidad ${formatCurrency(pnl.gastoPublicidad)}`,
+                                    // Lo que suma el total, por separado: los gastos registrados
+                                    // (los del panel) y las compras sin producto (gasolina, comida…).
+                                    `Gastos op. ${formatCurrency(gastosRegistrados)}`,
+                                    comprasGasto > 0 ? `Compras ${formatCurrency(comprasGasto)}` : null,
+                                    // Las facturas que la empresa no pagó: se dicen, pero no suman.
+                                    (pnl.comprasSoloIgv?.cantidad ?? 0) > 0
+                                        ? `Fuera: ${formatCurrency(pnl.comprasSoloIgv!.neto)} solo IGV`
+                                        : null,
                                     // Viendo una sede: los gastos compartidos no se le cargan,
                                     // pero hay que decir cuánto quedó fuera o el número engaña.
                                     pnl.gastosEmpresa ? `${formatCurrency(pnl.gastosEmpresa)} de empresa no incluidos` : null,
@@ -469,7 +484,15 @@ export default function RentabilidadView(props: RentabilidadViewProps) {
                                     onAgregar={abrirModalCrear}
                                     onEditar={abrirModalEditar}
                                     onEliminar={eliminarGasto}
+                                    comprasConsumo={comprasGasto}
                                 />
+                                {(pnl.comprasSinProducto?.length ?? 0) > 0 && marcarCompraSoloIgv && (
+                                    <ComprasSinProductoPanel
+                                        compras={pnl.comprasSinProducto!}
+                                        puedeMarcar={esAdmin}
+                                        onMarcar={marcarCompraSoloIgv}
+                                    />
+                                )}
                                 <IngresosPanel
                                     ingresos={ingresos}
                                     onAgregar={abrirModalCrearIngreso}

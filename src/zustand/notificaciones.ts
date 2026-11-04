@@ -12,6 +12,12 @@ export interface NotificacionMetaData {
   correlativo?: number | null;
   tipoDoc?: string | null;
   errorMsg?: string | null;
+  /** Recordatorio de la Agenda: `origen: 'AGENDA'`. */
+  origen?: string;
+  agendaEventoId?: number;
+  /** Inicio ISO de la ocurrencia avisada. */
+  ocurrencia?: string;
+  url?: string;
 }
 
 export interface Notificacion {

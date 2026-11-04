@@ -1,5 +1,6 @@
 import { usePerfilViewModel } from '@/features/admin/perfil/usePerfilViewModel';
 import AlertasStockConfig from '@/features/admin/perfil/AlertasStockConfig';
+import MayoristaMezclaConfig from '@/features/admin/perfil/MayoristaMezclaConfig';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
 import Loading from '@/components/Loading';
@@ -11,6 +12,7 @@ import CuentasBancariasConfig from '@/pages/admin/empresa/CuentasBancariasConfig
 import MediosDePagoConfig from '@/pages/admin/empresa/MediosDePagoConfig';
 import ShalomProConexion from '@/components/ShalomProConexion';
 import OlvaConfiguracion from '@/components/OlvaConfiguracion';
+import { FechaAnteriorSerieToggle } from './FechaAnteriorSerieToggle';
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -568,6 +570,10 @@ export default function PerfilIndex() {
                                         {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                {/* Precio por mayor sumando productos distintos (solo administradores) */}
+                                {(perfil?.rol === 'ADMIN_EMPRESA' || perfil?.rol === 'ADMIN_SISTEMA') && (
+                                    <div className="mt-3"><MayoristaMezclaConfig /></div>
+                                )}
                                 <label data-testid="config-ley-amazonia" className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                                     <input
                                         type="checkbox"
@@ -695,6 +701,12 @@ export default function PerfilIndex() {
                                         {vm.savingImpresionConfig && <p className="text-xs text-violet-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                <FechaAnteriorSerieToggle
+                                    checked={Boolean((perfil.empresa as any).permitirFechaAnteriorEnSerie)}
+                                    disabled={vm.savingImpresionConfig}
+                                    saving={vm.savingImpresionConfig}
+                                    onChange={(checked) => vm.handleImpresionConfig('permitirFechaAnteriorEnSerie', checked)}
+                                />
 
                                 {/* ── Observaciones por defecto de la venta ── */}
                                 <div className="mt-3 p-3 rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/40 dark:bg-amber-900/10">

@@ -2,8 +2,10 @@ import { Icon } from '@iconify/react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useEscapeKey from '@/hooks/useEscapeKey';
+import { useDesfaseFranjaSede } from '@/features/tiendaSede/FranjaSede';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import axios from 'axios';
+import { EnlaceTienda } from '@/components/tienda/navTienda';
 import { withPricingList } from '@/templates/shared/pricing';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -41,6 +43,8 @@ export default function StoreHeader({
     hideCart = false
 }: StoreHeaderProps & { onSearch?: () => void }) {
     const navigate = useNavigate();
+    // Bajo la franja "Comprando en" (modo CLIENTE) mientras está a la vista.
+    const desfaseSede = useDesfaseFranjaSede();
     const isLoggedIn = (() => { try { return !!localStorage.getItem('ACCESS_TOKEN'); } catch { return false; } })();
     const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -86,7 +90,7 @@ export default function StoreHeader({
 
     return (
         <>
-        <header className="fixed top-0 left-0 right-0 z-[100] font-sans bg-white shadow-sm">
+        <header className="fixed top-0 left-0 right-0 z-[100] font-sans bg-white shadow-sm" style={{ top: desfaseSede }}>
 
             {/* ── Main Row ── */}
             <div className="max-w-screen-xl mx-auto px-5 md:px-8 py-3 flex items-center gap-4">
@@ -150,8 +154,11 @@ export default function StoreHeader({
                                 ) : liveResults.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-2">
                                         {liveResults.map((item, i) => (
-                                            <a
+                                            <EnlaceTienda
                                                 href={`/tienda/${slug}/producto/${item.id}`}
+                                                slug={slug}
+                                                diseno={tienda?.diseno}
+                                                onClick={() => setIsSearchFocused(false)}
                                                 key={i}
                                                 className="flex items-center gap-3 p-2 hover:bg-[#FAF6F1] rounded-xl group"
                                             >
@@ -161,7 +168,7 @@ export default function StoreHeader({
                                                 <span className="text-xs font-semibold text-[#1A1A1A] truncate transition-colors">
                                                     {item.descripcion}
                                                 </span>
-                                            </a>
+                                            </EnlaceTienda>
                                         ))}
                                     </div>
                                 ) : (

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import { productoEnCategoria } from '@/components/tienda/navTienda';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TemplateCatalogoPageProps } from '@/templates/shared/types';
 import { sinStock } from '@/templates/shared/ventaSinStock';
 import {
-  GREEN, resolveFalconGreen, getName, money, getImg, catOf, storeNameOf, editable, withPreviewQuery, FALCON_DEFAULT_IMAGES,
+  GREEN, resolveFalconGreen, getName, money, getImg, storeNameOf, editable, withPreviewQuery, FALCON_DEFAULT_IMAGES,
   FalconHeader, FalconFooter, FalconProductCard,
   FalconCartDrawer, FalconWishlistDrawer, FalconCompareModal, FalconQuickView,
   falconFadeUp, falconScaleIn, falconStagger, falconTap,
@@ -53,7 +54,7 @@ export default function FalconCatalogoPage({
   const categoryCircles = useMemo(() => allCategorías
     .map((c) => {
       const name = getName(c);
-      const inCat = catalogProducts.filter((p) => catOf(p).toLowerCase() === name.toLowerCase());
+      const inCat = catalogProducts.filter((p) => productoEnCategoria(p, name));
       const img = (typeof c === 'object' && c?.imagenUrl) || getImg(inCat[0]) || '';
       return { name, img, count: inCat.length };
     })
@@ -63,7 +64,7 @@ export default function FalconCatalogoPage({
   // Categorías reales con la cantidad de productos en cada una (para el sidebar).
   // Usa la lista completa para que siempre aparezcan todas, aun con un filtro activo.
   const categoryCounts = useMemo(() => categoryNames
-    .map((name) => ({ name, count: catalogProducts.filter((p) => catOf(p).toLowerCase() === name.toLowerCase()).length }))
+    .map((name) => ({ name, count: catalogProducts.filter((p) => productoEnCategoria(p, name)).length }))
     .filter((c) => c.count > 0), [categoryNames, catalogProducts]);
 
   const inStockCount = productos.filter((p) => Number(p?.stock ?? 1) > 0).length;
@@ -167,7 +168,7 @@ export default function FalconCatalogoPage({
               <SidebarSection title={editable(diseno?.falconCatalogTypeTitle, 'Tipo de producto')}>
                 <div className="space-y-3 text-sm">
                   {categoryNames.map((nm) => {
-                    const count = productos.filter((p) => catOf(p).toLowerCase() === nm.toLowerCase()).length;
+                    const count = productos.filter((p) => productoEnCategoria(p, nm)).length;
                     return (
                       <label key={nm} className="flex cursor-pointer items-center gap-3">
                         <input type="checkbox" checked={selectedCategorías.includes(nm)} onChange={() => toggleCategory(nm)} className="h-4 w-4 rounded border-gray-300" style={{ accentColor: green }} />

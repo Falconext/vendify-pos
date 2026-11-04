@@ -227,6 +227,19 @@ export function useRentabilidadViewModel(sedeId?: number | null) {
         }
     }, [fetchPnl, fetchGastos, fetchIngresos]);
 
+    /**
+     * Compra sin producto → "solo IGV" (la empresa no la pagó) o de vuelta a
+     * gasto. Recarga el P&L para que la tarjeta y la ganancia cambien al toque.
+     */
+    const marcarCompraSoloIgv = useCallback(async (compraId: number, soloCreditoIgv: boolean) => {
+        const r = await patch(`compras/${compraId}/solo-credito-igv`, { soloCreditoIgv });
+        if (!r.success) {
+            alert(r.error || 'No se pudo cambiar la compra', 'error');
+            return;
+        }
+        await refreshPnlAndGastos();
+    }, [alert, refreshPnlAndGastos]);
+
     const crearGasto = useCallback(async (data: GastoFormData) => {
         setState(prev => ({ ...prev, isSaving: true }));
         try {
@@ -350,6 +363,7 @@ export function useRentabilidadViewModel(sedeId?: number | null) {
     // ─── Return ───────────────────────────────────────────────────────────────
 
     return {
+        marcarCompraSoloIgv,
         // State
         mesActual: state.mesActual,
         anioActual: state.anioActual,

@@ -13,6 +13,8 @@ export interface IPropsProducts {
     initialForm: IFormProduct;
     isInvoice?: boolean;
     setSelectProduct?: any;
+    /** Sede que el Kardex está mostrando: ahí va el stock. `id` null = "Todas las sedes". */
+    sedeStock?: { id: number | null; nombre: string | null };
 }
 
 export type TipoAjusteStock = 'ninguno' | 'reemplazar' | 'sumar' | 'restar';

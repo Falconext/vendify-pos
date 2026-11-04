@@ -35,8 +35,10 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
     password: '',
     permisos: [],
     sedeIds: [],
+    sedesSinVenta: [],
     subModuloIds: [],
     puedeAnularComprobantes: false,
+    soloImagenesProductos: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,11 +65,13 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         permisos: user.rol === 'ADMIN_EMPRESA' ? ['*'] : (user.permisos || []),
         sedeIds: (user.sedes || []).map(s => s.id),
         sedeDefaultId: user.sedeId ?? undefined,
+        sedesSinVenta: (user.sedes || []).filter(s => s.puedeVender === false).map(s => s.id),
         subModuloIds: (user.subModulos || []).map(s => s.id),
         comisionGlobal: user.comisionGlobal || undefined,
         comisionGlobalFija: user.comisionGlobalFija || undefined,
         comisionGlobalVenta: user.comisionGlobalVenta || undefined,
         puedeAnularComprobantes: user.puedeAnularComprobantes ?? false,
+        soloImagenesProductos: user.soloImagenesProductos ?? false,
       });
     } else {
       setFormData({
@@ -79,11 +83,13 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         permisos: [],
         sedeIds: [],
         sedeDefaultId: undefined,
+        sedesSinVenta: [],
         subModuloIds: [],
         comisionGlobal: undefined,
         comisionGlobalFija: undefined,
         comisionGlobalVenta: undefined,
         puedeAnularComprobantes: false,
+        soloImagenesProductos: false,
       });
     }
     setErrors({});
@@ -166,6 +172,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
   // el administrador puede).
   const PERMISOS_AVANZADOS: { key: keyof IFormUsuario; icon: string; label: string; descripcion: string; soloAdmin?: boolean }[] = [
     { key: 'puedeAnularComprobantes', icon: 'solar:shield-check-bold-duotone', label: 'Permitir anular/eliminar comprobantes', descripcion: 'Por defecto solo el administrador puede anular o eliminar una venta/nota de venta. Activa esto para que este usuario también pueda.', soloAdmin: true },
+    { key: 'soloImagenesProductos', icon: 'solar:gallery-edit-bold-duotone', label: 'Solo gestionar fotos de productos', descripcion: 'Solo entrará a la lista de productos, sin precios ni costos, y al editar solo verá las fotos: subir, cambiar u ordenar. No podrá tocar datos ni entrar a ningún otro módulo.', soloAdmin: true },
   ];
 
   const handleSedeToggle = (sedeId: number) => {
@@ -180,9 +187,21 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         sedeIds: nuevos,
         // Si se desmarca la sede que era la predeterminada, se limpia.
         sedeDefaultId: desmarcando && prev.sedeDefaultId === sedeId ? undefined : prev.sedeDefaultId,
+        sedesSinVenta: desmarcando ? (prev.sedesSinVenta || []).filter(id => id !== sedeId) : prev.sedesSinVenta,
       };
     });
     if (errors.sedeIds) setErrors(prev => ({ ...prev, sedeIds: '' }));
+  };
+
+  // La sede sigue asignada (ve stock, cotiza, traslada), solo deja de emitir ventas ahí.
+  const handleSedeVentaToggle = (sedeId: number) => {
+    setFormData(prev => {
+      const sinVenta = prev.sedesSinVenta || [];
+      return {
+        ...prev,
+        sedesSinVenta: sinVenta.includes(sedeId) ? sinVenta.filter(id => id !== sedeId) : [...sinVenta, sedeId],
+      };
+    });
   };
 
   const handleSedeDefaultChange = (sedeId: number) => {
@@ -207,7 +226,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
     if (formData.celular?.trim() && !/^\d{9}$/.test(formData.celular)) newErrors.celular = 'El celular debe tener 9 dígitos';
     if (!isEdit && !formData.password) newErrors.password = 'La contraseña es obligatoria';
     else if (formData.password && formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    if (formData.permisos.length === 0) newErrors.permisos = 'Debe asignar al menos un permiso';
+    if (formData.permisos.length === 0 && !formData.soloImagenesProductos) newErrors.permisos = 'Debe asignar al menos un permiso';
     if (!formData.sedeIds || formData.sedeIds.length === 0) newErrors.sedeIds = 'Debe asignar al menos una sede';
 
     setErrors(newErrors);
@@ -359,7 +378,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Icon icon="solar:city-bold-duotone" width={20} height={20} className="text-violet-500" />
             Sedes Asignadas
-            <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">(el usuario solo podrá acceder a las sedes seleccionadas)</span>
+            <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">(el usuario solo podrá acceder a las sedes seleccionadas; toca "Puede vender" para que solo consulte en esa sede)</span>
           </h3>
 
           {errors.sedeIds && (
@@ -399,6 +418,24 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
                         )}
                       </div>
                       {(sede as any).codigo && <p className="text-xs text-gray-400 ml-6">Código: {(sede as any).codigo}</p>}
+                      {isSelected && actorEsAdmin && user?.rol !== 'ADMIN_EMPRESA' && (() => {
+                        const vende = !(formData.sedesSinVenta || []).includes(sede.id);
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleSedeVentaToggle(sede.id); }}
+                            title={vende ? 'Puede emitir ventas en esta sede' : 'Entra a la sede pero no puede emitir ventas'}
+                            className={`ml-6 mt-1.5 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                              vende
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
+                            }`}
+                          >
+                            <Icon icon={vende ? 'solar:cart-check-bold' : 'solar:cart-cross-bold'} width={13} />
+                            {vende ? 'Puede vender' : 'No vende aquí'}
+                          </button>
+                        );
+                      })()}
                     </div>
                     {isSelected && (
                       <button
