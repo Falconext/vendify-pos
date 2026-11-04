@@ -22,6 +22,7 @@ import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ModalOrdenDesdeVentas from './ModalOrdenDesdeVentas';
+import { armarLlegadas, errorDeLlegadas, fmtCant, llegaTodo, pendienteDe, progresoOrden, type LineaOrden } from './entregasOrden';
 import { observacionDeOrigen, type LineaDesdeVentas, type ResumenDesdeVentas } from './ordenDesdeVentas';
 
 interface DetalleOC {
@@ -50,7 +51,7 @@ interface OrdenCompra {
     igv: any;
     total: any;
     igvIncluido?: boolean;
-    estado: 'BORRADOR' | 'EMITIDA' | 'RECIBIDA' | 'ANULADA';
+    estado: 'BORRADOR' | 'EMITIDA' | 'PARCIAL' | 'RECIBIDA' | 'ANULADA';
     observaciones?: string | null;
     condicionesPago?: string | null;
     lugarEntrega?: string | null;
@@ -76,6 +77,7 @@ interface OrdenInicial {
 const ESTADO_STYLE: Record<string, string> = {
     BORRADOR: 'bg-gray-100 text-gray-600 dark:bg-slate-700/60 dark:text-gray-300',
     EMITIDA: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
+    PARCIAL: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     RECIBIDA: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300',
     ANULADA: 'bg-rose-50 text-rose-500 dark:bg-rose-900/30 dark:text-rose-300',
 };
@@ -83,6 +85,7 @@ const ESTADO_STYLE: Record<string, string> = {
 const ESTADO_LABEL: Record<string, string> = {
     BORRADOR: 'Borrador',
     EMITIDA: 'Emitida',
+    PARCIAL: 'Parcial',
     RECIBIDA: 'Recibida',
     ANULADA: 'Anulada',
 };
@@ -105,6 +108,9 @@ export default function OrdenesCompraPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [ordenEdit, setOrdenEdit] = useState<OrdenCompra | null>(null);
     const [recibirOrden, setRecibirOrden] = useState<OrdenCompra | null>(null);
+    // Orden que llega por partes: una entrega más, o cerrarla con lo que llegó.
+    const [entregaOrden, setEntregaOrden] = useState<OrdenCompra | null>(null);
+    const [cerrarOrden, setCerrarOrden] = useState<OrdenCompra | null>(null);
     const [anularOrden, setAnularOrden] = useState<OrdenCompra | null>(null);
     const [descargandoId, setDescargandoId] = useState<number | null>(null);
 
@@ -190,6 +196,18 @@ export default function OrdenesCompraPage() {
         }
     };
 
+    const confirmarCerrar = async () => {
+        if (!cerrarOrden) return;
+        const resp: any = await patch(`compras/ordenes/${cerrarOrden.id}/cerrar`, {});
+        if (resp.success) {
+            alert(`Orden ${cerrarOrden.numeroFormato} cerrada con lo recibido`, 'success');
+            setCerrarOrden(null);
+            cargar();
+        } else {
+            alert(resp.error || 'No se pudo cerrar la orden', 'error');
+        }
+    };
+
     const abrirEditar = async (orden: OrdenCompra) => {
         const resp: any = await get(`compras/ordenes/${orden.id}`);
         if (resp.success) {
@@ -220,6 +238,12 @@ export default function OrdenesCompraPage() {
             icon: <Icon icon="solar:close-circle-bold-duotone" />,
             onClick: (o: OrdenCompra) => setAnularOrden(o),
             condition: abierta,
+        },
+        {
+            tooltip: 'Cerrar con lo recibido (no llegará el resto)',
+            icon: <Icon icon="solar:check-square-bold-duotone" />,
+            onClick: (o: OrdenCompra) => setCerrarOrden(o),
+            condition: (o: OrdenCompra) => o.estado === 'PARCIAL',
         },
     ];
 
@@ -283,6 +307,7 @@ export default function OrdenesCompraPage() {
                                 { id: 'TODOS', value: 'Todos los estados' },
                                 { id: 'BORRADOR', value: 'Borrador' },
                                 { id: 'EMITIDA', value: 'Emitida' },
+                                { id: 'PARCIAL', value: 'Parcial (llegando)' },
                                 { id: 'RECIBIDA', value: 'Recibida' },
                                 { id: 'ANULADA', value: 'Anulada' },
                             ]}
@@ -336,6 +361,14 @@ export default function OrdenesCompraPage() {
                                     <td className="px-4 py-3 text-right font-black text-gray-900 dark:text-white">{monedaFmt(o)} {Number(o.total).toFixed(2)}</td>
                                     <td className="px-4 py-3">
                                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${ESTADO_STYLE[o.estado]}`}>{ESTADO_LABEL[o.estado]}</span>
+                                        {o.estado === 'PARCIAL' && (() => {
+                                            const { recibido, pedido } = progresoOrden(o.detalles);
+                                            return (
+                                                <p className="mt-1 whitespace-nowrap text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                                                    Llegó {fmtCant(recibido)} de {fmtCant(pedido)}
+                                                </p>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                                         {o.compra ? `${o.compra.serie}-${o.compra.numero}` : '—'}
@@ -351,6 +384,17 @@ export default function OrdenesCompraPage() {
                                                 >
                                                     <Icon icon="solar:box-bold-duotone" className="text-base" />
                                                     Recibir
+                                                </button>
+                                            )}
+                                            {o.estado === 'PARCIAL' && (
+                                                <button
+                                                    onClick={() => setEntregaOrden(o)}
+                                                    title="Registrar lo que llegó en este envío"
+                                                    data-testid={`oc-entrega-${o.id}`}
+                                                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300"
+                                                >
+                                                    <Icon icon="solar:box-bold-duotone" className="text-base" />
+                                                    Recibir entrega
                                                 </button>
                                             )}
                                             <MenuAcciones row={o} actions={accionesOrden} />
@@ -388,6 +432,22 @@ export default function OrdenesCompraPage() {
                     onSaved={() => { setRecibirOrden(null); cargar(); }}
                 />
             )}
+
+            {entregaOrden && (
+                <ModalEntregaOrden
+                    orden={entregaOrden}
+                    onClose={() => setEntregaOrden(null)}
+                    onSaved={() => { setEntregaOrden(null); cargar(); }}
+                />
+            )}
+
+            <ModalConfirm
+                isOpenModal={Boolean(cerrarOrden)}
+                setIsOpenModal={(v: boolean) => { if (!v) setCerrarOrden(null); }}
+                title="Cerrar con lo recibido"
+                information={`La orden ${cerrarOrden?.numeroFormato} quedará como recibida con lo que llegó. La factura no cambia: si el proveedor te devuelve dinero o te emite una nota de crédito, regístralo aparte.`}
+                confirmSubmit={confirmarCerrar}
+            />
 
             <ModalConfirm
                 isOpenModal={Boolean(anularOrden)}
@@ -904,6 +964,10 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
     const [formaPago, setFormaPago] = useState('CONTADO');
     const [fechaVencimiento, setFechaVencimiento] = useState('');
     const [guardando, setGuardando] = useState(false);
+    // ¿Llegó todo? El proveedor puede facturar todo de una vez y mandar la
+    // mercadería por partes: la factura va completa, al stock solo lo que llegó.
+    const { lineas, valores, setValores } = useLineasOrden(orden.id);
+    const [llegoParte, setLlegoParte] = useState(false);
     // A qué sede/almacén entra la mercadería. Antes siempre entraba a la sede
     // de la orden y para mandarla al almacén había que editar la compra después.
     const { sedes, listarSedes } = useSedesStore();
@@ -929,6 +993,11 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
     const recibir = async () => {
         if (!serie.trim() || !numero.trim()) { alert('Ingresa la serie y número del documento del proveedor', 'warning'); return; }
         if (esUSD && !(Number(tipoCambio) > 0)) { alert('Ingresa el tipo de cambio (S/ por US$) de la factura recibida', 'warning'); return; }
+        const parcial = llegoParte && !llegaTodo(lineas, valores);
+        if (parcial) {
+            const error = errorDeLlegadas(lineas, valores);
+            if (error) { alert(error, 'warning'); return; }
+        }
         setGuardando(true);
         try {
             const resp: any = await post(`compras/ordenes/${orden.id}/recibir`, {
@@ -940,10 +1009,16 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
                 sedeId: sedeDestinoId || undefined,
                 tipoCambio: esUSD ? Number(tipoCambio) : undefined,
                 fechaVencimiento: formaPago === 'CREDITO' && fechaVencimiento ? fechaVencimiento : undefined,
+                ...(parcial ? { lineas: armarLlegadas(lineas, valores) } : {}),
             });
             if (resp.success) {
                 const destino = sedesActivas.find((x: any) => x.id === sedeDestinoId);
-                alert(`Mercadería recibida: se registró la compra y el stock ingresó a ${destino ? etiquetaSede(destino) : 'la sede'}`, 'success');
+                alert(
+                    parcial
+                        ? 'Factura registrada por el total y el stock de lo que llegó ya ingresó. La orden queda "Parcial": usa "Recibir entrega" cuando llegue el resto.'
+                        : `Mercadería recibida: se registró la compra y el stock ingresó a ${destino ? etiquetaSede(destino) : 'la sede'}`,
+                    'success',
+                );
                 onSaved();
             } else {
                 alert(resp.error || 'No se pudo registrar la recepción', 'error');
@@ -956,9 +1031,31 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
     return (
         <Modal isOpenModal closeModal={onClose} title={`Recibir mercadería — ${orden.numeroFormato}`} icon="solar:box-bold-duotone" width="480px" position="center">
             <div className="space-y-4 p-4">
-                <div className="rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                    Se creará la compra con los {orden._count?.detalles ?? ''} ítems de la orden: el stock ingresará al almacén y quedará en tus cuentas por pagar.
+                <div>
+                    <p className={lblCls}>¿Llegó todo?</p>
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup">
+                        {[{ v: false, t: 'Sí, llegó todo' }, { v: true, t: 'Llegó una parte' }].map(({ v, t }) => (
+                            <button
+                                key={t}
+                                type="button"
+                                role="radio"
+                                aria-checked={llegoParte === v}
+                                onClick={() => setLlegoParte(v)}
+                                className={`rounded-xl border px-3 py-2.5 text-sm font-bold transition ${llegoParte === v
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-300'}`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
                 </div>
+                <div className="rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                    {llegoParte
+                        ? 'La factura se registra completa (deuda o pago por el total). Al stock entra solo lo que llegó; el resto lo recibes después con "Recibir entrega".'
+                        : `Se creará la compra con los ${orden._count?.detalles ?? ''} ítems de la orden: el stock ingresará al almacén y quedará en tus cuentas por pagar.`}
+                </div>
+                {llegoParte && <TablaLlegadas lineas={lineas} valores={valores} setValores={setValores} />}
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <Select
@@ -1044,6 +1141,119 @@ function ModalRecibirOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; on
                 >
                     <Icon icon={guardando ? 'svg-spinners:180-ring' : 'solar:box-bold'} className="text-lg" />
                     Registrar recepción y crear compra
+                </button>
+            </div>
+        </Modal>
+    );
+}
+
+/* ─── Entregas parciales ─────────────────────────────────────────────────── */
+
+/** Líneas de la orden con lo que falta, y lo que llega (por defecto, todo lo que falta). */
+function useLineasOrden(ordenId: number) {
+    const [lineas, setLineas] = useState<LineaOrden[]>([]);
+    const [valores, setValores] = useState<Record<number, string>>({});
+    useEffect(() => {
+        let vivo = true;
+        get(`compras/ordenes/${ordenId}`).then((resp: any) => {
+            if (!vivo || !resp.success) return;
+            const ls: LineaOrden[] = (resp.data?.detalles ?? [])
+                .slice()
+                .sort((a: any, b: any) => a.id - b.id)
+                .map((d: any) => ({ id: d.id, descripcion: d.descripcion, cantidad: d.cantidad, cantidadRecibida: d.cantidadRecibida }));
+            setLineas(ls);
+            setValores(Object.fromEntries(ls.map((l) => [l.id, fmtCant(pendienteDe(l))])));
+        });
+        return () => { vivo = false; };
+    }, [ordenId]);
+    return { lineas, valores, setValores };
+}
+
+function TablaLlegadas({ lineas, valores, setValores }: { lineas: LineaOrden[]; valores: Record<number, string>; setValores: (fn: (v: Record<number, string>) => Record<number, string>) => void }) {
+    if (lineas.length === 0) {
+        return <p className="text-xs text-gray-400">Cargando productos de la orden…</p>;
+    }
+    return (
+        <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-100 dark:border-slate-700">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_96px] gap-x-3 border-b border-gray-100 bg-gray-50 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-gray-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-gray-400">
+                <span>Producto</span>
+                <span className="text-right">Falta</span>
+                <span className="text-right">Llega ahora</span>
+            </div>
+            {lineas.map((l) => {
+                const falta = pendienteDe(l);
+                const recibido = Number(l.cantidadRecibida) || 0;
+                return (
+                    <div key={l.id} className="grid grid-cols-[minmax(0,1fr)_auto_96px] items-center gap-x-3 border-b border-gray-50 px-3 py-2 last:border-0 dark:border-slate-800">
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100" title={l.descripcion}>{l.descripcion}</p>
+                            <p className="text-[11px] text-gray-400">
+                                Pedido {fmtCant(Number(l.cantidad) || 0)}{recibido > 0 ? ` · ya llegó ${fmtCant(recibido)}` : ''}
+                            </p>
+                        </div>
+                        <span className="text-right text-sm font-bold text-gray-600 dark:text-gray-300">{fmtCant(falta)}</span>
+                        <input
+                            type="number"
+                            min={0}
+                            max={falta}
+                            step="any"
+                            inputMode="decimal"
+                            aria-label={`Llega ahora: ${l.descripcion}`}
+                            disabled={falta <= 0}
+                            value={valores[l.id] ?? ''}
+                            onChange={(e) => { const v = e.target.value; setValores((prev) => ({ ...prev, [l.id]: v })); }}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-emerald-300 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+function ModalEntregaOrden({ orden, onClose, onSaved }: { orden: OrdenCompra; onClose: () => void; onSaved: () => void }) {
+    const { alert } = useAlertStore();
+    const { lineas, valores, setValores } = useLineasOrden(orden.id);
+    const [guardando, setGuardando] = useState(false);
+
+    const registrar = async () => {
+        const error = errorDeLlegadas(lineas, valores);
+        if (error) { alert(error, 'warning'); return; }
+        setGuardando(true);
+        try {
+            const resp: any = await post(`compras/ordenes/${orden.id}/entregas`, { lineas: armarLlegadas(lineas, valores) });
+            if (resp.success) {
+                alert(
+                    resp.data?.completa
+                        ? `Llegó todo: la orden ${orden.numeroFormato} quedó recibida.`
+                        : 'Entrega registrada: el stock de lo que llegó ya ingresó.',
+                    'success',
+                );
+                (resp.data?.stockWarnings ?? []).forEach((w: string) => alert(w, 'warning'));
+                onSaved();
+            } else {
+                alert(resp.error || 'No se pudo registrar la entrega', 'error');
+            }
+        } finally {
+            setGuardando(false);
+        }
+    };
+
+    return (
+        <Modal isOpenModal closeModal={onClose} title={`Recibir entrega — ${orden.numeroFormato}`} icon="solar:box-bold-duotone" width="520px" position="center">
+            <div className="space-y-4 p-4">
+                <div className="rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                    La factura {orden.compra ? `${orden.compra.serie}-${orden.compra.numero} ` : ''}ya está registrada por el total: aquí solo entra al stock lo que llegó en este envío, al mismo costo.
+                </div>
+                <TablaLlegadas lineas={lineas} valores={valores} setValores={setValores} />
+                <button
+                    type="button"
+                    onClick={registrar}
+                    disabled={guardando || lineas.length === 0}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                    <Icon icon={guardando ? 'svg-spinners:180-ring' : 'solar:box-bold'} className="text-lg" />
+                    Registrar entrega
                 </button>
             </div>
         </Modal>
