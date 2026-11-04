@@ -194,6 +194,12 @@ export default function MovementsView() {
                             }}
                             handleOnBlur={() => setTimeout(() => actions.setShowSuggestions(false), 150)}
                         />
+                        {/* Escrito pero sin elegir: todavía no filtra. */}
+                        {productQuery.trim() && !filters.productoId && (
+                            <p className="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400" data-testid="producto-sin-elegir">
+                                Elige el producto de la lista (o aprieta Buscar) para filtrar
+                            </p>
+                        )}
                         {showSuggestions && products && products.length > 0 && (
                             <div className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-none max-h-60 overflow-auto">
                                 {products.map((p: any) => (
