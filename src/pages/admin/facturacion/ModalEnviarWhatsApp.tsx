@@ -33,6 +33,8 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
     const [pdfUrl, setPdfUrl] = useState<string | undefined>(undefined);
     const [generando, setGenerando] = useState(false);
     const [enviandoWhatsApp, setEnviandoWhatsApp] = useState(false);
+    // Texto que acompaña al PDF: viene armado y el negocio lo puede cambiar.
+    const [mensaje, setMensaje] = useState('');
     const [enviandoEmail, setEnviandoEmail] = useState(false);
 
     // Reset y pre-llenar al abrir. Siempre regeneramos el PDF en segundo plano:
@@ -44,6 +46,11 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
         setPdfUrl(undefined);
         setNumeroDestino(comprobante.clienteCelular || '');
         setEmailDestino(comprobante.clienteEmail || '');
+        setMensaje(
+            `Hola ${comprobante.clienteNombre}, aquí está tu ${comprobante.comprobante} ` +
+                `${comprobante.serie}-${String(comprobante.correlativo).padStart(8, '0')} ` +
+                `por S/ ${(comprobante.total ?? 0).toFixed(2)}.\n\nGracias por tu preferencia.`,
+        );
         void generarPdf();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, comprobante.id, defaultTab]);
@@ -88,7 +95,10 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
         }
         setEnviandoWhatsApp(true);
         await asegurarPdf();
-        const res = await post(`comprobante/${comprobante.id}/enviar-whatsapp`, { celular: num });
+        const res = await post(`comprobante/${comprobante.id}/enviar-whatsapp`, {
+            celular: num,
+            ...(mensaje.trim() ? { mensaje: mensaje.trim() } : {}),
+        });
         setEnviandoWhatsApp(false);
         if ((res as any).error) {
             alert((res as any).error, 'error');
@@ -228,6 +238,17 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
                                 type="text"
                             />
 
+                            <label className="block">
+                                <span className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Mensaje</span>
+                                <textarea
+                                    value={mensaje}
+                                    onChange={(e) => setMensaje(e.target.value)}
+                                    rows={4}
+                                    className="w-full resize-y rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                />
+                                <span className="mt-1 block text-[11px] text-gray-400">Puedes cambiarlo. *texto* sale en negrita en WhatsApp.</span>
+                            </label>
+
                              {/* Info */}
                             <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30 rounded-xl p-3 flex items-start gap-2">
                                 <Icon icon="mdi:whatsapp" className="text-green-500 text-base mt-0.5 shrink-0" />
@@ -266,10 +287,10 @@ const ModalEnviarWhatsApp = ({ isOpen, onClose, defaultTab = 'whatsapp', comprob
                                         const url = await asegurarPdf();
                                         if (!url) return;
                                         const finalNum = num.startsWith('51') ? num : `51${num}`;
-                                        const mensaje = encodeURIComponent(
-                                            `Hola ${comprobante.clienteNombre}, te enviamos tu ${comprobante.comprobante} ${serie} por ${monto}.\n\nPuedes descargarlo aquí: ${url}`
+                                        const texto = encodeURIComponent(
+                                            `${mensaje.trim() || `Hola ${comprobante.clienteNombre}, te enviamos tu ${comprobante.comprobante} ${serie} por ${monto}.`}\n\nPuedes descargarlo aquí: ${url}`
                                         );
-                                        window.open(`https://wa.me/${finalNum}?text=${mensaje}`, '_blank');
+                                        window.open(`https://wa.me/${finalNum}?text=${texto}`, '_blank');
                                     }}
                                     disabled={!numeroDestino.trim() || generando}
                                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-green-500 text-green-600 dark:text-green-400 font-bold hover:bg-green-50 dark:hover:bg-green-900/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
