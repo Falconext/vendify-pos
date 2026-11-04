@@ -4,6 +4,13 @@
  * formularios dinámicos sobre la tienda pública en "modo WordPress".
  */
 
+import { camposDeMenu } from '@/components/tienda/navTienda';
+import { FALCON_MENU_ATENCION, FALCON_MENU_OFERTAS, FALCON_MENU_PIE } from '@/templates/falcon/menuFalcon';
+import { CONSTRUCCION_MENU, CONSTRUCCION_MENU_PIE } from '@/templates/construccion/menuConstruccion';
+import { URBANO_MENU } from '@/templates/urbano/menu';
+import { AUTOPARTES_MENU } from '@/templates/autopartes/menu';
+import { MODA_MENU } from '@/templates/moda/menu';
+
 export interface ImageFieldDef {
   key: string;
   label: string;
@@ -35,6 +42,10 @@ export interface LinkFieldDef {
   label: string;
   group?: string;
   defaultType?: LinkFieldTarget;
+  /** Ofrece "Automático" (sin destino guardado): la plantilla decide, p. ej. la categoría con el mismo nombre del botón. */
+  permiteAuto?: boolean;
+  /** Qué pasa al elegir "Sin enlace" (por defecto: el bloque no navega). */
+  textoSinEnlace?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,6 +171,8 @@ const AUTOPARTES_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'widgetTwoSubtitle', label: 'Widget 2: Subtítulo', placeholder: '¡Rendimiento Suave!', group: 'Widgets promocionales' },
   { key: 'widgetThreeTitle', label: 'Widget 3: Título', placeholder: 'COMPRA 1 LLEVA 1!', group: 'Widgets promocionales' },
   { key: 'widgetThreeSubtitle', label: 'Widget 3: Subtítulo', placeholder: '¡Aprovecha ahora!', group: 'Widgets promocionales' },
+  // Accesos rápidos de la barra del header (también en "Navegación" del pie).
+  ...camposDeMenu(AUTOPARTES_MENU).textFields,
 ];
 
 const URBANO_TEXT_FIELDS: TextFieldDef[] = [
@@ -168,6 +181,7 @@ const URBANO_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'urbanoHeroTitle', label: 'Hero título', placeholder: 'Estilo urbano para la ciudad', group: 'Hero' },
   { key: 'urbanoHeroBtn', label: 'Hero botón', placeholder: '[ VER COLECCIÓN ]', group: 'Hero' },
   { key: 'urbanoAnnouncementText', label: 'Barra superior', placeholder: '[ VER COLECCIÓN ]', group: 'Header' },
+  ...camposDeMenu(URBANO_MENU).textFields,
   { key: 'urbanoCat1Text', label: 'Categoría 1', placeholder: 'Automática', group: 'Categorías', type: 'categorySelect' },
   { key: 'urbanoCat2Text', label: 'Categoría 2', placeholder: 'Automática', group: 'Categorías', type: 'categorySelect' },
   { key: 'urbanoCat3Text', label: 'Categoría 3', placeholder: 'Automática', group: 'Categorías', type: 'categorySelect' },
@@ -176,7 +190,7 @@ const URBANO_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'urbanoShopTheLookTitle', label: 'Título "Compra el look"', placeholder: 'COMPRA EL LOOK', group: 'Bloques' },
   { key: 'urbanoBottomBannerText', label: 'Marquesina inferior', placeholder: 'VISTE A TU MANERA.', group: 'Bloques' },
   { key: 'urbanoBottomBannerBtn', label: 'Botón banner inferior', placeholder: '[ VER COLECCIÓN ]', group: 'Bloques' },
-  { key: 'urbanoFeatureLabel', label: 'Etiqueta producto macro', placeholder: 'CASACA', group: 'Bloques' },
+  { key: 'urbanoFeatureTitle', label: 'Título "Completa el look"', placeholder: 'Completa el look', group: 'Bloques' },
   { key: 'urbanoSlogan', label: 'Slogan footer', placeholder: 'Moda urbana minimalista...', group: 'Footer' },
   { key: 'urbanoFooterTitle', label: 'Footer: título contacto', placeholder: 'Atención', group: 'Footer' },
   { key: 'urbanoFooterHelpText', label: 'Footer: texto contacto', placeholder: 'Compra desde la tienda oficial...', group: 'Footer' },
@@ -381,6 +395,8 @@ const FALCON_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'falconContactPhoneTitle', label: 'Contacto: título teléfono', placeholder: 'Teléfono', group: 'Contacto' },
   { key: 'falconContactEmailTitle', label: 'Contacto: título correo', placeholder: 'Correo', group: 'Contacto' },
   { key: 'falconContactHoursTitle', label: 'Contacto: título horario', placeholder: 'Horario', group: 'Contacto' },
+  ...camposDeMenu(FALCON_MENU_PIE, 'Menú · pie de página').textFields,
+  ...camposDeMenu(FALCON_MENU_ATENCION, 'Menú · atención al cliente').textFields,
 ];
 
 const CONSTRUCCION_TEXT_FIELDS: TextFieldDef[] = [
@@ -473,6 +489,7 @@ const CONSTRUCCION_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'construccionProductSecureTitle', label: 'Detalle: pago seguro', placeholder: 'Pago seguro garantizado', group: 'Detalle producto' },
   { key: 'construccionProductSecureMethods', label: 'Detalle: medios pago', placeholder: 'VISA · Mastercard · Yape · Plin', group: 'Detalle producto' },
   { key: 'construccionRelatedTitle', label: 'Detalle: relacionados', placeholder: 'Productos relacionados', group: 'Detalle producto' },
+  ...camposDeMenu(CONSTRUCCION_MENU_PIE, 'Menú · pie de página').textFields,
 ];
 
 const APICULTURA_TEXT_FIELDS: TextFieldDef[] = [
@@ -510,9 +527,6 @@ const APICULTURA_TEXT_FIELDS: TextFieldDef[] = [
   { key: 'apiculturaContactHours', label: 'Contacto: horario', placeholder: '9:00 AM - 6:00 PM', group: 'Contacto' },
   { key: 'apiculturaContactSubmitLabel', label: 'Contacto: botón', placeholder: 'Enviar', group: 'Contacto' },
   { key: 'apiculturaOcultarEnvio', label: 'Ocultar costo de envío', placeholder: '', group: 'Checkout', type: 'toggle', hint: 'Actívalo si coordinas el envío internamente. Oculta la línea "Envío" y el mensaje de delivery gratis en el checkout.' },
-  { key: 'apiculturaNewsletterTitle', label: 'Newsletter: título', placeholder: 'Subscribe To Our Newsletter', group: 'Newsletter' },
-  { key: 'apiculturaNewsletterText', label: 'Newsletter: texto', placeholder: 'Recibe novedades y promociones...', group: 'Newsletter' },
-  { key: 'apiculturaNewsletterButton', label: 'Newsletter: botón', placeholder: 'Suscribirse', group: 'Newsletter' },
   { key: 'apiculturaCheckoutTitle', label: 'Checkout: título', placeholder: 'Finalizar compra', group: 'Checkout' },
   { key: 'apiculturaCheckoutCustomerTitle', label: 'Checkout: datos cliente', placeholder: 'Datos del cliente', group: 'Checkout' },
   { key: 'apiculturaCheckoutDeliveryTitle', label: 'Checkout: entrega y pago', placeholder: 'Entrega y pago', group: 'Checkout' },
@@ -561,8 +575,20 @@ const APICULTURA_PRODUCT_FIELDS: ProductFieldDef[] = [
   { key: 'apiculturaFeaturedProducts', label: 'Productos destacados de portada' },
 ];
 
+const MODA_TEXT_FIELDS: TextFieldDef[] = [
+  { key: 'modaBrandName', label: 'Nombre de la tienda (logo)', placeholder: 'chiclara', group: 'Header' },
+  { key: 'modaPromoText', label: 'Barra superior (promoción)', placeholder: 'Oferta de verano: hasta 30% OFF', group: 'Header' },
+  // Botones del menú (header, menú móvil y flechas de la barra superior).
+  ...camposDeMenu(MODA_MENU).textFields,
+  { key: 'modaHeroTitle', label: 'Hero: título (texto alternativo del banner)', placeholder: 'Banner de la tienda', group: 'Hero' },
+  { key: 'modaTrendsTitle', label: 'Título "En tendencia"', placeholder: 'En tendencia', group: 'Secciones' },
+  { key: 'modaStylesTitle', label: 'Título "Elige tu estilo"', placeholder: 'Elige tu estilo', group: 'Secciones' },
+  { key: 'modaCollectionsTitle', label: 'Título "Colecciones destacadas"', placeholder: 'Colecciones destacadas', group: 'Secciones' },
+];
+
 const MODA_LINK_FIELDS: LinkFieldDef[] = [
   { key: 'modaHeroAction', label: 'Banner del hero', group: 'Hero', defaultType: 'catalog' },
+  ...camposDeMenu(MODA_MENU).linkFields,
 ];
 
 const MAYE_LINK_FIELDS: LinkFieldDef[] = [
@@ -598,6 +624,9 @@ const FALCON_LINK_FIELDS: LinkFieldDef[] = [
   { key: 'falconSideTwoAction', label: 'Banner lateral 2', group: 'Hero', defaultType: 'catalog' },
   { key: 'falconBannerAction', label: 'Banner promociones', group: 'Banners', defaultType: 'catalog' },
   { key: 'falconCountdownAction', label: 'Cuenta regresiva', group: 'Banners', defaultType: 'catalog' },
+  ...camposDeMenu(FALCON_MENU_OFERTAS, 'Header').linkFields,
+  ...camposDeMenu(FALCON_MENU_PIE, 'Menú · pie de página').linkFields,
+  ...camposDeMenu(FALCON_MENU_ATENCION, 'Menú · atención al cliente').linkFields,
 ];
 
 const CONSTRUCCION_LINK_FIELDS: LinkFieldDef[] = [
@@ -608,6 +637,8 @@ const CONSTRUCCION_LINK_FIELDS: LinkFieldDef[] = [
   { key: 'construccionWideBannerAction', label: 'Banner ancho', group: 'Banners', defaultType: 'catalog' },
   { key: 'construccionHalfBannerOneAction', label: 'Banner inferior 1', group: 'Banners', defaultType: 'catalog' },
   { key: 'construccionHalfBannerTwoAction', label: 'Banner inferior 2', group: 'Banners', defaultType: 'catalog' },
+  ...camposDeMenu(CONSTRUCCION_MENU, 'Header').linkFields,
+  ...camposDeMenu(CONSTRUCCION_MENU_PIE, 'Menú · pie de página').linkFields,
 ];
 
 const APICULTURA_LINK_FIELDS: LinkFieldDef[] = [
@@ -630,9 +661,9 @@ export interface LiveEditorPlantillaConfig {
 const EMPTY: LiveEditorPlantillaConfig = { textFields: [], imageFields: [], productFields: [], linkFields: [] };
 
 export const LIVE_EDITOR_FIELDS: Record<string, LiveEditorPlantillaConfig> = {
-  autopartes: { textFields: AUTOPARTES_TEXT_FIELDS, imageFields: AUTOPARTES_IMAGE_FIELDS, productFields: [], linkFields: [] },
-  urbano: { textFields: URBANO_TEXT_FIELDS, imageFields: URBANO_IMAGE_FIELDS, productFields: URBANO_PRODUCT_FIELDS, linkFields: [] },
-  moda: { textFields: [], imageFields: MODA_IMAGE_FIELDS, productFields: [], linkFields: MODA_LINK_FIELDS },
+  autopartes: { textFields: AUTOPARTES_TEXT_FIELDS, imageFields: AUTOPARTES_IMAGE_FIELDS, productFields: [], linkFields: camposDeMenu(AUTOPARTES_MENU).linkFields },
+  urbano: { textFields: URBANO_TEXT_FIELDS, imageFields: URBANO_IMAGE_FIELDS, productFields: URBANO_PRODUCT_FIELDS, linkFields: camposDeMenu(URBANO_MENU).linkFields },
+  moda: { textFields: MODA_TEXT_FIELDS, imageFields: MODA_IMAGE_FIELDS, productFields: [], linkFields: MODA_LINK_FIELDS },
   maye: { textFields: MAYE_TEXT_FIELDS, imageFields: MAYE_IMAGE_FIELDS, productFields: MAYE_PRODUCT_FIELDS, linkFields: MAYE_LINK_FIELDS },
   tecnologia: { textFields: TECNOLOGIA_TEXT_FIELDS, imageFields: TECNOLOGIA_IMAGE_FIELDS, productFields: TECNOLOGIA_PRODUCT_FIELDS, linkFields: TECNOLOGIA_LINK_FIELDS },
   falcon: { textFields: FALCON_TEXT_FIELDS, imageFields: FALCON_IMAGE_FIELDS, productFields: FALCON_PRODUCT_FIELDS, linkFields: FALCON_LINK_FIELDS },

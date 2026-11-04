@@ -112,6 +112,7 @@ export default function AutopartesCheckout({
     >
       {/* ── Header ── */}
       <AutopartesHeader
+        diseno={diseno}
         tienda={tienda}
         slug={slug}
         cp={cp}

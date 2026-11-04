@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useEscapeKey from '@/hooks/useEscapeKey';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import axios from 'axios';
+import { EnlaceTienda } from '@/components/tienda/navTienda';
 import { withPricingList } from '@/templates/shared/pricing';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
@@ -150,8 +151,11 @@ export default function StoreHeader({
                                 ) : liveResults.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-2">
                                         {liveResults.map((item, i) => (
-                                            <a
+                                            <EnlaceTienda
                                                 href={`/tienda/${slug}/producto/${item.id}`}
+                                                slug={slug}
+                                                diseno={tienda?.diseno}
+                                                onClick={() => setIsSearchFocused(false)}
                                                 key={i}
                                                 className="flex items-center gap-3 p-2 hover:bg-[#FAF6F1] rounded-xl group"
                                             >
@@ -161,7 +165,7 @@ export default function StoreHeader({
                                                 <span className="text-xs font-semibold text-[#1A1A1A] truncate transition-colors">
                                                     {item.descripcion}
                                                 </span>
-                                            </a>
+                                            </EnlaceTienda>
                                         ))}
                                     </div>
                                 ) : (

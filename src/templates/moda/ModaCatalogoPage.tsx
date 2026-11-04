@@ -284,7 +284,7 @@ export default function ModaCatalogoPage({ tienda, slug, cp, navigate,
         )}
       </main>
 
-      <ModaFooter tiendaNombre={tienda?.nombreComercial || tienda?.nombre || 'chiclara'} />
+      <ModaFooter tienda={tienda} slug={slug} tiendaNombre={tienda?.nombreComercial || tienda?.nombre || 'chiclara'} />
 
       <ShoppingCartModal
         isOpen={mostrarCarrito}

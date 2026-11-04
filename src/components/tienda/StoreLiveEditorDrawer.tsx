@@ -428,8 +428,8 @@ function LinkActionPicker({
   const valueKey = `${field.key}Value`;
   const productKey = `${field.key}ProductId`;
   const urlKey = `${field.key}Url`;
-  const rawType = diseno?.[typeKey] || field.defaultType || 'catalog';
-  const type = LINK_TARGET_OPTIONS.some(o => o.id === rawType) ? rawType as LinkFieldTarget : 'catalog';
+  const rawType = diseno?.[typeKey] || (field.permiteAuto ? '' : field.defaultType || 'catalog');
+  const type = rawType === '' ? '' : LINK_TARGET_OPTIONS.some(o => o.id === rawType) ? rawType as LinkFieldTarget : 'catalog';
   const value = String(diseno?.[valueKey] ?? '');
   const url = String(diseno?.[urlKey] ?? '');
 
@@ -439,9 +439,10 @@ function LinkActionPicker({
         <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{field.label}</p>
         <select
           value={type}
-          onChange={e => onChange({ [typeKey]: e.target.value })}
+          onChange={e => onChange({ [typeKey]: e.target.value || null })}
           className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-bold text-gray-700 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-200"
         >
+          {field.permiteAuto && <option value="">Automático</option>}
           {LINK_TARGET_OPTIONS.map(option => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
@@ -506,8 +507,12 @@ function LinkActionPicker({
         <p className="text-[11px] text-gray-400">Abrirá el catálogo general de la tienda.</p>
       )}
 
+      {type === '' && (
+        <p className="text-[11px] text-gray-400">Lleva a la categoría con el mismo nombre del botón; si no existe, al catálogo.</p>
+      )}
+
       {type === 'none' && (
-        <p className="text-[11px] text-gray-400">El bloque se verá igual, pero no navegará a otra página.</p>
+        <p className="text-[11px] text-gray-400">{field.textoSinEnlace || 'El bloque se verá igual, pero no navegará a otra página.'}</p>
       )}
     </div>
   );

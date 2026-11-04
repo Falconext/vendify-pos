@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { productoEnCategoria, useIrEnTienda } from '@/components/tienda/navTienda';
 import { Icon } from '@iconify/react';
 import UrbanoHeader from './UrbanoHeader';
 import UrbanoHero from './UrbanoHero';
@@ -42,7 +42,7 @@ export default function UrbanoCatalogoPage({
   onSearchSubmit,
   diseno,
 }: UrbanoCatalogoPageProps) {
-  const navigate = useNavigate();
+  const navigate = useIrEnTienda(slug, diseno);
   const [hoveredCategory, setHoveredCategory] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
   const activeDiseno = diseno || tienda?.diseno || {};
@@ -54,7 +54,7 @@ export default function UrbanoCatalogoPage({
   const categoryNameFromProduct = (product: any) =>
     typeof product?.categoria === 'object' ? product.categoria?.nombre : product?.categoria;
   const imageForCategory = (name: string, fallback?: string) => {
-    const product = displayProducts.find((item) => String(categoryNameFromProduct(item) || '').toLowerCase() === String(name).toLowerCase());
+    const product = displayProducts.find((item) => productoEnCategoria(item, name));
     return productImage(product) || fallback || PRODUCT_PLACEHOLDER;
   };
   const categoriesFromApi = allCategories

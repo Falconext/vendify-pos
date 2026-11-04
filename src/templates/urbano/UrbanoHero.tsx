@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useIrEnTienda } from '@/components/tienda/navTienda';
 
 interface UrbanoHeroProps {
   diseno?: any;
@@ -7,7 +7,7 @@ interface UrbanoHeroProps {
 }
 
 export default function UrbanoHero({ slug, tienda, diseno }: UrbanoHeroProps) {
-    const navigate = useNavigate();
+    const navigate = useIrEnTienda(slug, diseno);
 
     return (
         <section className="relative w-full h-screen flex flex-col items-center justify-end overflow-hidden" style={{ fontFamily: '"Inter", sans-serif' }}>

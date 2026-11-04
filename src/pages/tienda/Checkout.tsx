@@ -567,7 +567,7 @@ export default function Checkout() {
                 onSelectCategory={() => { }}
                 recommendedProducts={searchResults}
                 hideCart={true}
-                onSearch={() => { if (search.trim()) window.location.href = `/tienda/${slug}?search=${encodeURIComponent(search)}`; }}
+                onSearch={() => { if (search.trim()) navigate(`/tienda/${slug}/catalogo?search=${encodeURIComponent(search)}`); }}
             />
 
             {/* Mejora 4: layout mobile — flex-col en mobile, flex-row en desktop */}

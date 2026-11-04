@@ -174,7 +174,7 @@ export default function ModaSeguimientoPage({
         </div>
       </div>
 
-      <ModaFooter diseno={diseno} tiendaNombre={tienda?.nombreComercial || tienda?.razonSocial || 'Tienda'} />
+      <ModaFooter tienda={tienda} slug={slug} diseno={diseno} tiendaNombre={tienda?.nombreComercial || tienda?.razonSocial || 'Tienda'} />
     </div>
   );
 }

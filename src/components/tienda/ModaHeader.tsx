@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { Link, useNavigate } from 'react-router-dom';
+import { categoriaParecida, EnlaceTienda, itemsDeMenu, useIrEnTienda, type ItemMenu } from '@/components/tienda/navTienda';
+import { MEGA_MODA, menuModa } from '@/templates/moda/menu';
 
 interface ModaHeaderProps {
   diseno?: any;
@@ -68,7 +69,10 @@ export default function ModaHeader({ tienda,
   setSearchQuery,
   onSearchSubmit,
   allCategories = [], diseno }: ModaHeaderProps) {
-  const navigate = useNavigate();
+  const cfg = diseno || tienda?.diseno || {};
+  // Navega sin recargar y respeta la vista previa (slug `preview`).
+  const navigate = useIrEnTienda(slug, cfg);
+  const items = itemsDeMenu(menuModa(cfg), { diseno: cfg, slug, categorias: allCategories });
   const [activeMenu, setActiveMenu] = useState<MenuKey>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -78,13 +82,27 @@ export default function ModaHeader({ tienda,
     return String(name).replace(/\s+/g, ' ').trim();
   }, [(diseno || tienda?.diseno)?.modaBrandName, tienda?.nombre]);
 
+  // Subitems del desplegable: la categoría real parecida o, si no hay, la búsqueda del texto.
   const goCatalog = (query?: string) => {
-    if (slug === 'preview') {
-      window.dispatchEvent(new CustomEvent('preview-nav', { detail: 'catalogo' }));
-      return;
-    }
-    navigate(query ? `/tienda/${slug}/catalogo?search=${encodeURIComponent(query)}` : `/tienda/${slug}/catalogo`);
+    setMobileOpen(false);
+    if (!query) { navigate(`/tienda/${slug}/catalogo`); return; }
+    const categoria = categoriaParecida(query, allCategories);
+    navigate(categoria
+      ? `/tienda/${slug}/catalogo?category=${encodeURIComponent(categoria)}`
+      : `/tienda/${slug}/catalogo?search=${encodeURIComponent(query)}`);
   };
+  const goCategory = (name: string) => {
+    setMobileOpen(false);
+    navigate(`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`);
+  };
+  const abrirItem = (item?: ItemMenu) => {
+    setMobileOpen(false);
+    if (!item?.href) return;
+    if (item.externo) window.open(item.href, '_blank', 'noopener,noreferrer');
+    else navigate(item.href);
+  };
+  const nuevos = items.find((it) => it.key === 'modaMenu1Action');
+  const ofertas = items.find((it) => it.key === 'modaMenu7Action');
 
   const goTracking = () => {
     if (slug === 'preview') {
@@ -99,13 +117,13 @@ export default function ModaHeader({ tienda,
   return (
     <header className="sticky top-0 z-[80] w-full bg-white text-[#111111]" onMouseLeave={() => setActiveMenu(null)}>
       <div className="h-[72px] bg-black text-white grid grid-cols-[1fr_auto_1fr] items-center px-5 md:px-10">
-        <button className="justify-self-start text-white/80 hover:text-white" onClick={() => goCatalog('nuevos ingresos')} aria-label="Promoción anterior">
+        <button className="justify-self-start text-white/80 hover:text-white" onClick={() => (nuevos ? abrirItem(nuevos) : goCatalog())} aria-label="Promoción anterior">
           <Icon icon="solar:arrow-left-linear" width={22} />
         </button>
         <p className="text-[12px] md:text-[15px] font-black tracking-[-0.01em]">
           {(diseno || tienda?.diseno)?.modaPromoText || 'Oferta de verano: hasta 30% OFF'}
         </p>
-        <button className="justify-self-end text-white/80 hover:text-white" onClick={() => goCatalog('ofertas')} aria-label="Promoción siguiente">
+        <button className="justify-self-end text-white/80 hover:text-white" onClick={() => (ofertas ? abrirItem(ofertas) : goCatalog())} aria-label="Promoción siguiente">
           <Icon icon="solar:arrow-right-linear" width={22} />
         </button>
       </div>
@@ -143,7 +161,7 @@ export default function ModaHeader({ tienda,
           >
             <Icon icon={mobileOpen ? 'solar:close-circle-linear' : 'solar:hamburger-menu-linear'} width={24} />
           </button>
-          <Link to={`/tienda/${slug}`} className="flex items-center">
+          <EnlaceTienda href={`/tienda/${slug}`} slug={slug} diseno={cfg} className="flex items-center">
             {tienda?.logo ? (
               <img src={tienda.logo} alt={tienda.nombre} className="h-10 max-w-[190px] object-contain" />
             ) : (
@@ -151,30 +169,31 @@ export default function ModaHeader({ tienda,
                 {brandName}
               </span>
             )}
-          </Link>
+          </EnlaceTienda>
         </div>
 
         <nav className="hidden lg:flex items-center gap-10 text-[14px] font-medium">
-          <button onClick={() => goCatalog('nuevos ingresos')} className="leading-none hover:text-[#15243B]">
-            Nuevos ingresos
-          </button>
-          <button onClick={() => goCatalog('más vendidos')} className="leading-none hover:text-[#15243B]">
-            Más vendidos
-          </button>
-          {(['women', 'men', 'accessories', 'style'] as const).map((key) => (
-            <button
-              key={key}
-              onMouseEnter={() => setActiveMenu(key)}
-              onClick={() => goCatalog(key)}
-              className={`inline-flex items-center gap-1.5 leading-none pb-1 border-b transition-colors ${activeMenu === key ? 'border-black' : 'border-transparent hover:border-black'}`}
-            >
-              {menuBase[key].label}
-              <Icon icon="solar:alt-arrow-down-linear" width={14} />
-            </button>
-          ))}
-          <button onClick={() => goCatalog('ofertas')} className="leading-none hover:text-[#15243B]">
-            Ofertas
-          </button>
+          {items.map((item) => {
+            const mega = MEGA_MODA[item.key];
+            if (!mega) {
+              return (
+                <button key={item.key} onMouseEnter={() => setActiveMenu(null)} onClick={() => abrirItem(item)} className="leading-none hover:text-[#15243B]">
+                  {item.label}
+                </button>
+              );
+            }
+            return (
+              <button
+                key={item.key}
+                onMouseEnter={() => setActiveMenu(mega)}
+                onClick={() => abrirItem(item)}
+                className={`inline-flex items-center gap-1.5 leading-none pb-1 border-b transition-colors ${activeMenu === mega ? 'border-black' : 'border-transparent hover:border-black'}`}
+              >
+                {item.label}
+                <Icon icon="solar:alt-arrow-down-linear" width={14} />
+              </button>
+            );
+          })}
         </nav>
 
         <div className="hidden lg:flex items-center justify-end gap-6 text-[14px] font-medium">
@@ -206,14 +225,13 @@ export default function ModaHeader({ tienda,
       {mobileOpen && (
         <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-black p-5 shadow-xl">
           <div className="grid gap-4 text-lg font-medium">
-            <button onClick={() => goCatalog('nuevos ingresos')} className="text-left">Nuevos ingresos</button>
-            <button onClick={() => goCatalog('más vendidos')} className="text-left">Más vendidos</button>
-            <button onClick={() => goCatalog('mujer')} className="text-left">Mujer</button>
-            <button onClick={() => goCatalog('hombre')} className="text-left">Hombre</button>
+            {items.map((item) => (
+              <button key={item.key} onClick={() => abrirItem(item)} className="text-left">{item.label}</button>
+            ))}
             {allCategories.slice(0, 6).map((category: any) => {
               const name = typeof category === 'string' ? category : category?.nombre;
               if (!name) return null;
-              return <button key={name} onClick={() => goCatalog(name)} className="text-left">{name}</button>;
+              return <button key={name} onClick={() => goCategory(name)} className="text-left">{name}</button>;
             })}
             <button onClick={() => { setMobileOpen(false); goTracking(); }} className="mt-1 flex items-center gap-2 border-t border-neutral-200 pt-4 text-left">
               <Icon icon="solar:box-minimalistic-linear" width={20} />

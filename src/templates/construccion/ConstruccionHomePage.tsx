@@ -8,6 +8,9 @@ import ProductCardActions from '@/components/tienda/ProductCardActions';
 import HammerCatalogCard from './HammerCatalogCard';
 import { getProductPricing } from '@/templates/shared/pricing';
 import { getStoreLinkAction, runStoreLinkAction } from '@/components/tienda/storeLinkActions';
+import { EnlaceTienda, itemsDeMenu, productoEnCategoria, useIrEnTienda } from '@/components/tienda/navTienda';
+import ConstruccionHeader, { HammerLogo, formatPhone } from './ConstruccionHeader';
+import { CONSTRUCCION_MENU_PIE } from './menuConstruccion';
 import ConstruccionCartModal from './ConstruccionCartModal';
 
 import { sinStock } from '@/templates/shared/ventaSinStock';
@@ -318,27 +321,12 @@ function HammerSectionHeader({
   );
 }
 
-function HammerLogo({ storeName, subtitle = 'Herramientas y accesorios', accent = '#ffb400' }: { storeName: string; subtitle?: string; accent?: string }) {
-  const label = storeName?.trim() ? storeName.trim().split(/\s+/)[0] : 'Hammer';
-  const clean = label.replace(/[^a-zA-Z0-9]/g, '') || 'Hammer';
-  const start = clean.slice(0, Math.max(2, clean.length - 3)).toUpperCase();
-  const end = clean.slice(Math.max(2, clean.length - 3)).toUpperCase();
-
-  return (
-    <div className="leading-none">
-      <div className="flex items-end text-[30px] font-black uppercase tracking-[0.08em] text-white md:text-[36px]">
-        <span>{start}</span>
-        <span style={{ color: accent }}>{end}</span>
-      </div>
-      <p className="mt-1 text-[13px] font-semibold tracking-wide text-white/35">{subtitle}</p>
-    </div>
-  );
-}
-
 export function ConstruccionFooter({ tienda, slug, cp, categories, diseno: disenoProp }: { tienda: any; slug: string; cp: string; categories: any[]; diseno?: any }) {
   const storeName = tienda?.nombreComercial || tienda?.nombre || tienda?.razonSocial || 'Ferretería';
   const diseno = disenoProp || tienda?.diseno || {};
   const links = categories.map(getName).filter(Boolean).slice(0, 5);
+  const novedades = useMemo(() => itemsDeMenu(CONSTRUCCION_MENU_PIE, { diseno, slug, categorias: categories }), [diseno, slug, categories]);
+  const enlace = (href: string, texto: string) => <EnlaceTienda href={href} slug={slug} diseno={diseno} className="block hover:text-white">{texto}</EnlaceTienda>;
 
   return (
     <footer className="bg-[#1d1d1d] text-white">
@@ -389,28 +377,31 @@ export function ConstruccionFooter({ tienda, slug, cp, categories, diseno: disen
         <div>
           <p className="mb-7 text-2xl font-black" style={{ color: cp }}>{editable(diseno?.construccionFooterInfoTitle, 'Información')}</p>
           <div className="space-y-5 text-base font-semibold text-white/75">
-            <a href={`/tienda/${slug}/contacto`} className="block hover:text-white">Contáctanos</a>
-            <a href={`/tienda/${slug}`} className="block hover:text-white">Sobre nosotros</a>
-            <a href={`/tienda/${slug}/catalogo`} className="block hover:text-white">Novedades</a>
-            <a href={`/tienda/${slug}/seguimiento`} className="block hover:text-white">Seguimiento de pedido</a>
+            {enlace(`/tienda/${slug}/contacto`, 'Contáctanos')}
+            {enlace(`/tienda/${slug}`, 'Sobre nosotros')}
+            {novedades.map((it) => (
+              <EnlaceTienda key={it.key} href={it.href!} slug={slug} diseno={diseno} target={it.externo ? '_blank' : undefined} rel={it.externo ? 'noreferrer' : undefined} className="block hover:text-white">{it.label}</EnlaceTienda>
+            ))}
+            {enlace(`/tienda/${slug}/seguimiento`, 'Seguimiento de pedido')}
           </div>
         </div>
         <div>
           <p className="mb-7 text-2xl font-black" style={{ color: cp }}>{editable(diseno?.construccionFooterPoliciesTitle, 'Políticas')}</p>
           <div className="space-y-5 text-base font-semibold text-white/75">
-            <a href={`/tienda/${slug}/politicas/devoluciones`} className="block hover:text-white">Cambios y devoluciones</a>
-            <a href={`/tienda/${slug}/terminos`} className="block hover:text-white">Términos de uso</a>
-            <a href={`/tienda/${slug}/privacidad`} className="block hover:text-white">Privacidad</a>
-            <a href={`/tienda/${slug}/catalogo`} className="block hover:text-white">Mapa del sitio</a>
+            {/* Aún no hay páginas de políticas: se consultan por contacto en vez de caer en una ruta vacía. */}
+            {enlace(`/tienda/${slug}/contacto`, 'Cambios y devoluciones')}
+            {enlace(`/tienda/${slug}/contacto`, 'Términos de uso')}
+            {enlace(`/tienda/${slug}/contacto`, 'Privacidad')}
+            {enlace(`/tienda/${slug}/catalogo`, 'Mapa del sitio')}
           </div>
         </div>
         <div>
           <p className="mb-7 text-2xl font-black" style={{ color: cp }}>{editable(diseno?.construccionFooterHelpTitle, 'Ayuda')}</p>
           <div className="space-y-5 text-base font-semibold text-white/75">
             {links.map((name) => (
-              <a key={name} href={`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`} className="block hover:text-white">
+              <EnlaceTienda key={name} href={`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`} slug={slug} diseno={diseno} className="block hover:text-white">
                 {name}
-              </a>
+              </EnlaceTienda>
             ))}
           </div>
         </div>
@@ -441,7 +432,7 @@ export default function ConstruccionHomePage({
   loading,
 }: TemplateHomePageProps) {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const ir = useIrEnTienda(slug, diseno);
   const [activeTrendingTab, setActiveTrendingTab] = useState<'featured' | 'best' | 'new'>('featured');
   const [activeTopCategory, setActiveTopCategory] = useState('');
   const storeName = tienda?.nombreComercial || tienda?.nombre || tienda?.razonSocial || 'Hammer';
@@ -450,10 +441,6 @@ export default function ConstruccionHomePage({
   const heroImage = diseno?.construccionHeroImageUrl || diseno?.ferreteriaHeroImageUrl || diseno?.bannerHeroUrl || '/assets/templates/ferreteria/banner.png';
   const cartCount = carrito.reduce((sum: number, item: any) => sum + Number(item?.cantidad || 1), 0);
   const irACheckout = () => navigate(`/tienda/${slug}/checkout`, { state: { carrito, tienda } });
-  const categoryLabel = useMemo(() => categories[0] || 'Todas las categorías', [categories]);
-  const logoSubtitle = editable(diseno?.construccionLogoSubtitle, 'Herramientas y accesorios');
-  const categoryButtonLabel = editable(diseno?.construccionHeaderCategoryLabel, 'Comprar por categorías');
-  const searchPlaceholder = editable(diseno?.construccionSearchPlaceholder, 'Buscar...');
   const goAction = (key: string, defaultType: 'catalog' | 'category' | 'search' | 'product' | 'url' | 'none' = 'catalog') => {
     runStoreLinkAction(getStoreLinkAction(diseno, key, { defaultType }), { slug, navigate });
   };
@@ -478,6 +465,7 @@ export default function ConstruccionHomePage({
   const topCategoryProducts = useMemo(() => {
     const selected = currentTopCategory.toLowerCase();
     const filtered = productos.filter((producto: any) => {
+      if (productoEnCategoria(producto, currentTopCategory)) return true;
       const categoria = typeof producto?.categoria === 'object' ? producto?.categoria?.nombre : producto?.categoria;
       return categoria?.toLowerCase?.().includes(selected);
     });
@@ -494,84 +482,15 @@ export default function ConstruccionHomePage({
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f4f4f4]" style={{ fontFamily: `'${diseno?.tipografia || 'Inter'}', sans-serif` }}>
-      <header className="relative z-20 bg-[#111111] text-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 lg:flex-row lg:items-center lg:px-6">
-          <button type="button" onClick={() => navigate(`/tienda/${slug}`)} className="text-left">
-            <HammerLogo storeName={storeName} subtitle={logoSubtitle} accent={accent} />
-          </button>
-
-          <form
-            className="flex min-h-[48px] flex-1 overflow-hidden rounded-md bg-white text-[13px] text-[#111] shadow-xl lg:mx-10"
-            onSubmit={(event) => {
-              event.preventDefault();
-              navigate(`/tienda/${slug}/catalogo?search=${encodeURIComponent(search)}`);
-            }}
-          >
-            <button type="button" className="hidden min-w-[190px] items-center justify-between border-r border-gray-200 px-5 text-[13px] font-bold text-gray-500 md:flex">
-              {categoryLabel}
-              <Icon icon="solar:alt-arrow-down-linear" width={18} />
-            </button>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={searchPlaceholder}
-              className="min-w-0 flex-1 px-5 text-[13px] font-semibold text-gray-700 outline-none"
-            />
-            <button type="submit" className="px-4 text-[13px] font-black text-[#111] sm:px-7" style={{ background: accent }}>
-              Buscar
-            </button>
-          </form>
-
-          <div className="hidden items-center gap-8 lg:flex">
-            <div className="flex items-center gap-3">
-              <span className="flex h-14 w-14 items-center justify-center rounded-md bg-white/10">
-                <Icon icon="solar:phone-calling-bold" width={28} />
-              </span>
-              <div>
-              <p className="text-[13px] font-black text-white/80">{editable(diseno?.construccionCallLabel, 'Llámanos:')}</p>
-                <p className="text-[13px] font-black" style={{ color: accent }}>
-                  {tienda?.whatsappTienda || tienda?.telefono || '(+51) 999-999-999'}
-                </p>
-              </div>
-            </div>
-            <Icon icon="solar:user-linear" width={30} className="text-white" />
-          </div>
-        </div>
-
-        <div className="bg-[#ffb400]" style={{ background: accent }}>
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 lg:px-6">
-            <button
-              type="button"
-              onClick={() => navigate(`/tienda/${slug}/catalogo`)}
-              className="inline-flex h-12 min-w-0 flex-1 items-center gap-3 rounded-md bg-white px-4 text-[13px] font-black text-[#151515] shadow-sm sm:flex-none sm:px-5 sm:text-[14px] md:min-w-[230px]"
-            >
-              <Icon icon="solar:hamburger-menu-linear" width={28} />
-              {categoryButtonLabel}
-            </button>
-            <nav className="hidden flex-1 items-center justify-center gap-8 text-[14px] font-black text-[#151515] lg:flex">
-              <button type="button" onClick={() => navigate(`/tienda/${slug}`)}>{editable(diseno?.construccionNavHome, 'Inicio')}</button>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="inline-flex items-center gap-1">{editable(diseno?.construccionNavStore, 'Tienda')} <Icon icon="solar:alt-arrow-down-linear" /></button>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="inline-flex items-center gap-2">
-                {editable(diseno?.construccionNavCategories, 'Categorías')} <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-white" style={{ background: '#13a084' }}>OFERTA</span>
-              </button>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="inline-flex items-center gap-2">
-                {editable(diseno?.construccionNavProducts, 'Productos')} <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-white" style={{ background: '#e93473' }}>TOP</span>
-              </button>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)}>{editable(diseno?.construccionNavOffers, 'Ofertas destacadas')}</button>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)}>{editable(diseno?.construccionNavCatalog, 'Catálogo')}</button>
-            </nav>
-            <button
-              type="button"
-              onClick={() => setMostrarCarrito(true)}
-              className="inline-flex items-center gap-2 text-[14px] font-black text-[#151515]"
-            >
-              <Icon icon="solar:cart-large-2-linear" width={34} />
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs">{cartCount}</span>
-              <span className="hidden sm:inline">{editable(diseno?.construccionCartLabel, 'Mi carrito')}</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <ConstruccionHeader
+        tienda={tienda}
+        slug={slug}
+        diseno={diseno}
+        accent={accent}
+        cartCount={cartCount}
+        onOpenCart={() => setMostrarCarrito(true)}
+        categories={allCategories}
+      />
 
       <main>
         <section className="relative min-h-[560px] overflow-hidden bg-[#050505] text-white md:min-h-[640px]">
@@ -686,7 +605,7 @@ export default function ConstruccionHomePage({
                     producto={producto}
                     cp={accent}
                     onAdd={() => agregarAlCarrito(producto)}
-                    onOpen={() => navigate(`/tienda/${slug}/producto/${producto.id}`)}
+                    onOpen={() => ir(`/tienda/${slug}/producto/${producto.id}`)}
                   />
                 ))}
               </div>
@@ -729,7 +648,7 @@ export default function ConstruccionHomePage({
                     producto={producto}
                     cp={accent}
                     onAdd={() => agregarAlCarrito(producto)}
-                    onOpen={() => navigate(`/tienda/${slug}/producto/${producto.id}`)}
+                    onOpen={() => ir(`/tienda/${slug}/producto/${producto.id}`)}
                   />
                 ))}
               </div>
@@ -793,7 +712,7 @@ export default function ConstruccionHomePage({
                     producto={producto}
                     cp={accent}
                     onAdd={() => agregarAlCarrito(producto)}
-                    onOpen={() => navigate(`/tienda/${slug}/producto/${producto.id}`)}
+                    onOpen={() => ir(`/tienda/${slug}/producto/${producto.id}`)}
                   />
                 ))}
               </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { productoEnCategoria, useIrEnTienda } from '@/components/tienda/navTienda';
 import { Icon } from '@iconify/react';
 import UrbanoHeader from './UrbanoHeader';
 import UrbanoFooter from './UrbanoFooter';
@@ -60,15 +60,15 @@ export default function UrbanoCatalogPage(props: UrbanoCatalogPageProps) {
         hasActiveFilters, carritoSize, onOpenCart, onAddToCart, onProduct,
     } = props;
 
-    const navigate = useNavigate();
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const diseno = tienda?.diseno || {};
+    const navigate = useIrEnTienda(slug, diseno);
     const storeLooksEmpty = !loading && productos.length === 0 && total === 0 && allCategorias.length === 0 && allMarcas.length === 0;
     const displayProducts = storeLooksEmpty ? getUrbanoTemplateProducts(diseno) : productos;
     const displayTotal = storeLooksEmpty ? displayProducts.length : total;
     const fallbackCategories = getUrbanoTemplateCategories(diseno);
     const imageForCategory = (name: string, fallback?: string) => {
-        const product = displayProducts.find((item) => String(productCategoryName(item) || '').toLowerCase() === String(name).toLowerCase());
+        const product = displayProducts.find((item) => productoEnCategoria(item, name));
         return productImage(product) || fallback || '/assets/templates/urbano/coleccion1.png';
     };
     const headerCategories = (allCategorias.length > 0

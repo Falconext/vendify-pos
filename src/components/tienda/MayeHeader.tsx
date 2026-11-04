@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { Link, useNavigate } from 'react-router-dom';
+import { EnlaceTienda, normalizarNombre, useIrEnTienda } from '@/components/tienda/navTienda';
 import { useFavoritosStore } from '@/zustand/favoritos';
 
 interface MayeHeaderProps {
@@ -32,7 +32,8 @@ export default function MayeHeader({
   diseno,
   onCategorySelect,
 }: MayeHeaderProps) {
-  const navigate = useNavigate();
+  // Navega sin recargar y respeta la vista previa de plantilla.
+  const navigate = useIrEnTienda(slug, diseno);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const { getFavoritosBySlug, removeFavorito } = useFavoritosStore();
@@ -93,13 +94,14 @@ export default function MayeHeader({
     'Periféricos',
     'Sillas Gamer',
   ].filter(Boolean);
-  const quickLinks = categoryNames.length > 0 ? categoryNames.slice(0, 8) : fallbackQuickLinks;
-  const normalizeCategory = (value: string) => value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  const normalizeCategory = (value: string) => normalizarNombre(value).replace(/[^a-z0-9]+/g, ' ').trim();
+  // Accesos rápidos elegidos por el dueño (en orden), completados con las categorías reales.
+  const elegidos = [diseno?.mayeQuickLink1, diseno?.mayeQuickLink2, diseno?.mayeQuickLink3, diseno?.mayeQuickLink4]
+    .map((v) => String(v ?? '').trim())
+    .filter(Boolean);
+  const quickLinks = categoryNames.length > 0
+    ? Array.from(new Map([...elegidos, ...categoryNames].map((name) => [normalizeCategory(name), name])).values()).slice(0, 8)
+    : fallbackQuickLinks;
   const resolveCategoryName = (value: string) => {
     const normalized = normalizeCategory(value);
     return categoryNames.find(name => normalizeCategory(name) === normalized)
@@ -115,7 +117,7 @@ export default function MayeHeader({
       {/* Top Bar */}
       <div className="w-full max-w-7xl mx-auto px-4 xl:px-8 py-3 md:py-4 flex items-center justify-between gap-4 md:gap-6">
         {/* Logo */}
-        <Link to={`/tienda/${slug}`} className="flex items-center gap-2 flex-shrink-0">
+        <EnlaceTienda href={`/tienda/${slug}`} slug={slug} diseno={diseno} className="flex items-center gap-2 flex-shrink-0">
           {tienda?.logo ? (
             <img src={tienda.logo} alt={tienda.nombre} className="h-9 w-auto object-contain md:h-10" />
           ) : (
@@ -128,7 +130,7 @@ export default function MayeHeader({
               </span>
             </div>
           )}
-        </Link>
+        </EnlaceTienda>
 
         {/* Search Bar (Center) */}
         <div className="flex-1 max-w-2xl hidden md:block">

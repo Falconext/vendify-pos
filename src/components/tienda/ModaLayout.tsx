@@ -82,7 +82,7 @@ export default function ModaLayout({
         )}
       </main>
 
-      <ModaFooter diseno={diseno} tiendaNombre={tienda?.nombre || 'Styliq'} />
+      <ModaFooter tienda={tienda} slug={slug} diseno={diseno} tiendaNombre={tienda?.nombre || 'Styliq'} />
 
       <ShoppingCartModal
         isOpen={mostrarCarrito}

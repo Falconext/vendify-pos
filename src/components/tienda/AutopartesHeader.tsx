@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useFavoritosStore } from '@/zustand/favoritos';
+import { EnlaceTienda, itemsDeMenu, useIrEnTienda, type ItemMenu } from '@/components/tienda/navTienda';
+import { menuAutopartes } from '@/templates/autopartes/menu';
 
 interface AutopartesHeaderProps {
   tienda: any;
@@ -14,6 +15,8 @@ interface AutopartesHeaderProps {
   setSearchQuery: (q: string) => void;
   onSearchSubmit: (e: React.FormEvent, value: string) => void;
   allCategories?: any[];
+  /** Diseño de la tienda; si no llega se toma de `tienda.diseno`. */
+  diseno?: any;
 }
 
 export default function AutopartesHeader({
@@ -26,9 +29,12 @@ export default function AutopartesHeader({
   searchQuery,
   setSearchQuery,
   onSearchSubmit,
-  allCategories = []
+  allCategories = [],
+  diseno,
 }: AutopartesHeaderProps) {
-  const navigate = useNavigate();
+  const cfg = diseno || tienda?.diseno || {};
+  // Navega sin recargar (y respeta la vista previa: slug `preview`).
+  const navigate = useIrEnTienda(slug, cfg);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const { getFavoritosBySlug, removeFavorito } = useFavoritosStore();
@@ -54,15 +60,24 @@ export default function AutopartesHeader({
     navigate(`/tienda/${slug}/seguimiento`);
   };
 
-  // Fallback links if categories are few
-  const quickLinks = ['Tienda de Llantas', 'Fluidos y Lubricantes', 'Baterías', 'Herramientas', 'Camiones', 'Motocicletas', 'Zona Eléctrica'];
+  // Accesos rápidos configurables (texto y destino) desde "Personalizar tienda".
+  const quickLinks = itemsDeMenu(menuAutopartes(cfg, allCategories), { diseno: cfg, slug, categorias: allCategories });
+  const abrirItem = (item: ItemMenu) => {
+    setIsCategoryMenuOpen(false);
+    if (item.externo) window.open(item.href!, '_blank', 'noopener,noreferrer');
+    else navigate(item.href!);
+  };
+  const irACategoria = (name: string) => {
+    setIsCategoryMenuOpen(false);
+    navigate(`/tienda/${slug}/catalogo?category=${encodeURIComponent(name)}`);
+  };
 
   return (
     <header className="w-full bg-white border-b border-gray-100 flex flex-col">
       {/* Top Bar */}
       <div className="w-full max-w-7xl mx-auto px-4 xl:px-8 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <Link to={`/tienda/${slug}`} className="flex items-center gap-2 flex-shrink-0">
+        <EnlaceTienda href={`/tienda/${slug}`} slug={slug} diseno={cfg} className="flex items-center gap-2 flex-shrink-0">
           {tienda?.logo ? (
             <img src={tienda.logo} alt={tienda.nombre} className="h-10 w-auto object-contain" />
           ) : (
@@ -75,7 +90,7 @@ export default function AutopartesHeader({
               </span>
             </div>
           )}
-        </Link>
+        </EnlaceTienda>
 
         {/* Search Bar (Center) */}
         <div className="flex-1 max-w-2xl hidden md:block">
@@ -175,12 +190,7 @@ export default function AutopartesHeader({
                     return (
                       <button 
                         key={name}
-                        onClick={() => {
-                          setSearchQuery(name);
-                          setIsCategoryMenuOpen(false);
-                          // We trigger a search by navigating to catalog
-                          slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?q=${encodeURIComponent(name)}`);
-                        }}
+                        onClick={() => irACategoria(name)}
                         className="w-full text-left px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors"
                       >
                         {name}
@@ -190,15 +200,11 @@ export default function AutopartesHeader({
                 ) : (
                   quickLinks.map(link => (
                     <button 
-                      key={link}
-                      onClick={() => {
-                        setSearchQuery(link);
-                        setIsCategoryMenuOpen(false);
-                        slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?q=${encodeURIComponent(link)}`);
-                      }}
+                      key={link.key}
+                      onClick={() => abrirItem(link)}
                       className="w-full text-left px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors"
                     >
-                      {link}
+                      {link.label}
                     </button>
                   ))
                 )}
@@ -217,14 +223,11 @@ export default function AutopartesHeader({
           <div className="hidden lg:flex items-center flex-1 overflow-x-auto no-scrollbar bg-[#1A1A1A] rounded-r-md px-2">
             {quickLinks.map((link) => (
               <button 
-                key={link} 
-                onClick={() => {
-                  setSearchQuery(link);
-                  slug === "preview" ? window.dispatchEvent(new CustomEvent("preview-nav", { detail: "catalogo" })) : navigate(`/tienda/${slug}/catalogo?q=${encodeURIComponent(link)}`);
-                }}
+                key={link.key} 
+                onClick={() => abrirItem(link)}
                 className="px-5 h-full flex items-center text-sm font-bold text-gray-300 hover:text-white whitespace-nowrap transition-colors border-b-2 border-transparent hover:border-white"
               >
-                {link}
+                {link.label}
               </button>
             ))}
           </div>
