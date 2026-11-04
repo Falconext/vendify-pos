@@ -1004,7 +1004,7 @@ export default function ProductsView() {
                             )}
                         </div>
                         {/* Fila 3: chips de filtros activos (categoría / localización) — se quitan con un clic */}
-                        {(vm.categoriaIdFilter || vm.localizacionFilter) && (
+                        {(vm.categoriaIdFilter || vm.localizacionFilter || vm.varianteFiltro) && (
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Filtrando por</span>
                                 {vm.categoriaIdFilter && (
@@ -1017,6 +1017,19 @@ export default function ProductsView() {
                                     >
                                         <Icon icon="solar:tag-linear" />
                                         {categoriaActiva?.nombre ?? 'Categoría'}
+                                        <Icon icon="solar:close-circle-bold" className="opacity-60 group-hover:opacity-100" />
+                                    </button>
+                                )}
+                                {vm.varianteFiltro && (
+                                    <button
+                                        type="button"
+                                        onClick={() => actions.setVarianteFiltro(vm.varianteFiltro)}
+                                        title="Quitar filtro de variante"
+                                        className="group inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors"
+                                        style={{ borderColor: ACCENT, color: ACCENT, background: 'color-mix(in srgb, var(--accent) 8%, transparent)' }}
+                                    >
+                                        <Icon icon="solar:t-shirt-linear" />
+                                        {vm.varianteFiltro.replace('=', ': ')}
                                         <Icon icon="solar:close-circle-bold" className="opacity-60 group-hover:opacity-100" />
                                     </button>
                                 )}
