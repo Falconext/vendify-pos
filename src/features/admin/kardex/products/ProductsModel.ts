@@ -57,6 +57,8 @@ export const initialProductForm: IFormProduct = {
     productoId: 0,
     descripcion: "",
     categoriaId: "",
+    // Producto nuevo: sin categorías adicionales (el campo se muestra vacío).
+    categoriasExtraIds: [],
     precioUnitario: 0,
     categoriaNombre: "",
     afectacionNombre: "Gravado – Operación Onerosa",
@@ -122,6 +124,10 @@ export const buildEditFormValues = (originalProduct: any): IFormProduct => {
         unidadMedidaNombre: originalProduct.unidadMedida?.nombre,
         categoriaId: originalProduct.categoria?.id || originalProduct.categoriaId,
         categoriaNombre: originalProduct.categoria?.nombre,
+        // undefined si el backend no las devuelve: el campo se oculta y no se envía.
+        categoriasExtraIds: Array.isArray(originalProduct.categoriasExtra)
+            ? originalProduct.categoriasExtra.map((c: { id: number }) => c.id)
+            : undefined,
         marcaId: (originalProduct as any).marca?.id || (originalProduct as any).marcaId,
         marcaNombre: (originalProduct as any).marca?.nombre,
         precioUnitario: Number(originalProduct.precioUnitario),

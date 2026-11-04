@@ -18,6 +18,7 @@ import {
   ICreationLote,
   IWholesaleOption,
 } from "./ProductModalModel";
+import { payloadCategoriasExtra } from "./categoriasExtra";
 
 export const useProductModalViewModel = (props: IPropsProducts) => {
   const {
@@ -1445,6 +1446,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             formValues?.categoriaId === ""
               ? null
               : Number(formValues?.categoriaId),
+          ...payloadCategoriasExtra(formValues),
           precioUnitario: Number(formValues?.precioUnitario),
           costoUnitario: formValues?.costoUnitario
             ? Number(formValues?.costoUnitario)
@@ -1799,6 +1801,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
               formValues?.categoriaId === ""
                 ? null
                 : Number(formValues?.categoriaId),
+            ...payloadCategoriasExtra(formValues),
             precioUnitario: Number(formValues?.precioUnitario),
             costoUnitario: formValues?.costoUnitario
               ? Number(formValues?.costoUnitario)

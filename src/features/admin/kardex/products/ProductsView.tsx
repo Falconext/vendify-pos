@@ -13,6 +13,7 @@ import ModalMarcas from '@/pages/admin/kardex/modal-marcas';
 import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
 import CategoriaInlineSelect, { TEXTOS_MARCA } from './components/CategoriaInlineSelect';
 import ModalAsignarSedes from './components/ModalAsignarSedes';
+import { resumenCategoriasExtra } from './categoriasExtra';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
 import CardRestaurante from '@/components/productos/CardRestaurante';
@@ -262,15 +263,28 @@ export default function ProductsView() {
                     const nombre = item?.categoria?.nombre || 'Sin categoría';
                     const c = getCatColor(nombre);
                     // Editable en la propia tabla: clic en el badge → elegir y guardar.
+                    const extras = resumenCategoriasExtra(item?.categoriasExtra);
                     return (
-                        <CategoriaInlineSelect
-                            productoId={Number(item.id)}
-                            categoriaId={item?.categoria?.id ?? item?.categoriaId ?? null}
-                            nombre={nombre}
-                            color={c}
-                            categories={vm.categories}
-                            onChange={vm.cambiarCategoria}
-                        />
+                        <div className="inline-flex items-center gap-1">
+                            <CategoriaInlineSelect
+                                productoId={Number(item.id)}
+                                categoriaId={item?.categoria?.id ?? item?.categoriaId ?? null}
+                                nombre={nombre}
+                                color={c}
+                                categories={vm.categories}
+                                onChange={vm.cambiarCategoria}
+                            />
+                            {extras && (
+                                <span
+                                    className="shrink-0 rounded-full bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:text-gray-300 cursor-default"
+                                    title={`También en: ${extras.nombres}`}
+                                    aria-label={`También en: ${extras.nombres}`}
+                                    data-testid="categorias-extra-badge"
+                                >
+                                    +{extras.cantidad}
+                                </span>
+                            )}
+                        </div>
                     );
                 })(),
                 'Marca': (() => {
