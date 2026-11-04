@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import Select from '@/components/Select';
 import InputPro from '@/components/InputPro';
 import { ICategory } from '@/interfaces/categories';
+import { opcionesCategorias } from '@/utils/categoriasArbol';
 import { IBrand } from '@/zustand/brands';
 import { GrupoModificador } from '@/zustand/modificadores';
 import { useProductModalViewModel } from '../useProductModalViewModel';
@@ -540,7 +541,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
                     <Select defaultValue={formValues?.unidadMedidaNombre} error={""} isSearch options={unitOfMeasure?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="unidadMedidaId" name="unidadMedidaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Unidad de medida" withLabel />
                     <div>
-                        <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
+                        <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={opcionesCategorias(categories as ICategory[])} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
                         {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
                     </div>
                     {campoCategoriasExtra}
@@ -840,7 +841,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             </div>
             <div className={`col-span-1 md:col-span-1 ${isRestaurante ? '' : 'flex gap-2'} w-full`}>
                 <div className="w-full">
-                    <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value={formValues?.categoriaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoria" />
+                    <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={opcionesCategorias(categories as ICategory[])} id="categoriaId" name="categoriaNombre" value={formValues?.categoriaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoria" />
                     {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
                 </div>
                 {!isRestaurante && (

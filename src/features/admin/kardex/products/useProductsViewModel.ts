@@ -194,6 +194,7 @@ export const useProductsViewModel = () => {
             return { stockFiltro, stockDesde: sp.get('stockDesde') || '', stockHasta: sp.get('stockHasta') || '' };
         })(),
         incluirOcultos: false,
+        varianteFiltro: '',
         isOpenModalAsignarSedes: false,
     });
 
@@ -222,6 +223,15 @@ export const useProductsViewModel = () => {
     const [productsLoaded, setProductsLoaded] = useState(false);
     const [productsLoading, setProductsLoading] = useState(false);
     const [resumenInventario, setResumenInventario] = useState({ totalProductos: 0, totalCantidad: 0, totalValorInventario: 0 });
+    // Tallas, colores… que existen, para el filtro "Variante". Un backend sin el
+    // endpoint (aún no desplegado) deja la lista vacía y el filtro no aparece.
+    const [atributosVariantes, setAtributosVariantes] = useState<{ nombre: string; valores: { valor: string; modelos: number }[] }[]>([]);
+    useEffect(() => {
+        if (!auth?.empresaId) return;
+        get('productos/atributos-variantes')
+            .then((r: any) => setAtributosVariantes(r?.code === 1 && Array.isArray(r.data) ? r.data : []))
+            .catch(() => setAtributosVariantes([]));
+    }, [auth?.empresaId]);
     const [resumenLoading, setResumenLoading] = useState(false);
     // Ordenamiento por stock (client-side sobre la lista mostrada).
     // Ciclo al hacer click en el header "Stock": null → desc → asc → null.
@@ -349,6 +359,7 @@ export const useProductsViewModel = () => {
                 if (state.stockHasta.trim() !== '') params.stockHasta = state.stockHasta.trim();
             }
             if (effectiveSedeId && state.incluirOcultos) params.incluirOcultos = 'true';
+            if (state.varianteFiltro) params.variante = state.varianteFiltro;
             const query = new URLSearchParams(params).toString();
             const resp: any = await get(`productos?${query}`);
             if (resp?.code === 1) {
@@ -367,7 +378,7 @@ export const useProductsViewModel = () => {
             setProductsLoaded(true);
             setProductsLoading(false);
         }
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos]);
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos, state.varianteFiltro]);
 
     // Siempre mantiene la ref actualizada sin recrear efectos dependientes
     const fetchProductsListRef = useRef(fetchProductsList);
@@ -377,7 +388,7 @@ export const useProductsViewModel = () => {
     useEffect(() => {
         if (!auth?.empresaId) return;
         fetchProductsListRef.current();
-    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos, state.varianteFiltro]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchResumenInventario = useCallback(async () => {
         if (!auth?.empresaId) {
@@ -914,6 +925,7 @@ export const useProductsViewModel = () => {
         confirmarQuitarConStock,
         setQuitarConStock,
         setIncluirOcultos: (v: boolean) => setState(prev => ({ ...prev, incluirOcultos: v, currentPage: 1 })),
+        setVarianteFiltro: (v: string) => setState(prev => ({ ...prev, varianteFiltro: prev.varianteFiltro === v ? '' : v, currentPage: 1 })),
         setCategoriaFilter: (id: number | undefined) => setState(prev => ({
             ...prev,
             categoriaIdFilter: prev.categoriaIdFilter === id ? undefined : id,
@@ -928,6 +940,7 @@ export const useProductsViewModel = () => {
             setState(prev => ({
                 ...prev,
                 categoriaIdFilter: undefined,
+                varianteFiltro: '',
                 localizacionFilter: undefined,
                 stockFiltro: '',
                 stockDesde: '',
@@ -987,6 +1000,8 @@ export const useProductsViewModel = () => {
         stockSort,
         // Cambio rápido de categoría desde la tabla + filtro por categoría
         categories,
+        varianteFiltro: state.varianteFiltro,
+        atributosVariantes,
         localizaciones,
         cambiarCategoria,
         brands,

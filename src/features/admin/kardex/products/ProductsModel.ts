@@ -50,6 +50,8 @@ export interface IProductsViewModelState {
     stockHasta: string;
     /** Ver también los productos NO asignados a la sede seleccionada. */
     incluirOcultos: boolean;
+    /** Filtro por variante: "Talla=M"; '' = todas. */
+    varianteFiltro: string;
     isOpenModalAsignarSedes: boolean;
 }
 

@@ -24,6 +24,7 @@ import TableSkeleton from '@/components/Skeletons/table';
 import { useProductsViewModel } from './useProductsViewModel';
 import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import { etiquetaCategoria, ordenarCategorias } from '@/utils/categoriasArbol';
 import ModalPreviewCatalogo from '../shared/ModalPreviewCatalogo';
 import RangoStockInputs, { describirFiltroStock } from './components/RangoStockInputs';
 import type { StockFiltro } from './ProductsModel';
@@ -33,6 +34,10 @@ const ACCENT = 'var(--accent, #7551FF)';
 // Excel/CSV, Catálogo PDF): borde neutro + hover con tinte de acento, para que
 // se sientan como un mismo grupo y sigan el color de la UI.
 const TOOLBAR_BTN = 'h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 hover:text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] hover:border-[color-mix(in_srgb,var(--accent)_45%,transparent)]';
+
+/** Para el selector de la tabla: la subcategoría se lee "Peluches › Osos" y queda junto a su madre. */
+const categoriasConMadre = (lista: any[] | undefined) =>
+    (lista ?? []).map(c => ({ ...c, nombre: etiquetaCategoria(c, lista) }));
 
 function InventarioKpiCard({ icon, label, value, sub }: {
     icon: string; label: string; value: string; sub?: string;
@@ -118,14 +123,16 @@ export default function ProductsView() {
         (vm.stockFiltro ? 1 : 0) +
         (vm.incluirOcultos ? 1 : 0) +
         (vm.categoriaIdFilter ? 1 : 0) +
+        (vm.varianteFiltro ? 1 : 0) +
         (vm.localizacionFilter ? 1 : 0);
     // Buscadores internos del panel de filtros (categoría / localización).
     const [categoriaQuery, setCategoriaQuery] = useState('');
     const [localizacionQuery, setLocalizacionQuery] = useState('');
     const categoriaActiva = vm.categories.find((c: any) => Number(c.id) === Number(vm.categoriaIdFilter));
-    const categoriasFiltradas = vm.categories.filter((c: any) =>
-        !categoriaQuery.trim() || c.nombre?.toLowerCase().includes(categoriaQuery.trim().toLowerCase()),
-    );
+    // Cada madre seguida de sus hijas; una hija también se encuentra por el nombre de su madre.
+    const categoriasFiltradas = ordenarCategorias(vm.categories as any[])
+        .map((c: any) => ({ ...c, etiqueta: etiquetaCategoria(c, vm.categories as any[]) }))
+        .filter((c: any) => !categoriaQuery.trim() || c.etiqueta.toLowerCase().includes(categoriaQuery.trim().toLowerCase()));
     const localizacionesFiltradas = vm.localizaciones.filter((l: string) =>
         !localizacionQuery.trim() || l.toLowerCase().includes(localizacionQuery.trim().toLowerCase()),
     );
@@ -271,7 +278,7 @@ export default function ProductsView() {
                                 categoriaId={item?.categoria?.id ?? item?.categoriaId ?? null}
                                 nombre={nombre}
                                 color={c}
-                                categories={vm.categories}
+                                categories={categoriasConMadre(vm.categories)}
                                 onChange={vm.cambiarCategoria}
                             />
                             {extras && (
@@ -781,7 +788,7 @@ export default function ProductsView() {
                                                         className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
                                                     >
                                                         <Icon icon="solar:tag-linear" className="text-base text-slate-400 dark:text-gray-400" />
-                                                        <span className="flex-1 truncate text-left">{cat.nombre}</span>
+                                                        <span className="flex-1 truncate text-left">{cat.etiqueta}</span>
                                                         {typeof cat._count?.productos === 'number' && (
                                                             <span className="text-[11px] tabular-nums text-slate-400 dark:text-gray-500">{cat._count.productos}</span>
                                                         )}
@@ -792,6 +799,36 @@ export default function ProductsView() {
                                         </div>
 
                                         {/* Localización física (estante / zona) */}
+                                        {/* Variante: "¿qué modelos tengo en talla M?". Sin variantes en la empresa no aparece. */}
+                                        {vm.atributosVariantes.length > 0 && (
+                                            <>
+                                                <div className="mt-1.5 border-t border-slate-100 dark:border-slate-700" />
+                                                <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Variante</p>
+                                                    {vm.varianteFiltro && (
+                                                        <button type="button" onClick={() => actions.setVarianteFiltro(vm.varianteFiltro)} className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-gray-200">Quitar</button>
+                                                    )}
+                                                </div>
+                                                <div className="max-h-44 overflow-y-auto" data-testid="filtro-variante">
+                                                    {vm.atributosVariantes.flatMap((a: any) => a.valores.map((v: any) => {
+                                                        const id = `${a.nombre}=${v.valor}`;
+                                                        const active = vm.varianteFiltro === id;
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                type="button"
+                                                                onClick={() => actions.setVarianteFiltro(id)}
+                                                                className={`${FILTER_ROW} ${active ? FILTER_ROW_ACTIVE : FILTER_ROW_IDLE}`}
+                                                            >
+                                                                <span className="flex-1 truncate text-left">{a.nombre}: {v.valor}</span>
+                                                                <span className="text-[11px] tabular-nums text-slate-400 dark:text-gray-500">{v.modelos}</span>
+                                                                {active && <Icon icon="solar:check-circle-bold" style={{ color: ACCENT }} />}
+                                                            </button>
+                                                        );
+                                                    }))}
+                                                </div>
+                                            </>
+                                        )}
                                         <div className="mt-1.5 border-t border-slate-100 dark:border-slate-700" />
                                         <div className="flex items-center justify-between px-3 pt-2 pb-1">
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Localización</p>
@@ -1109,6 +1146,7 @@ export default function ProductsView() {
                 setErrors={actions.setErrors}
                 setFormValues={actions.setFormValues}
                 isEdit={vm.isEdit}
+                sedeStock={vm.tieneVariasSedes ? { id: vm.effectiveSedeId ?? null, nombre: vm.selectedSedeName ?? null } : undefined}
             />}
 
             <ModalConfirm
@@ -1146,7 +1184,6 @@ export default function ProductsView() {
                     isOpen={vm.isOpenModalAsignarSedes}
                     onClose={() => actions.setIsOpenModalAsignarSedes(false)}
                     sedes={vm.sedes}
-                sedeStock={vm.tieneVariasSedes ? { id: vm.effectiveSedeId ?? null, nombre: vm.selectedSedeName ?? null } : undefined}
                     defaultSedeId={vm.effectiveSedeId}
                     catalogoPorSede={vm.catalogoPorSede}
                     onChanged={() => { void actions.refreshProducts(); }}
