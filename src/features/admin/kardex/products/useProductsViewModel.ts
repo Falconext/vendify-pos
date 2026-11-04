@@ -43,6 +43,8 @@ export const useProductsViewModel = () => {
     const { categories, getAllCategories } = useCategoriesStore();
 
     const isAdmin = auth?.rol === 'ADMIN_EMPRESA' || auth?.rol === 'ADMIN_SISTEMA';
+    // Delegado solo para fotos: ve la lista sin plata y edita únicamente las imágenes.
+    const soloImagenes = auth?.rol === 'USUARIO_EMPRESA' && Boolean((auth as any)?.soloImagenesProductos);
     const esPrincipal = !sedeActiva || sedeActiva.esPrincipal === true;
     // `?sede=` llega desde la alerta "stock bajo" del dashboard: el Kardex abre en
     // la MISMA sede que contó el dashboard (0 = todas), si no los números no cuadran.
@@ -124,6 +126,7 @@ export const useProductsViewModel = () => {
     const tieneTienda = hasPlanFeature(userPermissions, 'tieneTienda');
 
     const COLUMNAS_ECOMMERCE = ['Tienda'];
+    const COLUMNAS_DE_PLATA = ['Precio Venta', 'Costo', 'Valor Inventario', '% Venta', '% Provisión', 'Lotes'];
 
     const allColumns = useMemo(() => {
         // Rubros farmacéuticos: "Lotes" (próximo vencimiento) al costado de Producto, sin U.M/%Venta/%Provisión
@@ -133,9 +136,10 @@ export const useProductsViewModel = () => {
         return base.filter(c => {
             if (COLUMNAS_CORPORATIVAS.includes(c) && !tieneGestionProvisiones) return false;
             if (COLUMNAS_ECOMMERCE.includes(c) && !tieneTienda) return false;
+            if (soloImagenes && COLUMNAS_DE_PLATA.includes(c)) return false;
             return true;
         });
-    }, [tieneGestionProvisiones, tieneTienda, esFarmaceuticoRubro]);
+    }, [tieneGestionProvisiones, tieneTienda, esFarmaceuticoRubro, soloImagenes]);
 
     const initialVisibleColumns = allColumns;
 
@@ -380,7 +384,7 @@ export const useProductsViewModel = () => {
     }, [auth?.empresaId, state.currentPage, state.itemsPerPage, state.marcaIdFilter, state.categoriaIdFilter, state.localizacionFilter, debounce, effectiveSedeId, state.stockFiltro, state.stockDesde, state.stockHasta, state.incluirOcultos]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchResumenInventario = useCallback(async () => {
-        if (!auth?.empresaId) {
+        if (!auth?.empresaId || soloImagenes) {
             setResumenInventario({ totalProductos: 0, totalCantidad: 0, totalValorInventario: 0 });
             return;
         }
@@ -961,6 +965,7 @@ export const useProductsViewModel = () => {
         products,
         productsLoaded,
         totalProducts,
+        soloImagenes,
         resumenInventario,
         resumenLoading,
         loading: productsLoading || loading,

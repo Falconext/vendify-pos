@@ -8,11 +8,13 @@ interface CardRestauranteProps {
     onDelete: (product: any) => void;
     onToggleState: (product: any) => void;
     onUploadImage: (product: any) => void;
+    /** Delegado solo para fotos: sin precios ni acciones sobre el producto. */
+    soloFotos?: boolean;
     loading?: boolean;
     skeletonCount?: number;
 }
 
-const CardRestaurante = ({ products, onEdit, onDelete, onToggleState, onUploadImage, loading, skeletonCount = 8 }: CardRestauranteProps) => {
+const CardRestaurante = ({ products, onEdit, onDelete, onToggleState, onUploadImage, soloFotos, loading, skeletonCount = 8 }: CardRestauranteProps) => {
     const [loaded, setLoaded] = useState<Record<number, boolean>>({});
 
     if (loading) {
@@ -103,10 +105,10 @@ const CardRestaurante = ({ products, onEdit, onDelete, onToggleState, onUploadIm
                             </div>
 
                             <div className="mt-auto pt-4 border-t border-gray-50 space-y-2">
-                                <div className="flex justify-between items-center">
+                                {!soloFotos && <div className="flex justify-between items-center">
                                     <span className="text-sm text-gray-500">Precio:</span>
                                     <span className="font-bold text-lg text-indigo-600">S/ {precio.toFixed(2)}</span>
-                                </div>
+                                </div>}
 
                                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
                                     <div className="flex justify-between">
@@ -115,15 +117,15 @@ const CardRestaurante = ({ products, onEdit, onDelete, onToggleState, onUploadIm
                                             {product.stock} {product.unidadMedida?.nombre}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    {!soloFotos && <div className="flex justify-between">
                                         <span>Margen:</span>
                                         <span className="text-green-600">{margen.toFixed(0)}%</span>
-                                    </div>
+                                    </div>}
                                 </div>
                             </div>
 
                             {/* Acciones footer */}
-                            <div className="mt-4 flex justify-end gap-2 pt-2 border-t border-gray-50">
+                            {!soloFotos && <div className="mt-4 flex justify-end gap-2 pt-2 border-t border-gray-50">
                                 <button
                                     onClick={() => onToggleState(product)}
                                     className={`p-1.5 rounded hover:bg-gray-100 ${product.estado === 'ACTIVO' ? 'text-red-500' : 'text-green-500'}`}
@@ -138,7 +140,7 @@ const CardRestaurante = ({ products, onEdit, onDelete, onToggleState, onUploadIm
                                 >
                                     <Icon icon="mdi:trash-outline" width={20} height={20} />
                                 </button>
-                            </div>
+                            </div>}
                         </div>
                     </div>
                 );
