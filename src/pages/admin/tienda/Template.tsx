@@ -68,6 +68,19 @@ const getTemplateDetails = (plantilla: any) => {
 };
 
 
+function SeccionPlantillas({ titulo, detalle, icono, children }: { titulo: string; detalle: string; icono: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-6 first:mt-0">
+      <div className="mb-3 flex items-baseline gap-2">
+        <Icon icon={icono} className="self-center text-base text-indigo-500" />
+        <h4 className="text-sm font-bold text-gray-900 dark:text-white">{titulo}</h4>
+        <span className="text-xs text-gray-400">{detalle}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">{children}</div>
+    </section>
+  );
+}
+
 export default function TemplateTienda() {
   const vm = useConfiguracionTiendaViewModel();
   const auth = useAuthStore(s => s.auth);
@@ -139,28 +152,123 @@ export default function TemplateTienda() {
     return () => { mounted = false; };
   }, [rubroId]);
 
-  // IDs habilitados para el rubro: lo que asignó el admin manda. Si el admin aún no
-  // configuró este rubro, caemos al permiso por defecto del catálogo de plantillas.
+  // Recomendadas para el rubro: lo que asignó el admin manda (sin ids que ya no
+  // existen). Si aún no lo configuró, las pensadas para el rubro; las universales
+  // (sin rubros) van abajo.
   const allowedPlantillaIds = useMemo(() => {
-    const fromAdmin = (rubroPlantillaId || '').split(',').map(s => s.trim()).filter(Boolean);
+    const existe = new Set<string>(plantillasCatalogo.map(p => p.id));
+    const fromAdmin = (rubroPlantillaId || '').split(',').map(s => s.trim()).filter(id => id && existe.has(id));
     if (fromAdmin.length > 0) return fromAdmin;
     if (rubroNombre) {
-      const porRubro = plantillasCatalogo.filter(p => isTemplateAllowedForRubro(p, rubroNombre)).map(p => p.id);
+      const porRubro = plantillasCatalogo
+        .filter(p => (p.rubrosPermitidos?.length ?? 0) > 0 && isTemplateAllowedForRubro(p, rubroNombre))
+        .map(p => p.id as string);
       if (porRubro.length > 0) return porRubro;
     }
-    return ['moderna'];
+    return [] as string[];
   }, [plantillasCatalogo, rubroPlantillaId, rubroNombre]);
 
-  const plantillasVisibles = useMemo(
+  // Todo el catálogo se puede elegir; las del rubro solo van primero.
+  const recomendadas = useMemo(
     () => plantillasCatalogo.filter(p => allowedPlantillaIds.includes(p.id)),
     [allowedPlantillaIds, plantillasCatalogo],
   );
+  const otras = useMemo(
+    () => plantillasCatalogo.filter(p => !allowedPlantillaIds.includes(p.id)),
+    [allowedPlantillaIds, plantillasCatalogo],
+  );
 
-  // La plantilla activa en la tienda es la que el emprendedor eligió (override),
-  // ya validada por el backend contra la lista permitida.
-  const seleccionada = allowedPlantillaIds.includes(activePlantillaId)
-    ? activePlantillaId
-    : allowedPlantillaIds[0];
+  // La plantilla activa es la que el emprendedor eligió (override).
+  const seleccionada = activeTemplateId;
+
+  const renderTarjeta = (plantilla: any) => {
+              const isOn = seleccionada === plantilla.id;
+              const isPremium = Boolean(plantilla.premium);
+              const isPurchased = plantillasPremiumCompradas.includes(plantilla.id);
+              const isLocked = isTemplatePremiumLocked(plantilla, vm.config?.diseno);
+              const details = getTemplateDetails(plantilla);
+
+              return (
+                <div
+                  key={plantilla.id}
+                  className={`relative text-left p-4 rounded-xl border-2 transition-all flex flex-col hover:border-indigo-300 dark:hover:border-indigo-700
+                    ${isOn ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 shadow-sm' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900'}`}
+                >
+                  {isOn && (
+                    <span className="absolute top-2 right-2">
+                      <Icon icon="solar:check-circle-bold" className="text-indigo-600 text-sm" />
+                    </span>
+                  )}
+
+                  {isPremium && (
+                    <span className={`absolute top-2 ${isOn ? 'right-8' : 'right-2'} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider ${isPurchased ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
+                      <Icon icon={isPurchased ? 'solar:unlock-bold' : 'solar:lock-keyhole-bold'} className="text-xs" />
+                      {isPurchased ? 'Comprada' : 'Premium'}
+                    </span>
+                  )}
+
+                  <div className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: plantilla.accentColor + '18' }}>
+                    <Icon icon={plantilla.icon} className="text-xl" style={{ color: plantilla.accentColor }} />
+                  </div>
+
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">{plantilla.label}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                    {plantilla.description}
+                  </p>
+
+                  {isPremium && (
+                    <div className="mt-3 space-y-3 rounded-xl border border-amber-100 bg-amber-50/70 p-3 dark:border-amber-900/40 dark:bg-amber-900/10">
+                      <div>
+                        <p className="text-lg font-black text-gray-900 dark:text-white">S/ {Number(plantilla.precioSoles || 0).toFixed(2)}</p>
+                        <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                          {plantilla.premiumNote || 'Compra única aparte del plan'}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {details.features.slice(0, 3).map((feature) => (
+                          <p key={feature} className="flex items-start gap-1.5 text-[10px] font-semibold leading-snug text-gray-700 dark:text-gray-300">
+                            <Icon icon="solar:check-circle-bold" className="mt-0.5 flex-shrink-0 text-emerald-500" />
+                            {feature}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPlantilla(plantilla)}
+                      className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-700 ring-1 ring-gray-200 transition hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-200 dark:ring-slate-700"
+                    >
+                      {isPremium ? 'Ver qué incluye' : 'Vista previa'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => elegirPlantilla(plantilla.id)}
+                      disabled={vm.saving || isLocked}
+                      className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all disabled:cursor-not-allowed
+                        ${isOn
+                          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                          : isLocked
+                            ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500'
+                            : 'bg-gray-900 text-white hover:bg-black dark:bg-white dark:text-gray-900'}`}
+                    >
+                      {isOn ? 'Diseño activo' : isLocked ? 'Bloqueada' : 'Usar diseño'}
+                    </button>
+                    {isLocked && (
+                      <button
+                        type="button"
+                        onClick={() => solicitarPlantillaPremium(plantilla)}
+                        className="rounded-full bg-amber-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-600"
+                      >
+                        Comprar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+  };
 
   const elegirPlantilla = (id: string) => {
     if (id === activePlantillaId || vm.saving) return;
@@ -293,100 +401,28 @@ export default function TemplateTienda() {
             Plantilla de Tienda
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-            Elige el diseño con el que se verá tu tienda. Estos son los diseños habilitados para el rubro {rubroNombre ? <strong>{rubroNombre}</strong> : 'de tu empresa'}.
+            Elige el diseño con el que se verá tu tienda. Puedes usar cualquiera; primero van los recomendados para tu rubro.
             {loadingRubroPlantilla ? ' Cargando diseños del rubro...' : ' El cambio se aplica al instante en tu tienda virtual.'}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {plantillasVisibles.map(plantilla => {
-              const isOn = seleccionada === plantilla.id;
-              const isPremium = Boolean(plantilla.premium);
-              const isPurchased = plantillasPremiumCompradas.includes(plantilla.id);
-              const isLocked = isTemplatePremiumLocked(plantilla, vm.config?.diseno);
-              const details = getTemplateDetails(plantilla);
-
-              return (
-                <div
-                  key={plantilla.id}
-                  className={`relative text-left p-4 rounded-xl border-2 transition-all flex flex-col hover:border-indigo-300 dark:hover:border-indigo-700
-                    ${isOn ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 shadow-sm' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900'}`}
-                >
-                  {isOn && (
-                    <span className="absolute top-2 right-2">
-                      <Icon icon="solar:check-circle-bold" className="text-indigo-600 text-sm" />
-                    </span>
-                  )}
-
-                  {isPremium && (
-                    <span className={`absolute top-2 ${isOn ? 'right-8' : 'right-2'} inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider ${isPurchased ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
-                      <Icon icon={isPurchased ? 'solar:unlock-bold' : 'solar:lock-keyhole-bold'} className="text-xs" />
-                      {isPurchased ? 'Comprada' : 'Premium'}
-                    </span>
-                  )}
-
-                  <div className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: plantilla.accentColor + '18' }}>
-                    <Icon icon={plantilla.icon} className="text-xl" style={{ color: plantilla.accentColor }} />
-                  </div>
-
-                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">{plantilla.label}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                    {plantilla.description}
-                  </p>
-
-                  {isPremium && (
-                    <div className="mt-3 space-y-3 rounded-xl border border-amber-100 bg-amber-50/70 p-3 dark:border-amber-900/40 dark:bg-amber-900/10">
-                      <div>
-                        <p className="text-lg font-black text-gray-900 dark:text-white">S/ {Number(plantilla.precioSoles || 0).toFixed(2)}</p>
-                        <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-                          {plantilla.premiumNote || 'Compra única aparte del plan'}
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        {details.features.slice(0, 3).map((feature) => (
-                          <p key={feature} className="flex items-start gap-1.5 text-[10px] font-semibold leading-snug text-gray-700 dark:text-gray-300">
-                            <Icon icon="solar:check-circle-bold" className="mt-0.5 flex-shrink-0 text-emerald-500" />
-                            {feature}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewPlantilla(plantilla)}
-                      className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-700 ring-1 ring-gray-200 transition hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-200 dark:ring-slate-700"
-                    >
-                      {isPremium ? 'Ver qué incluye' : 'Vista previa'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => elegirPlantilla(plantilla.id)}
-                      disabled={vm.saving || isLocked}
-                      className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all disabled:cursor-not-allowed
-                        ${isOn
-                          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-                          : isLocked
-                            ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500'
-                            : 'bg-gray-900 text-white hover:bg-black dark:bg-white dark:text-gray-900'}`}
-                    >
-                      {isOn ? 'Diseño activo' : isLocked ? 'Bloqueada' : 'Usar diseño'}
-                    </button>
-                    {isLocked && (
-                      <button
-                        type="button"
-                        onClick={() => solicitarPlantillaPremium(plantilla)}
-                        className="rounded-full bg-amber-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-amber-600"
-                      >
-                        Comprar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {recomendadas.length > 0 && (
+            <SeccionPlantillas
+              titulo={`Recomendados para ${rubroNombre || 'tu rubro'}`}
+              detalle={`${recomendadas.length} diseño${recomendadas.length === 1 ? '' : 's'}`}
+              icono="solar:star-bold"
+            >
+              {recomendadas.map(renderTarjeta)}
+            </SeccionPlantillas>
+          )}
+          {otras.length > 0 && (
+            <SeccionPlantillas
+              titulo={recomendadas.length > 0 ? 'También te podría interesar' : 'Todos los diseños'}
+              detalle={`${otras.length} diseño${otras.length === 1 ? '' : 's'}`}
+              icono="solar:widget-5-bold"
+            >
+              {otras.map(renderTarjeta)}
+            </SeccionPlantillas>
+          )}
         </div>
         {!usesLiveTemplateEditor && vm.bannerSlots.length > 0 && <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-transparent p-6">
           <div className="flex items-center justify-between mb-4">
