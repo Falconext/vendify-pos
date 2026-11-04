@@ -14,6 +14,7 @@ import useAlertStore from "@/zustand/alert";
 import { useAuthStore } from "@/zustand/auth";
 import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 import { useEmpresasStore } from "@/zustand/empresas";
+import { avisoMezcla, cantidadEnMezcla, configMezclaDe, precioPorCantidad, reprecioPorMezcla, sumaALaMezcla } from "./mayoristaMezcla";
 import { useUsersStore } from "@/zustand/users";
 import { IFormClient } from "@/interfaces/clients";
 import { IFormProduct } from "@/interfaces/products";
@@ -1398,17 +1399,6 @@ export const useFacturacionViewModel = () => {
 
     // Product Adding logic
 
-    const normalizeWholesaleUnitPrice = (basePrice: number, rule: { cantidadMinima: number; precio: number }) => {
-        const minQty = Number(rule.cantidadMinima);
-        const rulePrice = Number(rule.precio);
-
-        if (!Number.isFinite(rulePrice) || rulePrice <= 0) return basePrice;
-        if (Number.isFinite(basePrice) && basePrice > 0 && minQty > 1 && rulePrice > basePrice) {
-            return Number((rulePrice / minQty).toFixed(6));
-        }
-        return rulePrice;
-    };
-
     // Tipo de cambio del día (venta). Se usa para convertir a soles los productos en dólares
     // al agregarlos al carrito. El comprobante siempre se emite en soles (PEN).
     const [tcVenta, setTcVenta] = useState<number | null>(null);
@@ -1422,33 +1412,10 @@ export const useFacturacionViewModel = () => {
             .catch(() => setTcVenta(null));
     }, []);
 
-    const getApplicablePrice = (item: any, qty: number): number => {
-        const base = Number(item.precioBase ?? item.precioUnitario ?? 0);
-        if (!Number.isFinite(base) || base <= 0) return 0;
-
-        const parsedQty = Number(qty);
-        if (!Number.isFinite(parsedQty) || parsedQty <= 0) return base;
-
-        const rules = (item.preciosMayorista ?? [])
-            .map((r: { cantidadMinima: number; precio: number }) => ({
-                cantidadMinima: Number(r.cantidadMinima),
-                precioUnitario: normalizeWholesaleUnitPrice(base, r),
-            }))
-            .filter((r: { cantidadMinima: number; precioUnitario: number }) =>
-                Number.isFinite(r.cantidadMinima) &&
-                r.cantidadMinima > 0 &&
-                Number.isFinite(r.precioUnitario) &&
-                r.precioUnitario > 0,
-            );
-
-        if (!rules.length) return base;
-
-        const applicable = rules
-            .filter((r: { cantidadMinima: number; precioUnitario: number }) => parsedQty >= r.cantidadMinima)
-            .sort((a: { cantidadMinima: number }, b: { cantidadMinima: number }) => b.cantidadMinima - a.cantidadMinima)[0];
-
-        return applicable ? applicable.precioUnitario : base;
-    };
+    // La regla de escalas vive en mayoristaMezcla.ts: el carrito, la mezcla y
+    // el modal de edición tienen que calcular exactamente lo mismo.
+    const getApplicablePrice = (item: any, qty: number): number =>
+        precioPorCantidad(Number(item.precioBase ?? item.precioUnitario ?? 0), item.preciosMayorista, qty);
 
     const calculateLineItem = (item: any, newQuantity: number) => {
         const price = getApplicablePrice(item, newQuantity);
@@ -1459,9 +1426,40 @@ export const useFacturacionViewModel = () => {
             precioUnitario: price,
             total: subtotal.toFixed(2),
             sale: (subtotal / 1.18).toFixed(2),
-            igv: (subtotal - subtotal / 1.18).toFixed(2)
+            igv: (subtotal - subtotal / 1.18).toFixed(2),
+            // Cambiar la cantidad vuelve a poner el precio que toca: un precio
+            // escrito a mano antes ya no manda (igual que siempre).
+            precioManual: false,
         };
     };
+
+    // Precio por mayor mezclando productos (ver mayoristaMezcla.ts). Cada
+    // cambio del carrito —sumar, quitar, editar, cambiar de lista— puede
+    // cruzar o deshacer una escala en OTRAS líneas: en vez de tocar cada
+    // camino que modifica el carrito, se recalcula acá después de cada cambio.
+    // Solo actualiza las líneas cuyo precio no corresponde, así no hay bucle.
+    const empresaMezcla: any = auth?.empresa;
+    const configMezcla = useMemo(
+        () => configMezclaDe(empresaMezcla),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [empresaMezcla?.mayoristaMezclaActivo, JSON.stringify(empresaMezcla?.mayoristaMezclaCategoriaIds ?? [])],
+    );
+    useEffect(() => {
+        if (!configMezcla.activo) return;
+        for (const c of reprecioPorMezcla(productsInvoice || [], configMezcla)) {
+            updateProductInvoice(c.index, c.patch);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productsInvoice, configMezcla]);
+    const avisoMezclaCarrito = useMemo(
+        () => avisoMezcla(productsInvoice || [], configMezcla),
+        [productsInvoice, configMezcla],
+    );
+    /** Unidades mezcladas de las OTRAS líneas (para el modal de edición). */
+    const cantidadMezclaSinLinea = (index: number): number =>
+        configMezcla.activo && sumaALaMezcla(productsInvoice?.[index], configMezcla)
+            ? cantidadEnMezcla(productsInvoice || [], configMezcla, index)
+            : 0;
 
     const getCartQtyByProductId = (productoId: number) =>
         productsInvoice
@@ -3409,6 +3407,9 @@ export const useFacturacionViewModel = () => {
         handleDeleteProductByIndex,
         handleSaveEdit,
         handleSelectWholesaleTier,
+        configMezcla,
+        avisoMezclaCarrito,
+        cantidadMezclaSinLinea,
         getApplicablePrice,
         updateProductInvoice,
         handleChangeSelect,

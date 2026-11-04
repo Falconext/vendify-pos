@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import useAlertStore from "@/zustand/alert";
 import { DetalleAdicionalLinea } from './DetalleAdicionalLinea';
+import { seRepreciaPorMezcla, type AvisoMezcla as AvisoMezclaData } from '../mayoristaMezcla';
 
 // Línea de PAQUETE (ej. six-pack escaneado): el vendedor piensa en packs, no en
 // unidades — el carrito muestra/edita PACKS y por dentro la cantidad sigue en
@@ -59,6 +60,36 @@ const QtyInput = ({ item, index, vm }: { item: any; index: number; vm: any }) =>
         />
     );
 };
+
+/**
+ * Precio por mayor mezclando productos: cuántas unidades lleva la venta y
+ * cuánto falta para la próxima escala, para que el cajero se lo diga al
+ * cliente ("lleva 4, con 2 más le sale a precio por mayor").
+ */
+const AvisoMezcla = ({ aviso }: { aviso: AvisoMezclaData }) => (
+    <div
+        className={`flex items-start gap-2.5 rounded-2xl border px-3 py-2.5 text-xs ${aviso.aplicado
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/50 dark:bg-emerald-900/20 dark:text-emerald-200'
+            : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200'}`}
+        role="status"
+    >
+        <Icon icon={aviso.aplicado ? 'solar:tag-price-bold-duotone' : 'solar:cart-plus-bold-duotone'} className="mt-0.5 shrink-0 text-base" />
+        <div className="min-w-0">
+            <p className="font-bold">
+                {aviso.aplicado
+                    ? `Precio por mayor aplicado: ${aviso.total} unidades mezcladas`
+                    : `Lleva ${aviso.total} ${aviso.total === 1 ? 'unidad' : 'unidades'} para el precio por mayor`}
+            </p>
+            {aviso.siguiente && (
+                <p className="mt-0.5 opacity-80">
+                    {aviso.aplicado
+                        ? `Con ${aviso.siguiente.faltan} más baja a la escala de ${aviso.siguiente.cantidadMinima}.`
+                        : `Faltan ${aviso.siguiente.faltan} (iguales o distintos) para llegar a ${aviso.siguiente.cantidadMinima}.`}
+                </p>
+            )}
+        </div>
+    </div>
+);
 
 export const POSCartLayout = ({ vm }: { vm: any }) => {
     const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
@@ -119,7 +150,9 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                     <p className="text-sm">Agrega productos del catálogo</p>
                 </div>
             ) : (
-                vm.productsInvoice.map((item: any, index: number) => (
+                <>
+                {vm.avisoMezclaCarrito && <AvisoMezcla aviso={vm.avisoMezclaCarrito} />}
+                {vm.productsInvoice.map((item: any, index: number) => (
                     <div key={index} className="flex flex-col gap-2.5 bg-white dark:bg-[#111c44]/60 dark:backdrop-blur-sm p-3 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-white/20 transition-all group relative">
                         {/* Fila 1: imagen + descripción (ancho completo) + precio + acciones */}
                         <div className="flex items-start gap-3">
@@ -175,6 +208,14 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                                     )}
                                     {item.esItemLibre && (
                                         <span className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded-full font-semibold text-[10px]">Ítem libre</span>
+                                    )}
+                                    {vm.configMezcla?.activo && seRepreciaPorMezcla(item, vm.configMezcla) && Number(item.precioUnitario) < Number(item.precioBase ?? item.precioUnitario) - 0.000001 && (
+                                        <span
+                                            className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-semibold text-[10px]"
+                                            title={`Precio de lista ${vm.monedaSimbolo} ${Number(item.precioBase).toFixed(2)}: baja por la cantidad mezclada con otros productos`}
+                                        >
+                                            Por mayor
+                                        </span>
                                     )}
                                     {getUnidadAtajos(item) && (
                                         <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-semibold text-[10px]">⚖️ Por {getUnidadAtajos(item)!.sufijo}</span>
@@ -293,7 +334,8 @@ export const POSCartLayout = ({ vm }: { vm: any }) => {
                             </div>
                         </div>{/* /Fila 1 */}
                     </div>
-                ))
+                ))}
+                </>
             )}
         </div>
     );

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useProductModalViewModel } from '../useProductModalViewModel';
+import { useAuthStore } from '@/zustand/auth';
+import { configMezclaDe, sumaALaMezcla } from '@/features/admin/facturacion/mayoristaMezcla';
 
 type ViewProps = ReturnType<typeof useProductModalViewModel>;
 
@@ -19,6 +21,14 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editValues, setEditValues] = useState({ cantidadMinima: '', precio: '' });
     const [isOpen, setIsOpen] = useState(false);
+    // Precio por mayor mezclando productos: el cajero lo tiene que saber al
+    // armar las escalas ("desde 6" cuenta también otros productos).
+    const empresa: any = useAuthStore((st) => st.auth?.empresa);
+    const mezcla = configMezclaDe(empresa);
+    const entraEnMezcla = mezcla.activo && sumaALaMezcla(
+        { productoId: 1, cantidad: 1, categoriaId: formValues.categoriaId, categoriasExtra: (formValues as any).categoriasExtraIds },
+        mezcla,
+    );
 
     useEffect(() => {
         if (wholesaleOptions.length > 0) setIsOpen(true);
@@ -90,6 +100,12 @@ export const ProductWholesalePricing: React.FC<{ vm: ViewProps }> = ({ vm }) => 
                 </button>
                 <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#1E2435]">
+            {entraEnMezcla && (
+                <p className="mb-3 flex items-start gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-2 text-[11px] text-emerald-700 dark:text-emerald-300">
+                    <Icon icon="solar:info-circle-linear" className="mt-0.5 shrink-0" width={13} />
+                    La cantidad se cuenta junto con otros productos de la venta (precio por mayor mezclando, en Configuración).
+                </p>
+            )}
             {/* Tiers list */}
             {sorted.length > 0 && (
                 <div className="mb-3 space-y-1.5">

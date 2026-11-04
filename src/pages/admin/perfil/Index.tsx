@@ -1,5 +1,6 @@
 import { usePerfilViewModel } from '@/features/admin/perfil/usePerfilViewModel';
 import AlertasStockConfig from '@/features/admin/perfil/AlertasStockConfig';
+import MayoristaMezclaConfig from '@/features/admin/perfil/MayoristaMezclaConfig';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
 import Loading from '@/components/Loading';
@@ -568,6 +569,10 @@ export default function PerfilIndex() {
                                         {savingVentaSinStockConfig && <p className="text-xs text-amber-600 mt-1">Guardando configuración...</p>}
                                     </div>
                                 </label>
+                                {/* Precio por mayor sumando productos distintos (solo administradores) */}
+                                {(perfil?.rol === 'ADMIN_EMPRESA' || perfil?.rol === 'ADMIN_SISTEMA') && (
+                                    <div className="mt-3"><MayoristaMezclaConfig /></div>
+                                )}
                                 <label data-testid="config-ley-amazonia" className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                                     <input
                                         type="checkbox"
