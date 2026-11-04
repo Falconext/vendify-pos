@@ -1146,6 +1146,7 @@ export default function ProductsView() {
                     isOpen={vm.isOpenModalAsignarSedes}
                     onClose={() => actions.setIsOpenModalAsignarSedes(false)}
                     sedes={vm.sedes}
+                sedeStock={vm.tieneVariasSedes ? { id: vm.effectiveSedeId ?? null, nombre: vm.selectedSedeName ?? null } : undefined}
                     defaultSedeId={vm.effectiveSedeId}
                     catalogoPorSede={vm.catalogoPorSede}
                     onChanged={() => { void actions.refreshProducts(); }}

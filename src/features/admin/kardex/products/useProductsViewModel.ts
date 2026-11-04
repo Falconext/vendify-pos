@@ -580,7 +580,12 @@ export const useProductsViewModel = () => {
             // El listado no trae campos pesados (descripcionLarga, atributosTecnicos).
             // Traemos el producto completo por id para poblar el editor de descripción.
             try {
-                const resp = await apiClient.get(`/productos/${originalProduct.id}`);
+                // Con la sede que se está viendo: sin ella, el stock de cada
+                // variante llegaba como la suma de todas las sedes y pisaba el
+                // del listado (que sí es de la sede).
+                const resp = await apiClient.get(`/productos/${originalProduct.id}`, {
+                    params: effectiveSedeId ? { sedeId: effectiveSedeId } : undefined,
+                });
                 const full = resp?.data?.data || resp?.data;
                 if (full) {
                     // Fuente autoritativa: re-sembramos las variantes desde el GET individual

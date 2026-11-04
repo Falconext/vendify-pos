@@ -1451,6 +1451,9 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
           costoUnitario: formValues?.costoUnitario
             ? Number(formValues?.costoUnitario)
             : undefined,
+          // El stock va a la sede que se está viendo; null = "Todas las sedes",
+          // y ahí el stock de las variantes no se toca.
+          ...(props.sedeStock ? { stockSedeId: props.sedeStock.id ?? null } : {}),
           costoFijo:
             (formValues as any)?.costoFijo != null
               ? Number((formValues as any).costoFijo)
@@ -2094,6 +2097,7 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
 
   return {
     // Properties & State
+    sedeStock: props.sedeStock,
     isMobile,
     isRestaurante,
     isFarmacia,

@@ -603,6 +603,10 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
   const usaVariantes = isModaRubro || Boolean(vm.features?.usaVariantes);
   if (vm.isFarmacia || vm.isRestaurante || !usaVariantes) return null;
+  // Viendo "Todas las sedes" el stock es el total: no se edita (no hay una
+  // sede donde escribirlo). Una variante nueva sí recibe su stock inicial.
+  const stockSoloLectura = Boolean(vm.sedeStock && !vm.sedeStock.id);
+  const yaGuardadas = new Set(variantesExistentes.map((v) => comboKey(v.valoresAtributos)));
 
   const rows = buildConfig(opcionesAtributos);
 
@@ -1127,7 +1131,9 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                   <th className="px-4 py-3">Variante</th>
                   <th className="px-4 py-3">SKU</th>
                   <th className="px-4 py-3">Precio</th>
-                  <th className="px-4 py-3">Stock</th>
+                  <th className="px-4 py-3" title={stockSoloLectura ? 'Total de todas las sedes. Elige una sede para editarlo.' : vm.sedeStock?.nombre ? `Stock en ${vm.sedeStock.nombre}` : undefined}>
+                    {stockSoloLectura ? 'Stock (total)' : vm.sedeStock?.nombre ? `Stock · ${vm.sedeStock.nombre}` : 'Stock'}
+                  </th>
                   <th className="px-4 py-3">Barras</th>
                   <th className="px-4 py-3">Activo</th>
                 </tr>
@@ -1166,7 +1172,9 @@ export const ProductVariantsManager: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                           type="number"
                           value={row.stock ?? 0}
                           onChange={(event) => updateVariant(key, { stock: Number(event.target.value || 0) })}
-                          className="w-24 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          disabled={stockSoloLectura && yaGuardadas.has(key)}
+                          title={stockSoloLectura && yaGuardadas.has(key) ? 'Elige una sede en el Kardex para editar su stock' : undefined}
+                          className="w-24 disabled:cursor-not-allowed disabled:opacity-60 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         />
                       </td>
                       <td className="px-4 py-3">
