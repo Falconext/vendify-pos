@@ -27,6 +27,19 @@ export const ModalRecetaMedica = ({ isOpen, item, onConfirmar, onCerrar }: Props
     const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
     const doctorRef = useRef<HTMLDivElement>(null);
 
+    // El modal siempre está montado: al abrirlo para otro ítem arranca con la receta
+    // de ese ítem, no con el paciente y el médico del anterior.
+    useEffect(() => {
+        if (!isOpen) return;
+        setDatos(item?.datosReceta ?? {});
+        setReniecNombre(null);
+        setReniecError(null);
+        setDoctorQuery('');
+        setDoctorResults([]);
+        setShowDoctorDropdown(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
     useEffect(() => {
         if (!doctorQuery.trim() || doctorQuery.length < 2) {
             setDoctorResults([]);

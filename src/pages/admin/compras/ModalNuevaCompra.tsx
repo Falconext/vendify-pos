@@ -133,14 +133,15 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
     const [cuotas, setCuotas] = useState<any[]>([]);
 
     // Item entry state
-    const [currentItem, setCurrentItem] = useState({
+    const itemVacio = {
         productoId: 0,
         descripcion: '',
         cantidad: 1,
         precioUnitario: 0,
         lote: '',
         fechaVencimiento: ''
-    });
+    };
+    const [currentItem, setCurrentItem] = useState(itemVacio);
 
     const [items, setItems] = useState<any[]>([]);
     // Distribución por sede: índice de la línea cuyo panel "Distribuir" está
@@ -290,6 +291,16 @@ const ModalNuevaCompra = ({ isOpen, onClose, onSuccess, compra }: ModalNuevaComp
             setPagosExistentes([]);
             listarCuentas();
             setItems([]);
+            // También lo que quedó a medio cargar y la clasificación de la compra
+            // anterior: el producto se veía en blanco pero "Agregar" lo agregaba.
+            setCurrentItem(itemVacio);
+            setPkg(null);
+            setPkgCajas('1');
+            setPkgCosto('');
+            setPkgLineKey(null);
+            setDistribuyendoIdx(null);
+            setDistribucion({});
+            setEsGasto(null);
             setIncluyeIgv(false);
             setCuotas([]);
             setBarcodeInput('');
