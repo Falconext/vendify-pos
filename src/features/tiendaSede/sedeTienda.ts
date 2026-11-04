@@ -31,11 +31,15 @@ export interface StockTienda {
     sedes: SedeTienda[];
 }
 
-/** Otra sede donde el producto sí se puede pedir (ficha, modo CLIENTE). */
+/**
+ * Otra sede donde el producto sí hay (ficha). En CLIENTE se puede pasar a
+ * ella; en SEDE solo se informa, con su dirección.
+ */
 export interface DisponibleEnSede {
     sedeId: number;
     nombre: string;
     stock: number;
+    direccion?: string | null;
 }
 
 /** Lo que el aviso común de la ficha necesita del último producto abierto. */

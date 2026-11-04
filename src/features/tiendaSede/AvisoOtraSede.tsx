@@ -6,7 +6,8 @@ interface Props {
     ficha: FichaSede;
     sedeNombre: string;
     color: string;
-    onCambiar: (sedeId: number) => void;
+    /** Sin esto (tienda de una sola sede) el aviso solo informa dónde hay. */
+    onCambiar?: (sedeId: number) => void;
 }
 
 /** ¿Hay que avisar que el producto está en otra sede? (agotado o no vendible aquí) */
@@ -33,12 +34,25 @@ function AvisoOtraSede({ ficha, sedeNombre, color, onCambiar }: Props) {
                 <Icon icon="solar:map-point-wave-linear" className="mt-0.5 h-4 w-4 flex-none" style={{ color }} />
                 <p className="min-w-0 flex-1 text-[12.5px] leading-5">
                     <strong className="font-semibold">{ficha.vendible ? 'Agotado' : 'No disponible'} en {sedeNombre}</strong>
-                    <span className="text-gray-500"> · Disponible en {otras.map((o) => o.nombre).join(', ')}</span>
+                    <span className="text-gray-500"> · {onCambiar ? 'Disponible' : 'Hay stock'} en {otras.map((o) => o.nombre).join(', ')}</span>
                 </p>
                 <button type="button" aria-label="Cerrar aviso" onClick={() => setCerrado(true)} className="-mr-1 -mt-1 rounded-full p-1 text-gray-400 hover:bg-gray-100">
                     <Icon icon="solar:close-circle-linear" className="h-4 w-4" />
                 </button>
             </div>
+            {!onCambiar ? (
+                // Tienda de una sola sede: no se compra en la otra por la web,
+                // pero el cliente sabe adónde ir o qué preguntar.
+                <ul className="mt-2 space-y-1 pl-6" data-testid="aviso-solo-informa">
+                    {otras.map((o) => (
+                        <li key={o.sedeId} className="text-[11.5px] leading-4 text-gray-600">
+                            <span className="font-semibold" style={{ color }}>{o.nombre}</span>
+                            {o.direccion ? <span> · {o.direccion}</span> : null}
+                        </li>
+                    ))}
+                    <li className="pt-0.5 text-[11px] text-gray-400">Escríbenos para coordinarlo.</li>
+                </ul>
+            ) : (
             <div className="mt-2 flex flex-wrap gap-1.5 pl-6">
                 {otras.map((o) => (
                     <button
@@ -53,6 +67,7 @@ function AvisoOtraSede({ ficha, sedeNombre, color, onCambiar }: Props) {
                     </button>
                 ))}
             </div>
+            )}
         </div>
     );
 }

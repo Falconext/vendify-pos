@@ -131,6 +131,9 @@ export default function ControlSedeTienda({ slug, productoId }: Props) {
 
     const sedePendiente = pendiente ? sedePorId(stockTienda, pendiente.sedeId) : null;
     const fichaVigente = ficha && (ficha.sedeId ?? stockTienda?.sedeDefaultId ?? null) === sedeId ? ficha : null;
+    // Tienda de una sola sede (modo SEDE): el cliente no elige, pero si el
+    // producto está agotado aquí y hay en otra sede, se le avisa dónde.
+    const sedeDeLaTienda = stockTienda?.modo === 'SEDE' ? sedePorId(stockTienda, stockTienda.sedeDefaultId) : null;
 
     return (
         <>
@@ -172,6 +175,15 @@ export default function ControlSedeTienda({ slug, productoId }: Props) {
                     sedeNombre={sedeActual.nombre}
                     color={color}
                     onCambiar={(id) => void cambiarSede(id)}
+                />
+            )}
+
+            {!vistaPrevia && sedeDeLaTienda && debeAvisarOtraSede(ficha) && (
+                <AvisoOtraSede
+                    key={`${productoId}:solo-informa`}
+                    ficha={ficha}
+                    sedeNombre={sedeDeLaTienda.nombre}
+                    color={color}
                 />
             )}
         </>

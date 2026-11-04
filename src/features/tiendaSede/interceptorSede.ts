@@ -95,7 +95,8 @@ function normalizarDisponibleEn(raw: unknown): DisponibleEnSede[] {
     return raw
         .map((d) => {
             const o = (d && typeof d === 'object' ? d : {}) as Record<string, unknown>;
-            return { sedeId: Number(o.sedeId), nombre: String(o.nombre ?? ''), stock: Number(o.stock ?? 0) };
+            const direccion = typeof o.direccion === 'string' && o.direccion.trim() ? o.direccion.trim() : null;
+            return { sedeId: Number(o.sedeId), nombre: String(o.nombre ?? ''), stock: Number(o.stock ?? 0), ...(direccion ? { direccion } : {}) };
         })
         .filter((d) => Number.isInteger(d.sedeId) && d.sedeId > 0 && d.nombre && d.stock > 0);
 }
