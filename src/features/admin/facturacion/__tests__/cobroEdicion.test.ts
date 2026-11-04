@@ -114,3 +114,24 @@ describe('cableado en el POS', () => {
         expect(POS).toContain('const splitRemaining = Math.max(0, cobroObjetivo - splitTotal);');
     });
 });
+
+
+describe('editar una nota con saldo sin cobrar', () => {
+    const base = { esMixto: false, esEfectivo: true, pay: 0, splitTotal: 0 };
+
+    it('no recibe nada ni falta nada, y el saldo se sigue viendo', () => {
+        expect(calcularCobro({ ...base, total: 254.24, pagoPrevio: 20, sinCobrar: true }))
+            .toEqual({ aCobrar: 234.24, aDevolver: 0, montoRecibido: 0, vuelto: 0, faltante: 0 });
+    });
+
+    it('sin el check, vacío sigue siendo "exacto"', () => {
+        expect(calcularCobro({ ...base, total: 254.24, pagoPrevio: 20 }).montoRecibido).toBe(234.24);
+    });
+
+    it('el pago guardado es solo lo de antes: el backend deja el saldo', () => {
+        const pago = armarPagoEdicion({ total: 254.24, previas: [{ method: 'YAPE', amount: 20 }], nuevas: [] });
+        expect(pago.medioPago).toBe('YAPE');
+        expect(pago.paymentDetails).toMatchObject({ mode: 'SIMPLE', amount: 20, pagoAnterior: 20, recibido: 0, devolucion: 0 });
+        expect(pago.vuelto).toBe(0);
+    });
+});

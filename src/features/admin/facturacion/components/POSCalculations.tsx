@@ -13,6 +13,7 @@ import type { PaymentLine } from "../useFacturacionViewModel";
 import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
 import { type FormatoImpresion } from "@/utils/formatoImpresion";
+import { avisosDestinatario } from '../envioDeVenta';
 
 const METODOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta'];
 
@@ -260,7 +261,9 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab, printFormValues
     const splitCashTotal = (vm.splitPayments as PaymentLine[])
         .filter((p) => String(p.method).trim().toUpperCase() === 'EFECTIVO')
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    const splitValid = sinCobroPendiente || Math.abs(splitTotal - cobroObjetivo) < 0.01 || (splitExcess > 0 && splitCashTotal + 0.01 >= splitExcess);
+    const sinCobrarAhora = Boolean(vm.sinCobrarAhora);
+    const avisosEnvio = vm.envioActivo ? avisosDestinatario(vm.envioData ?? {}, vm.selectedClient) : [];
+    const splitValid = sinCobroPendiente || sinCobrarAhora || Math.abs(splitTotal - cobroObjetivo) < 0.01 || (splitExcess > 0 && splitCashTotal + 0.01 >= splitExcess);
     const splitChange = splitValid ? Number(splitExcess.toFixed(2)) : 0;
 
     const updateSplitAmount = (idx: number, value: number) => {
@@ -606,6 +609,8 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                 {/* Adelanto field for NP and OT */}
                 {(vm.formValues.tipoDoc === 'NP' || vm.formValues.tipoDoc === 'OT') && !vm.isQuotationRoute && (
                     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-800">
+                        {/* Al editar al contado este campo no hace nada: lo cobrado y el saldo se ven en el cobro. */}
+                        {!(vm.isEditNotaVenta && vm.formValues.medioPago !== 'Crédito') && (<>
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">
                             Adelanto (opcional)
                         </label>
@@ -631,6 +636,7 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                 </div>
                             </div>
                         )}
+                        </>)}
 
                         {/* Descontar stock: solo para Nota de Pedido */}
                         {vm.formValues.tipoDoc === 'NP' && (
@@ -771,6 +777,13 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                         <div className={`grid grid-cols-1 ${vm.formValues?.medioPago === 'Crédito' ? '' : 'md:grid-cols-2'} gap-0 overflow-y-auto flex-1 min-h-0`}>
                             {/* IZQUIERDA: métodos de pago (oculto en crédito) */}
                             <div className={`p-5 border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/10 ${vm.formValues?.medioPago === 'Crédito' ? 'hidden' : ''}`}>
+                                {vm.envioActivo && (
+                                    <div data-testid="pos-resumen-envio" className={`mb-4 rounded-xl border p-3 text-xs ${avisosEnvio.length > 0 ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100' : 'border-gray-200 bg-gray-50 text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200'}`}>
+                                        <p className="font-black">Envío para {vm.envioData?.nombreDestinatario || vm.selectedClient?.nombre || 'el cliente'}</p>
+                                        <p className="mt-0.5 break-words">{[vm.envioData?.celularDest, vm.envioData?.agenciaDestino, vm.envioData?.distrito].filter(Boolean).join(' · ')}</p>
+                                        {avisosEnvio.map((t: string) => <p key={t} className="mt-1 font-bold">{t}</p>)}
+                                    </div>
+                                )}
                                 <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Método de pago</h4>
                                 {vm.formValues?.medioPago === 'Crédito' ? (
                                     <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-700 dark:text-amber-300">
@@ -778,6 +791,31 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                     </div>
                                 ) : (
                 <div className="mb-1">
+                    {vm.notaTeniaSaldo && (
+                        <div className="mb-3" data-testid="pos-no-cobrar">
+                            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="¿Cobrar el saldo ahora?">
+                                {[{ v: true, t: 'No cobrar ahora' }, { v: false, t: 'Cobrar ahora' }].map(({ v, t }) => (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={Boolean(vm.noCobrarAhora) === v}
+                                        onClick={() => vm.setNoCobrarAhora(v)}
+                                        className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition ${Boolean(vm.noCobrarAhora) === v
+                                            ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-200'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-300'}`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                            {sinCobrarAhora && (
+                                <p data-testid="pos-no-cobrar-aviso" className="mt-2 text-[11px] font-semibold leading-snug text-gray-600 dark:text-gray-300">
+                                    No cobras nada ahora: el saldo de S/ {cobroObjetivo.toFixed(2)} sigue pendiente y no entra plata a caja.
+                                </p>
+                            )}
+                        </div>
+                    )}
                     {enModoSaldo && (
                         <div data-testid="pos-pago-previo" className="mb-3 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/70 dark:bg-violet-950/30 p-3">
                             <div className="grid grid-cols-3 gap-2 text-center">
@@ -796,21 +834,21 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                     </div>
                                 ) : (
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-wide text-violet-600">Saldo a cobrar</p>
+                                        <p className="text-[9px] font-black uppercase tracking-wide text-violet-600">{sinCobrarAhora ? 'Saldo pendiente' : 'Saldo a cobrar'}</p>
                                         <p className="text-sm font-black text-violet-700 dark:text-violet-300">S/ {cobroObjetivo.toFixed(2)}</p>
                                     </div>
                                 )}
                             </div>
-                            <p className="mt-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                            {!sinCobrarAhora && <p className="mt-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
                                 {aDevolver > 0
                                     ? `El cliente pagó más que el nuevo total: devuélvele S/ ${aDevolver.toFixed(2)}. No hay nada que cobrar.`
                                     : sinCobroPendiente
                                         ? 'Lo ya pagado cubre el nuevo total. No hay nada que cobrar.'
                                         : `Cobra solo la diferencia. Ingresa lo que el cliente entrega ahora; el vuelto se calcula sobre S/ ${cobroObjetivo.toFixed(2)}.`}
-                            </p>
+                            </p>}
                         </div>
                     )}
-                    {!sinCobroPendiente && (<>
+                    {!sinCobroPendiente && !sinCobrarAhora && (<>
                     {/* Toggle simple / mixto */}
                     <div className="flex items-center justify-end mb-2">
                         <button

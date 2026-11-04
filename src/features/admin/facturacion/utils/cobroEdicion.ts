@@ -134,11 +134,14 @@ export function calcularCobro(p: {
     esEfectivo: boolean;
     pay: number;
     splitTotal: number;
+    /** Editar una nota con saldo sin cobrar nada: el saldo sigue pendiente. */
+    sinCobrar?: boolean;
 }): CobroCalculado {
     const total = round2(Math.max(0, p.total));
     const previo = round2(Math.max(0, p.pagoPrevio || 0));
     const aCobrar = round2(Math.max(0, total - previo));
     const aDevolver = round2(Math.max(0, previo - total));
+    if (p.sinCobrar) return { aCobrar, aDevolver, montoRecibido: 0, vuelto: 0, faltante: 0 };
     const montoRecibido = p.esMixto
         ? round2(p.splitTotal)
         : p.esEfectivo && p.pay > 0

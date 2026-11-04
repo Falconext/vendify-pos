@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState, useMemo, useRef } from "react";
 import { armarPagoEdicion, calcularCobro, pagoPrevioDeNota, type PagoPrevio } from './utils/cobroEdicion';
+import { envioAlCambiarCliente, envioParaSiguienteVenta, envioTieneDestino, envioVacio } from './envioDeVenta';
 import { guardarObservacionesRecordadas, leerObservacionesRecordadas } from '@/utils/observacionesVenta';
 import { IInvoicesState, useInvoiceStore } from "@/zustand/invoices";
 import { IExtentionsState, useExtentionsStore } from "@/zustand/extentions";
@@ -401,7 +402,7 @@ export const useFacturacionViewModel = () => {
 
     const [paymentMethod, setPaymentMethod] = useState<string>('Efectivo');
     const [isMixedPayment, setIsMixedPayment] = useState<boolean>(false);
-    const [paymentDetail, setPaymentDetail] = useState<PaymentLine>({
+    const pagoDetalleInicial: PaymentLine = {
         method: 'Efectivo',
         amount: 0,
         referencia: '',
@@ -409,7 +410,8 @@ export const useFacturacionViewModel = () => {
         tarjetaMarca: '',
         tarjetaTipo: 'Débito',
         tarjetaUltimos4: '',
-    });
+    };
+    const [paymentDetail, setPaymentDetail] = useState<PaymentLine>(pagoDetalleInicial);
     const [splitPayments, setSplitPayments] = useState<PaymentLine[]>([
         { method: 'Efectivo', amount: 0 },
         { method: 'Yape', amount: 0 },
@@ -478,6 +480,10 @@ export const useFacturacionViewModel = () => {
     // pago previo o si la nota sigue a crédito). Con esto el modal cobra solo el
     // saldo y el vuelto se calcula contra el saldo, no contra el total.
     const [pagoPrevioEdicion, setPagoPrevioEdicion] = useState<PagoPrevio | null>(null);
+    // Editar una nota que ya debía saldo no es cobrarla: se puede corregir la nota
+    // o descontar el stock y cobrar al entregar. Por eso arranca en "no cobrar".
+    const [notaTeniaSaldo, setNotaTeniaSaldo] = useState(false);
+    const [noCobrarAhora, setNoCobrarAhora] = useState(false);
     const [_change, setChange] = useState<number>(0);
     const [receiptNote, setReceiptNote] = useState<string>("FACTURA")
     const [serie, setSerie] = useState<string>("");
@@ -493,45 +499,9 @@ export const useFacturacionViewModel = () => {
 
     // Coordinación de envío nacional
     const [envioActivo, setEnvioActivo] = useState(false);
-    const [envioData, setEnvioData] = useState({
-        transportista: '',
-        tipoEnvio: 'AGENCIA',
-        agenciaDestino: '',
-        celularDest: '',
-        nroPaquetes: 1,
-        turnoEnvio: 'MANANA',
-        tipoMercaderia: '',
-        claveEnvio: '',
-        nroOrden: '',
-        claveOrden: '',
-        establecimiento: '',
-        repartidor: '',
-        repartidorId: null as number | null,
-        empaquetador: auth?.nombre ?? '',
-        observaciones: '',
-        fechaEstimada: '',
-        costoEnvio: 0,
-        pagarFlete: 'CLIENTE' as 'CLIENTE' | 'NEGOCIO',
-        // Sin valor: lo decide el contexto (ver aplicacionPorDefecto). Antes
-        // arrancaba en 'ADELANTO' y no había forma de distinguir "recién
-        // abierto" de "el vendedor eligió adelanto", así que en un documento
-        // formal se convertía en cobro.
-        aplicacionMontoCliente: undefined as 'ITEM_ENVIO' | 'ADELANTO' | 'NEGOCIO' | undefined,
-        nombreDestinatario: '',
-        dniDestinatario: '',
-        contenidoPaquete: '',
-        montoCOD: 0,
-        pesoKg: 0,
-        shalomTipoProducto: undefined as number | undefined,
-        shalomAgenciaDestinoId: '',
-        // Reparto propio / motorizado
-        tipoVentaReparto: '',
-        distritoUbigeo: '',
-        distrito: '',
-        coordenadas: '',
-        formaPagoCobro: '',
-        revisarProducto: false,
-    });
+    const [envioData, setEnvioData] = useState(() => envioVacio(auth?.nombre ?? ''));
+    // Cliente al que corresponden los datos del envío cargados.
+    const clienteDelEnvioRef = useRef<any>(null);
     const [correlative, setCorrelative] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [descountGlobal, _setDescountGlobal] = useState<number>(0)
@@ -1178,6 +1148,9 @@ export const useFacturacionViewModel = () => {
                     ? pagoPrevioDeNota(nvData)
                     : null;
                 setPagoPrevioEdicion(previoEdicion && previoEdicion.monto > 0 ? previoEdicion : null);
+                const teniaSaldo = Boolean(state.isEditNV && state.notaVentaId && !notaACreditoConSaldo && Number(nvData.saldo || 0) > 0.009);
+                setNotaTeniaSaldo(teniaSaldo);
+                setNoCobrarAhora(teniaSaldo);
 
                 if (previoEdicion && previoEdicion.monto > 0) {
                     setIsMixedPayment(false);
@@ -2331,6 +2304,24 @@ export const useFacturacionViewModel = () => {
         setErrorsClient({ ...initialErrorsClient });
         setIsOpenModalClient(true);
     };
+    // Cambiar de cliente con el envío ya cargado: lo que vino del anterior se
+    // reemplaza y lo escrito a mano se conserva, avisando para que lo revisen.
+    useEffect(() => {
+        if (!selectedClient) return;
+        const anterior = clienteDelEnvioRef.current;
+        clienteDelEnvioRef.current = selectedClient;
+        const mismoCliente = anterior && (anterior.id != null && selectedClient.id != null
+            ? anterior.id === selectedClient.id
+            : anterior.nroDoc === selectedClient.nroDoc);
+        if (!anterior || mismoCliente || !envioTieneDestino(envioData)) return;
+        const { envio, quedoAMano } = envioAlCambiarCliente(envioData, anterior, selectedClient);
+        setEnvioData(envio);
+        if (quedoAMano) {
+            useAlertStore.getState().alert('Cambiaste de cliente: revisa los datos de envío. Lo que escribiste a mano se conservó.', 'warning');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedClient?.id, selectedClient?.nroDoc]);
+
     const handleClienteCreado = (client: any) => {
         if (!client) return;
         setSelectedClient(client);
@@ -2414,6 +2405,7 @@ export const useFacturacionViewModel = () => {
     // Efectivo simple con un monto recibido MENOR al saldo: lo que aún falta cobrar
     // (`faltanteEfectivo`). Si se cobra de menos, antes se registraba como pagada
     // completa. Para mixto, el propio panel de líneas ya muestra "Falta S/ ...".
+    const sinCobrarAhora = notaTeniaSaldo && noCobrarAhora && !esCreditoNV;
     const cobro = calcularCobro({
         total: totalAdjusted,
         pagoPrevio,
@@ -2421,6 +2413,7 @@ export const useFacturacionViewModel = () => {
         esEfectivo: isCashPayment,
         pay,
         splitTotal: splitPaymentTotal,
+        sinCobrar: sinCobrarAhora,
     });
     const { montoRecibido, faltante: faltanteEfectivo, aCobrar: montoACobrar, aDevolver: montoADevolver } = cobro;
     const vueltoCalculado = cobro.vuelto;
@@ -2457,7 +2450,7 @@ export const useFacturacionViewModel = () => {
             };
         };
 
-        const pagoNuevo = isMixedPayment
+        const pagoNuevo = isMixedPayment && !sinCobrarAhora
             ? {
                 mode: 'MIXTO',
                 splitPayments: splitPayments
@@ -2482,7 +2475,7 @@ export const useFacturacionViewModel = () => {
         ? armarPagoEdicion({
             total: totalAdjusted,
             previas: pagoPrevioEdicion.lineas,
-            nuevas: montoACobrar <= 0
+            nuevas: montoACobrar <= 0 || sinCobrarAhora
                 ? []
                 : isMixedPayment
                     ? splitPayments.map((l) => ({ ...l, method: normalizePaymentMethod(l.method), amount: Number(l.amount || 0) }))
@@ -2791,7 +2784,7 @@ export const useFacturacionViewModel = () => {
 
         const effectiveMedioPago = pagoEdicion
             ? pagoEdicion.medioPago
-            : isMixedPayment
+            : isMixedPayment && !sinCobrarAhora
                 ? 'MIXTO'
                 : paymentMethod;
         const paymentDetails = buildPaymentDetails();
@@ -3222,6 +3215,8 @@ export const useFacturacionViewModel = () => {
         });
         setPay(0);
         setPagoPrevioEdicion(null);
+        setNotaTeniaSaldo(false);
+        setNoCobrarAhora(false);
         setChange(0);
         setPaymentMethod('Efectivo');
         setIsMixedPayment(false);
@@ -3245,6 +3240,27 @@ export const useFacturacionViewModel = () => {
         setPorcentajeDetraccion(0);
         setMontoDetraccion(0);
         setCuotas([]);
+        // Nada de la venta anterior pasa a la siguiente: ni el destinatario del
+        // envío, ni la plata, ni las fechas, ni a quién se le atribuye.
+        setEnvioActivo(false);
+        setEnvioData((prev) => envioParaSiguienteVenta(prev));
+        clienteDelEnvioRef.current = null;
+        setAdelanto(0);
+        setAdelantoMetodo('Efectivo');
+        setFechaRecojo('');
+        setDescontarStockNP(false);
+        setDescuentoPctNV(0);
+        setDescuentoSolesNV(0);
+        setDescuentoModoNV('SOLES');
+        setFechaVencimientoCredito('');
+        setFechaEmisionManual(todayStr);
+        setPaymentDetail(pagoDetalleInicial);
+        setAnticipos([]);
+        setVendedorCampoId(null);
+        setQuotationDiscount(0);
+        setQuotationAdvance(0);
+        setQuotationPaymentType('CONTADO');
+        pedidoTiendaOrigenRef.current = null;
         setTimeout(() => getSerieAndCorrelativeByReceipt(auth?.empresa?.id, siguienteTipoDoc), 1000);
         // Re-fetch products so the POS catalog reflects the updated stock after the sale
         const refreshParams: any = { page, limit };
@@ -3418,6 +3434,7 @@ export const useFacturacionViewModel = () => {
         opGravadaAdjusted, igvAdjusted, opExoneradaAdjusted, opInafectaAdjusted, finalDiscount, totalInWords,
         montoRecibido, vueltoCalculado, faltanteEfectivo, isCashPayment,
         pagoPrevio, montoACobrar, montoADevolver, pagoEdicion,
+        notaTeniaSaldo, noCobrarAhora, setNoCobrarAhora, sinCobrarAhora,
 
         // References & Inputs
         serie, setSerie,

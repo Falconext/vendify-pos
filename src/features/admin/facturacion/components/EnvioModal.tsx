@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/Date";
 import Select from "@/components/Select";
 import moment from "moment";
+import { avisosDestinatario, cobroPorDefectoReparto } from "../envioDeVenta";
 import { useRepartidoresStore } from "@/zustand/repartidores";
 import useAlertStore from "@/zustand/alert";
 import { ShalomAgenciaSelect } from "@/components/ShalomAgenciaSelect";
@@ -106,8 +107,15 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
     // la carga, no se le repisa lo que ya escribió.
     useEffect(() => {
         const precarga = precargaDesdeCliente(vm.selectedClient, envioData);
-        if (Object.keys(precarga).length === 0) return;
-        setEnvioData((prev: any) => ({ ...prev, ...precarga }));
+        // El calendario muestra hoy aunque el campo esté vacío: sin esto, "Confirmar"
+        // decía que falta la fecha que se ve en pantalla.
+        const fecha = envioData.fechaEstimada ? {} : { fechaEstimada: moment().format('YYYY-MM-DD') };
+        // El reparto propio se conserva entre ventas, así que nadie vuelve a tocar
+        // el courier: el tipo de venta de ESTA venta se decide acá.
+        const cobro = envioData.transportista === 'PROPIOS' && !envioData.tipoVentaReparto
+            ? cobroPorDefectoReparto(vm.formValues?.medioPago === 'Crédito' ? Number(vm.totalCredito || 0) : 0, envioData.formaPagoCobro)
+            : {};
+        setEnvioData((prev: any) => ({ ...prev, ...fecha, ...cobro, ...precarga }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -139,13 +147,7 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
         if (envioData.tipoEnvio !== 'DOMICILIO') set('tipoEnvio', 'DOMICILIO');
         // Tipo de venta por defecto según lo que quede por cobrar.
         if (!envioData.tipoVentaReparto) {
-            if (saldoVenta > 0.009) {
-                set('tipoVentaReparto', 'CONTRAENTREGA');
-                if (!envioData.formaPagoCobro || envioData.formaPagoCobro === 'NO_COBRAR') set('formaPagoCobro', 'EFECTIVO');
-            } else {
-                set('tipoVentaReparto', 'SOLO_ENTREGA');
-                set('formaPagoCobro', 'NO_COBRAR');
-            }
+            setEnvioData((prev: any) => ({ ...prev, ...cobroPorDefectoReparto(saldoVenta, envioData.formaPagoCobro) }));
         }
     };
     const inputClass = (field: keyof EnvioValidationErrors) => `${inp} ${errors[field] ? invalidInp : ''}`;
@@ -718,6 +720,13 @@ export function EnvioModal({ vm, onClose }: { vm: any; onClose: () => void }) {
                         </div>
                     )}
                 </div>
+
+                {avisosDestinatario(envioData, vm.selectedClient).length > 0 && (
+                    <div data-testid="envio-aviso-destinatario" className="mx-6 mb-2 flex-shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200">
+                        {avisosDestinatario(envioData, vm.selectedClient).map((t) => <p key={t}>{t}</p>)}
+                        <p className="mt-0.5 font-normal">Si no es a propósito, corrígelo antes de confirmar.</p>
+                    </div>
+                )}
 
                 {/* Footer */}
                 <div className="px-6 pb-6 pt-3 flex gap-3 flex-shrink-0 border-t border-slate-100 dark:border-slate-800">
