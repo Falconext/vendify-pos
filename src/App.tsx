@@ -70,6 +70,7 @@ import ResumenNegocio from './pages/admin/ecommerce/ResumenNegocio'
 import ComprasIndex from './pages/admin/compras/Index'
 import ProveedoresPage from './pages/admin/compras/Proveedores'
 import OrdenesCompraPage from './pages/admin/compras/OrdenesCompra'
+import DolarMargenesPage from './features/admin/compras/dolar-margenes/DolarMargenesView'
 import GuiaRemision from './pages/admin/guia-remision/GuiaRemision'
 import LibroVentas from './pages/admin/sire/LibroVentas'
 import LibroCompras from './pages/admin/sire/LibroCompras'
@@ -151,6 +152,7 @@ function App() {
           <Route path="compras" element={<ComprasIndex />} />
           <Route path="compras/proveedores" element={<ProveedoresPage />} />
           <Route path="compras/ordenes" element={<OrdenesCompraPage />} />
+          <Route path="compras/dolar-margenes" element={<DolarMargenesPage />} />
           <Route path="guia-remision" element={<GuiaRemision />} />
           <Route path="facturacion/guia-remision" element={<GuiaRemision />} />
           <Route path="contabilidad" element={<Navigate to="/administrador/contabilidad/reporte" replace />} />

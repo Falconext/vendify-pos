@@ -16,6 +16,7 @@ import ProductPriceListsPanel from './ProductPriceListsPanel';
 import { ProductVariantsManager } from './ProductVariantsManager';
 import { ProductFinancialAnalysis } from './ProductFinancialAnalysis';
 import { tipoCambioService } from '@/services/tipoCambio.service';
+import CostoReposicionProducto from './CostoReposicionProducto';
 
 const afectaciones = [
     { id: "10", value: "Gravado - Operación Onerosa" },
@@ -147,6 +148,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
     const moneda = ((formValues as any)?.moneda === 'USD') ? 'USD' : 'PEN';
     const simbolo = moneda === 'USD' ? '$' : 'S/';
     const [listasPrecioOpen, setListasPrecioOpen] = useState(false);
+    const productoIdActual = Number((formValues as any)?.productoId) || 0;
     const setMoneda = (m: 'PEN' | 'USD') => setFormValues({ ...formValues, moneda: m } as any);
     const [tcVenta, setTcVenta] = useState<number | null>(null);
     useEffect(() => {
@@ -1231,6 +1233,12 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                                                     </div>
                                                 )}
                                             </div>
+                                            {isEdit && productoIdActual > 0 && (
+                                                <CostoReposicionProducto
+                                                    productoId={productoIdActual}
+                                                    onUsarPrecio={(precioSugerido) => setFormValues({ ...formValues, precioUnitario: precioSugerido } as any)}
+                                                />
+                                            )}
                                             {/* Desglose IGV del costo (referenciado al costo de venta) */}
                                             {esGravado && costo > 0 && (
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
