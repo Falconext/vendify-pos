@@ -1277,7 +1277,7 @@ export default function ModaProductoDetalle() {
       </main>
 
       {/* ── Footer ── */}
-      <ModaFooter tiendaNombre={tiendaNombre} />
+      <ModaFooter tienda={tienda} slug={slug} tiendaNombre={tiendaNombre} />
 
       {/* ── Cart ── */}
       <ModaCartModal

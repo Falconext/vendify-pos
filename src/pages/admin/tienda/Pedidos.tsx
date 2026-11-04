@@ -10,6 +10,7 @@ import {
   ESTADOS_ENVIO,
   PedidoTiendaAdmin,
   usePedidosViewModel,
+  type FiltroSedePedidos,
 } from '@/features/admin/tienda/usePedidosViewModel';
 import { PedidoDetalleDrawer } from './PedidoDetalleDrawer';
 import ModalNotaVentaPedido from './ModalNotaVentaPedido';
@@ -19,6 +20,9 @@ import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
 import { get } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '@/zustand/auth';
+import { esDeOtraSede } from '@/features/admin/tienda/sedePedido';
+import ModalPedidoOtraSede from './ModalPedidoOtraSede';
 
 const money = (value: number) => `S/ ${value.toFixed(2)}`;
 
@@ -29,6 +33,18 @@ const formatDate = (value: string) => new Date(value).toLocaleString('es-PE', {
 const inputBase = 'h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-[#0F172A] dark:text-white';
 
 const HEADER_COLS = ['#', 'Fecha', 'Cliente', 'Vendedor', 'Estado entrega', 'Agencia envío', 'Estado envío', 'Total', 'Pagado', 'Por pagar', 'Estado pago', 'Acciones'];
+// Con varias sedes, la sede va después del cliente.
+const HEADER_COLS_SEDE = [...HEADER_COLS.slice(0, 3), 'Sede', ...HEADER_COLS.slice(3)];
+
+function SedeBadge({ pedido }: { pedido: PedidoTiendaAdmin }) {
+  return pedido.sede ? (
+    <span className="inline-flex max-w-[140px] items-center gap-1 truncate rounded-md border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:border-violet-900/40 dark:bg-violet-900/20 dark:text-violet-300" title={pedido.sede.nombre}>
+      <Icon icon="solar:map-point-linear" className="h-3 w-3 flex-none" />{pedido.sede.nombre}
+    </span>
+  ) : (
+    <span className="inline-flex rounded-md border border-dashed border-gray-200 px-2 py-0.5 text-[11px] text-gray-400 dark:border-slate-700" title="Se elige al generar la nota de venta">Sin sede</span>
+  );
+}
 
 const selCls = '!h-9 !rounded-xl !border-gray-200 dark:!border-slate-700 !bg-white dark:!bg-slate-800 !px-2 !py-0 !text-xs !shadow-none !text-gray-700 dark:!text-white';
 
@@ -141,6 +157,11 @@ export default function PedidosTienda() {
   // Menú de acciones: un solo menú abierto, anclado al botón ⋮ de la fila.
   const [menu, setMenu] = useState<{ pedido: PedidoTiendaAdmin; anchor: HTMLElement } | null>(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  // Pedido de otra sede que se quiso abrir en el punto de venta.
+  const [otraSede, setOtraSede] = useState<{ pedido: PedidoTiendaAdmin; tipo: 'BOLETA' | 'FACTURA' | 'NV' } | null>(null);
+  const sedeActiva = useAuthStore((s) => s.sedeActiva);
+  const sedesUsuario = useAuthStore((s) => s.auth?.sedes);
+  const variasSedes = vm.sedes.length > 1;
 
   // Llegada desde el Panel de ventas ("Ver / gestionar pedido"): ?codigo=PT-… →
   // se filtra por ese código y se abre su detalle en cuanto carguen los pedidos.
@@ -157,7 +178,7 @@ export default function PedidosTienda() {
     setSelectedPedido(pedido);
   }, [codigoParam, vm.loading, vm.pedidos, vm.setBusqueda]);
 
-  const navegarComprobantePedido = (pedido: PedidoTiendaAdmin, defaultType: 'BOLETA' | 'FACTURA' | 'NV') => {
+  const abrirEnPos = (pedido: PedidoTiendaAdmin, defaultType: 'BOLETA' | 'FACTURA' | 'NV') => {
     navigate('/administrador/facturacion/nuevo', {
       state: {
         defaultType,
@@ -166,6 +187,18 @@ export default function PedidosTienda() {
         pedidoTiendaData: pedido,
       },
     });
+  };
+
+  /**
+   * El punto de venta emite en la sede activa: si el pedido es de otra, el
+   * backend lo rechaza (409). Se avisa antes y se ofrece cambiar de sede.
+   */
+  const navegarComprobantePedido = (pedido: PedidoTiendaAdmin, defaultType: 'BOLETA' | 'FACTURA' | 'NV') => {
+    if (esDeOtraSede(pedido.sedeId, sedeActiva?.id)) {
+      setOtraSede({ pedido, tipo: defaultType });
+      return;
+    }
+    abrirEnPos(pedido, defaultType);
   };
 
   const navegarGuiaPedido = (pedido: PedidoTiendaAdmin) => {
@@ -290,6 +323,7 @@ export default function PedidosTienda() {
           <div className="text-[11px] text-gray-400">{pedido.clienteTelefono || pedido.codigoSeguimiento}</div>
         </div>
       ),
+      ...(variasSedes ? { 'Sede': <SedeBadge pedido={pedido} /> } : {}),
       'Vendedor': <SellerCell nombre={pedido.vendedorNombre} />,
       'Estado entrega': (
         <div onClick={(e) => e.stopPropagation()} className="w-[200px]">
@@ -344,6 +378,7 @@ export default function PedidosTienda() {
     vm.fechaDesde,
     vm.fechaHasta,
     vm.filtroEstado,
+    vm.filtroSede,
   ].filter(Boolean).length;
 
   return (
@@ -380,7 +415,7 @@ export default function PedidosTienda() {
               <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
             </button>
           </div>
-          <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} gap-4 md:grid md:grid-cols-2 xl:grid-cols-[1.4fr_0.7fr_0.7fr_auto]`}>
+          <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} gap-4 md:grid md:grid-cols-2 ${variasSedes ? 'xl:grid-cols-[1.3fr_0.7fr_0.7fr_0.8fr_auto]' : 'xl:grid-cols-[1.4fr_0.7fr_0.7fr_auto]'}`}>
             <label className="space-y-2">
               <span className="text-sm text-gray-600 dark:text-gray-300">Buscar pedido</span>
               <div className="relative">
@@ -410,12 +445,27 @@ export default function PedidosTienda() {
                 right
               />
             </div>
+            {variasSedes && (
+              <label className="space-y-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Sede</span>
+                <select
+                  data-testid="filtro-sede"
+                  value={vm.filtroSede}
+                  onChange={(e) => vm.setFiltroSede(e.target.value as FiltroSedePedidos)}
+                  className={`${inputBase} w-full`}
+                >
+                  <option value="">Todas las sedes</option>
+                  {vm.sedes.map((s) => <option key={s.id} value={String(s.id)}>{s.nombre}</option>)}
+                  <option value="sin-sede">Sin sede (por asignar)</option>
+                </select>
+              </label>
+            )}
             <div className="flex items-end">
               <Button
                 type="button"
                 variant="outline-default"
                 className="h-11 w-full rounded-xl px-4 xl:w-auto"
-                onClick={() => { vm.setBusqueda(''); vm.setFechaDesde(''); vm.setFechaHasta(''); vm.setFiltroEstado(''); }}
+                onClick={() => { vm.setBusqueda(''); vm.setFechaDesde(''); vm.setFechaHasta(''); vm.setFiltroEstado(''); if (vm.filtroSede) vm.setFiltroSede(''); }}
               >
                 <Icon icon="solar:refresh-bold" className="h-4 w-4" />
                 Limpiar
@@ -464,6 +514,7 @@ export default function PedidosTienda() {
                   <PagoBadge pedido={pedido} />
                 </div>
 
+                {variasSedes && <div className="mb-3"><SedeBadge pedido={pedido} /></div>}
                 <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-slate-900/60">
                   <SellerCell nombre={pedido.vendedorNombre} />
                   <span className="truncate text-xs font-semibold text-gray-500">{pedido.clienteTelefono || pedido.codigoSeguimiento}</span>
@@ -527,7 +578,7 @@ export default function PedidosTienda() {
         <div className="hidden md:block">
           <DataTable
             bodyData={bodyData}
-            headerColumns={HEADER_COLS}
+            headerColumns={variasSedes ? HEADER_COLS_SEDE : HEADER_COLS}
             pageSize={20}
           />
         </div>
@@ -572,11 +623,31 @@ export default function PedidosTienda() {
       {/* Pedido → nota de venta con despacho en un clic */}
       <ModalNotaVentaPedido
         pedido={nvPedido}
+        sedes={vm.sedes}
+        sedeActivaId={sedeActiva?.id ?? null}
         onClose={() => setNvPedido(null)}
         onRevisarEnPos={(p) => { setNvPedido(null); navegarComprobantePedido(p, 'NV'); }}
         onVerNota={(id) => { setNvPedido(null); setVerNotaId(id); }}
         onGenerada={() => void vm.recargar()}
       />
+
+      {otraSede && otraSede.pedido.sede && (
+        <ModalPedidoOtraSede
+          sedePedido={otraSede.pedido.sede}
+          sedeActiva={sedeActiva?.nombre ?? 'otra sede'}
+          puedeCambiar={!!sedesUsuario?.some((s) => s.id === otraSede.pedido.sedeId && s.activo !== false)}
+          onCambiar={async () => {
+            await useAuthStore.getState().selectSede(Number(otraSede.pedido.sedeId));
+            if (useAuthStore.getState().sedeActiva?.id !== otraSede.pedido.sedeId) return false;
+            const { pedido, tipo } = otraSede;
+            setOtraSede(null);
+            abrirEnPos(pedido, tipo);
+            return true;
+          }}
+          onGenerarNota={() => { const p = otraSede.pedido; setOtraSede(null); setNvPedido(p); }}
+          onCerrar={() => setOtraSede(null)}
+        />
+      )}
 
       <ModalDetalleComprobante comprobanteId={verNotaId} isOpen={verNotaId !== null} onClose={() => setVerNotaId(null)} />
 

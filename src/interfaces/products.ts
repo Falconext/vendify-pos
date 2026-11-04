@@ -15,6 +15,12 @@ export type ICodigoBarraExtra = {
   imagenUrlDisplay?: string | null
 }
 
+/** Categoría en su forma corta (id + nombre), como la devuelve el backend. */
+export type ICategoriaResumen = {
+  id: number
+  nombre: string
+}
+
 export type IProduct = {
   id: number
   codigo: string
@@ -72,6 +78,11 @@ export type IProduct = {
     nombre: string
     empresaId: number
   }
+  /**
+   * Otras categorías donde también aparece (la principal es `categoria`).
+   * Ausente = backend anterior a la función: no se muestra el campo.
+   */
+  categoriasExtra?: ICategoriaResumen[]
   marca?: {
     id: number
     nombre: string
@@ -117,6 +128,8 @@ export type IFormProduct = {
   categoriaNombre: string
   disponibleParaVenta: boolean
   categoriaId: string | number | null,
+  /** Otras categorías (ids) donde también aparece. No incluye la principal. */
+  categoriasExtraIds?: number[],
   marcaNombre?: string
   marcaId?: number | null,
   afectacionNombre: string

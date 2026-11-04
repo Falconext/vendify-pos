@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { BarcodeScannerInput } from '@/components/BarcodeScannerInput';
@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import Select from '@/components/Select';
 import InputPro from '@/components/InputPro';
 import { ICategory } from '@/interfaces/categories';
+import { opcionesCategorias } from '@/utils/categoriasArbol';
 import { IBrand } from '@/zustand/brands';
 import { GrupoModificador } from '@/zustand/modificadores';
 import { useProductModalViewModel } from '../useProductModalViewModel';
@@ -17,6 +18,8 @@ import { ProductVariantsManager } from './ProductVariantsManager';
 import { ProductFinancialAnalysis } from './ProductFinancialAnalysis';
 import { tipoCambioService } from '@/services/tipoCambio.service';
 import CostoReposicionProducto from './CostoReposicionProducto';
+import { ProductCategoriasExtra } from './ProductCategoriasExtra';
+import type { ICategoriaResumen } from '@/interfaces/products';
 
 const afectaciones = [
     { id: "10", value: "Gravado - Operación Onerosa" },
@@ -60,6 +63,27 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             setSavingCat(false);
         }
     };
+
+    // "Otras categorías". Sin el arreglo en el formulario (backend anterior o
+    // producto que no lo trajo) el campo no se muestra ni se envía.
+    const categoriasExtraIds = (formValues as any)?.categoriasExtraIds as number[] | undefined;
+    const setCategoriasExtra = useCallback(
+        (ids: number[]) => setFormValues((prev: any) => ({ ...prev, categoriasExtraIds: ids })),
+        [setFormValues],
+    );
+    const crearCategoriaExtra = useCallback(async (nombre: string): Promise<ICategoriaResumen | null> => {
+        const creada: any = await (addCategory as any)({ nombre });
+        return creada?.id ? { id: Number(creada.id), nombre: creada.nombre ?? nombre } : null;
+    }, [addCategory]);
+    const campoCategoriasExtra = Array.isArray(categoriasExtraIds) ? (
+        <ProductCategoriasExtra
+            categories={(categories ?? []) as ICategoriaResumen[]}
+            categoriaPrincipalId={formValues?.categoriaId}
+            value={categoriasExtraIds}
+            onChange={setCategoriasExtra}
+            onCreate={crearCategoriaExtra}
+        />
+    ) : null;
 
     const handleCrearMarca = async () => {
         const nombre = newBrandName.trim();
@@ -519,9 +543,10 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
 
                     <Select defaultValue={formValues?.unidadMedidaNombre} error={""} isSearch options={unitOfMeasure?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="unidadMedidaId" name="unidadMedidaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Unidad de medida" withLabel />
                     <div>
-                        <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
+                        <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={opcionesCategorias(categories as ICategory[])} id="categoriaId" name="categoriaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoría" withLabel />
                         {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
                     </div>
+                    {campoCategoriasExtra}
                     <div>
                         <Select defaultValue={formValues.marcaNombre} error={""} isSearch options={brands?.map((item: IBrand) => ({ id: item?.id, value: `${item?.nombre}` }))} id="marcaId" name="marcaNombre" value="" onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Laboratorio/Marca" withLabel />
                         {renderInlineCreate(creatingBrand, setCreatingBrand, newBrandName, setNewBrandName, savingBrand, handleCrearMarca, 'Nueva marca', 'Nombre de la marca')}
@@ -818,7 +843,7 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
             </div>
             <div className={`col-span-1 md:col-span-1 ${isRestaurante ? '' : 'flex gap-2'} w-full`}>
                 <div className="w-full">
-                    <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={categories?.map((item: ICategory) => ({ id: item?.id, value: `${item?.nombre}` }))} id="categoriaId" name="categoriaNombre" value={formValues?.categoriaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoria" />
+                    <Select defaultValue={formValues.categoriaNombre} error={""} isSearch options={opcionesCategorias(categories as ICategory[])} id="categoriaId" name="categoriaNombre" value={formValues?.categoriaNombre || ""} onChange={handleChangeSelect} icon="clarity:box-plot-line" isIcon label="Categoria" />
                     {renderInlineCreate(creatingCat, setCreatingCat, newCatName, setNewCatName, savingCat, handleCrearCategoria, 'Nueva categoría', 'Nombre de la categoría')}
                 </div>
                 {!isRestaurante && (
@@ -828,6 +853,9 @@ export const ProductBasicForm: React.FC<{ vm: ViewProps }> = ({ vm }) => {
                     </div>
                 )}
             </div>
+            {campoCategoriasExtra && (
+                <div className="col-span-1 md:col-span-2">{campoCategoriasExtra}</div>
+            )}
 
 
 

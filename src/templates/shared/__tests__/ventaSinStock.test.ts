@@ -6,7 +6,7 @@
  * backend —el pedido se habría aceptado— pero las plantillas pintaban
  * "Agotado" por su cuenta, sin mirarlo nunca.
  */
-import { recordarVentaSinStock, aceptaVentaSinStock, sinStock } from '../ventaSinStock';
+import { recordarVentaSinStock, aceptaVentaSinStock, sinStock, STOCK_NO_VENDIBLE } from '../ventaSinStock';
 
 describe('Tienda normal (no acepta pedidos agotados)', () => {
   beforeEach(() => { recordarVentaSinStock({ tiendaVentaSinStock: false }); });
@@ -31,9 +31,15 @@ describe('Tienda normal (no acepta pedidos agotados)', () => {
 describe('Tienda por encargo (acepta pedidos agotados)', () => {
   beforeEach(() => { recordarVentaSinStock({ tiendaVentaSinStock: true }); });
 
-  it('nunca se muestra agotado, aunque el stock sea cero o negativo', () => {
+  it('nunca se muestra agotado, aunque el stock sea cero', () => {
     expect( sinStock(0)).toBe(false);
-    expect( sinStock(-10)).toBe(false);
+  });
+
+  it('lo que no se vende en la sede (stock negativo) se bloquea igual', () => {
+    // El interceptor de la sede deja `vendible: false` como STOCK_NO_VENDIBLE
+    // y los negativos vendibles como 0: negativo ya solo significa "no vendible".
+    expect(sinStock(STOCK_NO_VENDIBLE)).toBe(true);
+    expect(sinStock(-10)).toBe(true);
   });
 
   it('tampoco frena una presentación grande', () => {

@@ -147,8 +147,23 @@ export default function Catalogo() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams.get('category')]);
 
+    // Igual con búsqueda, marca y orden: un enlace del menú a ?search=… u
+    // ?sort=… estando ya en el catálogo debe aplicarse sin recargar.
     useEffect(() => {
-        const params = new URLSearchParams();
+        const q = searchParams.get('search') || '';
+        setSearch(prev => (prev.trim() === q ? prev : q));
+        const b = searchParams.get('brand');
+        const marcas = b ? b.split(',').map(s => s.trim()).filter(Boolean) : [];
+        setSelectedMarcas(prev => (prev.join('||') === marcas.join('||') ? prev : marcas));
+        setSortBy(searchParams.get('sort') || 'relevance');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams.get('search'), searchParams.get('brand'), searchParams.get('sort')]);
+
+    useEffect(() => {
+        // Se parte de la URL actual para no perder lo que no es un filtro
+        // (vista previa de plantilla, ?wholesale, …).
+        const params = new URLSearchParams(window.location.search);
+        ['search', 'brand', 'category', 'minPrice', 'maxPrice', 'sort', 'attrs'].forEach(k => params.delete(k));
         const normalizedSearch = search.trim();
 
         if (normalizedSearch) params.set('search', normalizedSearch);
@@ -297,6 +312,11 @@ export default function Catalogo() {
 
         if (sortBy === 'name-asc') {
             return list.sort((a, b) => String(a.descripcion || '').localeCompare(String(b.descripcion || '')));
+        }
+
+        // "Novedades": lo último que se cargó primero.
+        if (sortBy === 'new' || sortBy === 'novedades' || sortBy === 'newest') {
+            return list.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
         }
 
         return list;

@@ -14,7 +14,7 @@ import { buildVariantCartItem, findApiculturaVariant, getApiculturaVariantData }
 import { honeyCard, honeyEase, honeyHover, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from '@/templates/apicultura/motion';
 import ProductoVideo from '@/components/tienda/ProductoVideo';
 
-import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
+import { recordarVentaSinStock, sinStock, noVendible } from '@/templates/shared/ventaSinStock';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 const honeyPattern = {
   backgroundImage:
@@ -377,7 +377,7 @@ export default function ApiculturaProductoDetalle() {
               {categoryName && <div className="bg-[#F8F8F8] p-4"><span className="block text-gray-400">Categoría</span><span className="text-black">{categoryName}</span></div>}
               {brandName && <div className="bg-[#F8F8F8] p-4"><span className="block text-gray-400">Marca</span><span className="text-black">{brandName}</span></div>}
               {selectedVariant?.label && <div className="bg-[#F8F8F8] p-4"><span className="block text-gray-400">Variante</span><span className="text-black">{selectedVariant.label}</span></div>}
-              <div className="bg-[#F8F8F8] p-4"><span className="block text-gray-400">Disponibilidad</span><span className="text-black">{stock} unidades</span></div>
+              <div className="bg-[#F8F8F8] p-4"><span className="block text-gray-400">Disponibilidad</span><span className="text-black">{noVendible(stock) ? 'No disponible' : `${stock} unidades`}</span></div>
             </div>
           </div>
         </motion.section>

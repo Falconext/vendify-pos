@@ -348,7 +348,7 @@ export default function ModaCheckoutPage({
         </div>
       </div>
 
-      <ModaFooter tiendaNombre={tienda?.nombreComercial || tienda?.nombre || 'Styliq'} />
+      <ModaFooter tienda={tienda} slug={slug} tiendaNombre={tienda?.nombreComercial || tienda?.nombre || 'Styliq'} />
 
       {pedidoCreado && (
         <ModaPaymentConfirmationModal

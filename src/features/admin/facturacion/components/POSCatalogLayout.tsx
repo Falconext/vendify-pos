@@ -1,4 +1,5 @@
 import { accionDeTecla } from '../atajosPos';
+import { totalPestanaTodos } from '../catalogoPestanas';
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Pagination from "@/components/Pagination";
@@ -131,6 +132,15 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
         return Math.max(0, Math.min(...stockByItem));
     };
     const esServicio = (item: any) => String(item?.atributosTecnicos?.tipoProducto || '').toUpperCase() === 'SERVICIO';
+    // "Todos" muestra el total real del catálogo, tomado del servidor la última
+    // vez que se pidió sin categoría ni búsqueda. Sumar las pestañas contaba
+    // dos veces al producto que está en varias categorías.
+    const [totalSinFiltro, setTotalSinFiltro] = useState<number | null>(null);
+    useEffect(() => {
+        const sinFiltro = !Number(vm.selectedCategoryId || 0) && !String(vm.searchTerm || '').trim();
+        const total = Number(vm.totalProducts || 0);
+        if (sinFiltro && total > 0) setTotalSinFiltro(total);
+    }, [vm.selectedCategoryId, vm.searchTerm, vm.totalProducts]);
     const categoryFilter = useMemo(() => {
         const visibleCounts = new Map<number, number>();
 
@@ -165,9 +175,15 @@ export const POSCatalogLayout = ({ vm, layout = 'CATALOGO' }: { vm: any; layout?
             .filter((category: any) => category.id > 0 && (category.count > 0 || Number(vm.selectedCategoryId || 0) === category.id))
             .sort((a: any, b: any) => a.name.localeCompare(b.name, 'es'));
 
-        const total = tabs.reduce((sum: number, category: any) => sum + Number(category.count || 0), 0) || Number(vm.totalProducts || vm.catalogItems?.length || 0);
+        const sumaPestanas = tabs.reduce((sum: number, category: any) => sum + Number(category.count || 0), 0);
+        const total = totalPestanaTodos({
+            totalSinFiltro,
+            sinFiltroAhora: !Number(vm.selectedCategoryId || 0) && !String(vm.searchTerm || '').trim(),
+            totalActual: Number(vm.totalProducts || vm.catalogItems?.length || 0),
+            sumaPestanas,
+        });
         return { tabs, total };
-    }, [vm.catalogItems, vm.categories, vm.selectedCategoryId, vm.totalProducts]);
+    }, [vm.catalogItems, vm.categories, vm.selectedCategoryId, vm.totalProducts, vm.searchTerm, totalSinFiltro]);
 
     return (
         <>

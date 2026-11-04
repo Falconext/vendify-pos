@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
+import { productoEnCategoria } from '@/components/tienda/navTienda';
 import MayeHeader from './MayeHeader';
 import MayeHero from './MayeHero';
 import ProductCardMaye from './ProductCardMaye';
@@ -121,7 +122,10 @@ export default function MayeLayout({
     ? featuredSource.filter((product: any) => {
       const productCategory = normalizeFilterValue(getProductCategoryName(product));
       const productSubcategory = normalizeFilterValue(getProductSubcategoryName(product));
-      const categoryMatches = selectedCategory === ALL_VALUE || productCategory === normalizeFilterValue(selectedCategory);
+      // Cuenta también las categorías adicionales del producto.
+      const categoryMatches = selectedCategory === ALL_VALUE
+        || productCategory === normalizeFilterValue(selectedCategory)
+        || productoEnCategoria(product, selectedCategory);
       const subcategoryMatches = selectedSubcategory === ALL_VALUE || productSubcategory === normalizeFilterValue(selectedSubcategory);
       return categoryMatches && subcategoryMatches;
     })

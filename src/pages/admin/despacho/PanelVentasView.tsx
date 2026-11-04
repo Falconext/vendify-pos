@@ -592,6 +592,9 @@ export default function PanelVentasView() {
                         montoPagado: item.total,
                         saldoPendiente: 0,
                         items: pedido?.items || pedido?.detalles || [],
+                        // La sede del pedido: el punto de venta avisa si es otra que la activa.
+                        sedeId: pedido?.sedeId ?? null,
+                        sede: pedido?.sede ?? null,
                     },
                 },
             });

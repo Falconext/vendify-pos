@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import TecnologiaCartModal from '@/components/tienda/TecnologiaCartModal';
 import { ApiculturaFooter, ApiculturaHeader } from './ApiculturaParts';
 import { honeyCard, honeyHover, honeyPage, honeySection, honeyStagger, honeyTap, honeyViewport } from './motion';
+import { useIrEnTienda } from '@/components/tienda/navTienda';
 
 const honeyPattern = {
   backgroundImage:
@@ -53,15 +54,13 @@ export default function ApiculturaContactPage({
   const displayEmail = contact.email || 'Correo no configurado';
   const displayHours = contact.hours || 'Horario no configurado';
 
+  const ir = useIrEnTienda(slug, diseno);
   const go = (page: 'home' | 'catalogo' | 'checkout' | 'contacto') => {
     if (onNavigate) {
       onNavigate(page);
       return;
     }
-    if (page === 'home') window.location.href = `/tienda/${slug}`;
-    if (page === 'catalogo') window.location.href = `/tienda/${slug}/catalogo`;
-    if (page === 'checkout') window.location.href = `/tienda/${slug}/checkout`;
-    if (page === 'contacto') window.location.href = `/tienda/${slug}/contacto`;
+    ir(page === 'home' ? `/tienda/${slug}` : `/tienda/${slug}/${page}`);
   };
 
   return (
@@ -77,7 +76,7 @@ export default function ApiculturaContactPage({
         onSearchSubmit={(event, value) => {
           event.preventDefault();
           const term = value?.trim();
-          if (term) window.location.href = `/tienda/${slug}/catalogo?search=${encodeURIComponent(term)}`;
+          if (term) ir(`/tienda/${slug}/catalogo?search=${encodeURIComponent(term)}`);
         }}
       />
 

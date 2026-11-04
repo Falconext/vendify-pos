@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import UrbanoFavoritesDrawer from '@/components/tienda/UrbanoFavoritesDrawer';
+import { itemsDeMenu, useIrEnTienda, type ItemMenu } from '@/components/tienda/navTienda';
+import { URBANO_MENU } from './menu';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
@@ -31,7 +32,8 @@ export default function UrbanoHeader({
     searchQuery = '',
     setSearchQuery,
     onSearchSubmit, diseno }: UrbanoHeaderProps) {
-    const navigate = useNavigate();
+    // Navega sin recargar y conserva la query de vista previa de plantilla.
+    const navigate = useIrEnTienda(slug, diseno);
     const [isShopHovered, setIsShopHovered] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -129,6 +131,13 @@ export default function UrbanoHeader({
         )).filter(Boolean)
         : [];
 
+    const menu = itemsDeMenu(URBANO_MENU, { diseno: cfg, slug, categorias: categories });
+    const abrirItem = (item: ItemMenu) => {
+        setIsMobileMenuOpen(false);
+        if (item.externo) window.open(item.href!, '_blank', 'noopener,noreferrer');
+        else navigate(item.href!);
+    };
+
     const selectCategory = (category: string) => {
         setIsShopHovered(false);
         setIsMobileMenuOpen(false);
@@ -177,7 +186,9 @@ export default function UrbanoHeader({
                             </span>
                         </div>
 
-                        <button onClick={goCatalog} className="hover:text-black transition-colors">Colecciones</button>
+                        {menu.map((item) => (
+                            <button key={item.key} onClick={() => abrirItem(item)} className="hover:text-black transition-colors">{item.label}</button>
+                        ))}
                     </nav>
 
                     {/* Left: Hamburger (Mobile) */}
@@ -304,7 +315,9 @@ export default function UrbanoHeader({
                                 </button>
                             ))}
                         </div>
-                        <button onClick={() => { setIsMobileMenuOpen(false); goCatalog(); }} className="text-left text-xs font-bold uppercase tracking-[0.15em] text-gray-900 mt-2">Colecciones</button>
+                        {menu.map((item) => (
+                            <button key={`${item.key}-mobile`} onClick={() => abrirItem(item)} className="text-left text-xs font-bold uppercase tracking-[0.15em] text-gray-900 mt-2">{item.label}</button>
+                        ))}
                     </div>
                 </div>
             </div>

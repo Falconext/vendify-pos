@@ -11,6 +11,8 @@ import InputPro from "@/components/InputPro"
 import Button from "@/components/Button"
 import CircularImageUploader from "@/components/CircularImageUploader"
 import apiClient from "@/utils/apiClient"
+import Select from "@/components/Select"
+import { etiquetaCategoria, madresPosibles, ordenarCategorias } from "@/utils/categoriasArbol"
 
 interface IPropsProducts {
     isOpenModal: boolean
@@ -22,7 +24,8 @@ const ModalCategories = ({ isOpenModal, closeModal, setIsOpenModal }: IPropsProd
 
     const initialForm: IFormCategories = {
         categoriaId: 0,
-        nombre: ""
+        nombre: "",
+        padreId: null
     }
 
     const [formValues, setFormValues] = useState(initialForm);
@@ -62,7 +65,8 @@ const ModalCategories = ({ isOpenModal, closeModal, setIsOpenModal }: IPropsProd
     const handleGetCategory = (data: any) => {
         setFormValues({
             categoriaId: data.categoriaId,
-            nombre: data.nombre
+            nombre: data.nombre,
+            padreId: data.padreId ?? null
         })
         setPreviewUrl(data.imagenUrl || null)
         setImageFile(null)
@@ -132,6 +136,8 @@ const ModalCategories = ({ isOpenModal, closeModal, setIsOpenModal }: IPropsProd
         setPreviewUrl(null)
         setImageFile(null)
         setIsEdit(false)
+        // La lista trae la madre de cada una: se recarga para verla en su lugar.
+        getAllCategories({})
     }
 
     const actions = [
@@ -139,13 +145,24 @@ const ModalCategories = ({ isOpenModal, closeModal, setIsOpenModal }: IPropsProd
         { onClick: (row: any) => handleDeleteCategory(row), icon: <Icon icon="solar:trash-bin-trash-bold" width={18} />, tooltip: 'Eliminar', color: 'rose' as const },
     ];
 
-    const categoriesTable = categories?.map((item: any, index: number) => ({
+    // Cada madre seguida de sus subcategorías, sangradas.
+    const categoriesTable = ordenarCategorias(categories ?? []).map((item: any, index: number) => ({
         '#': index + 1,
         categoriaId: item.id,
         nombre: item.nombre,
-        'Nombre': <span className="font-medium tracking-wide">{item.nombre?.toUpperCase()}</span>,
+        padreId: item.padreId ?? null,
+        'Nombre': item.padreId
+            ? <span className="pl-5 font-medium tracking-wide text-gray-600 dark:text-gray-300">↳ {item.nombre?.toUpperCase()}</span>
+            : <span className="font-medium tracking-wide">{item.nombre?.toUpperCase()}</span>,
         imagenUrl: item.imagenUrl,
     }))
+
+    // Una categoría con subcategorías no puede volverse subcategoría (un solo nivel).
+    const tieneHijas = !!formValues.categoriaId && (categories ?? []).some((c: any) => c.padreId === formValues.categoriaId)
+    const opcionesMadre = [
+        { id: '', value: 'Ninguna (categoría principal)' },
+        ...madresPosibles(categories, formValues.categoriaId || undefined).map((c) => ({ id: c.id, value: c.nombre })),
+    ]
 
     const confirmDeleteCategory = () => {
         deleteCategory(formValues)
@@ -167,6 +184,24 @@ const ModalCategories = ({ isOpenModal, closeModal, setIsOpenModal }: IPropsProd
                             isLabel
                             label="Nombre de la categoría"
                         />
+                        <div className="mt-4">
+                            <Select
+                                onChange={(id: any) => setFormValues({ ...formValues, padreId: id ? Number(id) : null })}
+                                label={tieneHijas ? 'Dentro de (tiene subcategorías: queda principal)' : 'Dentro de (opcional)'}
+                                name="padreId"
+                                isSearch
+                                disabled={tieneHijas}
+                                options={opcionesMadre}
+                                error=""
+                                value={opcionesMadre.find(o => o.id === formValues.padreId)?.value ?? 'Ninguna (categoría principal)'}
+                                defaultValue="Ninguna (categoría principal)"
+                            />
+                            {formValues.padreId ? (
+                                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    Quedará como {etiquetaCategoria({ nombre: formValues.nombre || '…', padreId: formValues.padreId }, categories)}
+                                </p>
+                            ) : null}
+                        </div>
                     </div>
 
                     <div className="md:col-span-2 flex justify-end gap-5 mt-5 md:mt-7 relative">

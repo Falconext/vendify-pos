@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useIrEnTienda } from '@/components/tienda/navTienda';
 import { motion } from 'framer-motion';
 import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
@@ -84,7 +84,7 @@ export default function ConstruccionCheckoutPage(props: TemplateCheckoutPageProp
     onSubmit,
   } = props;
 
-  const navigate = useNavigate();
+  const ir = useIrEnTienda(slug, diseno);
   const accent = cp || diseno?.colorPrimario || '#ffb400';
   const storeName = tienda?.nombreComercial || tienda?.nombre || tienda?.razonSocial || 'Ferretería';
   const subtotal = calcularSubtotal();
@@ -103,13 +103,13 @@ export default function ConstruccionCheckoutPage(props: TemplateCheckoutPageProp
     <div className="min-h-screen overflow-x-hidden bg-[#f4f4f4]" style={{ fontFamily: `'${diseno?.tipografia || 'Inter'}', sans-serif` }}>
       <header className="bg-[#111111] text-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <button type="button" onClick={() => navigate(`/tienda/${slug}`)} className="text-left">
+          <button type="button" onClick={() => ir(`/tienda/${slug}`)} className="text-left">
             <HammerLogo storeName={storeName} subtitle={editable(diseno?.construccionLogoSubtitle, 'Herramientas y accesorios')} accent={accent} />
           </button>
           <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-white/60">
-            <button type="button" onClick={() => navigate(`/tienda/${slug}`)} className="hover:text-white">Inicio</button>
+            <button type="button" onClick={() => ir(`/tienda/${slug}`)} className="hover:text-white">Inicio</button>
             <Icon icon="solar:alt-arrow-right-linear" width={14} />
-            <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="hover:text-white">Tienda</button>
+            <button type="button" onClick={() => ir(`/tienda/${slug}/catalogo`)} className="hover:text-white">Tienda</button>
             <Icon icon="solar:alt-arrow-right-linear" width={14} />
             <span style={{ color: accent }}>Checkout</span>
           </div>
@@ -120,7 +120,7 @@ export default function ConstruccionCheckoutPage(props: TemplateCheckoutPageProp
               <Icon icon="solar:shield-check-bold" width={22} />
               {editable(diseno?.construccionCheckoutSecureText, 'Compra segura y pedido directo a tienda')}
             </div>
-            <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="hidden rounded-md bg-white px-5 py-2 text-sm font-black shadow-sm md:inline-flex">
+            <button type="button" onClick={() => ir(`/tienda/${slug}/catalogo`)} className="hidden rounded-md bg-white px-5 py-2 text-sm font-black shadow-sm md:inline-flex">
               {editable(diseno?.construccionCheckoutContinueLabel, 'Seguir comprando')}
             </button>
           </div>
@@ -134,7 +134,7 @@ export default function ConstruccionCheckoutPage(props: TemplateCheckoutPageProp
               <Icon icon="solar:cart-large-minimalistic-linear" width={72} className="mx-auto text-gray-300" />
               <h1 className="mt-5 text-2xl font-black text-[#151515]">Tu carrito está vacío</h1>
               <p className="mt-2 text-sm font-semibold text-gray-500">Agrega productos para iniciar el checkout.</p>
-              <button type="button" onClick={() => navigate(`/tienda/${slug}/catalogo`)} className="mt-7 rounded-md px-6 py-3 text-sm font-black text-[#111]" style={{ background: accent }}>
+              <button type="button" onClick={() => ir(`/tienda/${slug}/catalogo`)} className="mt-7 rounded-md px-6 py-3 text-sm font-black text-[#111]" style={{ background: accent }}>
                 Ver catálogo
               </button>
             </motion.div>

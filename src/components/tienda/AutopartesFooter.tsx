@@ -1,16 +1,36 @@
 import React from 'react';
 import { BRAND } from '@/lib/branding';
 import { Icon } from '@iconify/react';
-import { Link } from 'react-router-dom';
+import { EnlaceTienda, itemsDeMenu } from '@/components/tienda/navTienda';
+import { buildStorePurchaseWhatsappUrl } from '@/utils/storeWhatsapp';
+import { menuAutopartes } from '@/templates/autopartes/menu';
 
 interface Props {
   tienda: any;
   slug: string;
   diseno: any;
+  categories?: any[];
 }
 
-export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
+const linkCls = 'text-xs text-gray-400 hover:text-white transition-colors';
+const limpio = (v: unknown) => String(v ?? '').trim();
+
+export default function AutopartesFooter({ tienda, slug, diseno, categories }: Props) {
   const currentYear = new Date().getFullYear();
+  const cfg = diseno || tienda?.diseno || {};
+  const base = `/tienda/${slug}`;
+  // Solo datos reales de la tienda: lo que no está configurado no se muestra.
+  const telefono = limpio(tienda?.telefono || tienda?.celular || tienda?.whatsappTienda);
+  const email = limpio(tienda?.email || tienda?.correo);
+  const whatsapp = buildStorePurchaseWhatsappUrl(tienda?.whatsappTienda ?? cfg?.whatsappTienda, 'Hola, tengo una consulta.');
+  const redes = [
+    { icon: 'mdi:facebook', label: 'Facebook', url: limpio(tienda?.facebookUrl) },
+    { icon: 'mdi:instagram', label: 'Instagram', url: limpio(tienda?.instagramUrl) },
+    { icon: 'ic:baseline-tiktok', label: 'TikTok', url: limpio(tienda?.tiktokUrl) },
+    { icon: 'mdi:whatsapp', label: 'WhatsApp', url: whatsapp || '' },
+  ].filter((red) => red.url);
+  // Mismos accesos que la barra del header (texto y destino configurables).
+  const menu = itemsDeMenu(menuAutopartes(cfg, categories), { diseno: cfg, slug, categorias: categories });
 
   return (
     <footer className="w-full">
@@ -76,7 +96,7 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
         </div>
 
         <div className="w-full max-w-7xl mx-auto px-4 xl:px-8 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             
             {/* Help Information */}
             <div className="lg:col-span-2 pr-4">
@@ -85,51 +105,44 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
                 <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-red-600"></div>
               </h4>
               <p className="text-gray-400 text-xs leading-relaxed mb-8">
-                Muestra de manera destacada la lista de los más vendidos en la página de inicio de tu sitio web de múltiples vendedores. Esto será lo primero que vean los visitantes.
+                {tienda?.descripcionTienda || 'Muestra de manera destacada la lista de los más vendidos en la página de inicio de tu sitio web de múltiples vendedores. Esto será lo primero que vean los visitantes.'}
               </p>
               
-              <div className="flex flex-col gap-4 mb-8">
-                <a href="#" className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors">
-                  <Icon icon="solar:phone-calling-linear" className="text-xl" />
-                  <span className="text-sm">+900 1175 423 512</span>
-                </a>
-                <a href="#" className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors">
-                  <Icon icon="solar:letter-linear" className="text-xl" />
-                  <span className="text-sm">contacto@tutienda.com</span>
-                </a>
-              </div>
+              {(telefono || email) && (
+                <div className="flex flex-col gap-4 mb-8">
+                  {telefono && (
+                    <a href={`tel:${telefono.replace(/[^\d+]/g, '')}`} className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors">
+                      <Icon icon="solar:phone-calling-linear" className="text-xl" />
+                      <span className="text-sm">{telefono}</span>
+                    </a>
+                  )}
+                  {email && (
+                    <a href={`mailto:${email}`} className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors">
+                      <Icon icon="solar:letter-linear" className="text-xl" />
+                      <span className="text-sm">{email}</span>
+                    </a>
+                  )}
+                </div>
+              )}
 
-              <div className="flex items-center gap-3">
-                <a href="#" className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors">
-                  <Icon icon="mdi:twitter" />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-gray-800 text-gray-400 flex items-center justify-center hover:bg-gray-800 transition-colors">
-                  <Icon icon="mdi:facebook" />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-gray-800 text-gray-400 flex items-center justify-center hover:bg-gray-800 transition-colors">
-                  <Icon icon="mdi:web" />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-gray-800 text-gray-400 flex items-center justify-center hover:bg-gray-800 transition-colors">
-                  <Icon icon="mdi:behance" />
-                </a>
-              </div>
-            </div>
-
-            {/* More About Us */}
-            <div>
-              <h4 className="text-white font-bold text-base mb-6 relative w-max pb-3">
-                Más Sobre Nosotros
-                <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-red-600"></div>
-              </h4>
-              <ul className="flex flex-col gap-3">
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Nuestra Historia Corporativa</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Marcas & Socios</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Nuestras Apps</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Campaña RSC</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Clima Para el Cambio</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Próximos Esfuerzos</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Blog</Link></li>
-              </ul>
+              {redes.length > 0 && (
+                <div className="flex items-center gap-3">
+                  {redes.map((red, i) => (
+                    <a
+                      key={red.icon}
+                      href={red.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={red.label}
+                      className={i === 0
+                        ? 'w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors'
+                        : 'w-8 h-8 rounded-full bg-[#1A1A1A] border border-gray-800 text-gray-400 flex items-center justify-center hover:bg-gray-800 transition-colors'}
+                    >
+                      <Icon icon={red.icon} />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Customer Services */}
@@ -139,12 +152,13 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
                 <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-red-600"></div>
               </h4>
               <ul className="flex flex-col gap-3">
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Mi Cuenta</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Rastrear Tu Pedido</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Programa de Lealtad</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Centro de Ayuda</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Contáctanos</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Preguntas Frecuentes</Link></li>
+                <li><EnlaceTienda href={`${base}/seguimiento`} slug={slug} diseno={cfg} className={linkCls}>Rastrear Tu Pedido</EnlaceTienda></li>
+                <li><EnlaceTienda href={`${base}/checkout`} slug={slug} diseno={cfg} className={linkCls}>Mi Carrito</EnlaceTienda></li>
+                <li>
+                  {whatsapp
+                    ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={linkCls}>Contáctanos</a>
+                    : <EnlaceTienda href={`${base}/contacto`} slug={slug} diseno={cfg} className={linkCls}>Contáctanos</EnlaceTienda>}
+                </li>
               </ul>
             </div>
 
@@ -155,30 +169,12 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
                 <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-red-600"></div>
               </h4>
               <ul className="flex flex-col gap-3">
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Catálogo de Autos</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Tienda de Llantas</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Fluidos y Lubricantes</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Baterías</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Herramientas</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Camiones</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Motocicletas</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Bahía de Eléctricos</Link></li>
-              </ul>
-            </div>
-
-            {/* Policies & Legal */}
-            <div>
-              <h4 className="text-white font-bold text-base mb-6 relative w-max pb-3">
-                Políticas y Legales
-                <div className="absolute bottom-0 left-0 w-8 h-0.5 bg-red-600"></div>
-              </h4>
-              <ul className="flex flex-col gap-3">
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Términos y Condiciones</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Política de Envío</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Política de Privacidad</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Política de Seguridad</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Política de Cookies</Link></li>
-                <li><Link to="#" className="text-xs text-gray-400 hover:text-white transition-colors">Devoluciones y Reembolsos</Link></li>
+                <li><EnlaceTienda href={`${base}/catalogo`} slug={slug} diseno={cfg} className={linkCls}>Catálogo</EnlaceTienda></li>
+                {menu.map((item) => (
+                  <li key={item.key}>
+                    <EnlaceTienda href={item.href!} slug={slug} diseno={cfg} target={item.externo ? '_blank' : undefined} rel={item.externo ? 'noreferrer' : undefined} className={linkCls}>{item.label}</EnlaceTienda>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -188,10 +184,6 @@ export default function AutopartesFooter({ tienda, slug, diseno }: Props) {
             <p className="text-[11px] text-gray-500">
               ©copyright {currentYear} . Diseñado Por <span className="text-white font-bold">{BRAND.name}</span>
             </p>
-            <div className="flex items-center gap-6">
-              <Link to="#" className="text-[11px] text-gray-400 hover:text-white transition-colors">Política de Privacidad</Link>
-              <Link to="#" className="text-[11px] text-gray-400 hover:text-white transition-colors">Términos de Uso</Link>
-            </div>
           </div>
         </div>
       </div>

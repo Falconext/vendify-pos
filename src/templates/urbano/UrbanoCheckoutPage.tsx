@@ -3,7 +3,7 @@ import UrbanoFooter from './UrbanoFooter';
 import PaymentConfirmationModal from '@/components/tienda/PaymentConfirmationModal';
 import ConfirmOrderModal from '@/components/tienda/ConfirmOrderModal';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useIrEnTienda } from '@/components/tienda/navTienda';
 import type { TemplateCheckoutPageProps } from '@/templates/shared/types';
 import { BancoLogo } from '@/components/shared/BancoLogo';
 import { buildStorePurchaseWhatsappUrl, normalizeStoreWhatsapp } from '@/utils/storeWhatsapp';
@@ -47,7 +47,7 @@ export default function UrbanoCheckoutPage({
   showConfirmModal, setShowConfirmModal,
   showPaymentModal, setShowPaymentModal, pedidoCreado, enviarPedido,
 }: TemplateCheckoutPageProps) {
-  const navigate = useNavigate();
+  const navigate = useIrEnTienda(slug, diseno);
   const isPreview = slug === 'preview';
   const storeWhatsappNumber = configPago?.whatsappTienda ?? tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda;
   const safeFormData = {

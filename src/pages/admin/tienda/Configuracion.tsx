@@ -1,4 +1,5 @@
 import { useConfiguracionTiendaViewModel } from '@/features/admin/tienda/useConfiguracionTiendaViewModel';
+import StockTiendaSeccion from '@/features/admin/tienda/StockTiendaSeccion';
 import { Icon } from '@iconify/react';
 import Button from '@/components/Button';
 import InputPro from '@/components/InputPro';
@@ -65,6 +66,18 @@ export default function ConfiguracionTienda() {
           )}
         </div>
       </div>
+
+      {vm.stockTienda.aviso && (
+        <button
+          type="button"
+          onClick={() => document.getElementById('stock-tienda')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-800 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200"
+        >
+          <Icon icon="solar:buildings-2-bold-duotone" className="h-5 w-5 flex-none" />
+          <span className="flex-1">Tienes varias sedes: elige de qué stock vende tu tienda virtual.</span>
+          <Icon icon="solar:alt-arrow-down-linear" className="h-4 w-4 flex-none" />
+        </button>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -241,6 +254,18 @@ export default function ConfiguracionTienda() {
             <InputPro label="Tiempo estimado de preparación (minutos)" name="tiempoPreparacionMin" type="number" value={formData.tiempoPreparacionMin} onChange={handleChange} placeholder="30" isLabel />
           </div>
         </div>
+
+        {/* ── Stock de la tienda virtual (por sede) ── */}
+        <div id="stock-tienda" className="scroll-mt-4" />
+        <StockTiendaSeccion
+          form={vm.stockForm}
+          sedes={vm.stockTienda.sedes}
+          aviso={vm.stockTienda.aviso}
+          error={vm.stockError}
+          guardando={saving}
+          onChange={vm.cambiarStockTienda}
+          onConfirmar={vm.confirmarModoStock}
+        />
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-3 pt-2">

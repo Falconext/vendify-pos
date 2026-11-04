@@ -84,7 +84,8 @@ export default function AutopartesLayout({
   return (
     <div className="min-h-screen bg-[#FAF5F5]" style={{ fontFamily: `'${diseno.tipografia || 'Inter'}', sans-serif` }}>
       {/* Header */}
-      <AutopartesHeader 
+      <AutopartesHeader
+        diseno={diseno}
         tienda={tienda}
         slug={slug}
         cp={cp}
@@ -212,7 +213,7 @@ export default function AutopartesLayout({
         <AutopartesTopSelling cp={cp} diseno={diseno} />
       </div>
 
-      <AutopartesFooter tienda={tienda} slug={slug} diseno={diseno} />
+      <AutopartesFooter tienda={tienda} slug={slug} diseno={diseno} categories={allCategories} />
 
       {getBySlug(slug).length > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto w-max max-w-[95vw]">

@@ -687,6 +687,7 @@ export const FacturacionNuevoView = () => {
                     item={vm.productsInvoice[vm.editingIndex]}
                     onSave={vm.handleSaveEdit}
                     monedaSimbolo={vm.monedaSimbolo}
+                    cantidadOtrasEnMezcla={vm.cantidadMezclaSinLinea(vm.editingIndex)}
                 />
             )}
 

@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import { sinStock } from '@/templates/shared/ventaSinStock';
 
 interface ComboCardProps {
     combo: any;
@@ -9,6 +10,8 @@ interface ComboCardProps {
 export default function ComboCard({ combo, onAddToCart, diseno }: ComboCardProps) {
     const descuento = Math.round(Number(combo.descuentoPorcentaje || 0));
     const ahorro = Number(combo.precioRegular) - Number(combo.precioCombo);
+    // `stockDisponible` llega desde el stock por sede; sin el dato (combos antiguos) no se bloquea.
+    const agotado = combo.stockDisponible !== undefined && sinStock(combo.stockDisponible);
 
     const getBordeRadius = () => {
         switch (diseno.bordeRadius) {
@@ -108,12 +111,13 @@ export default function ComboCard({ combo, onAddToCart, diseno }: ComboCardProps
 
                 {/* Botón Agregar */}
                 <button
-                    onClick={() => onAddToCart(combo)}
-                    className={`w-full text-white py-3 ${btnRadius} font-semibold hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg`}
+                    onClick={() => { if (!agotado) onAddToCart(combo); }}
+                    disabled={agotado}
+                    className={`w-full text-white py-3 ${btnRadius} font-semibold hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100`}
                     style={{ backgroundColor: diseno.colorPrimario || '#f97316' }}
                 >
-                    <Icon icon="mdi:cart-plus" width={20} />
-                    Agregar al carrito
+                    <Icon icon={agotado ? 'mdi:cart-off' : 'mdi:cart-plus'} width={20} />
+                    {agotado ? 'Agotado' : 'Agregar al carrito'}
                 </button>
             </div>
         </div>

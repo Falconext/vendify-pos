@@ -18,7 +18,7 @@ import ShoppingCartModal from '@/components/tienda/ShoppingCartModal';
 import ProductVariantsShopify from '@/components/tienda/ProductVariantsShopify';
 import ProductoVideo from '@/components/tienda/ProductoVideo';
 
-import { recordarVentaSinStock, sinStock } from '@/templates/shared/ventaSinStock';
+import { recordarVentaSinStock, sinStock, noVendible } from '@/templates/shared/ventaSinStock';
 const PROSE_CLASSES = [
   'text-sm text-gray-600 leading-relaxed break-words overflow-hidden w-full',
   '[&_h1]:text-xl [&_h1]:font-black [&_h1]:text-gray-900 [&_h1]:mb-3 [&_h1]:mt-5',
@@ -750,8 +750,8 @@ export default function ProductoDetalle() {
           {/* Details Column */}
           <div className="flex flex-col pt-1 bg-white border border-gray-100 rounded-3xl p-5 md:p-7 shadow-sm">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FFF3E0] text-[#FF9500] font-bold">Disponible</span>
-              <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-bold">Stock: {stockActual}</span>
+              <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FFF3E0] text-[#FF9500] font-bold">{isOutOfStock ? 'Agotado' : 'Disponible'}</span>
+              {!noVendible(stockActual) && <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-bold">Stock: {stockActual}</span>}
             </div>
 
             <p className="text-gray-500 text-sm mb-1 font-medium">{tienda?.nombreComercial || 'Mi Tienda'}</p>

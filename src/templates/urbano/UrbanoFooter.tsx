@@ -41,7 +41,7 @@ export default function UrbanoFooter({ tienda, diseno, slug, categories = [] }: 
     }
     return storeSlug ? `/tienda/${storeSlug}${path}` : '/';
   };
-  const phone = normalizeStoreWhatsapp(tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda);
+  const phone = normalizeStoreWhatsapp(clean(cfg.urbanoFooterPhone) || (tienda?.whatsappTienda ?? tienda?.diseno?.whatsappTienda ?? diseno?.whatsappTienda));
   const email = clean(cfg.urbanoFooterEmail || tienda?.email || tienda?.correo || tienda?.correoPrincipal);
   const whatsapp = phone;
   const contactHref = buildStorePurchaseWhatsappUrl(phone, `Hola, vengo de ${storeName} y quisiera información.`);
