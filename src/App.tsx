@@ -69,6 +69,7 @@ import FinanceDashboard from './pages/admin/finanzas/Dashboard'
 import MisComisionesPage from './pages/admin/mis-comisiones/MisComisionesPage'
 import Campanas from './pages/admin/marketing/Campanas'
 import ResumenNegocio from './pages/admin/ecommerce/ResumenNegocio'
+import AgendaPage from './pages/admin/agenda/Agenda'
 import ComprasIndex from './pages/admin/compras/Index'
 import ProveedoresPage from './pages/admin/compras/Proveedores'
 import OrdenesCompraPage from './pages/admin/compras/OrdenesCompra'
@@ -179,6 +180,8 @@ function App() {
           <Route path="mis-comisiones" element={<MisComisionesPage />} />
           <Route path="mi-negocio/marketing/campanas" element={<Campanas />} />
           <Route path="mi-negocio/resumen" element={<ResumenNegocio />} />
+          {/* Agenda: la página misma avisa si el plan no la incluye. */}
+          <Route path="mi-negocio/agenda" element={<AgendaPage />} />
           <Route path="kardex" element={<KardexIndex />} />
           <Route path="kardex/productos" element={<KardexProductos />} />
           <Route path="kardex/productos/nuevo" element={<ProductoNuevo />} />

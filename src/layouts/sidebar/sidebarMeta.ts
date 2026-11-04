@@ -26,6 +26,12 @@ export interface SubModuleMeta {
   end?: boolean;
 }
 
+/** Mi negocio → Agenda: solo si el plan tiene la característica. */
+export const itemsAgenda = (auth: any): SidebarSubItem[] =>
+  hasPlanFeature(auth, 'tieneAgenda')
+    ? [{ codigo: 'mi-negocio:agenda', nombre: 'Agenda', ruta: '/administrador/mi-negocio/agenda' }]
+    : [];
+
 const isRestaurante = (auth: any) => {
   const r = auth?.empresa?.rubro?.nombre?.toLowerCase() || '';
   return r.includes('restaurante') || r.includes('comida') || r.includes('alimento');
@@ -209,6 +215,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   'mi-negocio': {
     navRoute: () => '/administrador/mi-negocio/resumen',
     pathPrefix: () => '/administrador/mi-negocio',
+    // El módulo "Mi negocio" del menú es `mi-negocio` (no `ecommerce`).
+    extraItems: itemsAgenda,
   },
 
   ecommerce: {
