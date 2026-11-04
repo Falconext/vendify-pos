@@ -1663,6 +1663,7 @@ export default function PanelVentasView() {
                 <ModalHistorialPagos
                     comprobante={toComprobanteObj(historialItem)}
                     onClose={() => setHistorialItem(null)}
+                    onPagoCorregido={() => vm.cargar()}
                 />
             )}
             {detalleCuentaItem?.comprobanteId && (
