@@ -44,7 +44,7 @@ export interface IUsuario {
   empresaId: number;
   estado: 'ACTIVO' | 'INACTIVO';
   permisos?: string[];
-  sedes?: { id: number; nombre: string; codigo: string | null; esPrincipal: boolean }[];
+  sedes?: { id: number; nombre: string; codigo: string | null; esPrincipal: boolean; puedeVender?: boolean }[];
   subModulos?: { id: number; codigo: string; nombre: string; moduloId: number }[];
   comisionGlobal?: number;
   comisionGlobalFija?: number;
@@ -52,6 +52,7 @@ export interface IUsuario {
   // Sede por defecto al loguear (Usuario.sedeId reutilizado).
   sedeId?: number | null;
   puedeAnularComprobantes?: boolean;
+  soloImagenesProductos?: boolean;
 }
 
 export interface IFormUsuario {
@@ -64,11 +65,14 @@ export interface IFormUsuario {
   permisos: string[];
   sedeIds?: number[];
   sedeDefaultId?: number;
+  /** Entre sedeIds, donde entra pero no emite ventas. */
+  sedesSinVenta?: number[];
   subModuloIds?: number[];
   comisionGlobal?: number;
   comisionGlobalFija?: number;
   comisionGlobalVenta?: number;
   puedeAnularComprobantes?: boolean;
+  soloImagenesProductos?: boolean;
 }
 
 export interface IUsersState {

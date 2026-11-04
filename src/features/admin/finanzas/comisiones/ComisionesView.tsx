@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { get, patch } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
+import ModalConfirm from '@/components/ModalConfirm';
 import { usePeriodo } from '../shared/usePeriodo';
 import { PeriodoSelector, PeriodoTitulo } from '../shared/PeriodoSelector';
 
@@ -47,6 +48,9 @@ export default function ComisionesView() {
     const DETALLE_PAGE_SIZE = 15;
     const [pagandoId, setPagandoId] = useState<number | null>(null);
     const alertFn = useAlertStore(s => s.alert);
+    // Vendedor cuya liquidación se va a deshacer (abre la confirmación).
+    const [aRevertir, setARevertir] = useState<VendedorComision | null>(null);
+    const [revirtiendo, setRevirtiendo] = useState(false);
 
     // ── Filtros ───────────────────────────────────────────────────────────────
     const [filtroVendedor, setFiltroVendedor] = useState<number | null>(null);
@@ -105,6 +109,23 @@ export default function ComisionesView() {
             alertFn('Error al marcar comisiones', 'error');
         } finally {
             setPagandoId(null);
+        }
+    };
+
+    // Deshace un "Liquidar" apretado por error: lo PAGADO del vendedor en el
+    // período que se está viendo vuelve a PENDIENTE.
+    const revertirPagado = async () => {
+        if (!aRevertir) return;
+        setRevirtiendo(true);
+        try {
+            await patch(`/comisiones/revertir/${aRevertir.vendedor.id}?${periodo.queryParams()}`, {});
+            alertFn('Liquidación deshecha: las comisiones volvieron a pendiente', 'success');
+            setARevertir(null);
+            fetchData();
+        } catch {
+            alertFn('No se pudo deshacer la liquidación', 'error');
+        } finally {
+            setRevirtiendo(false);
         }
     };
 
@@ -314,6 +335,17 @@ export default function ComisionesView() {
                                                 Pagado
                                             </span>
                                         )}
+                                        {v.totalPagado > 0 && (
+                                            <button
+                                                onClick={() => setARevertir(v)}
+                                                title="Deshacer liquidación"
+                                                aria-label={`Deshacer liquidación de ${v.vendedor.nombre}`}
+                                                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-1"
+                                            >
+                                                <Icon icon="solar:undo-left-round-bold-duotone" />
+                                                <span className="hidden md:inline">Deshacer</span>
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => { setExpandedId(isExpanded ? null : v.vendedor.id); setDetallePage(1); }}
                                             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
@@ -399,6 +431,18 @@ export default function ComisionesView() {
                         );
                     })}
                 </div>
+            )}
+
+            {aRevertir && (
+                <ModalConfirm
+                    isOpenModal={!!aRevertir}
+                    setIsOpenModal={(v: boolean) => { if (!v && !revirtiendo) setARevertir(null); }}
+                    confirmSubmit={revertirPagado}
+                    title="¿Deshacer la liquidación?"
+                    information={`Las comisiones pagadas de ${aRevertir.vendedor.nombre} en ${periodo.label} (${formatCurrency(aRevertir.totalPagado)}) volverán a quedar como pendientes. Úsalo si marcaste el pago por error; después podrás liquidarlas de nuevo.`}
+                    confirmText="Deshacer liquidación"
+                    confirmLoading={revirtiendo}
+                />
             )}
         </div>
     );

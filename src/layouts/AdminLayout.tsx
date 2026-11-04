@@ -132,9 +132,18 @@ export default function AdminLayout() {
   // Almacén con facturación habilitada: además de kardex, permite el módulo de comprobantes.
   const almacenFactura = isAlmacen && sedeActiva?.permiteFacturacion === true
 
+  // Delegado solo para fotos: su única pantalla es Productos; la API rechaza lo demás.
+  const soloFotos = auth?.rol === 'USUARIO_EMPRESA' && Boolean((auth as any)?.soloImagenesProductos)
+  useEffect(() => {
+    if (!soloFotos) return
+    if (!location.pathname.startsWith('/administrador/kardex/productos')) {
+      navigate('/administrador/kardex/productos', { replace: true })
+    }
+  }, [soloFotos, location.pathname, navigate])
+
   // Redireccionar a primer módulo permitido si no tiene acceso a dashboard
   useEffect(() => {
-    if (!auth) return
+    if (!auth || soloFotos) return
     if (location.pathname === '/administrador' && !hasPermission(auth, 'dashboard')) {
       const path = getRedirectPath(auth, location.pathname)
       if (path && path !== location.pathname) {
@@ -555,7 +564,7 @@ export default function AdminLayout() {
                 {planModules.map(({ modulo }) => {
                   // En modo almacén solo mostrar kardex (y comprobantes si la sede habilita facturación)
                   if (isAlmacen && modulo.codigo !== 'kardex' && !(almacenFactura && modulo.codigo === 'comprobantes')) return null;
-                  if (!hasPermission(auth, modulo.codigo)) return null;
+                  if (soloFotos || !hasPermission(auth, modulo.codigo)) return null;
                   const meta = MODULE_META[modulo.codigo];
                   if (meta?.condition && !meta.condition(auth)) return null;
 
@@ -653,7 +662,18 @@ export default function AdminLayout() {
                 })}
 
                 {/* LEGACY: dashboard dashboard no existente en plan (fallback) */}
-                {!planModules.some(m => hasPermission(auth, m.modulo.codigo)) && (
+                {soloFotos && (
+                  <NavLink
+                    onClick={() => { setIsSidebarOpen(false); setNameNavbar('Productos'); }}
+                    to="/administrador/kardex/productos"
+                    className={({ isActive }) => isActive ? theme.activeLink : theme.inactiveLink}
+                    title="Productos"
+                  >
+                    <Icon icon="solar:box-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px]'}`} />
+                    {!isSidebarCollapsed && <span>Productos</span>}
+                  </NavLink>
+                )}
+                {!soloFotos && !planModules.some(m => hasPermission(auth, m.modulo.codigo)) && (
                   <NavLink data-tour="dashboard" onClick={() => { setIsSidebarOpen(false); setNameNavbar('Administrador') }} to="/administrador" end className={({ isActive }) => isActive ? theme.activeLink : theme.inactiveLink} title="Dashboard">
                     <Icon icon="solar:chart-2-linear" className={`${isSidebarCollapsed ? 'text-xl m-0' : 'mr-3 text-[18px]'}`} />
                     {!isSidebarCollapsed && <span>Dashboard</span>}
@@ -662,7 +682,7 @@ export default function AdminLayout() {
 
                 {/* Comisiones — parte del módulo financiero. Una sola entrada;
                     el admin ve además la pestaña "Del equipo" dentro de la página. */}
-                {planTieneFinanzas && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && matchesNavQuery('Comisiones') && (
+                {planTieneFinanzas && !soloFotos && (auth?.rol === 'USUARIO_EMPRESA' || auth?.rol === 'ADMIN_EMPRESA') && matchesNavQuery('Comisiones') && (
                   <NavLink
                     onClick={() => { setIsSidebarOpen(false); setNameNavbar('Comisiones'); }}
                     to="/administrador/mis-comisiones"

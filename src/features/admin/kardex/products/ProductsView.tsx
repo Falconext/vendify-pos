@@ -14,6 +14,7 @@ import ModalCatalog from '@/features/admin/kardex/shared/ModalCatalog';
 import CategoriaInlineSelect, { TEXTOS_MARCA } from './components/CategoriaInlineSelect';
 import ModalAsignarSedes from './components/ModalAsignarSedes';
 import { resumenCategoriasExtra } from './categoriasExtra';
+import ModalEtiquetasBarras from './components/ModalEtiquetasBarras';
 import ModalConfirm from '@/components/ModalConfirm';
 import Pagination from '@/components/Pagination';
 import CardRestaurante from '@/components/productos/CardRestaurante';
@@ -123,6 +124,8 @@ export default function ProductsView() {
     // otra llamada.
     const [desgloseProducto, setDesgloseProducto] = useState<any | null>(null);
     const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
+    // Etiquetas de código de barras: los productos con los que abre el modal.
+    const [etiquetasIds, setEtiquetasIds] = useState<number[]>([]);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     // Filtros activos (para el contador del botón Filtro).
     const filtrosActivos =
@@ -286,6 +289,7 @@ export default function ProductsView() {
                                 color={c}
                                 categories={categoriasConMadre(vm.categories)}
                                 onChange={vm.cambiarCategoria}
+                                disabled={vm.soloImagenes}
                             />
                             {extras && (
                                 <span
@@ -310,6 +314,7 @@ export default function ProductsView() {
                             color={getCatColor(nombre)}
                             categories={vm.brands}
                             onChange={vm.cambiarMarca}
+                            disabled={vm.soloImagenes}
                             textos={TEXTOS_MARCA}
                         />
                     );
@@ -470,6 +475,7 @@ export default function ProductsView() {
                             onDelete={(p) => actions.handleOpenDelete({ ...p, productoId: p.id })}
                             onToggleState={(p) => actions.handleToggleClientState({ ...p, productoId: p.id })}
                             onUploadImage={(p) => { actions.setUploadTarget({ id: p.id, tipo: 'principal' }); vm.uploadImageRef.current?.click(); }}
+                            soloFotos={vm.soloImagenes}
                         />
                         <Pagination
                             data={productsSource}
@@ -594,6 +600,7 @@ export default function ProductsView() {
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                {!vm.soloImagenes && <>
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Precio venta</p>
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' ? '$' : 'S/'} {Number(item?.precioUnitario || 0).toFixed(2)}</p>
@@ -603,6 +610,7 @@ export default function ProductsView() {
                                     {/* El costo siempre está en soles; en productos US$ se muestra el equivalente al TC del día */}
                                     <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">S/ {Number(item?.costoUnitario || item?.costoPromedio || 0).toFixed(2)}{String((item as any)?.moneda || 'PEN').toUpperCase() === 'USD' && tcHoy ? ` (≈ $ ${(Number(item?.costoUnitario || item?.costoPromedio || 0) / tcHoy).toFixed(2)})` : ''}</p>
                                 </div>
+                                </>}
                                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-[#111c44]/60">
                                     <p className="font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Marca</p>
                                     <p className="mt-1 truncate font-bold text-gray-700 dark:text-gray-200">{item?.marca?.nombre || 'Sin marca'}</p>
@@ -650,7 +658,7 @@ export default function ProductsView() {
                     <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Gestiona tu inventario de productos</p>
                 </div>
                 <div className="flex w-full sm:w-auto gap-3">
-                    <button
+                    {!vm.soloImagenes && <button
                         type="button"
                         onClick={() => navigate('/administrador/kardex/productos/nuevo')}
                         className="h-11 w-full sm:w-auto px-4 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/30 hover:brightness-105 transition-all shrink-0"
@@ -658,12 +666,12 @@ export default function ProductsView() {
                     >
                         <Icon icon="solar:add-circle-bold" className="text-lg" />
                         {vm.labels.nuevoBtn}
-                    </button>
+                    </button>}
                 </div>
             </div>
 
             {/* Resumen de Inventario */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
+            {!vm.soloImagenes && <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
                 <InventarioKpiCard
                     icon="solar:box-bold-duotone"
                     label={`Total de ${vm.labels.titulo.toLowerCase()}`}
@@ -680,7 +688,7 @@ export default function ProductsView() {
                     label="Valor total del inventario"
                     value={vm.resumenLoading ? '...' : `S/ ${vm.resumenInventario.totalValorInventario.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 />
-            </div>
+            </div>}
 
             {/* Main Content */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none relative z-0 overflow-hidden">
@@ -896,7 +904,7 @@ export default function ProductsView() {
                             >
                                 <Icon icon="solar:sort-vertical-linear" /> {vm.stockSort === 'asc' ? 'Stock ↑' : vm.stockSort === 'desc' ? 'Stock ↓' : 'Ordenar'}
                             </button>
-                            <div className="ml-auto flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            {!vm.soloImagenes && <div className="ml-auto flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                                 <button type="button" onClick={() => actions.setIsOpenModalCategory(true)} className={TOOLBAR_BTN}>
                                     <Icon icon="solar:tag-bold-duotone" style={{ color: ACCENT }} /> Categorías
                                 </button>
@@ -964,6 +972,13 @@ export default function ProductsView() {
                                                 <Icon icon="solar:file-download-bold" className="mr-2 text-amber-500" width={18} />
                                                 Descargar Modelo (Guía)
                                             </button>
+                                            <button
+                                                onClick={() => { setEtiquetasIds(productsSource.map((p: any) => p.id)); setShowOptionsDropdown(false); }}
+                                                className="w-full flex items-center px-4 py-2.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
+                                            >
+                                                <Icon icon="mdi:barcode" className="mr-2 text-violet-500" width={18} />
+                                                Etiquetas de código de barras
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -976,11 +991,11 @@ export default function ProductsView() {
                                     </button>
                                 )}
                                 {/* Botón "Autocompletar" oculto a pedido del usuario. */}
-                            </div>
+                            </div>}
                         </div>
                         {/* Fila 2: escáner + sede (compactos, sin etiqueta) */}
                         <div className="flex flex-col sm:flex-row gap-2.5">
-                            <BarcodeScannerInput
+                            {!vm.soloImagenes && <BarcodeScannerInput
                                 className="w-full sm:max-w-xs"
                                 inputRef={barcodeRef}
                                 value={barcodeInput}
@@ -988,7 +1003,7 @@ export default function ProductsView() {
                                 onScan={handleBarcodeScan}
                                 loading={barcodeLoading}
                                 placeholder="Escanear código de barras…"
-                            />
+                            />}
                             {vm.isAdmin && vm.esPrincipal && (
                                 <div className="w-full sm:w-52">
                                     <Select
@@ -1130,6 +1145,10 @@ export default function ProductsView() {
                                     <button type="button" onClick={() => { actions.setUploadTarget({ id: rowBase.id, tipo: 'principal' }); vm.uploadImageRef.current?.click(); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
                                         <Icon icon="solar:upload-minimalistic-bold" width={16} height={16} /> <span>Subir imagen</span>
                                     </button>
+                                    {!vm.soloImagenes && <>
+                                    <button type="button" onClick={() => { setEtiquetasIds([rowBase.id]); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                        <Icon icon="mdi:barcode" width={16} height={16} /> <span>Etiqueta de código de barras</span>
+                                    </button>
                                     <button type="button" onClick={() => { actions.handleToggleClientState({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
                                         <Icon icon="mdi:power" width={16} height={16} /> <span>{rowBase.estado === 'INACTIVO' ? 'Activar' : 'Desactivar'}</span>
                                     </button>
@@ -1148,12 +1167,21 @@ export default function ProductsView() {
                                     <button type="button" onClick={() => { actions.handleOpenDelete({ ...rowBase, productoId: rowBase.id }); actions.setOpenAccionesId(null); actions.setAnchorEl(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-t border-gray-100 dark:border-white/10">
                                         <Icon icon="solar:trash-bin-trash-bold" width={16} height={16} /> <span>Eliminar</span>
                                     </button>
+                                    </>}
                                 </>
                             );
                         })()}
                     </TableActionMenu>
                 </div>
             </div>
+
+            {etiquetasIds.length > 0 && (
+                <ModalEtiquetasBarras
+                    isOpen
+                    onClose={() => setEtiquetasIds([])}
+                    productoIds={etiquetasIds}
+                />
+            )}
 
             {vm.isOpenModal && <ModalProduct
                 isOpenModal={vm.isOpenModal}

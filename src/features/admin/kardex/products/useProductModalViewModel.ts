@@ -1378,6 +1378,63 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
       });
   };
 
+  // Usuario delegado solo para fotos (Usuario.soloImagenesProductos): la pantalla
+  // muestra solo las imágenes y guarda únicamente por las rutas de imagen; el PUT
+  // del producto lo rechazaría el backend.
+  const soloImagenes =
+    auth?.rol === "USUARIO_EMPRESA" && Boolean((auth as any)?.soloImagenesProductos);
+
+  const guardarSoloImagenes = async () => {
+    const productoId = Number(formValues.productoId);
+    if (!productoId) return;
+    setLoading(true);
+    try {
+      const original = originalImageUrlRef.current?.trim() || undefined;
+      const display =
+        typeof (formValues as any)?.imagenUrlDisplay === "string"
+          ? (formValues as any).imagenUrlDisplay.trim()
+          : undefined;
+      const elegida =
+        typeof previewPrincipal === "string" && previewPrincipal.trim()
+          ? previewPrincipal.trim()
+          : typeof formValues.imagenUrl === "string" && formValues.imagenUrl.trim()
+            ? formValues.imagenUrl.trim()
+            : undefined;
+      if (filePrincipal) {
+        const fd = new FormData();
+        fd.append("file", filePrincipal);
+        const resp = await apiClient.post(`/productos/${productoId}/imagen`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const signed = resp?.data?.signedUrl || resp?.data?.data?.signedUrl;
+        const url =
+          resp?.data?.data?.url || resp?.data?.url || resp?.data?.data?.imagenUrl || resp?.data?.imagenUrl || null;
+        if (url) {
+          setProductImage(productoId, url, signed || url);
+          upsertProductLocal({ id: productoId, imagenUrl: url, imagenUrlDisplay: signed || url } as any);
+        }
+      } else if (elegida && elegida !== original && elegida !== display && !elegida.startsWith("blob:")) {
+        // Foto elegida de la búsqueda/IA (URL externa): se copia a S3.
+        const resp = await apiClient.post(`/productos/${productoId}/imagen-url`, { url: elegida });
+        const signed = resp?.data?.signedUrl || resp?.data?.data?.signedUrl;
+        const url =
+          resp?.data?.data?.url || resp?.data?.url || resp?.data?.data?.imagenUrl || resp?.data?.imagenUrl || elegida;
+        setProductImage(productoId, url, signed || url);
+        upsertProductLocal({ id: productoId, imagenUrl: url, imagenUrlDisplay: signed || url } as any);
+        void aprobarImagenReferencia(elegida);
+      }
+      await uploadProductGallery(productoId);
+      useAlertStore.getState().alert("Fotos guardadas", "success");
+      setIsOpenModal(false);
+    } catch (e: any) {
+      useAlertStore
+        .getState()
+        .alert(e?.response?.data?.message || e?.message || "No se pudieron guardar las fotos", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- Main Submit handler ---
   const handleSubmitProduct = async () => {
     if (!validateForm()) return;
@@ -2096,6 +2153,8 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
   };
 
   return {
+    soloImagenes,
+    guardarSoloImagenes,
     // Properties & State
     sedeStock: props.sedeStock,
     isMobile,

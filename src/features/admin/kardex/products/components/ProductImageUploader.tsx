@@ -133,7 +133,8 @@ export const ProductImageUploader: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           }}
           className="hidden"
         />
-        {previewPrincipal && !loadingImage && (
+        {/* Quitar la principal va por el PUT del producto: el delegado de fotos no lo tiene. */}
+        {previewPrincipal && !loadingImage && !vm.soloImagenes && (
           <div className="mt-2">
             <button
               type="button"
