@@ -20,6 +20,7 @@ import { useClientsStore } from "@/zustand/clients";
 import { useProductsStore } from "@/zustand/products";
 import useAlertStore from "@/zustand/alert";
 import ComprobanteSearchModal from "./ComprobanteSearchModal";
+import { faltaDatoDelConductor, limpiarLicencia } from "./datosConductor";
 
 const MODO_TRANSPORTE_OPTIONS = [
     { id: "01", value: "TRANSPORTE PÚBLICO" },
@@ -850,9 +851,11 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
             }
         }
 
-        if (formValues.modoTransporte === "02" && !formValues.vehiculoM1oL) {
-            if (!formValues.conductorNumDoc || !formValues.vehiculoPlaca) {
-                useAlertStore.getState().alert("Datos del conductor y vehículo requeridos para transporte privado", "warning");
+        // SUNAT rechaza la guía con vehículo propio sin licencia (cód. 2572).
+        if (formValues.modoTransporte === "02" && !formValues.vehiculoM1oL && !isGuiaTransportista) {
+            const falta = faltaDatoDelConductor(formValues);
+            if (falta) {
+                useAlertStore.getState().alert(falta, "warning");
                 return;
             }
         }
@@ -886,7 +889,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
 
             const placaNormalizada = (formValues.vehiculoPlaca || '').trim().toUpperCase();
             const numeroTucNormalizado = (formValues.vehiculoAutorizacion || '').trim().toUpperCase();
-            const licenciaNormalizada = (formValues.conductorLicencia || '').trim().toUpperCase();
+            const licenciaNormalizada = limpiarLicencia(formValues.conductorLicencia);
 
             // Sanitize payload before sending
             const payload = {
@@ -1409,7 +1412,7 @@ const ModalGuiaRemision = ({ isOpen, onClose, onSuccess, guiaToEdit, prefillComp
                                             <InputPro autocomplete="off" label="DNI Conductor" name="conductorNumDoc" value={formValues.conductorNumDoc || ""} onChange={handleChange} isLabel />
                                             <InputPro autocomplete="off" label="Nombres Conductor" name="conductorNombre" value={formValues.conductorNombre || ""} onChange={handleChange} isLabel />
                                             <InputPro autocomplete="off" label="Apellidos Conductor" name="conductorApellidos" value={formValues.conductorApellidos || ""} onChange={handleChange} isLabel />
-                                            <InputPro autocomplete="off" label="Licencia (9 caract.)" name="conductorLicencia" value={(formValues.conductorLicencia || "").toUpperCase()} onChange={handleChange} isLabel />
+                                            <InputPro autocomplete="off" label="N° Licencia (ej. Q43808239)" name="conductorLicencia" value={(formValues.conductorLicencia || "").toUpperCase()} onChange={handleChange} isLabel />
                                         </div>
                                         {/* ── Bloque 2: lo que SUNAT imprime además del vehículo principal ── */}
                                         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
