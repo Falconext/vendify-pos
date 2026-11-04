@@ -46,6 +46,7 @@ import ModalDetalleComprobante from '@/pages/admin/facturacion/ModalDetalleCompr
 import ModalEnviarWhatsApp from '@/pages/admin/facturacion/ModalEnviarWhatsApp';
 import ModalRegistrarPago from '@/pages/admin/facturacion/ModalRegistrarPago';
 import ModalHistorialPagos from '@/pages/admin/facturacion/ModalHistorialPagos';
+import ClaveRetiroCelda from './ClaveRetiroCelda';
 import ModalDetalleCuenta from '@/pages/admin/facturacion/ModalDetalleCuenta';
 import TableActionMenu from '@/components/TableActionMenu';
 import { etiquetaMedioPago, lineasPagoMixto } from '@/utils/pagoMixto';
@@ -111,6 +112,8 @@ const COLUMNAS_CONFIG: { key: string; label: string; soloAdminPrincipal?: boolea
     { key: 'turno', label: 'Turno' },
     { key: 'celular', label: 'Celular' },
     { key: 'agencia', label: 'Agencia' },
+    // Antes solo se veía entrando a Editar despacho, y hay que dársela al cliente.
+    { key: 'clave', label: 'Clave de retiro' },
     { key: 'paq', label: 'Paquetes' },
     { key: 'repartidor', label: 'Repartidor' },
     { key: 'dirigidoA', label: 'Cobro dirigido a' },
@@ -1323,6 +1326,7 @@ export default function PanelVentasView() {
                                 {col('turno') && <th className="px-3 py-3 text-left">Turno</th>}
                                 {col('celular') && <th className="px-3 py-3 text-left">Celular</th>}
                                 {col('agencia') && <th className="px-3 py-3 text-left">Agencia</th>}
+                                {col('clave') && <th className="px-3 py-3 text-left whitespace-nowrap">Clave de retiro</th>}
                                 {col('paq') && <th className="px-3 py-3 text-center whitespace-nowrap">Paq.</th>}
                                 {col('repartidor') && <th className="px-3 py-3 text-left">Repartidor</th>}
                                 <th className="px-3 py-3 text-left">Vendedor</th>
@@ -1507,6 +1511,11 @@ export default function PanelVentasView() {
                                                     {item.estadoDespacho !== 'NO_APLICA' ? (item.agenciaDestino ?? '—') : '—'}
                                                 </td>
                                             )}
+                                            {col('clave') && (
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    <ClaveRetiroCelda clave={item.estadoDespacho !== 'NO_APLICA' ? item.claveEnvio : ''} />
+                                                </td>
+                                            )}
                                             {col('paq') && (
                                                 <td className="px-3 py-2.5 text-xs text-center text-slate-500 dark:text-gray-400">
                                                     {item.estadoDespacho !== 'NO_APLICA' ? (item.nroPaquetes ?? '—') : '—'}
@@ -1663,6 +1672,7 @@ export default function PanelVentasView() {
                 <ModalHistorialPagos
                     comprobante={toComprobanteObj(historialItem)}
                     onClose={() => setHistorialItem(null)}
+                    onPagoCorregido={() => vm.cargar()}
                 />
             )}
             {detalleCuentaItem?.comprobanteId && (

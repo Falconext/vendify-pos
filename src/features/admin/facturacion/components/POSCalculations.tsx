@@ -14,6 +14,7 @@ import { getFormatoImpresionDefault } from "@/utils/formatoImpresion";
 import ComprobantePrintPage from "@/pages/admin/facturacion/comprobanteImprimir";
 import { type FormatoImpresion } from "@/utils/formatoImpresion";
 import { avisosDestinatario } from '../envioDeVenta';
+import ModalCorregirMedioPago from "@/pages/admin/facturacion/ModalCorregirMedioPago";
 import { useAuthStore } from "@/zustand/auth";
 import { ventaBloqueadaEnSede } from "@/utils/ventaEnSede";
 
@@ -260,6 +261,7 @@ export const POSCalculations = ({ vm, printFn, handleOpenNewTab, printFormValues
     const cobroObjetivo: number = enModoSaldo ? Number(vm.montoACobrar ?? 0) : total;
     const aDevolver: number = enModoSaldo ? Number(vm.montoADevolver ?? 0) : 0;
     const sinCobroPendiente = enModoSaldo && cobroObjetivo <= 0;
+    const [corrigiendoPago, setCorrigiendoPago] = useState(false);
     // Efectivo simple con un monto recibido menor a lo que se cobra.
     const faltanteEfectivo: number = Number(vm.faltanteEfectivo ?? 0);
 
@@ -741,6 +743,13 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                 }}
             />
 
+            {corrigiendoPago && vm.editNotaVentaId != null && (
+                <ModalCorregirMedioPago
+                    comprobanteId={vm.editNotaVentaId}
+                    onClose={() => setCorrigiendoPago(false)}
+                    onCorregido={vm.alCorregirMedioPago}
+                />
+            )}
             {/* ── MODAL CONTINUAR PAGO → transición a EMITIDO dentro del mismo modal ── */}
             {(showPago || vm.IsOpenModalSuccessInvoice) && createPortal(
                 <motion.div
@@ -862,6 +871,17 @@ const simboloPreview = vm.monedaSimbolo || 'S/';
                                         ? 'Lo ya pagado cubre el nuevo total. No hay nada que cobrar.'
                                         : `Cobra solo la diferencia. Ingresa lo que el cliente entrega ahora; el vuelto se calcula sobre S/ ${cobroObjetivo.toFixed(2)}.`}
                             </p>}
+                            {vm.editNotaVentaId != null && (
+                                <button
+                                    type="button"
+                                    data-testid="pos-corregir-medio-pago"
+                                    onClick={() => setCorrigiendoPago(true)}
+                                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-violet-700 hover:underline dark:text-violet-300"
+                                >
+                                    <Icon icon="solar:pen-2-linear" />
+                                    ¿Se registró con otro método? Corregir método de pago
+                                </button>
+                            )}
                         </div>
                     )}
                     {!sinCobroPendiente && !sinCobrarAhora && (<>
