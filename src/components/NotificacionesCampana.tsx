@@ -8,6 +8,7 @@ import { useAuthStore } from '@/zustand/auth';
 import { useRubroFeatures } from '@/utils/rubro-features';
 import apiClient from '@/utils/apiClient';
 import { RUTA_DOLAR_MARGENES } from '@/services/dolarMargenes.service';
+import { linkAlAgenda } from '@/features/admin/agenda/AgendaModel';
 
 interface LoteAlerta {
   id: number;
@@ -347,9 +348,12 @@ const NotificacionesCampana: React.FC = () => {
                 const styles = getTipoEstilos(notificacion.tipo || 'INFO', notificacion.titulo);
                 const cleanTitle = notificacion.titulo.replace(/📦|⚠️|❗|✅/g, '').trim();
                 const meta = notificacion.metaData as any;
+                // Recordatorio de la Agenda: abre ese día con el evento.
+                const agendaLink = linkAlAgenda(meta);
                 // "El dólar subió": lleva a Compras → Dólar y márgenes.
                 const dolarLink = meta?.origen === 'tc-margen-riesgo' ? RUTA_DOLAR_MARGENES : null;
-                const sunatLink = dolarLink ?? (meta?.comprobanteId
+                const sunatLink = agendaLink ?? dolarLink
+                  ?? (meta?.comprobanteId
                   ? `/administrador/facturacion/comprobantes`
                   : meta?.guiaId
                   ? `/administrador/guia-remision`
@@ -380,7 +384,7 @@ const NotificacionesCampana: React.FC = () => {
                       <p className="text-[11.5px] text-gray-400 dark:text-slate-500 mt-1">{formatFecha(notificacion.creadoEn)}</p>
                       {sunatLink && (
                         <span className="text-[11.5px] font-semibold mt-1 inline-block" style={{ color: styles.color.includes('red') ? '#dc2626' : styles.color.includes('orange') ? '#ea580c' : '#2563eb' }}>
-                          {dolarLink ? 'Revisar precios →' : 'Ver comprobante →'}
+                          {agendaLink ? 'Ver en la agenda →' : dolarLink ? 'Revisar precios →' : 'Ver comprobante →'}
                         </span>
                       )}
                     </div>

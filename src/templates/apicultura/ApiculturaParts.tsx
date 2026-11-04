@@ -1,3 +1,4 @@
+import EnlaceLibroReclamaciones from '@/components/tienda/EnlaceLibroReclamaciones';
 import type React from 'react';
 import { BRAND } from '@/lib/branding';
 import { motion } from 'framer-motion';
@@ -165,6 +166,7 @@ export function ApiculturaFooter({ tienda, slug, diseno, cp, categories = [] }: 
       </div>
       <div className="border-t border-gray-100 px-5 py-5 text-center text-xs font-semibold text-gray-400">
         © 2026 {name}. Powered by {BRAND.name}.
+        {' '}<EnlaceLibroReclamaciones slug={slug} diseno={diseno} className="ml-3 font-semibold" />
       </div>
     </motion.footer>
   );
