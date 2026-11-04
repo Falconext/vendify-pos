@@ -245,7 +245,7 @@ describe('AgendaView', () => {
       Promise.reject({ response: { status: 403, data: { message: 'Tu plan no incluye la Agenda. Consulta con tu proveedor para activarla.' } } }),
     );
     montar();
-    expect(await screen.findByRole('heading', { name: 'Tu plan no incluye la Agenda' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'No disponible en tu plan' })).toBeInTheDocument();
   });
 
   it('error de red: mensaje y Reintentar', async () => {
@@ -303,7 +303,7 @@ describe('plan sin Agenda', () => {
         <AgendaPage />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('heading', { name: 'Tu plan no incluye la Agenda' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No disponible en tu plan' })).toBeInTheDocument();
     expect(getMock).not.toHaveBeenCalled();
     expect(itemsAgenda(authMock)).toEqual([]);
   });

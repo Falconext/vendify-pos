@@ -10,7 +10,7 @@ export default function AvisoPlanAgenda() {
           <Icon icon="solar:calendar-bold-duotone" width={28} />
         </span>
         <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-400">Agenda</p>
-        <h1 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Tu plan no incluye la Agenda</h1>
+        <h1 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">No disponible en tu plan</h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{MENSAJE_SIN_PLAN}</p>
       </div>
     </div>
