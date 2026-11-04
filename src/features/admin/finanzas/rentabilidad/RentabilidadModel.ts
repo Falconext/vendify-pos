@@ -13,6 +13,19 @@ export interface ProductoSinCosto {
     ingreso: number;
 }
 
+/** Compra sin productos del catálogo (gasolina, comida…), con su marca de "solo IGV". */
+export interface CompraSinProducto {
+    id: number;
+    documento: string;
+    proveedor: string;
+    fecha: string;
+    /** Soles, sin IGV. */
+    neto: number;
+    igv: number;
+    /** La empresa no la pagó: solo se registra por su crédito de IGV. */
+    soloCreditoIgv: boolean;
+}
+
 export interface PnlResponse {
     periodo: {
         mes: number;
@@ -56,6 +69,10 @@ export interface PnlResponse {
     /** IGV de esas compras (crédito fiscal, no gasto). */
     comprasConsumoIgv?: number;
     comprasConsumoCantidad?: number;
+    /** Facturas registradas solo por su crédito de IGV: NO están en los gastos; su IGV sí es crédito. */
+    comprasSoloIgv?: { cantidad: number; igv: number; neto: number };
+    /** Compras sin productos del período (consumo y solo IGV), para revisarlas una por una. */
+    comprasSinProducto?: CompraSinProducto[];
     /** IGV del mes frente a SUNAT: cobrado en electrónicos vs crédito fiscal de compras con factura. */
     igvSunat?: {
         cobrado: number;

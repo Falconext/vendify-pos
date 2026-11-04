@@ -12,8 +12,9 @@ import ProductosView from './productos/ProductosView';
 import MetodosPagoView from './metodos-pago/MetodosPagoView';
 import ConciliacionView from './conciliacion/ConciliacionView';
 import ClientesView from './clientes/ClientesView';
+import ResumenAnualView from './resumen-anual/ResumenAnualView';
 
-type TabId = 'rentabilidad' | 'flujo' | 'comisiones' | 'categorias' | 'productos' | 'clientes' | 'metodosPago' | 'conciliacion';
+type TabId = 'rentabilidad' | 'anual' | 'flujo' | 'comisiones' | 'categorias' | 'productos' | 'clientes' | 'metodosPago' | 'conciliacion';
 
 interface Tab {
     id: TabId;
@@ -28,6 +29,12 @@ const TABS: Tab[] = [
         label: 'Rentabilidad',
         icon: 'solar:chart-2-bold-duotone',
         description: 'P&L — Análisis de ganancias y pérdidas',
+    },
+    {
+        id: 'anual',
+        label: 'Resumen anual',
+        icon: 'solar:calendar-mark-bold-duotone',
+        description: 'Ganancia de cada mes del año, con y sin IGV, y el total',
     },
     {
         id: 'flujo',
@@ -191,7 +198,14 @@ export default function FinanzasTabs() {
                         abrirModalCrearIngreso={vm.abrirModalCrearIngreso}
                         abrirModalEditarIngreso={vm.abrirModalEditarIngreso}
                         cerrarModalIngreso={vm.cerrarModalIngreso}
+                        marcarCompraSoloIgv={vm.marcarCompraSoloIgv}
                     />
+                </div>
+            )}
+
+            {activeTab === 'anual' && (
+                <div className="px-3 pb-6 sm:px-6">
+                    <ResumenAnualView sedeId={sede.sedeId} />
                 </div>
             )}
 
