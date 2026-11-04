@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 import useEscapeKey from '@/hooks/useEscapeKey';
+import { useDesfaseFranjaSede } from '@/features/tiendaSede/FranjaSede';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import axios from 'axios';
 import { withPricingList } from '@/templates/shared/pricing';
@@ -45,6 +46,8 @@ export default function XtraHeader({
   cp,
 }: XtraHeaderProps) {
   const navigate = useNavigate();
+  // Bajo la franja "Comprando en" (modo CLIENTE) mientras está a la vista.
+  const desfaseSede = useDesfaseFranjaSede();
   const isLoggedIn = (() => { try { return !!localStorage.getItem('ACCESS_TOKEN'); } catch { return false; } })();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -93,7 +96,7 @@ export default function XtraHeader({
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-100 font-sans shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-100 font-sans shadow-sm" style={{ top: desfaseSede }}>
         <div className="max-w-screen-xl mx-auto px-5 md:px-8 h-16 flex items-center gap-5">
 
           {/* Logo */}

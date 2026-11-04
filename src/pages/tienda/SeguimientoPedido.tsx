@@ -378,6 +378,13 @@ export default function SeguimientoPedido() {
                                         <div className="text-xs md:text-sm text-gray-500">{new Date(pedido.creadoEn).toLocaleString('es-PE')}</div>
                                     </div>
 
+                                    {pedido.tipoEntrega !== 'ENVIO' && pedido.sede?.nombre && (
+                                        <div className="mb-5 flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2.5 text-sm text-gray-700" data-testid="seguimiento-sede">
+                                            <Icon icon="solar:map-point-bold" className="mt-0.5 h-4 w-4 flex-none" style={{ color: diseno.colorPrimario || '#FF9500' }} />
+                                            <span>Recoges en <strong>{pedido.sede.nombre}</strong>{pedido.sede.direccion ? ` · ${pedido.sede.direccion}` : ''}</span>
+                                        </div>
+                                    )}
+
                                     {pedido.historialEstados && pedido.historialEstados.length > 0 ? (
                                         <LineaTiempoEstados historial={pedido.historialEstados} estadoActual={estadoSeguimiento} />
                                     ) : (

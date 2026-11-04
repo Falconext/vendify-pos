@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { resolveTemplate, SLIDER_MAX_COUNT, SLIDER_BANNER_SLOTS } from '@/components/tienda/resolveTemplate';
+import {
+    leerStockTiendaConfig,
+    payloadStockTienda,
+    validarStockTienda,
+    type StockTiendaConfig,
+    type StockTiendaForm,
+} from './stockTiendaConfig';
 
 const defaultForm = {
     slugTienda: '', descripcionTienda: '', whatsappTienda: '',
@@ -28,6 +35,12 @@ export const useConfiguracionTiendaViewModel = (): any => {
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({ ...defaultForm });
     const { alert } = useAlertStore();
+
+    // "Stock de la tienda virtual": se edita aparte del resto del formulario y
+    // solo se manda si cambió (mandar el modo apaga el aviso de la migración).
+    const [stockTienda, setStockTienda] = useState<StockTiendaConfig>(() => leerStockTiendaConfig(null));
+    const [stockForm, setStockForm] = useState<StockTiendaForm>(stockTienda.form);
+    const [stockError, setStockError] = useState<string | null>(null);
 
     // Logo state
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -119,6 +132,10 @@ export const useConfiguracionTiendaViewModel = (): any => {
         try {
             const { data } = await apiClient.get('/tienda/config');
             setConfig(data.data);
+            const stock = leerStockTiendaConfig(data.data);
+            setStockTienda(stock);
+            setStockForm(stock.form);
+            setStockError(null);
             setFormData({
                 slugTienda: data.data.slugTienda || '', descripcionTienda: data.data.descripcionTienda || '',
                 whatsappTienda: data.data.whatsappTienda || '', facebookUrl: data.data.facebookUrl || '',
@@ -166,11 +183,28 @@ export const useConfiguracionTiendaViewModel = (): any => {
             if (payload.slugTienda) payload.slugTienda = slugify(payload.slugTienda);
             if (payload.costoEnvioFijo != null && payload.costoEnvioFijo !== '') payload.costoEnvioFijo = Number(payload.costoEnvioFijo);
             if (payload.tiempoPreparacionMin != null && payload.tiempoPreparacionMin !== '') payload.tiempoPreparacionMin = Number(payload.tiempoPreparacionMin);
+            const errorStock = validarStockTienda(stockForm, stockTienda.sedes);
+            if (errorStock) { setStockError(errorStock); alert(errorStock, 'error'); return; }
+            Object.assign(payload, payloadStockTienda(stockForm, stockTienda.form, stockTienda.sedes));
             await apiClient.patch('/tienda/config', payload);
             alert('Configuración guardada exitosamente', 'success');
             cargarConfiguracion();
         } catch (error: any) { alert(error.response?.data?.message || 'Error al guardar configuración', 'error'); }
         finally { setSaving(false); }
+    };
+
+    const cambiarStockTienda = (form: StockTiendaForm) => { setStockForm(form); setStockError(null); };
+
+    /** "Mantener este modo": guarda la elección actual tal cual (apaga el aviso). */
+    const confirmarModoStock = async () => {
+        setSaving(true);
+        try {
+            await apiClient.patch('/tienda/config', payloadStockTienda(stockTienda.form, stockTienda.form, stockTienda.sedes, true));
+            setStockTienda((prev) => ({ ...prev, aviso: false }));
+            alert('Listo: tu tienda sigue vendiendo así.', 'success');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'No se pudo guardar el modo de stock', 'error');
+        } finally { setSaving(false); }
     };
 
     const subirLogo = async () => {
@@ -389,6 +423,7 @@ export const useConfiguracionTiendaViewModel = (): any => {
 
     return {
         config, loading, saving, formData, handleChange, handleSubmit, abrirTienda, slugify,
+        stockTienda, stockForm, stockError, cambiarStockTienda, confirmarModoStock,
         logoFile, setLogoFile, logoUploading, previewLogoUrl, subirLogo, eliminarLogo,
         yapeFile, setYapeFile, plinFile, setPlinFile, yapeUploading, plinUploading, previewYapeUrl, previewPlinUrl, subirQr, eliminarQr, showConfirmDelete, setShowConfirmDelete, confirmarEliminarQr, deleteQrType,
         bannerSlots, bannerIsSlider, canUploadBanner, toggleBannerIsSlider,

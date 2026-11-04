@@ -320,11 +320,11 @@ function App() {
         <Route path="/tienda/:slug" element={<PorTienda><TiendaPublica /></PorTienda>} />
         <Route path="/tienda/:slug/catalogo" element={<PorTienda><Catalogo /></PorTienda>} />
         <Route path="/tienda/:slug/producto/:id" element={<PorTienda><ProductoDetalleRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/checkout" element={<PorTienda><Checkout /></PorTienda>} />
-        <Route path="/tienda/:slug/seguimiento" element={<PorTienda><SeguimientoPedido /></PorTienda>} />
+        <Route path="/tienda/:slug/checkout" element={<PorTienda recargarAlCambiarSede={false}><Checkout /></PorTienda>} />
+        <Route path="/tienda/:slug/seguimiento" element={<PorTienda conSede={false}><SeguimientoPedido /></PorTienda>} />
         <Route path="/tienda/:slug/contacto" element={<PorTienda><ContactoRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/blog" element={<PorTienda><BlogRouter /></PorTienda>} />
-        <Route path="/tienda/:slug/blog/:blogId" element={<PorTienda><BlogRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/blog" element={<PorTienda conSede={false}><BlogRouter /></PorTienda>} />
+        <Route path="/tienda/:slug/blog/:blogId" element={<PorTienda conSede={false}><BlogRouter /></PorTienda>} />
         {/* Catch-all para tienda pública: Evita que links rotos en banners manden al login/admin */}
         <Route path="/tienda/:slug/*" element={<PorTienda><TiendaPublica /></PorTienda>} />
         <Route path="/" element={<Navigate to="/login" replace />} />

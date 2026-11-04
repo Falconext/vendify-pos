@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useEscapeKey from '@/hooks/useEscapeKey';
+import { useDesfaseFranjaSede } from '@/features/tiendaSede/FranjaSede';
 import { useFavoritosStore } from '@/zustand/favoritos';
 import axios from 'axios';
 import { EnlaceTienda } from '@/components/tienda/navTienda';
@@ -42,6 +43,8 @@ export default function StoreHeader({
     hideCart = false
 }: StoreHeaderProps & { onSearch?: () => void }) {
     const navigate = useNavigate();
+    // Bajo la franja "Comprando en" (modo CLIENTE) mientras está a la vista.
+    const desfaseSede = useDesfaseFranjaSede();
     const isLoggedIn = (() => { try { return !!localStorage.getItem('ACCESS_TOKEN'); } catch { return false; } })();
     const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -87,7 +90,7 @@ export default function StoreHeader({
 
     return (
         <>
-        <header className="fixed top-0 left-0 right-0 z-[100] font-sans bg-white shadow-sm">
+        <header className="fixed top-0 left-0 right-0 z-[100] font-sans bg-white shadow-sm" style={{ top: desfaseSede }}>
 
             {/* ── Main Row ── */}
             <div className="max-w-screen-xl mx-auto px-5 md:px-8 py-3 flex items-center gap-4">

@@ -56,6 +56,7 @@ import { detalleAdicionalParaPayload } from "@/utils/detalleAdicional";
 import { tipoCambioService } from "@/services/tipoCambio.service";
 import { PORCENTAJE_RETENCION, aplicaRetencion, calcularRetencion } from './retencion';
 import { diasEmisionRetroactiva, fechaFueraDePlazo } from './fechaEmisionRetroactiva';
+import { esDeOtraSede, mensajeOtraSede, normalizarSedePedido } from '@/features/admin/tienda/sedePedido';
 import { aplicacionEfectiva, lineasDeEnvio } from './aplicacionMontoEnvio';
 import { montoACredito } from './montoACredito';
 
@@ -359,6 +360,8 @@ export const useFacturacionViewModel = () => {
     // Pedido de la tienda que se está convirtiendo: al emitir, queda vinculado
     // al comprobante para que no se pueda documentar dos veces.
     const pedidoTiendaOrigenRef = useRef<number | null>(null);
+    // Sede del pedido de la tienda (stock por sede): su comprobante debe salir de ahí.
+    const pedidoTiendaSedeRef = useRef<{ id: number; nombre: string } | null>(null);
     // Tracks the comprobante type that was pre-filled from a Nota de Venta conversion.
     // Prevents the auto-reset effect from overwriting the NV client while on that comprobante type.
     const fromNVComprobanteRef = useRef<string | null>(null);
@@ -1035,6 +1038,15 @@ export const useFacturacionViewModel = () => {
                 processedPedidoTiendaRef.current = pedidoKey;
 
                 pedidoTiendaOrigenRef.current = Number(pedido.id) || null;
+                pedidoTiendaSedeRef.current = normalizarSedePedido(pedido).sede;
+                // Se avisa al cargar, no recién al cobrar: el backend rechazaría la venta (409).
+                const sedePedido = pedidoTiendaSedeRef.current;
+                const sedeAhora = useAuthStore.getState().sedeActiva;
+                if (sedePedido && esDeOtraSede(sedePedido.id, sedeAhora?.id)) {
+                    setTimeout(() => {
+                        useAlertStore.getState().alert(mensajeOtraSede(sedePedido.nombre, sedeAhora?.nombre ?? 'otra sede'), 'warning');
+                    }, 400);
+                }
                 // Si el comprador dejó su DNI y ya es cliente, va con su ficha.
                 const doc = String(pedido.clienteDocumento || '').replace(/\D/g, '');
                 const clienteConDni = doc ? clients?.find((item: any) => String(item.nroDoc) === doc) : null;
@@ -2990,6 +3002,18 @@ export const useFacturacionViewModel = () => {
                 }
                 : baseData;
 
+        // Venta que documenta un pedido de la tienda: el backend valida su sede
+        // (409 si es otra) y respeta "vender sin stock" de la tienda.
+        const documentaPedidoTienda = !!pedidoTiendaOrigenRef.current && !isEditMode && !isQuotationRoute
+            && formValues.comprobante !== "NOTA DE CREDITO" && formValues.comprobante !== "NOTA DE DEBITO";
+        if (documentaPedidoTienda) {
+            const sedePedido = pedidoTiendaSedeRef.current;
+            if (sedePedido && esDeOtraSede(sedePedido.id, sedeActiva?.id)) {
+                return useAlertStore.getState().alert(mensajeOtraSede(sedePedido.nombre, sedeActiva?.nombre ?? 'otra sede'), "error");
+            }
+            finalData.pedidoTiendaId = pedidoTiendaOrigenRef.current;
+        }
+
         setSnapshotClient(selectedClient ? { ...selectedClient } : null);
         setDespachoCreado(false);
         setIsOpenModalSuccessInvoice(true);
@@ -3050,6 +3074,7 @@ export const useFacturacionViewModel = () => {
             const pedidoOrigen = pedidoTiendaOrigenRef.current;
             if (pedidoOrigen && comprobanteId) {
                 pedidoTiendaOrigenRef.current = null;
+                pedidoTiendaSedeRef.current = null;
                 const vinculo = await patch(`tienda/pedidos/${pedidoOrigen}/comprobante`, { comprobanteId });
                 if (vinculo.success === false || vinculo.error) {
                     useAlertStore.getState().alert(

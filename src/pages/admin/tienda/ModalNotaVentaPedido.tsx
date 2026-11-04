@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { post } from '@/utils/fetch';
 import { generarGuiaShalomAuto, type ResultadoGuiaShalom } from '@/utils/guiaShalomAuto';
-import type { PedidoTiendaAdmin } from '@/features/admin/tienda/usePedidosViewModel';
+import type { PedidoTiendaAdmin, SedePedidos } from '@/features/admin/tienda/usePedidosViewModel';
+import { pideSedeParaNota, sedePorDefectoParaNota } from '@/features/admin/tienda/sedePedido';
 
 /**
  * Pedido de la tienda → nota de venta con su envío, en un clic.
@@ -39,13 +40,16 @@ interface Resultado {
 
 interface Props {
     pedido: PedidoTiendaAdmin | null;
+    /** Sedes activas de la empresa: con varias, un pedido sin sede elige de cuál sale. */
+    sedes?: SedePedidos[];
+    sedeActivaId?: number | null;
     onClose: () => void;
     onRevisarEnPos: (pedido: PedidoTiendaAdmin) => void;
     onVerNota: (comprobanteId: number) => void;
     onGenerada: () => void;
 }
 
-export default function ModalNotaVentaPedido({ pedido, onClose, onRevisarEnPos, onVerNota, onGenerada }: Props) {
+export default function ModalNotaVentaPedido({ pedido, sedes = [], sedeActivaId = null, onClose, onRevisarEnPos, onVerNota, onGenerada }: Props) {
     const [pago, setPago] = useState<Pago>('NADA');
     const [adelanto, setAdelanto] = useState('');
     const [medio, setMedio] = useState<Medio>('EFECTIVO');
@@ -53,6 +57,10 @@ export default function ModalNotaVentaPedido({ pedido, onClose, onRevisarEnPos, 
     const [error, setError] = useState<string | null>(null);
     const [resultado, setResultado] = useState<Resultado | null>(null);
     const [guia, setGuia] = useState<ResultadoGuiaShalom | 'cargando'>(null);
+    const [sedeNota, setSedeNota] = useState<number | null>(null);
+    const eligeSede = pideSedeParaNota(pedido?.sedeId, sedes);
+    // Por defecto la sede activa del usuario (o la principal si no es de la lista).
+    const sedeElegida = sedeNota ?? sedePorDefectoParaNota(sedes, sedeActivaId);
 
     // Arranca con lo que ya se sabe del pedido: lo pagado en la tienda.
     useEffect(() => {
@@ -65,6 +73,7 @@ export default function ModalNotaVentaPedido({ pedido, onClose, onRevisarEnPos, 
         setError(null);
         setResultado(null);
         setGuia(null);
+        setSedeNota(null);
     }, [pedido]);
 
     const total = Number(pedido?.total || 0);
@@ -89,11 +98,14 @@ export default function ModalNotaVentaPedido({ pedido, onClose, onRevisarEnPos, 
 
     const generar = async () => {
         if (errorAdelanto) return setError(errorAdelanto);
+        if (eligeSede && !sedeElegida) return setError('Elige la sede de la que sale el pedido.');
         setEnviando(true);
         setError(null);
         const resp: any = await post(`tienda/pedidos/${pedido.id}/nota-venta`, {
             adelanto: montoAdelanto,
             ...(montoAdelanto > 0 ? { medioPago: medio } : {}),
+            // Pedido sin sede: la nota sale de la elegida. Con sede, manda la del pedido.
+            ...(eligeSede && sedeElegida ? { sedeId: sedeElegida } : {}),
         });
         setEnviando(false);
         if (!resp?.success) return setError(resp?.error || 'No se pudo generar la nota de venta.');
@@ -135,7 +147,28 @@ export default function ModalNotaVentaPedido({ pedido, onClose, onRevisarEnPos, 
                                 <Icon icon={envio.icon} className="mt-0.5 flex-none text-violet-500" />
                                 <span>{envio.texto}</span>
                             </div>
+                            {pedido.sede && (
+                                <div className="flex items-start gap-1.5 text-gray-600 dark:text-gray-300" data-testid="nv-sede-pedido">
+                                    <Icon icon="solar:map-point-bold" className="mt-0.5 flex-none text-violet-500" />
+                                    <span>Sale de <strong className="font-semibold">{pedido.sede.nombre}</strong> (la sede del pedido)</span>
+                                </div>
+                            )}
                         </div>
+
+                        {eligeSede && (
+                            <label className="mb-4 block">
+                                <span className="mb-1 block text-sm font-semibold text-gray-800 dark:text-gray-100">¿De qué sede sale?</span>
+                                <select
+                                    data-testid="nv-sede"
+                                    value={sedeElegida ?? ''}
+                                    onChange={(e) => { setSedeNota(Number(e.target.value) || null); setError(null); }}
+                                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100"
+                                >
+                                    {sedes.map((s) => <option key={s.id} value={s.id}>{s.nombre}{s.id === sedeActivaId ? ' (tu sede)' : ''}</option>)}
+                                </select>
+                                <span className="mt-1 block text-[11px] text-gray-500 dark:text-gray-400">El stock se descuenta de esa sede y el pedido queda asignado a ella.</span>
+                            </label>
+                        )}
 
                         <p className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">¿El cliente dejó un adelanto?</p>
                         <div className="mb-3 grid gap-2">
