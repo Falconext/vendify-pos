@@ -152,7 +152,8 @@ export default function TecnologiaHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 lg:px-6">
+      {/* En móvil el buscador baja a una segunda fila (order-last + w-full) en vez de ocultarse */}
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2.5 px-4 py-2.5 md:h-16 md:flex-nowrap md:py-0 lg:px-6">
         <button type="button" onClick={goHome} className="flex shrink-0 items-center gap-2.5 text-left">
           {tienda?.logo ? (
             <img src={tienda.logo} alt={storeName} className="h-10 w-auto object-contain" />
@@ -202,7 +203,7 @@ export default function TecnologiaHeader({
           )}
         </div>
 
-        <div ref={searchWrapRef} className="relative hidden min-w-0 flex-1 md:block">
+        <div ref={searchWrapRef} className="relative order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
           <form onSubmit={(e) => { setIsSearchFocused(false); handleSubmit(e); }} className="relative">
             <div className="flex h-11 items-center gap-2 rounded-2xl bg-gray-50 pl-4 pr-1.5 transition-colors focus-within:bg-gray-100 border-none outline-none">
               <Icon icon="solar:magnifer-linear" className="shrink-0 text-sm text-gray-400" />
