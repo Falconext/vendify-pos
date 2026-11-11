@@ -12,7 +12,7 @@ import { useUsersStore } from '@/zustand/users';
 import Select from '@/components/Select';
 import useAlertStore from '@/zustand/alert';
 import ComprobantePrintPage from './comprobanteImprimir';
-import { etiquetaMedioPago, lineasPagoMixto } from '@/utils/pagoMixto';
+import { etiquetaMedioPago, lineasCobroCredito, lineasPagoMixto } from '@/utils/pagoMixto';
 import { lineasPagoConVuelto } from '@/utils/pagoConVuelto';
 import { numberToWords } from '@/utils/numberToLetters';
 import { hasPlanFeature } from '@/utils/permissions';
@@ -383,17 +383,23 @@ export default function ModalDetalleComprobante({ comprobanteId, isOpen, onClose
                                 {monedaSimbolo} {total.toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
+                                {/* En crédito el medioPago es el que quedó por defecto al emitir
+                                    ("Crédito · EFECTIVO" aunque se cobró por transferencia): lo
+                                    real son los cobros registrados. */}
                                 {esVentaCredito
-                                    ? `Crédito${comprobante.medioPago ? ` · ${comprobante.medioPago}` : ''}`
+                                    ? 'Crédito'
                                     : comprobante.medioPago || 'Sin medio de pago'}
                             </p>
-                            {String(comprobante.medioPago || '').toUpperCase() === 'MIXTO' && lineasPagoMixto(comprobante).map((l) => (
+                            {esVentaCredito && lineasCobroCredito(comprobante, monedaSimbolo).map((linea) => (
+                                <p key={linea} data-testid="detalle-cobro-credito" className="text-xs text-gray-500 dark:text-gray-400">{linea}</p>
+                            ))}
+                            {!esVentaCredito && String(comprobante.medioPago || '').toUpperCase() === 'MIXTO' && lineasPagoMixto(comprobante).map((l) => (
                                 <p key={l.method} className="text-xs text-gray-500 dark:text-gray-400">
                                     {etiquetaMedioPago(l.method)} {monedaSimbolo} {l.amount.toFixed(2)}
                                 </p>
                             ))}
                             {/* Con cuánto pagó y el vuelto: antes solo se veía imprimiendo. */}
-                            {String(comprobante.medioPago || '').toUpperCase() !== 'MIXTO' && lineasPagoConVuelto(comprobante, monedaSimbolo).map((linea) => (
+                            {!esVentaCredito && String(comprobante.medioPago || '').toUpperCase() !== 'MIXTO' && lineasPagoConVuelto(comprobante, monedaSimbolo).map((linea) => (
                                 <p key={linea} data-testid="detalle-pago-vuelto" className="text-xs text-gray-500 dark:text-gray-400">{linea}</p>
                             ))}
                         </div>
