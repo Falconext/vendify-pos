@@ -6,7 +6,8 @@ import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import RotuloTicket, { tieneDestino } from '../RotuloTicket'
-import { colorDeRepartidor, opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo } from '../filtrosDespacho'
+import { altoTicketMm, rotuloPageStyle } from '../rotuloFormato'
+import { colorDeRepartidor, FECHA_INICIO_TODO, guardarPeriodo, opcionesCourier, periodoActivo, periodoGuardado, quienLlevaEnLista, rangoDePeriodo } from '../filtrosDespacho'
 
 const base = {
     nroOrden: null, claveOrden: null, nombreDestinatario: 'GOMEZ CUEVA KATIA', dniDestinatario: '46531103',
@@ -91,5 +92,65 @@ describe('estado Confirmado (rótulo impreso)', () => {
         const { elegiblesParaRotulo } = require('../seleccionRotulos')
         const fila = (comprobanteId: number, estadoDespacho: string) => ({ comprobanteId, estadoDespacho, referencia: `NV01-${comprobanteId}`, cliente: '', courier: 'PROPIOS', celularDest: '', clienteTelefono: '' })
         expect(elegiblesParaRotulo([fila(1, 'PREPARANDO'), fila(2, 'CONFIRMADO'), fila(3, 'EN_CAMINO')]).map((e: any) => e.comprobanteId)).toEqual([1])
+    })
+})
+
+describe('periodo "Todas" del panel', () => {
+    const hoy = '2026-11-04';
+    beforeEach(() => localStorage.clear());
+
+    it('va desde antes de cualquier venta hasta hoy y se reconoce', () => {
+        const r = rangoDePeriodo('TODO', hoy);
+        expect(r).toEqual({ fecha: FECHA_INICIO_TODO, fechaFin: hoy });
+        expect(periodoActivo(r.fecha, r.fechaFin, hoy)).toBe('TODO');
+    });
+
+    it('recuerda lo que eligió la caja', () => {
+        expect(periodoGuardado()).toBeNull();
+        guardarPeriodo('TODO');
+        expect(periodoGuardado()).toBe('TODO');
+        guardarPeriodo('DIA');
+        expect(periodoGuardado()).toBe('DIA');
+    });
+
+    it('ignora un valor guardado que no conoce', () => {
+        localStorage.setItem('panel_ventas_periodo', 'ANIO');
+        expect(periodoGuardado()).toBeNull();
+    });
+});
+
+describe('página del rótulo en ticket', () => {
+    const conAltos = (...altos: number[]) => {
+        const caja = document.createElement('div')
+        altos.forEach((alto) => {
+            const el = document.createElement('div')
+            el.setAttribute('data-testid', 'rotulo-ticket')
+            Object.defineProperty(el, 'offsetHeight', { value: alto })
+            caja.appendChild(el)
+        })
+        return caja
+    }
+
+    it('usa el alto del rótulo más largo y no el fijo de 330 mm', () => {
+        const alto = altoTicketMm(conAltos(269, 493, 269))
+        expect(alto).toBe(133)
+        expect(rotuloPageStyle('TICKET', alto)).toContain('size: 80mm 133mm')
+        expect(rotuloPageStyle('TICKET', alto)).not.toContain('330mm')
+    })
+
+    it('un rótulo corto no queda más ancho que alto', () => {
+        // 280 px son unos 74 mm: en 80×76 mm la impresora lo pondría en horizontal.
+        expect(altoTicketMm(conAltos(280))).toBe(90)
+        expect(altoTicketMm(conAltos(280))!).toBeGreaterThan(80)
+    })
+
+    it('sin nada pintado no inventa un alto', () => {
+        expect(altoTicketMm(null)).toBeNull()
+        expect(altoTicketMm(conAltos(0))).toBeNull()
+    })
+
+    it('las etiquetas conservan su tamaño', () => {
+        expect(rotuloPageStyle('ETIQUETA_80X50', 133)).toContain('size: 80mm 50mm')
+        expect(rotuloPageStyle('ETIQUETA_100X150', 133)).toContain('size: 100mm 150mm')
     })
 })

@@ -26,6 +26,7 @@ import EmpresasIndex from './pages/admin/empresa/Index'
 import PerfilIndex from './pages/admin/perfil/Index'
 import KardexIndex from './pages/admin/kardex/Index'
 import InventarioDashboard from './pages/admin/kardex/Dashboard'
+import InventarioValorizado from './pages/admin/kardex/InventarioValorizado'
 import KardexProductos from './pages/admin/kardex/Productos'
 import KardexMermas from './pages/admin/kardex/mermas'
 import KardexEntradasSalidas from './pages/admin/kardex/entradasSalidas'
@@ -202,6 +203,7 @@ function App() {
           <Route path="reservas" element={<ReservasPage />} />
           <Route path="kardex/combos" element={<CombosTienda />} />
           <Route path="kardex/dashboard" element={<InventarioDashboard />} />
+          <Route path="kardex/inventario-valorizado" element={<InventarioValorizado />} />
           <Route
             path="produccion/recetas"
             element={
@@ -259,7 +261,14 @@ function App() {
               </RoleRoute>
             }
           />
-          <Route path="sistema/catalogo-global" element={<CatalogoGlobal />} />
+          <Route
+            path="sistema/catalogo-global"
+            element={
+              <RoleRoute allowedRoles={["ADMIN_SISTEMA"]} fallbackPath="/administrador">
+                <CatalogoGlobal />
+              </RoleRoute>
+            }
+          />
           <Route path="sistema/planes" element={<Planes />} />
           <Route
             path="sistema/disenos-tienda"
@@ -297,7 +306,7 @@ function App() {
           <Route
             path="sistema/finanzas"
             element={
-              <RoleRoute allowedRoles={["ADMIN_SISTEMA", "ADMIN_EMPRESA"]} fallbackPath="/administrador">
+              <RoleRoute allowedRoles={["ADMIN_SISTEMA"]} fallbackPath="/administrador">
                 <SistemaFinanzas />
               </RoleRoute>
             }

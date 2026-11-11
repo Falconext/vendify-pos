@@ -24,6 +24,8 @@ interface DespachoConfig {
     mensajeEntregadoAgencia: string;
     notificarEnCamino: boolean;
     notificarEntregado: boolean;
+    /** Mandar la clave de retiro en los avisos. Apagada, el negocio la da aparte. */
+    claveEnAvisos: boolean;
 }
 
 const DEFAULTS: DespachoConfig = {
@@ -33,6 +35,7 @@ const DEFAULTS: DespachoConfig = {
     mensajeEntregadoAgencia: '',
     notificarEnCamino: true,
     notificarEntregado: true,
+    claveEnAvisos: true,
 };
 
 const EJEMPLO = { nombre: 'Juan Pérez', pedido: 'B001-00000123', repartidor: 'Carlos Quispe', empresa: 'Mi Empresa', agencia: 'Shalom Cusco Centro', clave: '4321' };
@@ -202,6 +205,7 @@ export default function DespachoConfigPage() {
                     mensajeEntregadoAgencia: res.data.mensajeEntregadoAgencia ?? '',
                     notificarEnCamino: res.data.notificarEnCamino ?? true,
                     notificarEntregado: res.data.notificarEntregado ?? true,
+                    claveEnAvisos: res.data.claveEnAvisos ?? true,
                 });
                 setProvinciaActiva(provinciaActivaDesde(res.data));
             }
@@ -222,7 +226,12 @@ export default function DespachoConfigPage() {
         }
         setSaving(true);
         try {
-            await put('/envio-despacho/config', { ...config, ...payloadProvincia(config, provinciaActiva) });
+            // put() no lanza: devuelve success=false con el mensaje del backend (ej. 403 por plan).
+            const res = await put('/envio-despacho/config', { ...config, ...payloadProvincia(config, provinciaActiva) });
+            if (!res.success) {
+                alert(res.error || 'Error al guardar configuración', 'error');
+                return;
+            }
             alert('Configuración guardada', 'success');
         } catch {
             alert('Error al guardar configuración', 'error');
@@ -345,6 +354,28 @@ export default function DespachoConfigPage() {
                         onMensaje={v => set('mensajeEntregado', v)}
                         provincia={varianteProvincia('mensajeEntregadoAgencia')}
                     />
+                    {/* Helou Shop, 06-11: quien trabaja contra entrega da la clave
+                        cuando le pagan; si sale en el aviso, el cliente ya la tiene. */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] dark:shadow-none border border-slate-100 dark:border-slate-700 p-6 flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">Enviar la clave de retiro al cliente</p>
+                            <p className="text-xs text-slate-400 dark:text-gray-400 mt-0.5">
+                                Apagado: <code>{'{{clave}}'}</code> queda vacío en los avisos. Tú se la das, por ejemplo cuando ya te pagó.
+                                Revisa que tus textos no digan «Clave:» antes de <code>{'{{clave}}'}</code>.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={config.claveEnAvisos}
+                            aria-label="Enviar la clave de retiro al cliente"
+                            data-testid="toggle-clave-en-avisos"
+                            onClick={() => set('claveEnAvisos', !config.claveEnAvisos)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${config.claveEnAvisos ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                        >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${config.claveEnAvisos ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

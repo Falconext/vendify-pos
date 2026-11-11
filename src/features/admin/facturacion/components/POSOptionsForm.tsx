@@ -6,6 +6,7 @@ import { EnvioModal } from "./EnvioModal";
 import { Calendar } from "@/components/Date";
 import moment from "moment";
 import { aplicaRetencion } from '../retencion';
+import { useAuthStore } from '@/zustand/auth';
 
 const COURIER_LABELS: Record<string, string> = {
     SHALOM_PRO: 'Shalom PRO', SHALOM_COD: 'Shalom COD', OLVA: 'Olva',
@@ -233,6 +234,8 @@ function OperacionFiscalTrigger({ vm }: { vm: any }) {
 }
 
 export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpenComprobanteModal?: () => void }) => {
+    // Restricción por usuario: el cajero no da descuento global (el backend también lo rechaza).
+    const bloquearDescuento = !!useAuthStore((s) => s.auth?.bloquearDescuentos);
     return (
         <div className="p-4 md:p-5 bg-white dark:bg-[#111827]">
             <div className="mb-4 rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
@@ -344,7 +347,7 @@ export const POSOptionsForm = ({ vm, onOpenComprobanteModal }: { vm: any; onOpen
             )}
 
             {/* Descuento global — % / S/ / $ para todos los comprobantes (boleta, factura, informales y cotización) */}
-            {!['NP', '07', '08'].includes(vm.formValues?.tipoDoc) && (
+            {!['NP', '07', '08'].includes(vm.formValues?.tipoDoc) && !bloquearDescuento && (
                 <div className="mt-2 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                         <div>

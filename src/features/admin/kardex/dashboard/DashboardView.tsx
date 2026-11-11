@@ -75,7 +75,7 @@ export default function DashboardView() {
                 {(() => {
                     const kpiCards = [
                         { label: 'Total Productos', value: dashboardData.resumenGeneral.totalProductos.toLocaleString(), sub: 'productos registrados', icon: 'solar:box-bold', tone: 'blue', to: '/administrador/kardex/productos' },
-                        { label: 'Valor Inventario', value: helpers.formatCurrency(dashboardData.resumenGeneral.valorTotalInventario), sub: 'valor total en stock', icon: 'solar:wallet-money-bold', tone: 'emerald', to: '/administrador/kardex/productos' },
+                        { label: 'Valor Inventario', value: helpers.formatCurrency(dashboardData.resumenGeneral.valorTotalInventario), sub: 'ver detalle y ganancia', icon: 'solar:wallet-money-bold', tone: 'emerald', to: '/administrador/kardex/inventario-valorizado' },
                         { label: 'Stock Crítico', value: dashboardData.resumenGeneral.productosStockCritico.toLocaleString(), sub: 'productos bajo mínimo', icon: 'solar:danger-triangle-bold', tone: 'amber', to: '/administrador/kardex/productos?soloStockBajo=true' },
                         { label: 'Sin Stock', value: dashboardData.resumenGeneral.productosStockCero.toLocaleString(), sub: 'productos agotados', icon: 'solar:close-circle-bold', tone: 'rose', to: '/administrador/kardex/productos' },
                     ];

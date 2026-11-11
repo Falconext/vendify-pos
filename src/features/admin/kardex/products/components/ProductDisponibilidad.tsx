@@ -140,6 +140,32 @@ export const ProductDisponibilidad: React.FC<{ vm: ViewProps }> = ({ vm }) => {
           mayor empuje. Sale en el Excel del catálogo.
         </p>
       </div>
+
+      {/* Naturistas: el cliente busca por lo que le duele ("hígado"), no por el nombre. */}
+      <div className="mt-3 border-t border-gray-100 pt-2 dark:border-slate-800">
+        <p className="mb-1.5 text-[11px] font-bold text-gray-600 dark:text-gray-300">
+          Actúa sobre
+        </p>
+        <input
+          data-testid="organos"
+          maxLength={500}
+          value={String(formValues?.organos ?? '')}
+          placeholder="Órganos: Hígado, Colon, Corazón"
+          onChange={(e) => poner('organos', e.target.value)}
+          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] dark:border-slate-700 dark:bg-slate-900"
+        />
+        <input
+          data-testid="sistemas"
+          maxLength={500}
+          value={String(formValues?.sistemas ?? '')}
+          placeholder="Sistemas: Sistema Digestivo, Sistema Inmune"
+          onChange={(e) => poner('sistemas', e.target.value)}
+          className="mt-1.5 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] dark:border-slate-700 dark:bg-slate-900"
+        />
+        <p className="mt-1 text-[10px] text-gray-400">
+          Separados por coma. La tienda virtual busca y filtra por ellos.
+        </p>
+      </div>
     </div>
   );
 };

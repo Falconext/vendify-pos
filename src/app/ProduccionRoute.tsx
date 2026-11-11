@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../zustand/auth';
-import { esRubroFabricacion } from '@/utils/rubro-features';
+import { tieneModuloProduccion } from '@/utils/moduloProduccion';
 import Loading from '@/components/Loading';
 
 interface ProduccionRouteProps {
@@ -24,7 +24,7 @@ export function ProduccionRoute({
     return <Navigate to="/login" replace />;
   }
 
-  const habilitado = esRubroFabricacion(auth?.empresa?.rubro?.nombre);
+  const habilitado = tieneModuloProduccion(auth);
   if (!habilitado) {
     return <Navigate to={fallbackPath} replace />;
   }

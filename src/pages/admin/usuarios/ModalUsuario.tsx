@@ -38,6 +38,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
     sedesSinVenta: [],
     subModuloIds: [],
     puedeAnularComprobantes: false,
+    bloquearDescuentos: false,
     soloImagenesProductos: false,
   });
 
@@ -71,6 +72,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         comisionGlobalFija: user.comisionGlobalFija || undefined,
         comisionGlobalVenta: user.comisionGlobalVenta || undefined,
         puedeAnularComprobantes: user.puedeAnularComprobantes ?? false,
+        bloquearDescuentos: user.bloquearDescuentos ?? false,
         soloImagenesProductos: user.soloImagenesProductos ?? false,
       });
     } else {
@@ -89,6 +91,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
         comisionGlobalFija: undefined,
         comisionGlobalVenta: undefined,
         puedeAnularComprobantes: false,
+        bloquearDescuentos: false,
         soloImagenesProductos: false,
       });
     }
@@ -171,6 +174,7 @@ const ModalUsuario: React.FC<Props> = ({ isOpen, onClose, user, isEdit }) => {
   // defecto apagada = sigue sin poder anular/eliminar, igual que hoy — solo
   // el administrador puede).
   const PERMISOS_AVANZADOS: { key: keyof IFormUsuario; icon: string; label: string; descripcion: string; soloAdmin?: boolean }[] = [
+    { key: 'bloquearDescuentos', icon: 'solar:tag-price-bold-duotone', label: 'No permitir dar descuentos', descripcion: 'No podrá aplicar descuentos por producto ni al total de la venta o cotización.' },
     { key: 'puedeAnularComprobantes', icon: 'solar:shield-check-bold-duotone', label: 'Permitir anular/eliminar comprobantes', descripcion: 'Por defecto solo el administrador puede anular o eliminar una venta/nota de venta. Activa esto para que este usuario también pueda.', soloAdmin: true },
     { key: 'soloImagenesProductos', icon: 'solar:gallery-edit-bold-duotone', label: 'Solo gestionar fotos de productos', descripcion: 'Solo entrará a la lista de productos, sin precios ni costos, y al editar solo verá las fotos: subir, cambiar u ordenar. No podrá tocar datos ni entrar a ningún otro módulo.', soloAdmin: true },
   ];

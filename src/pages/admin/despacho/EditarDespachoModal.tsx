@@ -128,6 +128,8 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [generandoGuia, setGenerandoGuia] = useState(false);
+    // Regenerar en Olva crea otra guía real que su API no deja anular: se pregunta antes.
+    const [confirmarOtraGuiaOlva, setConfirmarOtraGuiaOlva] = useState(false);
     const { alert } = useAlertStore();
     const [pidiendoDatos, setPidiendoDatos] = useState(false);
 
@@ -297,10 +299,11 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
         }
     };
 
-    // Olva no usa clave: el número de guía viaja solo y se guarda también como
-    // código de guía.
+    // Genera la guía en Olva y trae de vuelta el N° de guía (lo que el rastreo
+    // necesita después, también como código de guía) y la clave de retiro.
     const handleGenerarGuiaOlva = async () => {
         if (generandoGuia) return;
+        setConfirmarOtraGuiaOlva(false);
         setGenerandoGuia(true);
         try {
             await guardarAntesDeGuia();
@@ -316,9 +319,11 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
                 ...prev,
                 nroOrden: guia.nroOrden ?? prev.nroOrden,
                 codigoGuia: guia.codigoGuia ?? prev.codigoGuia,
+                claveEnvio: guia.claveEnvio ?? prev.claveEnvio,
                 olvaAgenciaDestinoCodigo: guia.olvaAgenciaDestinoCodigo ?? prev.olvaAgenciaDestinoCodigo,
             }));
-            alert(guia.nroOrden ? `Guía ${guia.nroOrden} generada en Olva` : 'Envío registrado en Olva', 'success');
+            const claveOlva = guia.claveEnvio ? ` · Clave de retiro: ${guia.claveEnvio}` : '';
+            alert(guia.nroOrden ? `Guía ${guia.nroOrden} generada en Olva${claveOlva}` : 'Envío registrado en Olva', 'success');
         } catch (error: unknown) {
             alert(mensajeErrorOlva(error, 'No se pudo generar la guía en Olva'), 'error');
         } finally {
@@ -639,9 +644,39 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
                                         className={inp}
                                     />
                                 </Field>
+                                <Field label="Clave de retiro (se la mandas al cliente)">
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={4}
+                                        value={envioData.claveEnvio}
+                                        onChange={e => set('claveEnvio', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                        placeholder={envioData.nroOrden ? '4 dígitos' : 'Vacío: la genera Olva'}
+                                        autoComplete="off"
+                                        className={inp}
+                                        data-testid="olva-clave-retiro"
+                                    />
+                                </Field>
+                                {confirmarOtraGuiaOlva ? (
+                                    // Regenerar crea otra guía real y Olva no deja anular la anterior por API.
+                                    <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-900/20" data-testid="olva-confirmar-otra-guia">
+                                        <p className="text-xs font-black text-amber-900 dark:text-amber-200">¿Crear otra guía en Olva?</p>
+                                        <p className="mt-1 text-[11px] leading-4 text-amber-800 dark:text-amber-300">
+                                            La guía {envioData.nroOrden} seguirá registrada en Olva y no se puede anular desde aquí. Olva volverá a enviar sus correos y este despacho quedará con el número nuevo.
+                                        </p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button type="button" onClick={() => setConfirmarOtraGuiaOlva(false)} className="h-9 rounded-lg border border-amber-300 bg-white px-3 text-xs font-bold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                                Cancelar
+                                            </button>
+                                            <button type="button" onClick={handleGenerarGuiaOlva} className="h-9 rounded-lg bg-amber-500 px-3 text-xs font-black text-white hover:opacity-90">
+                                                Crear otra guía
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
                                 <button
                                     type="button"
-                                    onClick={handleGenerarGuiaOlva}
+                                    onClick={envioData.nroOrden ? () => setConfirmarOtraGuiaOlva(true) : handleGenerarGuiaOlva}
                                     disabled={generandoGuia}
                                     data-testid="generar-guia-olva"
                                     className="w-full h-11 rounded-xl bg-amber-500 text-white text-sm font-black flex items-center justify-center gap-2 hover:bg-amber-600 disabled:opacity-60 transition-colors"
@@ -650,6 +685,7 @@ export function EditarDespachoModal({ comprobanteId, onClose, onSuccess, notasIn
                                     <Icon icon={generandoGuia ? 'svg-spinners:180-ring' : 'solar:document-add-bold-duotone'} className="text-base" />
                                     {envioData.nroOrden ? 'Regenerar guía en Olva' : 'Generar guía en Olva'}
                                 </button>
+                                )}
                             </div>
                         )}
                     </div>

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { useAuthStore } from '@/zustand/auth';
-import { esRubroFabricacion } from '@/utils/rubro-features';
+import { tieneModuloProduccion } from '@/utils/moduloProduccion';
+import { etiquetaVariante, varianteQueFalta } from '@/features/admin/kardex/entradasSalidas/EntradasSalidasModel';
 import Select from '@/components/Select';
 import InputPro from '@/components/InputPro';
 import Button from '@/components/Button';
@@ -29,7 +30,7 @@ type Orden = {
     nombre?: string;
     mermaObjetivoPorcentaje?: number | string;
   };
-  productoFinal?: { id: number; codigo?: string; descripcion?: string };
+  productoFinal?: { id: number; codigo?: string; descripcion?: string; valoresAtributos?: unknown };
 };
 
 type OrdenDetalle = {
@@ -67,11 +68,18 @@ type ResumenTotales = {
   mermaValorizada: number;
 };
 
+type VarianteOption = {
+  id: number;
+  descripcion?: string;
+  valoresAtributos?: unknown;
+  stock?: number | string;
+};
+
 type RecetaOption = {
   id: number;
   codigo?: string;
   nombre?: string;
-  productoFinal?: { id: number; descripcion?: string };
+  productoFinal?: { id: number; descripcion?: string; variantes?: VarianteOption[] };
 };
 
 type ProductoOption = {
@@ -79,6 +87,7 @@ type ProductoOption = {
   codigo?: string;
   descripcion?: string;
   codigoBarras?: string;
+  variantes?: VarianteOption[];
 };
 
 type SelectOption = {
@@ -121,6 +130,11 @@ export default function ProduccionOrdenesPage() {
   const [recetasBase, setRecetasBase] = useState<RecetaOption[]>([]);
   const [recetaOptions, setRecetaOptions] = useState<SelectOption[]>([]);
   const [productoOptions, setProductoOptions] = useState<SelectOption[]>([]);
+  const [productosBase, setProductosBase] = useState<ProductoOption[]>([]);
+  // Variantes del modelo elegido: la orden se hace sobre una de ellas.
+  const [variantesModelo, setVariantesModelo] = useState<VarianteOption[]>([]);
+  const [varianteId, setVarianteId] = useState<number | ''>('');
+  const [ordenesCreadas, setOrdenesCreadas] = useState(0);
   const [metodoSalidaLotes, setMetodoSalidaLotes] =
     useState<MetodoSalidaLotes>('LIFO');
   const [guardandoMetodo, setGuardandoMetodo] = useState(false);
@@ -173,9 +187,15 @@ export default function ProduccionOrdenesPage() {
   ];
 
   const esFabricacion = useMemo(
-    () => esRubroFabricacion(auth?.empresa?.rubro?.nombre),
-    [auth?.empresa?.rubro?.nombre],
+    () => tieneModuloProduccion(auth),
+    [auth],
   );
+
+  const nombreProductoFinal = (producto?: Orden['productoFinal']) => {
+    const descripcion = producto?.descripcion || '-';
+    const falta = varianteQueFalta(descripcion, producto?.valoresAtributos);
+    return falta ? `${descripcion} · ${falta}` : descripcion;
+  };
 
   const formatearReceta = (item: RecetaOption) => {
     const codigo = item.codigo || `REC-${item.id}`;
@@ -277,10 +297,11 @@ export default function ProduccionOrdenesPage() {
   ) => {
     try {
       const resp: any = await apiClient.get('/productos', {
-        params: { search, page: 1, limit: 20 },
+        params: { search, page: 1, limit: 20, incluirVariantes: true },
       });
       if (resp?.data?.code === 1) {
         const productos: ProductoOption[] = resp.data.data?.productos || [];
+        setProductosBase(productos);
         setProductoOptions(
           productos.map((item) => ({
             id: item.id,
@@ -387,6 +408,8 @@ export default function ProduccionOrdenesPage() {
   ) => {
     const recetaId = id ? Number(id) : '';
     const receta = recetasBase.find((item) => item.id === Number(id));
+    setVariantesModelo(receta?.productoFinal?.variantes ?? []);
+    setVarianteId('');
     setForm((prev) => ({
       ...prev,
       recetaId,
@@ -400,6 +423,9 @@ export default function ProduccionOrdenesPage() {
     _name: string,
     _idField?: string,
   ) => {
+    const producto = productosBase.find((item) => item.id === Number(id));
+    setVariantesModelo(producto?.variantes ?? []);
+    setVarianteId('');
     setForm((prev) => ({
       ...prev,
       productoFinalId: id ? Number(id) : '',
@@ -439,6 +465,10 @@ export default function ProduccionOrdenesPage() {
       alert('Debes enviar receta ID o producto final ID', 'warning');
       return;
     }
+    if (variantesModelo.length > 0 && !varianteId) {
+      alert('Elige la talla o el color que vas a producir', 'warning');
+      return;
+    }
 
     try {
       setGuardando(true);
@@ -447,17 +477,20 @@ export default function ProduccionOrdenesPage() {
         cantidadObjetivo: Number(form.cantidadObjetivo),
       };
       if (form.recetaId) payload.recetaId = Number(form.recetaId);
-      if (form.productoFinalId) payload.productoFinalId = Number(form.productoFinalId);
+      if (varianteId) payload.productoFinalId = Number(varianteId);
+      else if (form.productoFinalId) payload.productoFinalId = Number(form.productoFinalId);
 
       const resp: any = await apiClient.post('/produccion/ordenes', payload);
       if (resp?.data?.code === 1) {
         alert('Orden creada correctamente', 'success');
-        setForm({
-          recetaId: '',
-          productoFinalId: '',
+        // Se conserva la receta: lo normal es seguir con la siguiente talla.
+        setVarianteId('');
+        setOrdenesCreadas((n) => n + 1);
+        setForm((prev) => ({
+          ...prev,
           loteProduccion: '',
           cantidadObjetivo: '',
-        });
+        }));
         await cargarOrdenes();
       } else {
         alert(resp?.data?.message || 'No se pudo crear orden', 'error');
@@ -723,7 +756,7 @@ export default function ProduccionOrdenesPage() {
             Módulo no disponible
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Este módulo está disponible solo para rubros de fabricación.
+            Tu plan no incluye el módulo de Producción.
           </p>
         </div>
       </div>
@@ -855,6 +888,21 @@ export default function ProduccionOrdenesPage() {
             withLabel
             error={null}
           />
+          {variantesModelo.length > 0 && (
+            <Select
+              key={`${variantesModelo.map((v) => v.id).join('-')}-${ordenesCreadas}`}
+              label="Talla / color a producir"
+              name="varianteId"
+              options={variantesModelo.map((v) => ({
+                id: v.id,
+                value: etiquetaVariante(v.valoresAtributos) || v.descripcion || `#${v.id}`,
+              }))}
+              onChange={(id: any) => setVarianteId(id ? Number(id) : '')}
+              isSearch
+              withLabel
+              error={null}
+            />
+          )}
           <InputPro
             name="loteProduccion"
             isLabel
@@ -967,7 +1015,7 @@ export default function ProduccionOrdenesPage() {
                         {item.receta?.codigo || '—'}
                       </td>
                       <td className="py-3 px-3 text-sm text-slate-600 dark:text-gray-300 truncate max-w-[200px]">
-                        {item.productoFinal?.descripcion || '—'}
+                        {item.productoFinal ? nombreProductoFinal(item.productoFinal) : '—'}
                       </td>
                       <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm">
                         {item.cantidadObjetivo}

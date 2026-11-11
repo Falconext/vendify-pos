@@ -4,6 +4,7 @@ import { useComprasStore } from '@/zustand/compras';
 import Select from '@/components/Select';
 import Modal from '@/components/Modal';
 import { tipoCambioService } from '@/services/tipoCambio.service';
+import { useCuentasBancariasStore } from '@/zustand/cuentasBancarias';
 
 interface ModalRegistrarPagoCompraProps {
     isOpen: boolean;
@@ -19,6 +20,12 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
     const [observacion, setObservacion] = useState('');
     const [referencia, setReferencia] = useState('');
     const [localCompra, setLocalCompra] = useState<any>(null);
+    // Cuenta de la que sale una transferencia. Sin esto el abono no bajaba de
+    // ninguna cuenta, y quien paga parte desde una y parte desde otra (IRBA:
+    // BCP PRINCIPAL + CUENTA LIBRE) no tenía cómo registrarlo.
+    const { cuentas, listar: listarCuentas } = useCuentasBancariasStore();
+    const cuentasActivas = (cuentas || []).filter((c) => c.activo);
+    const [cuentaBancariaId, setCuentaBancariaId] = useState(0);
 
     // Sync local state to preserve data during closing animation
     useEffect(() => {
@@ -26,6 +33,26 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
             setLocalCompra(compra);
         }
     }, [isOpen, compra]);
+
+    // El modal siempre está montado: el monto y el N° de operación del pago
+    // anterior no pueden quedar puestos para otra compra.
+    useEffect(() => {
+        if (!isOpen) return;
+        setMonto('');
+        setMedioPago('EFECTIVO');
+        setObservacion('');
+        setReferencia('');
+        setCuentaBancariaId(0);
+        void listarCuentas();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
+    // Al pagar por Transferencia, autoseleccionar la primera cuenta activa.
+    useEffect(() => {
+        if (medioPago === 'TRANSFERENCIA' && !cuentaBancariaId && cuentasActivas.length > 0) {
+            setCuentaBancariaId(cuentasActivas[0].id);
+        }
+    }, [medioPago, cuentas, cuentaBancariaId]);
 
     const saldoActual = Number(localCompra?.saldo || 0);
     const montoNum = Number(monto) || 0;
@@ -83,6 +110,7 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
             observacion: observacion || undefined,
             referencia: referencia || undefined,
             tipoCambio: esUSD ? tcPagoNum : undefined,
+            cuentaBancariaId: medioPago === 'TRANSFERENCIA' && cuentaBancariaId ? cuentaBancariaId : undefined,
         });
 
         if (result && result.success) {
@@ -204,6 +232,24 @@ const ModalRegistrarPagoCompra = ({ isOpen, compra, onClose, onSuccess }: ModalR
                             />
                         </div>
                     </div>
+
+                    {medioPago === 'TRANSFERENCIA' && (
+                        cuentasActivas.length === 0 ? (
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                                No hay cuentas bancarias registradas. Agrégalas en <strong>Mi Negocio → Cuentas Bancarias</strong> para elegir de cuál sale el pago.
+                            </p>
+                        ) : (
+                            <Select
+                                label="Banco / Cuenta"
+                                name="cuentaBancaria"
+                                options={cuentasActivas.map((c) => ({ id: c.id, value: `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` }))}
+                                onChange={(id) => setCuentaBancariaId(Number(id))}
+                                value={(() => { const c = cuentasActivas.find((x) => x.id === cuentaBancariaId); return c ? `${c.alias || c.banco} — ${c.numeroCuenta} (${c.moneda})` : ''; })()}
+                                withLabel
+                                error={null}
+                            />
+                        )
+                    )}
 
                     <div>
                         <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 tracking-wider">Observación (opcional)</label>

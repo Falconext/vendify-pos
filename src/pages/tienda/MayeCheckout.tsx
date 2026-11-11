@@ -7,6 +7,7 @@ import MayeFooter from '@/components/tienda/MayeFooter';
 import ProductCardMaye from '@/components/tienda/ProductCardMaye';
 import { BancoLogo } from '@/components/shared/BancoLogo';
 import { mayeCard, mayePage, mayeSection, mayeStagger, mayeTap, mayeViewport } from '@/lib/motion/maye';
+import { textoEnvioSinCosto } from '@/utils/envioTienda';
 
 type MedioPago = 'YAPE' | 'PLIN' | 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 
@@ -562,7 +563,7 @@ export default function MayeCheckout({
                   <span>Envío</span>
                   <span className="font-bold text-gray-900">
                     {envio === 0
-                      ? <span className="text-emerald-600 font-bold">Gratis</span>
+                      ? <span className="text-emerald-600 font-bold">{textoEnvioSinCosto(configEnvio?.envioACoordinar, formData?.tipoEntrega, configEnvio?.aceptaRecojo)}</span>
                       : `S/ ${envio.toFixed(2)}`}
                   </span>
                 </div>

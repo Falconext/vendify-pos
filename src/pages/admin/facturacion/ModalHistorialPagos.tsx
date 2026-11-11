@@ -3,10 +3,13 @@ import { Icon } from '@iconify/react';
 import moment from 'moment';
 import { createPortal } from 'react-dom';
 import { usePagosStore } from '@/zustand/pagos';
+import ModalCorregirMedioPago from './ModalCorregirMedioPago';
 
 interface ModalHistorialPagosProps {
     comprobante: any;
     onClose: () => void;
+    /** La lista de atrás muestra el método: hay que recargarla si se corrige. */
+    onPagoCorregido?: () => void;
 }
 
 const medioPagoIcon: Record<string, string> = {
@@ -32,7 +35,8 @@ const DIRIGIDO_LABEL: Record<string, string> = {
     VENDEDOR: 'Vendedor',
 };
 
-const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps) => {
+const ModalHistorialPagos = ({ comprobante, onClose, onPagoCorregido }: ModalHistorialPagosProps) => {
+    const [corrigiendoPago, setCorrigiendoPago] = useState(false);
     const { getHistorialPagos, editarReferenciaPago, subirComprobantePago } = usePagosStore();
     const [pagos, setPagos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -292,6 +296,12 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                     <p className="text-xs text-slate-400">
                         {pagos.length} {pagos.length === 1 ? 'pago registrado' : 'pagos registrados'}
                     </p>
+                    {pagos.length > 0 && !['01', '03'].includes(String(comprobante?.tipoDoc ?? '')) && (
+                        <button type="button" data-testid="historial-corregir-medio-pago" onClick={() => setCorrigiendoPago(true)}
+                            className="ml-auto mr-2 h-11 px-4 rounded-2xl border border-violet-200 dark:border-violet-800/60 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30">
+                            Corregir método
+                        </button>
+                    )}
                     <button type="button" onClick={onClose}
                         className="h-11 px-8 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         Cerrar
@@ -323,6 +333,13 @@ const ModalHistorialPagos = ({ comprobante, onClose }: ModalHistorialPagosProps)
                         </button>
                     </div>
                 </div>
+            )}
+            {corrigiendoPago && (
+                <ModalCorregirMedioPago
+                    comprobanteId={comprobante.id}
+                    onClose={() => setCorrigiendoPago(false)}
+                    onCorregido={() => { cargarPagos(); onPagoCorregido?.(); }}
+                />
             )}
         </div>
     );

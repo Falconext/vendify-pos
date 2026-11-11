@@ -123,6 +123,9 @@ export type IFormProduct = {
     disponibilidad?: 'INMEDIATA' | 'BAJO_PEDIDO' | 'NO_DISPONIBLE' | 'NO_COMERCIAL';
     /** Empuje frente a productos equivalentes (1 baja … 4 muy alta). */
     prioridadVenta?: number;
+    /** Órganos y sistemas sobre los que actúa, separados por coma (búsqueda de la tienda). */
+    organos?: string | null;
+    sistemas?: string | null;
   productoId: number
   descripcion: string,
   categoriaNombre: string

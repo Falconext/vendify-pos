@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
-import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
 import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
 import RotuloEnvio100x150 from './RotuloEnvio100x150';
-import { COURIER_LABEL, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
+import RotuloTicketEnvio from './RotuloTicketEnvio';
+import { altoTicketMm, COURIER_LABEL, FUERA_DE_PANTALLA, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
 import RotuloTicket, { quienLleva, tieneDestino, type DatosRotulo } from './RotuloTicket';
 
 
@@ -38,6 +38,8 @@ export default function RotulosLotePrint({
     formato?: RotuloFormato;
 }) {
     const [datos, setDatos] = useState<Array<RotuloLoteItem & { rotulo: DatosRotulo | null }> | null>(null);
+    // Se fija tras pintar y medir; la impresión sale con este alto ya aplicado.
+    const [pagina, setPagina] = useState<{ altoTicket: number | null } | null>(null);
     const componentRef = useRef<HTMLDivElement>(null);
     // Los que de verdad salieron en este lote (sin los omitidos por falta de destino).
     const impresosRef = useRef<number[]>([]);
@@ -47,7 +49,7 @@ export default function RotulosLotePrint({
     const printFn = useReactToPrint({
         // @ts-ignore
         contentRef: componentRef,
-        pageStyle: rotuloPageStyle(formato) ?? buildComprobantePrintPageStyle({ width: 80, height: 330 }),
+        pageStyle: rotuloPageStyle(formato, pagina?.altoTicket),
         onAfterPrint: () => {
             if (onImpresos && impresosRef.current.length) onImpresos(impresosRef.current);
             impresosRef.current = [];
@@ -100,10 +102,36 @@ export default function RotulosLotePrint({
 
     useEffect(() => {
         if (!datos) return;
-        const timer = window.setTimeout(() => { printFn(); setDatos(null); }, 80);
+        const timer = window.setTimeout(() => setPagina({ altoTicket: altoTicketMm(componentRef.current) }), 80);
         return () => window.clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [datos]);
+
+    useEffect(() => {
+        if (!pagina) return;
+        printFn();
+        setDatos(null);
+        setPagina(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagina]);
+
+    if (formato === 'TICKET_ENVIO') {
+        return (
+            <div aria-hidden style={FUERA_DE_PANTALLA}>
+                <div ref={componentRef}>
+                    {(datos ?? []).map((d, idx) => (
+                        <RotuloTicketEnvio
+                            key={d.comprobanteId}
+                            saltoDePagina={idx < (datos?.length ?? 0) - 1}
+                            logo={logo}
+                            courier={(d.rotulo && quienLleva(d.rotulo)) || (COURIER_LABEL[d.courier] ?? d.courier)}
+                            d={{ ...(d.rotulo as DatosRotulo), referencia: d.rotulo?.referencia || d.referencia, celular: d.celular || d.rotulo?.celular }}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (formato === 'ETIQUETA_100X150') {
         return (
@@ -145,7 +173,7 @@ export default function RotulosLotePrint({
     }
 
     return (
-        <div className="hidden">
+        <div aria-hidden style={FUERA_DE_PANTALLA}>
             <div ref={componentRef}>
                 {(datos ?? []).map((d, idx) => (
                     <RotuloTicket

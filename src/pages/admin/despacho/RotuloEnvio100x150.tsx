@@ -20,29 +20,29 @@ const MM_POR_MODULO = 0.375;
 const ANCHO_MAX_BARRAS_MM = 90;
 
 /** Las barras negras del rótulo se perderían al imprimir sin esto. */
-const conFondo: CSSProperties = { WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' };
+export const conFondo: CSSProperties = { WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' };
 
 const tamanoNombre = (n: string) => (n.length > 44 ? '4.8mm' : n.length > 26 ? '5.8mm' : '7.4mm');
 const tamanoDestino = (t: string) => (t.length > 140 ? '3.1mm' : t.length > 70 ? '3.8mm' : t.length > 36 ? '4.6mm' : '5.8mm');
 
 /** Corta por línea entera: en un rótulo, media línea de dirección no se lee. */
-const lineas = (n: number): CSSProperties => ({
+export const lineas = (n: number): CSSProperties => ({
     display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: n, overflow: 'hidden', overflowWrap: 'anywhere',
 });
 
 /** "Clientes varios" lleva un documento de relleno: en el paquete no dice nada. */
-const documentoReal = (doc?: string | null) => {
+export const documentoReal = (doc?: string | null) => {
     const t = String(doc ?? '').trim();
     return t && !/^(0+|10{7})$/.test(t) ? t : '';
 };
 
-const fechaCorta = (iso?: string | null) => {
+export const fechaCorta = (iso?: string | null) => {
     if (!iso) return '';
     const f = new Date(iso);
     return isNaN(f.getTime()) ? '' : f.toLocaleDateString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric' });
 };
-const soles = (n: number) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const cantidadTexto = (n: number) => String(Number(n.toFixed(3)));
+export const soles = (n: number) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const cantidadTexto = (n: number) => String(Number(n.toFixed(3)));
 
 /** El logo de la empresa viene como URL o base64 (ver comprobanteImprimir). */
 export const logoSrc = (logo?: string | null) => {

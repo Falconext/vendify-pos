@@ -22,6 +22,21 @@ const inputCls = (field: string, errors: Record<string, string>) => {
   return errors?.[field] ? `${base} border-red-500` : `${base} border-gray-200 focus:border-[#151515]`;
 };
 
+// Fuera de la página a propósito: definida adentro, cada letra escrita creaba un
+// componente nuevo, React rehacía los campos y se perdía el foco.
+const Section = ({ green, icon, step, title, children }: { green: string; icon: string; step: number; title: string; children: React.ReactNode }) => (
+  <motion.section variants={falconFadeUp} whileHover={{ y: -2 }} className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
+    <div className="mb-5 flex items-center gap-3">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white" style={{ background: green }}>{step}</span>
+      <div className="flex items-center gap-2">
+        <Icon icon={icon} width={22} style={{ color: green }} />
+        <h2 className="text-lg font-black text-[#151515]">{title}</h2>
+      </div>
+    </div>
+    {children}
+  </motion.section>
+);
+
 export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
   const {
     slug, tienda, diseno, cp,
@@ -51,19 +66,6 @@ export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
   ].filter(Boolean) as MedioPago[]);
   const paymentMethods = acceptedPaymentMethods.length ? acceptedPaymentMethods : (['YAPE', 'EFECTIVO'] as MedioPago[]);
 
-  const Section = ({ icon, step, title, children }: { icon: string; step: number; title: string; children: React.ReactNode }) => (
-    <motion.section variants={falconFadeUp} whileHover={{ y: -2 }} className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white" style={{ background: green }}>{step}</span>
-        <div className="flex items-center gap-2">
-          <Icon icon={icon} width={22} style={{ color: green }} />
-          <h2 className="text-lg font-black text-[#151515]">{title}</h2>
-        </div>
-      </div>
-      {children}
-    </motion.section>
-  );
-
   return (
     <div className="min-h-screen bg-[#ececec]" style={{ fontFamily: `'${diseno?.tipografia || 'Inter'}', sans-serif` }}>
       <FalconHeader tienda={tienda} slug={slug} green={green} cartCount={cartCount} cartTotal={subtotal} onOpenCart={() => go(`/tienda/${slug}/catalogo`)} diseno={diseno} />
@@ -87,7 +89,7 @@ export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
         <motion.div initial="hidden" animate="show" variants={falconStagger} className="space-y-6">
           {/* Delivery */}
           {configEnvio && (configEnvio.aceptaEnvio || configEnvio.aceptaRecojo) && (
-            <Section icon="solar:delivery-bold" step={1} title={editable(diseno?.falconCheckoutDeliveryTitle, 'Método de entrega')}>
+            <Section green={green} icon="solar:delivery-bold" step={1} title={editable(diseno?.falconCheckoutDeliveryTitle, 'Método de entrega')}>
               <div className="grid gap-3 sm:grid-cols-2">
                 {configEnvio.aceptaEnvio && (
                   <motion.label whileHover={{ y: -2 }} whileTap={falconTap} className="flex cursor-pointer items-center gap-3 rounded-md border-2 px-4 py-4 text-sm font-black transition-colors" style={formData.tipoEntrega === 'ENVIO' ? { borderColor: green, background: `${green}14`, color: '#111' } : { borderColor: '#E5E7EB', color: '#6B7280' }}>
@@ -110,7 +112,7 @@ export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
           )}
 
           {/* Customer */}
-          <Section icon="solar:user-bold" step={2} title={editable(diseno?.falconCheckoutCustomerTitle, 'Datos del cliente')}>
+          <Section green={green} icon="solar:user-bold" step={2} title={editable(diseno?.falconCheckoutCustomerTitle, 'Datos del cliente')}>
             <div className="grid gap-4 sm:grid-cols-2">
               <input type="text" name="clienteNombre" placeholder="Nombre completo *" value={formData.clienteNombre} onChange={handleChange} className={inputCls('clienteNombre', erroresForm)} />
               <input type="tel" name="clienteTelefono" placeholder="Teléfono *" value={formData.clienteTelefono} onChange={handleChange} className={inputCls('clienteTelefono', erroresForm)} />
@@ -125,7 +127,7 @@ export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
           </Section>
 
           {/* Payment */}
-          <Section icon="solar:card-bold" step={3} title={editable(diseno?.falconCheckoutPaymentTitle, 'Método de pago')}>
+          <Section green={green} icon="solar:card-bold" step={3} title={editable(diseno?.falconCheckoutPaymentTitle, 'Método de pago')}>
             <div className="grid gap-3 sm:grid-cols-2">
               {paymentMethods.map((method) => {
                 const meta = PAYMENT_META[method];
@@ -154,7 +156,7 @@ export default function FalconCheckoutPage(props: TemplateCheckoutPageProps) {
           </Section>
 
           {/* Notes */}
-          <Section icon="solar:notes-bold" step={4} title={editable(diseno?.falconCheckoutNotesTitle, 'Indicaciones (opcional)')}>
+          <Section green={green} icon="solar:notes-bold" step={4} title={editable(diseno?.falconCheckoutNotesTitle, 'Indicaciones (opcional)')}>
             <textarea name="observaciones" placeholder="Horario de entrega, referencia adicional, etc." value={formData.observaciones} onChange={handleChange} rows={4} className="w-full resize-none rounded-md border border-gray-200 bg-white p-4 text-sm font-semibold outline-none placeholder:text-gray-400 focus:border-[#151515]" />
           </Section>
         </motion.div>

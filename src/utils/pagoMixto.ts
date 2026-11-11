@@ -48,3 +48,24 @@ export const etiquetaMedioPago = (m: string) => ETIQUETAS[String(m).toUpperCase(
 /** "Efectivo S/ 20.00 · Yape S/ 16.00" */
 export const resumenPagoMixto = (lineas: LineaPagoMixto[], simbolo = 'S/') =>
     lineas.map((l) => `${etiquetaMedioPago(l.method)} ${simbolo} ${l.amount.toFixed(2)}`).join(' · ');
+
+/**
+ * Detalle de una venta a crédito: cada cobro con su medio real, y lo que falta.
+ * El `medioPago` de la cabecera no sirve: es el que quedó por defecto al emitir.
+ * "Transferencia S/ 969.00 · op. 1861686", "Por cobrar S/ 120.00".
+ */
+export function lineasCobroCredito(doc: any, simbolo = 'S/'): string[] {
+    const pagos: any[] = Array.isArray(doc?.pagos) ? doc.pagos : [];
+    const lineas = pagos
+        .filter((p) => Number(p?.monto) > 0)
+        .map((p) => {
+            const op = String(p?.referencia ?? '').trim();
+            return `${etiquetaMedioPago(String(p?.medioPago ?? ''))} ${simbolo} ${Number(p.monto).toFixed(2)}${op ? ` · op. ${op}` : ''}`;
+        });
+    const cobrado = pagos.reduce((a, p) => a + (Number(p?.monto) || 0), 0);
+    const total = Number(doc?.mtoImpVenta ?? doc?.total ?? 0);
+    const saldo = doc?.saldo != null ? Number(doc.saldo) : total - cobrado;
+    if (saldo > 0.009) lineas.push(`Por cobrar ${simbolo} ${saldo.toFixed(2)}`);
+    if (!lineas.length) lineas.push('Sin cobros registrados');
+    return lineas;
+}

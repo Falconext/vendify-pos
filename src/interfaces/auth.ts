@@ -41,6 +41,8 @@ export interface IUser {
     puedeAnularComprobantes?: boolean
     /** Solo gestiona fotos de productos. */
     soloImagenesProductos?: boolean
+    /** No da descuentos por línea ni globales. */
+    bloquearDescuentos?: boolean
 }
 
 export interface IResponse {

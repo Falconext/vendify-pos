@@ -1,5 +1,6 @@
-import { detectarFuncionesRubro, esRubroFabricacion } from '@/utils/rubro-features';
+import { detectarFuncionesRubro } from '@/utils/rubro-features';
 import { hasPlanFeature } from '@/utils/permissions';
+import { tieneModuloProduccion } from '@/utils/moduloProduccion';
 
 const isDesktopBuild = String(import.meta.env.VITE_VENDIFY_DESKTOP || '').toLowerCase() === 'true';
 
@@ -152,6 +153,8 @@ export const MODULE_META: Record<string, ModuleMeta> = {
       items.push({ codigo: 'kardex:entradas-salidas', nombre: 'Entradas y salidas', ruta: '/administrador/kardex/entradas-salidas' });
       // Mermas: cuánto se perdió por producto roto, vencido o extraviado.
       items.push({ codigo: 'kardex:mermas', nombre: 'Mermas', ruta: '/administrador/kardex/mermas' });
+      // Inventario valorizado: costo, precio de venta y ganancia potencial.
+      items.push({ codigo: 'kardex:inventario-valorizado', nombre: 'Inventario valorizado', ruta: '/administrador/kardex/inventario-valorizado' });
       // Listas de Precio: gestión de precios por sede/usuario (multi-local).
       items.push({ codigo: 'kardex:listas-precio', nombre: 'Listas de Precio', ruta: '/administrador/kardex/listas-precio' });
       // Reprecio masivo: cambiar el precio de muchos productos de una vez.
@@ -161,7 +164,7 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   },
 
   produccion: {
-    condition: (auth) => esRubroFabricacion(auth?.empresa?.rubro?.nombre),
+    condition: tieneModuloProduccion,
     navRoute: () => '/administrador/produccion/recetas',
     pathPrefix: () => '/administrador/produccion',
   },

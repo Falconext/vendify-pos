@@ -5,6 +5,7 @@ import AutopartesHeader from '@/components/tienda/AutopartesHeader';
 import AutopartesFooter from '@/components/tienda/AutopartesFooter';
 import ProductCardAutopartes from '@/components/tienda/ProductCardAutopartes';
 import { BancoLogo } from '@/components/shared/BancoLogo';
+import { textoEnvioSinCosto } from '@/utils/envioTienda';
 
 type MedioPago = 'YAPE' | 'PLIN' | 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 
@@ -540,7 +541,7 @@ export default function AutopartesCheckout({
                   <span>Envío</span>
                   <span className="font-bold text-gray-900">
                     {envio === 0
-                      ? <span className="text-emerald-600 font-bold">Gratis</span>
+                      ? <span className="text-emerald-600 font-bold">{textoEnvioSinCosto(configEnvio?.envioACoordinar, formData?.tipoEntrega, configEnvio?.aceptaRecojo)}</span>
                       : `S/ ${envio.toFixed(2)}`}
                   </span>
                 </div>
