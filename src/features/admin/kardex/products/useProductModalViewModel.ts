@@ -1554,6 +1554,14 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             Number((formValues as any)?.prioridadVenta) >= 1
               ? Number((formValues as any).prioridadVenta)
               : undefined,
+          organos:
+            (formValues as any)?.organos !== undefined
+              ? String((formValues as any).organos ?? '')
+              : undefined,
+          sistemas:
+            (formValues as any)?.sistemas !== undefined
+              ? String((formValues as any).sistemas ?? '')
+              : undefined,
           preciosMayorista: Array.isArray(formValues?.preciosMayorista)
             ? formValues.preciosMayorista.map((p) => ({
                 cantidadMinima: Number(p.cantidadMinima),
@@ -1908,6 +1916,14 @@ export const useProductModalViewModel = (props: IPropsProducts) => {
             prioridadVenta:
               Number((formValues as any)?.prioridadVenta) >= 1
                 ? Number((formValues as any).prioridadVenta)
+                : undefined,
+            organos:
+              (formValues as any)?.organos !== undefined
+                ? String((formValues as any).organos ?? '')
+                : undefined,
+            sistemas:
+              (formValues as any)?.sistemas !== undefined
+                ? String((formValues as any).sistemas ?? '')
                 : undefined,
             estado: "ACTIVO",
             imagenUrl: imageToSave,
