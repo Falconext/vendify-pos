@@ -6,6 +6,7 @@ import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import RotuloTicket, { tieneDestino } from '../RotuloTicket'
+import { altoTicketMm, rotuloPageStyle } from '../rotuloFormato'
 import { colorDeRepartidor, FECHA_INICIO_TODO, guardarPeriodo, opcionesCourier, periodoActivo, periodoGuardado, quienLlevaEnLista, rangoDePeriodo } from '../filtrosDespacho'
 
 const base = {
@@ -117,3 +118,33 @@ describe('periodo "Todas" del panel', () => {
         expect(periodoGuardado()).toBeNull();
     });
 });
+
+describe('página del rótulo en ticket', () => {
+    const conAltos = (...altos: number[]) => {
+        const caja = document.createElement('div')
+        altos.forEach((alto) => {
+            const el = document.createElement('div')
+            el.setAttribute('data-testid', 'rotulo-ticket')
+            Object.defineProperty(el, 'offsetHeight', { value: alto })
+            caja.appendChild(el)
+        })
+        return caja
+    }
+
+    it('usa el alto del rótulo más largo y no el fijo de 330 mm', () => {
+        const alto = altoTicketMm(conAltos(269, 493, 269))
+        expect(alto).toBe(133)
+        expect(rotuloPageStyle('TICKET', alto)).toContain('size: 80mm 133mm')
+        expect(rotuloPageStyle('TICKET', alto)).not.toContain('330mm')
+    })
+
+    it('sin nada pintado no inventa un alto', () => {
+        expect(altoTicketMm(null)).toBeNull()
+        expect(altoTicketMm(conAltos(0))).toBeNull()
+    })
+
+    it('las etiquetas conservan su tamaño', () => {
+        expect(rotuloPageStyle('ETIQUETA_80X50', 133)).toContain('size: 80mm 50mm')
+        expect(rotuloPageStyle('ETIQUETA_100X150', 133)).toContain('size: 100mm 150mm')
+    })
+})

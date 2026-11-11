@@ -37,9 +37,27 @@ export const guardarRotuloFormato = (empresaId: number | string | undefined, for
     }
 };
 
+/**
+ * Alto de página para el ticket: el del rótulo más largo, más un margen para
+ * que el redondeo no empuje el final a una hoja nueva. Con un alto fijo de
+ * 330 mm la impresora botaba papel en blanco tras cada rótulo (71 mm de contenido).
+ * Sin medida (nada pintado) devuelve null.
+ */
+export const altoTicketMm = (contenedor: HTMLElement | null): number | null => {
+    const altos = Array.from(contenedor?.querySelectorAll<HTMLElement>('[data-testid="rotulo-ticket"]') ?? []).map((el) => el.offsetHeight);
+    const mayor = Math.max(0, ...altos);
+    return mayor > 0 ? Math.ceil((mayor * 25.4) / 96) + 2 : null;
+};
+
+/** El ticket se mide antes de imprimir: `display: none` daría alto 0. */
+export const FUERA_DE_PANTALLA = { position: 'fixed', left: '-10000px', top: 0, visibility: 'hidden' } as const;
+
 /** Estilo de página para react-to-print según el formato. */
-export const rotuloPageStyle = (formato: RotuloFormato) => {
-    if (formato === 'TICKET') return null;
+export const rotuloPageStyle = (formato: RotuloFormato, altoTicket?: number | null) => {
+    if (formato === 'TICKET') {
+        return `@page { size: 80mm ${altoTicket ?? 200}mm; margin: 0; }
+           @media print { html, body { margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`;
+    }
     const tamano = formato === 'ETIQUETA_100X150' ? '100mm 150mm' : '80mm 50mm';
     return `@page { size: ${tamano}; margin: 0; }
            @media print { html, body { margin: 0 !important; padding: 0 !important; } }`;

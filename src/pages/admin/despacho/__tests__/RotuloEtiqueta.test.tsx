@@ -38,5 +38,5 @@ it('el formato se recuerda por empresa y define el @page', () => {
     expect(leerRotuloFormato(63)).toBe('ETIQUETA_80X50');
     expect(leerRotuloFormato(64)).toBe('TICKET');
     expect(rotuloPageStyle('ETIQUETA_80X50')).toContain('size: 80mm 50mm');
-    expect(rotuloPageStyle('TICKET')).toBeNull();
+    expect(rotuloPageStyle('TICKET')).toContain('size: 80mm 200mm');
 });

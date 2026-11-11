@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
-import { buildComprobantePrintPageStyle } from '@/utils/printStyles';
 import { mensajeErrorShalom } from '@/services/shalom.service';
 import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
 import RotuloEnvio100x150 from './RotuloEnvio100x150';
-import { COURIER_LABEL, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
+import { altoTicketMm, COURIER_LABEL, FUERA_DE_PANTALLA, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
 import RotuloTicket, { quienLleva, type DatosRotulo } from './RotuloTicket';
 
 
@@ -31,6 +30,8 @@ export default function RotuloPrint({
     formato?: RotuloFormato;
 }) {
     const [datos, setDatos] = useState<DatosRotulo | null>(null);
+    // Se fija tras pintar y medir; la impresión sale con este alto ya aplicado.
+    const [pagina, setPagina] = useState<{ altoTicket: number | null } | null>(null);
     const componentRef = useRef<HTMLDivElement>(null);
     const { alert } = useAlertStore();
     const logo = useAuthStore((st) => (st.auth as any)?.empresa?.logo);
@@ -38,7 +39,7 @@ export default function RotuloPrint({
     const printFn = useReactToPrint({
         // @ts-ignore
         contentRef: componentRef,
-        pageStyle: rotuloPageStyle(formato) ?? buildComprobantePrintPageStyle({ width: 80, height: 330 }),
+        pageStyle: rotuloPageStyle(formato, pagina?.altoTicket),
         onAfterPrint: () => {
             if (comprobanteId && onImpreso) onImpreso(comprobanteId);
             onDone();
@@ -66,10 +67,18 @@ export default function RotuloPrint({
     useEffect(() => {
         if (!datos) return;
         // Un tick para que el div ya tenga el contenido pintado antes de imprimir.
-        const timer = window.setTimeout(() => { printFn(); setDatos(null); }, 50);
+        const timer = window.setTimeout(() => setPagina({ altoTicket: altoTicketMm(componentRef.current) }), 50);
         return () => window.clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [datos]);
+
+    useEffect(() => {
+        if (!pagina) return;
+        printFn();
+        setDatos(null);
+        setPagina(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagina]);
 
     if (formato === 'ETIQUETA_100X150') {
         return (
@@ -92,7 +101,7 @@ export default function RotuloPrint({
     }
 
     return (
-        <div className="hidden">
+        <div aria-hidden style={FUERA_DE_PANTALLA}>
             <div ref={componentRef}>
                 {datos && <RotuloTicket d={datos} />}
             </div>
