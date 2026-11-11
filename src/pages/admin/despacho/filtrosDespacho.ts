@@ -41,6 +41,29 @@ export function rangoDePeriodo(periodo: Periodo, hoy: string): { fecha: string; 
     return { fecha: inicio.format('YYYY-MM-DD'), fechaFin: h.format('YYYY-MM-DD') };
 }
 
+/**
+ * ¿El rango es un mes entero, o el mes actual del 1 a hoy? Es lo que deja al
+ * panel moverse de mes en mes con las flechas.
+ */
+export function esVistaDeMes(fecha: string, fechaFin: string, hoy: string): boolean {
+    if (!fechaFin) return false;
+    const inicio = moment(fecha, 'YYYY-MM-DD');
+    if (fecha === FECHA_INICIO_TODO || inicio.date() !== 1) return false;
+    const finDeMes = inicio.clone().endOf('month').format('YYYY-MM-DD');
+    return fechaFin === finDeMes || (fechaFin === hoy && inicio.isSame(moment(hoy, 'YYYY-MM-DD'), 'month'));
+}
+
+/** El mes anterior o siguiente, entero; el actual llega hasta hoy. Más allá de hoy, null. */
+export function mesVecino(fecha: string, delta: -1 | 1, hoy: string): { fecha: string; fechaFin: string } | null {
+    const inicio = moment(fecha, 'YYYY-MM-DD').add(delta, 'month').startOf('month');
+    const h = moment(hoy, 'YYYY-MM-DD');
+    if (inicio.isAfter(h, 'month')) return null;
+    return {
+        fecha: inicio.format('YYYY-MM-DD'),
+        fechaFin: inicio.isSame(h, 'month') ? h.format('YYYY-MM-DD') : inicio.clone().endOf('month').format('YYYY-MM-DD'),
+    };
+}
+
 /** Cuál periodo describe el rango actual (para resaltar el botón), o null. */
 export function periodoActivo(fecha: string, fechaFin: string, hoy: string): Periodo | null {
     for (const p of ['DIA', 'SEMANA', 'MES', 'TODO'] as Periodo[]) {

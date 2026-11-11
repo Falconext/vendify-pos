@@ -29,7 +29,7 @@ import {
     leerRotuloFormato,
     type RotuloFormato,
 } from './rotuloFormato';
-import { guardarPeriodo, LIMITE_TODAS, opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo, type Periodo } from './filtrosDespacho';
+import { esVistaDeMes, guardarPeriodo, LIMITE_TODAS, mesVecino, opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo, type Periodo } from './filtrosDespacho';
 import { elegiblesParaRotulo } from './seleccionRotulos';
 import {
     alternarRotulo,
@@ -643,18 +643,30 @@ export default function PanelVentasView() {
     const porCobrarGlobalTotal = Number(vm.porCobrarGlobal?.total ?? 0);
     const porCobrarGlobalCantidad = Number(vm.porCobrarGlobal?.cantidad ?? 0);
 
+    const hoyIso = moment().format('YYYY-MM-DD');
+    const vistaDeMes = !vm.verTodas && esVistaDeMes(vm.fecha, vm.fechaFin, hoyIso);
+    const mesSiguiente = vistaDeMes ? mesVecino(vm.fecha, 1, hoyIso) : null;
+    const irAlMes = (r: { fecha: string; fechaFin: string } | null) => {
+        if (!r) return;
+        vm.setFecha(r.fecha);
+        vm.setFechaFin(r.fechaFin);
+    };
+    // Los KPIs siguen al rango elegido: "hoy" solo cuando lo que se ve es hoy.
+    const esUnDia = !vm.verTodas && !(vm.fechaFin && vm.fechaFin > vm.fecha);
+    const esHoy = esUnDia && vm.fecha === hoyIso;
+
     const kpis = [
         {
-            label: vm.verTodas ? 'Vendido' : 'Vendido hoy',
+            label: esHoy ? 'Vendido hoy' : 'Vendido',
             value: `S/ ${totalVentasDia.toFixed(2)}`,
-            detail: `${vm.countTodo ?? 0} registro${(vm.countTodo ?? 0) !== 1 ? 's' : ''}${vm.verTodas ? '' : ' del día'}`,
+            detail: `${vm.countTodo ?? 0} registro${(vm.countTodo ?? 0) !== 1 ? 's' : ''}${esUnDia ? ' del día' : ''}`,
             icon: 'solar:wallet-money-bold-duotone',
             tone: 'emerald' as const,
         },
         {
-            label: vm.verTodas ? 'Por cobrar' : 'Por cobrar hoy',
+            label: esHoy ? 'Por cobrar hoy' : 'Por cobrar',
             value: `S/ ${totalPorCobrarDia.toFixed(2)}`,
-            detail: `${vm.countPorCobrar ?? 0} venta${(vm.countPorCobrar ?? 0) !== 1 ? 's' : ''} con saldo${vm.verTodas ? '' : ' hoy'}`,
+            detail: `${vm.countPorCobrar ?? 0} venta${(vm.countPorCobrar ?? 0) !== 1 ? 's' : ''} con saldo${esHoy ? ' hoy' : ''}`,
             icon: 'solar:bill-list-bold-duotone',
             tone: totalPorCobrarDia > 0 ? 'red' as const : 'blue' as const,
         },
@@ -668,7 +680,7 @@ export default function PanelVentasView() {
         {
             label: 'Con despacho',
             value: String(vm.countDespacho),
-            detail: vm.verTodas ? 'Ventas con seguimiento' : 'Ventas del día con seguimiento',
+            detail: esUnDia ? 'Ventas del día con seguimiento' : 'Ventas con seguimiento',
             icon: 'solar:delivery-bold-duotone',
             tone: 'blue' as const,
         },
@@ -713,7 +725,7 @@ export default function PanelVentasView() {
                     <div className="flex shrink-0 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800" data-testid="periodo-rapido">
                         {([['TODO', 'Todas'], ['DIA', 'Hoy'], ['SEMANA', 'Semana'], ['MES', 'Mes']] as [Periodo, string][]).map(([p, label]) => {
                             const hoy = moment().format('YYYY-MM-DD');
-                            const activo = periodoActivo(vm.fecha, vm.fechaFin, hoy) === p;
+                            const activo = p === 'MES' ? vistaDeMes : periodoActivo(vm.fecha, vm.fechaFin, hoy) === p;
                             return (
                                 <button
                                     key={p}
@@ -732,10 +744,13 @@ export default function PanelVentasView() {
                         })}
                     </div>
                     <button
-                        onClick={() => vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
+                        onClick={() => vistaDeMes
+                            ? irAlMes(mesVecino(vm.fecha, -1, hoyIso))
+                            : vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
                         data-testid="btn-dia-anterior"
                         disabled={vm.verTodas}
                         className="disabled:cursor-not-allowed disabled:opacity-40 h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title={vistaDeMes ? 'Mes anterior' : 'Día anterior'}
                     >
                         <Icon icon="solar:arrow-left-linear" className="text-lg" />
                     </button>
@@ -796,10 +811,13 @@ export default function PanelVentasView() {
                         </button>
                     )}
                     <button
-                        onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
+                        onClick={() => vistaDeMes
+                            ? irAlMes(mesSiguiente)
+                            : vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
                         data-testid="btn-dia-siguiente"
-                        disabled={vm.verTodas}
+                        disabled={vm.verTodas || (vistaDeMes && !mesSiguiente)}
                         className="disabled:cursor-not-allowed disabled:opacity-40 h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title={vistaDeMes ? 'Mes siguiente' : 'Día siguiente'}
                     >
                         <Icon icon="solar:arrow-right-linear" className="text-lg" />
                     </button>
