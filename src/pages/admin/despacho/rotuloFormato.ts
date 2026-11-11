@@ -37,16 +37,20 @@ export const guardarRotuloFormato = (empresaId: number | string | undefined, for
     }
 };
 
+/** Por debajo de este alto el rótulo quedaría más ancho que alto. */
+const ALTO_MINIMO_TICKET_MM = 90;
+
 /**
  * Alto de página para el ticket: el del rótulo más largo, más un margen para
  * que el redondeo no empuje el final a una hoja nueva. Con un alto fijo de
- * 330 mm la impresora botaba papel en blanco tras cada rótulo (71 mm de contenido).
- * Sin medida (nada pintado) devuelve null.
+ * 330 mm la impresora botaba papel en blanco tras cada rótulo. Nunca baja del
+ * mínimo: una página más ancha que alta se imprime en horizontal y el rótulo se
+ * parte en dos hojas (POS-80 de Pierre). Sin medida (nada pintado) devuelve null.
  */
 export const altoTicketMm = (contenedor: HTMLElement | null): number | null => {
     const altos = Array.from(contenedor?.querySelectorAll<HTMLElement>('[data-testid="rotulo-ticket"]') ?? []).map((el) => el.offsetHeight);
     const mayor = Math.max(0, ...altos);
-    return mayor > 0 ? Math.ceil((mayor * 25.4) / 96) + 2 : null;
+    return mayor > 0 ? Math.max(Math.ceil((mayor * 25.4) / 96) + 2, ALTO_MINIMO_TICKET_MM) : null;
 };
 
 /** El ticket se mide antes de imprimir: `display: none` daría alto 0. */

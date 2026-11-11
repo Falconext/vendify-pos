@@ -138,6 +138,12 @@ describe('página del rótulo en ticket', () => {
         expect(rotuloPageStyle('TICKET', alto)).not.toContain('330mm')
     })
 
+    it('un rótulo corto no queda más ancho que alto', () => {
+        // 280 px son unos 74 mm: en 80×76 mm la impresora lo pondría en horizontal.
+        expect(altoTicketMm(conAltos(280))).toBe(90)
+        expect(altoTicketMm(conAltos(280))!).toBeGreaterThan(80)
+    })
+
     it('sin nada pintado no inventa un alto', () => {
         expect(altoTicketMm(null)).toBeNull()
         expect(altoTicketMm(conAltos(0))).toBeNull()
