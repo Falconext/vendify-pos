@@ -242,8 +242,17 @@ export default function ConfiguracionTienda() {
                 </div>
               </div>
             )}
-            {formData.aceptaEnvio && <InputPro label="Costo de envío fijo (S/)" name="costoEnvioFijo" type="number" value={formData.costoEnvioFijo} onChange={handleChange} placeholder="0.00" isLabel />}
-            {formData.aceptaEnvio && <InputPro label="Envío gratis desde (S/) — 0 = nunca gratis" name="envioGratisDesdeSoles" type="number" value={formData.envioGratisDesdeSoles} onChange={handleChange} placeholder="0.00" isLabel />}
+            <div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="envioACoordinar" name="envioACoordinar" checked={formData.envioACoordinar} onChange={handleChange} className="w-4 h-4 dark:bg-slate-800 dark:border-slate-700" />
+                <label htmlFor="envioACoordinar" className="text-sm dark:text-gray-300">Coordino el envío aparte</label>
+              </div>
+              <p className="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                La tienda muestra "A coordinar", no cobra envío en el pedido y deja de anunciar envío gratis.
+              </p>
+            </div>
+            {formData.aceptaEnvio && !formData.envioACoordinar && <InputPro label="Costo de envío fijo (S/)" name="costoEnvioFijo" type="number" value={formData.costoEnvioFijo} onChange={handleChange} placeholder="0.00" isLabel />}
+            {formData.aceptaEnvio && !formData.envioACoordinar && <InputPro label="Envío gratis desde (S/) — 0 = nunca gratis" name="envioGratisDesdeSoles" type="number" value={formData.envioGratisDesdeSoles} onChange={handleChange} placeholder="0.00" isLabel />}
             {formData.aceptaRecojo && <InputPro label="Dirección de recojo" name="direccionRecojo" value={formData.direccionRecojo} onChange={handleChange} placeholder="Av. Principal 123, Distrito, Ciudad" isLabel />}
             {formData.tiendaVentaSinStock && (
               <p className="-mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">

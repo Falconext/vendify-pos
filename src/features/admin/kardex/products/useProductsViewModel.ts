@@ -612,6 +612,8 @@ export const useProductsViewModel = () => {
                         formValues: {
                             ...prev.formValues,
                             descripcionLarga: full.descripcionLarga ?? (prev.formValues as any).descripcionLarga ?? '',
+                            organos: full.organos ?? '',
+                            sistemas: full.sistemas ?? '',
                             atributosTecnicos: full.atributosTecnicos ?? (prev.formValues as any).atributosTecnicos,
                             codigosBarrasExtra: Array.isArray(full.codigosBarrasExtra)
                                 ? full.codigosBarrasExtra
