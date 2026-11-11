@@ -26,19 +26,25 @@ describe('el mensaje al cliente', () => {
         ).toContain('Guía: SHL-99123.');
     });
 
-    it('la clave de retiro solo sale con Shalom', () => {
+    it('la clave de retiro solo sale con Shalom y Olva', () => {
         const conShalom = mensajeAlCliente(
             { ...base, claveEnvio: '4821', transportista: 'SHALOM_PRO' },
             'NV01-8',
         );
         expect(conShalom).toContain('Clave de retiro: 4821.');
 
-        // Con otro courier la clave no significa nada y confunde al cliente.
         const conOlva = mensajeAlCliente(
             { ...base, claveEnvio: '4821', transportista: 'OLVA' },
             'NV01-8',
         );
-        expect(conOlva).not.toMatch(/clave/i);
+        expect(conOlva).toContain('Clave de retiro: 4821.');
+
+        // Con otro courier la clave no significa nada y confunde al cliente.
+        const propio = mensajeAlCliente(
+            { ...base, claveEnvio: '4821', transportista: 'PROPIOS' },
+            'NV01-8',
+        );
+        expect(propio).not.toMatch(/clave/i);
     });
 
     it('el flete sale con dos decimales y solo si es mayor que cero', () => {

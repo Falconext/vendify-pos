@@ -62,7 +62,7 @@ it('el formato se recuerda y define el @page; el logo acepta URL o base64', () =
     expect(leerRotuloFormato(70)).toBe('ETIQUETA_100X150');
     expect(rotuloPageStyle('ETIQUETA_100X150')).toContain('size: 100mm 150mm');
     expect(rotuloPageStyle('ETIQUETA_80X50')).toContain('size: 80mm 50mm');
-    expect(rotuloPageStyle('TICKET')).toBeNull();
+    expect(rotuloPageStyle('TICKET')).toContain('size: 80mm 200mm');
     expect(logoSrc('https://x.com/l.png')).toBe('https://x.com/l.png');
     expect(logoSrc('iVBORw0')).toBe('data:image/png;base64,iVBORw0');
     expect(logoSrc(null)).toBeUndefined();

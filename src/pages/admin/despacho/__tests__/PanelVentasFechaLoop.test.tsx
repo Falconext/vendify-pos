@@ -56,7 +56,9 @@ jest.mock('@/pages/admin/facturacion/ModalHistorialPagos', () => ({ __esModule: 
 jest.mock('@/pages/admin/facturacion/ModalDetalleCuenta', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/features/admin/facturacion/utils/comprobanteProductMapper', () => ({ mapDetalleToInvoiceProduct: (d: any) => d }));
 
+import moment from 'moment';
 import PanelVentasView from '../PanelVentasView';
+import { esVistaDeMes, mesVecino } from '../filtrosDespacho';
 
 const panelCalls = () => getMock.mock.calls.filter(([u]) => String(u).startsWith('/ventas/panel'));
 const fechasPedidas = () => panelCalls().map(([u]) => String(u).match(/fecha=(\d{4}-\d{2}-\d{2})/)?.[1]);
@@ -123,5 +125,60 @@ describe('Panel de Ventas · entrar desde "Ver despachos" de un repartidor', () 
         expect(urls.some((u) => u.includes('fechaEnvio=2026-10-08'))).toBe(true);
         expect(panelCalls().length).toBeLessThan(5);
         searchParams = new URLSearchParams('fecha=2026-10-08&repartidorId=38');
+    });
+});
+
+describe('Panel de Ventas · moverse de mes en mes', () => {
+    const hoy = moment().format('YYYY-MM-DD');
+    const cal = (n: string) => (screen.getByTestId(`cal-${n}`) as HTMLInputElement).value;
+    const fmt = (m: moment.Moment) => m.format('DD/MM/YYYY');
+    const abrirMes = async () => {
+        render(<PanelVentasView />);
+        await waitFor(() => expect(panelCalls().length).toBeGreaterThan(0));
+        fireEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    };
+
+    beforeEach(() => { getMock.mockClear(); });
+
+    it('con Mes, las flechas van al mes entero y sin pasar de hoy', async () => {
+        await abrirMes();
+        const anterior = moment(hoy).subtract(1, 'month');
+        expect(screen.getByTestId('btn-dia-siguiente')).toBeDisabled();
+
+        fireEvent.click(screen.getByTestId('btn-dia-anterior'));
+        await waitFor(() => expect(cal('fecha')).toBe(fmt(anterior.clone().startOf('month'))));
+        expect(cal('fechaFin')).toBe(fmt(anterior.clone().endOf('month')));
+        expect(screen.getByRole('button', { name: 'Mes' })).toHaveClass('bg-indigo-600');
+        expect(screen.getByText('Vendido')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('btn-dia-siguiente'));
+        await waitFor(() => expect(cal('fecha')).toBe(fmt(moment(hoy).startOf('month'))));
+        expect(cal('fechaFin')).toBe(fmt(moment(hoy)));
+    });
+
+    it('la consulta lleva el rango del mes elegido', async () => {
+        await abrirMes();
+        fireEvent.click(screen.getByTestId('btn-dia-anterior'));
+        const anterior = moment(hoy).subtract(1, 'month');
+        const inicio = anterior.clone().startOf('month').format('YYYY-MM-DD');
+        const fin = anterior.clone().endOf('month').format('YYYY-MM-DD');
+        await waitFor(() => expect(panelCalls().some(([u]) => String(u).includes(inicio) && String(u).includes(fin))).toBe(true));
+    });
+});
+
+describe('mesVecino y esVistaDeMes', () => {
+    it('febrero y fin de año', () => {
+        expect(mesVecino('2026-03-01', -1, '2026-11-06')).toEqual({ fecha: '2026-02-01', fechaFin: '2026-02-28' });
+        expect(mesVecino('2026-01-01', -1, '2026-11-06')).toEqual({ fecha: '2025-12-01', fechaFin: '2025-12-31' });
+        expect(mesVecino('2026-10-01', 1, '2026-11-06')).toEqual({ fecha: '2026-11-01', fechaFin: '2026-11-06' });
+        expect(mesVecino('2026-11-01', 1, '2026-11-06')).toBeNull();
+    });
+
+    it('un rango a mano o un solo día sigue moviéndose por día', () => {
+        expect(esVistaDeMes('2026-10-01', '2026-10-31', '2026-11-06')).toBe(true);
+        expect(esVistaDeMes('2026-11-01', '2026-11-06', '2026-11-06')).toBe(true);
+        expect(esVistaDeMes('2026-10-01', '', '2026-11-06')).toBe(false);
+        expect(esVistaDeMes('2026-10-01', '2026-10-15', '2026-11-06')).toBe(false);
+        expect(esVistaDeMes('2026-10-05', '2026-10-31', '2026-11-06')).toBe(false);
     });
 });

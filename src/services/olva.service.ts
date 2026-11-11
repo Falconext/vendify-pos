@@ -59,6 +59,7 @@ export interface GuiaOlvaCreada {
     id: number;
     nroOrden: string | null;
     codigoGuia: string | null;
+    claveEnvio: string | null;
     olvaAgenciaDestinoCodigo: string | null;
     olvaGuiaCreadaEn: string | null;
 }

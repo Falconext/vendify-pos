@@ -212,7 +212,7 @@ export function OperacionesLogisticasBar({ items, diaLabel, rotulosDisponibles, 
                 </div>
 
                 <div>
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Hoy</p>
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Resumen</p>
                     <div className="grid grid-cols-4 gap-2 xl:grid-cols-2">
                         {stats.map((s) => (
                             <div key={s.label} className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${s.tono}`}>
