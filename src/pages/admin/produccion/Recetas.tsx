@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import apiClient from '@/utils/apiClient';
 import useAlertStore from '@/zustand/alert';
 import { useAuthStore } from '@/zustand/auth';
-import { esRubroFabricacion } from '@/utils/rubro-features';
+import { tieneModuloProduccion } from '@/utils/moduloProduccion';
 import Select from '@/components/Select';
 import InputPro from '@/components/InputPro';
 import { useThemeStore, SIDEBAR_COLOR_HEX } from '@/zustand/theme';
@@ -71,8 +71,8 @@ export default function ProduccionRecetasPage() {
   });
 
   const esFabricacion = useMemo(
-    () => esRubroFabricacion(auth?.empresa?.rubro?.nombre),
-    [auth?.empresa?.rubro?.nombre],
+    () => tieneModuloProduccion(auth),
+    [auth],
   );
 
   const insumosDuplicados = useMemo(() => {
@@ -145,7 +145,7 @@ export default function ProduccionRecetasPage() {
   ) => {
     try {
       const resp: any = await apiClient.get('/productos', {
-        params: { search, page: 1, limit: 20 },
+        params: { search, page: 1, limit: 20, incluirVariantes: true },
       });
       if (resp?.data?.code === 1) {
         const productos: ProductoOption[] = resp.data.data?.productos || [];
@@ -407,7 +407,7 @@ export default function ProduccionRecetasPage() {
             Módulo no disponible
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Este módulo está disponible solo para rubros de fabricación.
+            Tu plan no incluye el módulo de Producción.
           </p>
         </div>
       </div>

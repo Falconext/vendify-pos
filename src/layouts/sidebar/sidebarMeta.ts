@@ -1,5 +1,6 @@
-import { detectarFuncionesRubro, esRubroFabricacion } from '@/utils/rubro-features';
+import { detectarFuncionesRubro } from '@/utils/rubro-features';
 import { hasPlanFeature } from '@/utils/permissions';
+import { tieneModuloProduccion } from '@/utils/moduloProduccion';
 
 const isDesktopBuild = String(import.meta.env.VITE_VENDIFY_DESKTOP || '').toLowerCase() === 'true';
 
@@ -161,7 +162,7 @@ export const MODULE_META: Record<string, ModuleMeta> = {
   },
 
   produccion: {
-    condition: (auth) => esRubroFabricacion(auth?.empresa?.rubro?.nombre),
+    condition: tieneModuloProduccion,
     navRoute: () => '/administrador/produccion/recetas',
     pathPrefix: () => '/administrador/produccion',
   },
