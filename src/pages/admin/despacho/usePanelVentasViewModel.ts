@@ -6,6 +6,7 @@ import useAlertStore from '@/zustand/alert';
 import { useSedesStore } from '@/zustand/sedes';
 import { useAuthStore } from '@/zustand/auth';
 import type { MensajeEstadoPendiente } from './ModalMensajeEstado';
+import { FECHA_INICIO_TODO, LIMITE_TODAS, periodoGuardado, rangoDePeriodo } from './filtrosDespacho';
 
 const ETIQUETA_ESTADO: Record<string, string> = {
     PREPARANDO: 'Preparando',
@@ -127,11 +128,20 @@ export function usePanelVentasViewModel() {
     const [searchParams] = useSearchParams();
     const diaValido = (v: string | null) =>
         v && moment(v, 'YYYY-MM-DD', true).isValid() ? v : null;
-    const [fecha, setFecha] = useState(
-        () => diaValido(searchParams.get('fecha')) ?? moment().format('YYYY-MM-DD'),
-    );
+    // Un enlace con fecha manda sobre el periodo que dejó elegido esta caja.
+    const [rangoInicial] = useState(() => {
+        const hoy = moment().format('YYYY-MM-DD');
+        const dia = diaValido(searchParams.get('fecha'));
+        if (dia) return { fecha: dia, fechaFin: '' };
+        // Con "Sale el" no se mezcla el periodo: llega desde Repartidores por un día.
+        if (diaValido(searchParams.get('fechaEnvio'))) return { fecha: hoy, fechaFin: '' };
+        return rangoDePeriodo(periodoGuardado() ?? 'DIA', hoy);
+    });
+    const [fecha, setFecha] = useState(rangoInicial.fecha);
     // Fin del rango (opcional). Vacío = panel de un solo día (comportamiento original).
-    const [fechaFin, setFechaFin] = useState('');
+    const [fechaFin, setFechaFin] = useState(rangoInicial.fechaFin);
+    const verTodas = fecha === FECHA_INICIO_TODO;
+    const [truncado, setTruncado] = useState(false);
     // Día de ENTREGA programada: el negocio que despacha por día necesita ver
     // "qué sale el jueves". Cuando se usa, reemplaza al filtro por fecha de
     // emisión: un pedido que sale el jueves pudo tomarse el lunes y si no, no
@@ -181,6 +191,7 @@ export function usePanelVentasViewModel() {
             // Rango: solo se envía si el usuario eligió una fecha final posterior
             if (fechaFin && fechaFin > fecha) params.set('fechaFin', fechaFin);
             if (fechaEnvio) params.set('fechaEnvio', fechaEnvio);
+            if (fecha === FECHA_INICIO_TODO) params.set('limite', String(LIMITE_TODAS));
             // El admin en la sede principal ve todas por defecto, o solo una si
             // la eligió en el selector; el resto siempre ve la suya.
             if (esPrincipalAdmin) {
@@ -193,6 +204,7 @@ export function usePanelVentasViewModel() {
             const { data } = await apiClient.get<any>(`/ventas/panel?${params}`, { timeout: 30_000 });
             const raw = data?.data?.data ?? data?.data ?? [];
             setItems(Array.isArray(raw) ? raw : []);
+            setTruncado(Boolean(data?.data?.truncado ?? data?.truncado));
             const resumenGlobal = data?.data?.resumen?.porCobrarGlobal ?? data?.resumen?.porCobrarGlobal;
             setPorCobrarGlobal({
                 total: Number(resumenGlobal?.total ?? 0),
@@ -547,6 +559,7 @@ export function usePanelVentasViewModel() {
     return {
         fecha, setFecha,
         fechaFin, setFechaFin,
+        verTodas, truncado,
         fechaEnvio, setFechaEnvio,
         exportandoProducto, exportarPorProducto,
         exportando, exportarResumen,

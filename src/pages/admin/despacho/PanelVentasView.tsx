@@ -29,7 +29,7 @@ import {
     leerRotuloFormato,
     type RotuloFormato,
 } from './rotuloFormato';
-import { opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo, type Periodo } from './filtrosDespacho';
+import { guardarPeriodo, LIMITE_TODAS, opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo, type Periodo } from './filtrosDespacho';
 import { elegiblesParaRotulo } from './seleccionRotulos';
 import {
     alternarRotulo,
@@ -288,6 +288,8 @@ export default function PanelVentasView() {
         const iso = date ? moment(date, 'DD/MM/YYYY').format('YYYY-MM-DD') : '';
         if (name === 'fecha') {
             if (iso) vm.setFecha(iso); // la fecha de inicio siempre debe tener valor
+            // Desde "Todas", elegir un día es ver ese día, no desde ese día hasta hoy.
+            if (iso && vm.verTodas) vm.setFechaFin('');
         } else if (name === 'fechaFin') {
             vm.setFechaFin(iso); // vacío = quitar rango (un solo día)
         }
@@ -465,7 +467,7 @@ export default function PanelVentasView() {
         : vm.filtrados;
 
     // Paginación (client-side) de la tabla de ventas.
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = 50;
     const [page, setPage] = useState(1);
     useEffect(() => { setPage(1); }, [vm.tab, vm.filtroUsuarioId, vm.busqueda, vm.filtroProducto, vm.fecha, vm.fechaFin, filasVisibles.length]);
     const totalPages = Math.max(1, Math.ceil(filasVisibles.length / PAGE_SIZE));
@@ -643,16 +645,16 @@ export default function PanelVentasView() {
 
     const kpis = [
         {
-            label: 'Vendido hoy',
+            label: vm.verTodas ? 'Vendido' : 'Vendido hoy',
             value: `S/ ${totalVentasDia.toFixed(2)}`,
-            detail: `${vm.countTodo ?? 0} registro${(vm.countTodo ?? 0) !== 1 ? 's' : ''} del día`,
+            detail: `${vm.countTodo ?? 0} registro${(vm.countTodo ?? 0) !== 1 ? 's' : ''}${vm.verTodas ? '' : ' del día'}`,
             icon: 'solar:wallet-money-bold-duotone',
             tone: 'emerald' as const,
         },
         {
-            label: 'Por cobrar hoy',
+            label: vm.verTodas ? 'Por cobrar' : 'Por cobrar hoy',
             value: `S/ ${totalPorCobrarDia.toFixed(2)}`,
-            detail: `${vm.countPorCobrar ?? 0} venta${(vm.countPorCobrar ?? 0) !== 1 ? 's' : ''} con saldo hoy`,
+            detail: `${vm.countPorCobrar ?? 0} venta${(vm.countPorCobrar ?? 0) !== 1 ? 's' : ''} con saldo${vm.verTodas ? '' : ' hoy'}`,
             icon: 'solar:bill-list-bold-duotone',
             tone: totalPorCobrarDia > 0 ? 'red' as const : 'blue' as const,
         },
@@ -666,7 +668,7 @@ export default function PanelVentasView() {
         {
             label: 'Con despacho',
             value: String(vm.countDespacho),
-            detail: 'Ventas del día con seguimiento',
+            detail: vm.verTodas ? 'Ventas con seguimiento' : 'Ventas del día con seguimiento',
             icon: 'solar:delivery-bold-duotone',
             tone: 'blue' as const,
         },
@@ -689,7 +691,9 @@ export default function PanelVentasView() {
                 <div className="min-w-0">
                     <h1 className="text-[22px] font-extrabold text-slate-800 dark:text-white tracking-tight">Panel de Ventas</h1>
                     <p className="text-sm text-slate-400 mt-0.5">
-                        {vm.fechaFin && vm.fechaFin > vm.fecha
+                        {vm.verTodas
+                            ? 'Todas las ventas, de la más reciente a la más antigua, y deuda pendiente acumulada.'
+                            : vm.fechaFin && vm.fechaFin > vm.fecha
                             ? 'Resumen del rango seleccionado y deuda pendiente acumulada.'
                             : 'Resumen del día seleccionado y deuda pendiente acumulada.'}
                         {/* El alcance se dice explícitamente: los KPIs y la tabla
@@ -707,7 +711,7 @@ export default function PanelVentasView() {
                 <div className="flex items-center gap-2 flex-wrap">
                     {/* Periodo rápido: hoy, esta semana (lunes a hoy) o este mes. */}
                     <div className="flex shrink-0 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800" data-testid="periodo-rapido">
-                        {([['DIA', 'Hoy'], ['SEMANA', 'Semana'], ['MES', 'Mes']] as [Periodo, string][]).map(([p, label]) => {
+                        {([['TODO', 'Todas'], ['DIA', 'Hoy'], ['SEMANA', 'Semana'], ['MES', 'Mes']] as [Periodo, string][]).map(([p, label]) => {
                             const hoy = moment().format('YYYY-MM-DD');
                             const activo = periodoActivo(vm.fecha, vm.fechaFin, hoy) === p;
                             return (
@@ -716,6 +720,7 @@ export default function PanelVentasView() {
                                     type="button"
                                     onClick={() => {
                                         const r = rangoDePeriodo(p, hoy);
+                                        guardarPeriodo(p);
                                         vm.setFecha(r.fecha);
                                         vm.setFechaFin(r.fechaFin);
                                     }}
@@ -729,14 +734,15 @@ export default function PanelVentasView() {
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).subtract(1, 'day').format('YYYY-MM-DD'))}
                         data-testid="btn-dia-anterior"
-                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        disabled={vm.verTodas}
+                        className="disabled:cursor-not-allowed disabled:opacity-40 h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-left-linear" className="text-lg" />
                     </button>
                     <div className="w-40 shrink-0">
                         <Calendar
                             name="fecha"
-                            value={vm.fecha ? moment(vm.fecha).format('DD/MM/YYYY') : ''}
+                            value={vm.fecha && !vm.verTodas ? moment(vm.fecha).format('DD/MM/YYYY') : ''}
                             onChange={handleFecha}
                             className="admin-date-filter"
                             portal
@@ -746,7 +752,7 @@ export default function PanelVentasView() {
                     <div className="w-40 shrink-0">
                         <Calendar
                             name="fechaFin"
-                            value={vm.fechaFin ? moment(vm.fechaFin).format('DD/MM/YYYY') : ''}
+                            value={vm.fechaFin && !vm.verTodas ? moment(vm.fechaFin).format('DD/MM/YYYY') : ''}
                             onChange={handleFecha}
                             className="admin-date-filter"
                             portal
@@ -780,7 +786,7 @@ export default function PanelVentasView() {
                             </button>
                         )}
                     </div>
-                    {vm.fechaFin && (
+                    {vm.fechaFin && !vm.verTodas && (
                         <button
                             onClick={() => vm.setFechaFin('')}
                             className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
@@ -792,7 +798,8 @@ export default function PanelVentasView() {
                     <button
                         onClick={() => vm.setFecha(moment(vm.fecha).add(1, 'day').format('YYYY-MM-DD'))}
                         data-testid="btn-dia-siguiente"
-                        className="h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        disabled={vm.verTodas}
+                        className="disabled:cursor-not-allowed disabled:opacity-40 h-11 w-11 grid place-items-center rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     >
                         <Icon icon="solar:arrow-right-linear" className="text-lg" />
                     </button>
@@ -1017,7 +1024,9 @@ export default function PanelVentasView() {
                 diaLabel={
                     vm.fechaEnvio
                         ? `Sale el ${moment(vm.fechaEnvio).format('DD/MM/YYYY')}`
-                        : vm.fechaFin && vm.fechaFin > vm.fecha
+                        : vm.verTodas
+                          ? 'Todas las ventas'
+                          : vm.fechaFin && vm.fechaFin > vm.fecha
                           ? `Del ${moment(vm.fecha).format('DD/MM')} al ${moment(vm.fechaFin).format('DD/MM')}`
                           : `Ventas del ${moment(vm.fecha).format('DD/MM/YYYY')}`
                 }
@@ -1031,7 +1040,7 @@ export default function PanelVentasView() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-[11px] font-black uppercase tracking-widest text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1.5">
                             <Icon icon="solar:scooter-bold-duotone" className="text-base" />
-                            Reparto propio · {moment(vm.fecha).format('DD/MM')}{vm.fechaFin && vm.fechaFin > vm.fecha ? ` – ${moment(vm.fechaFin).format('DD/MM')}` : ''}
+                            Reparto propio · {vm.verTodas ? 'todo' : moment(vm.fecha).format('DD/MM')}{!vm.verTodas && vm.fechaFin && vm.fechaFin > vm.fecha ? ` – ${moment(vm.fechaFin).format('DD/MM')}` : ''}
                             <span className="ml-1 font-semibold normal-case tracking-normal text-fuchsia-500/80 dark:text-fuchsia-300/70">(por fecha de entrega)</span>
                         </p>
                         {Number(vm.repartoResumen.incompletos?.length ?? 0) > 0 && (
@@ -1583,6 +1592,11 @@ export default function PanelVentasView() {
                         </tbody>
                     </table>
                 </AutoScrollTable>
+                {vm.truncado && (
+                    <p data-testid="panel-truncado" className="border-t border-gray-100 px-4 py-2.5 text-xs text-amber-700 dark:border-slate-800 dark:text-amber-400">
+                        Se muestran las {LIMITE_TODAS} ventas más recientes. Para ver las anteriores, elige una fecha.
+                    </p>
+                )}
                 {filasVisibles.length > PAGE_SIZE && (
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-800 text-xs">
                         <span className="text-slate-500 dark:text-slate-400">

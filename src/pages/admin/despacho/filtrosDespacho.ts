@@ -7,10 +7,34 @@ import { COURIER_LABEL } from './rotuloFormato';
  * de entrega (los mismos de la columna Despacho).
  */
 
-export type Periodo = 'DIA' | 'SEMANA' | 'MES';
+export type Periodo = 'DIA' | 'SEMANA' | 'MES' | 'TODO';
+
+/** "Todas" es un rango desde antes de que existiera cualquier venta. */
+export const FECHA_INICIO_TODO = '2000-01-01';
+/** Tope de "Todas": más que esto ya no cabe cómodo en el navegador. */
+export const LIMITE_TODAS = 2000;
+
+const CLAVE_PERIODO = 'panel_ventas_periodo';
+
+/** El periodo que dejó elegido esta caja: al volver al panel, sigue ahí. */
+export function periodoGuardado(): Periodo | null {
+    try {
+        const v = localStorage.getItem(CLAVE_PERIODO);
+        return v === 'DIA' || v === 'SEMANA' || v === 'MES' || v === 'TODO' ? v : null;
+    } catch {
+        return null;
+    }
+}
+
+export function guardarPeriodo(periodo: Periodo) {
+    try {
+        localStorage.setItem(CLAVE_PERIODO, periodo);
+    } catch { /* sin almacenamiento, solo no se recuerda */ }
+}
 
 /** Rango del periodo que contiene `hoy` (semana de lunes a hoy, mes del 1 a hoy). */
 export function rangoDePeriodo(periodo: Periodo, hoy: string): { fecha: string; fechaFin: string } {
+    if (periodo === 'TODO') return { fecha: FECHA_INICIO_TODO, fechaFin: hoy };
     const h = moment(hoy, 'YYYY-MM-DD');
     if (periodo === 'DIA') return { fecha: h.format('YYYY-MM-DD'), fechaFin: '' };
     const inicio = periodo === 'SEMANA' ? h.clone().isoWeekday(1) : h.clone().startOf('month');
@@ -19,7 +43,7 @@ export function rangoDePeriodo(periodo: Periodo, hoy: string): { fecha: string; 
 
 /** Cuál periodo describe el rango actual (para resaltar el botón), o null. */
 export function periodoActivo(fecha: string, fechaFin: string, hoy: string): Periodo | null {
-    for (const p of ['DIA', 'SEMANA', 'MES'] as Periodo[]) {
+    for (const p of ['DIA', 'SEMANA', 'MES', 'TODO'] as Periodo[]) {
         const r = rangoDePeriodo(p, hoy);
         if (r.fecha === fecha && (r.fechaFin || '') === (fechaFin || '')) return p;
     }

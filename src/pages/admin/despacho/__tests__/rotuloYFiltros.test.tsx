@@ -6,7 +6,7 @@ import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import RotuloTicket, { tieneDestino } from '../RotuloTicket'
-import { colorDeRepartidor, opcionesCourier, periodoActivo, quienLlevaEnLista, rangoDePeriodo } from '../filtrosDespacho'
+import { colorDeRepartidor, FECHA_INICIO_TODO, guardarPeriodo, opcionesCourier, periodoActivo, periodoGuardado, quienLlevaEnLista, rangoDePeriodo } from '../filtrosDespacho'
 
 const base = {
     nroOrden: null, claveOrden: null, nombreDestinatario: 'GOMEZ CUEVA KATIA', dniDestinatario: '46531103',
@@ -93,3 +93,27 @@ describe('estado Confirmado (rótulo impreso)', () => {
         expect(elegiblesParaRotulo([fila(1, 'PREPARANDO'), fila(2, 'CONFIRMADO'), fila(3, 'EN_CAMINO')]).map((e: any) => e.comprobanteId)).toEqual([1])
     })
 })
+
+describe('periodo "Todas" del panel', () => {
+    const hoy = '2026-11-04';
+    beforeEach(() => localStorage.clear());
+
+    it('va desde antes de cualquier venta hasta hoy y se reconoce', () => {
+        const r = rangoDePeriodo('TODO', hoy);
+        expect(r).toEqual({ fecha: FECHA_INICIO_TODO, fechaFin: hoy });
+        expect(periodoActivo(r.fecha, r.fechaFin, hoy)).toBe('TODO');
+    });
+
+    it('recuerda lo que eligió la caja', () => {
+        expect(periodoGuardado()).toBeNull();
+        guardarPeriodo('TODO');
+        expect(periodoGuardado()).toBe('TODO');
+        guardarPeriodo('DIA');
+        expect(periodoGuardado()).toBe('DIA');
+    });
+
+    it('ignora un valor guardado que no conoce', () => {
+        localStorage.setItem('panel_ventas_periodo', 'ANIO');
+        expect(periodoGuardado()).toBeNull();
+    });
+});
