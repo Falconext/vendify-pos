@@ -53,6 +53,8 @@ export interface VentaPanelItem {
     repartidorColor?: string | null;
     tipoEnvio: string;
     agenciaDestino: string;
+    /** Clave de retiro del courier: hay que dársela al cliente. */
+    claveEnvio?: string | null;
     celularDest: string;
     nroPaquetes: number | null;
     turnoEnvio: string;

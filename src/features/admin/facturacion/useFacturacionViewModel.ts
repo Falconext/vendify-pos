@@ -2481,6 +2481,17 @@ export const useFacturacionViewModel = () => {
 
     // Pago completo de la nota editada (lo previo + lo de ahora). El backend
     // reemplaza los pagos con lo que recibe, así que se le manda todo.
+    // Corrigieron el método con la edición abierta: sin esto, ACTUALIZAR volvía a
+    // guardar el método viejo, porque el pago de la nota se reemplaza con lo de acá.
+    const alCorregirMedioPago = (nota: any) => {
+        if (!nota) return;
+        const previo = pagoPrevioDeNota(nota);
+        setPagoPrevioEdicion(previo.monto > 0 ? previo : null);
+        if (previo.lineas.length === 1) {
+            const m = previo.lineas[0].method;
+            setPaymentMethod(m.charAt(0) + m.slice(1).toLowerCase());
+        }
+    };
     const pagoEdicion = pagoPrevio > 0 && pagoPrevioEdicion
         ? armarPagoEdicion({
             total: totalAdjusted,
@@ -3496,6 +3507,8 @@ export const useFacturacionViewModel = () => {
         isLoading,
         isEditMode,
         isEditNotaVenta: editNotaVentaId != null,
+        editNotaVentaId,
+        alCorregirMedioPago,
         editaHaciaFormal,
     };
 };
