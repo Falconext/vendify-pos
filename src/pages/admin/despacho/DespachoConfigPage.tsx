@@ -226,7 +226,12 @@ export default function DespachoConfigPage() {
         }
         setSaving(true);
         try {
-            await put('/envio-despacho/config', { ...config, ...payloadProvincia(config, provinciaActiva) });
+            // put() no lanza: devuelve success=false con el mensaje del backend (ej. 403 por plan).
+            const res = await put('/envio-despacho/config', { ...config, ...payloadProvincia(config, provinciaActiva) });
+            if (!res.success) {
+                alert(res.error || 'Error al guardar configuración', 'error');
+                return;
+            }
             alert('Configuración guardada', 'success');
         } catch {
             alert('Error al guardar configuración', 'error');

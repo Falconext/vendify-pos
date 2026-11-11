@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 let guardado: Record<string, unknown> = {};
-const mockPut = jest.fn((_url: string, _body: any) => Promise.resolve({ data: {} }));
+const mockPut = jest.fn((_url: string, _body: any): Promise<any> => Promise.resolve({ success: true, data: {} }));
 jest.mock('@/utils/fetch', () => ({
     get: () => Promise.resolve({ data: guardado }),
     put: (u: string, b: any) => mockPut(u, b),
@@ -32,6 +32,18 @@ describe('clave de retiro en los avisos', () => {
         fireEvent.click(screen.getByText('Guardar cambios'));
         await waitFor(() => expect(mockAlert).toHaveBeenCalledWith('Configuración guardada', 'success'));
         expect(mockPut.mock.calls[0][1].claveEnAvisos).toBe(false);
+    });
+
+    it('si el backend rechaza (plan sin automatización) avisa el error, no "guardada"', async () => {
+        guardado = {};
+        mockPut.mockResolvedValueOnce({ success: false, error: 'Tu plan no incluye la automatización de despacho.' });
+        render(<DespachoConfigPage />);
+        await waitFor(() => expect(interruptor()).toBeInTheDocument());
+        fireEvent.click(screen.getByText('Guardar cambios'));
+        await waitFor(() =>
+            expect(mockAlert).toHaveBeenCalledWith('Tu plan no incluye la automatización de despacho.', 'error'),
+        );
+        expect(mockAlert).not.toHaveBeenCalledWith('Configuración guardada', 'success');
     });
 
     it('respeta la opción guardada apagada', async () => {
