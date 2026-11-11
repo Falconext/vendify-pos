@@ -5,6 +5,7 @@ import { BRAND } from '@/lib/branding';
 import { elemCfg, lineasDeTexto, ticketPx } from '@/features/admin/cotizaciones/cotizFormatoElementos';
 import { useAuthStore } from '@/zustand/auth';
 import { descripcionParaImpresion } from '@/utils/descripcion-vehiculo';
+import { direccionSedeParaImprimir } from '@/utils/direccionSede';
 import { imprimeDetalleAdicional, lineasDetalleAdicional } from '@/utils/detalleAdicional';
 import { useQrSunat } from '@/utils/qrSunat';
 import { lineasPagoMixto } from '@/utils/pagoMixto';
@@ -58,11 +59,12 @@ const ComprobantePrintPage = ({
 
     // Dirección de la sede emisora: en reimpresión viene en formValues.sede
     // (backend listar); en emisión se toma la sede activa de la sesión.
-    // Solo se muestra si difiere de la dirección fiscal del RUC.
+    // Solo se muestra si es otro local que la dirección fiscal del RUC.
     const sedeActiva = useAuthStore((s) => s.sedeActiva);
-    const fiscalDireccion = String(company?.empresa?.direccion || '').trim().toUpperCase();
-    const sedeDireccionRaw = String(formValues?.sede?.direccion || sedeActiva?.direccion || '').trim().toUpperCase();
-    const sedeDireccion = sedeDireccionRaw && sedeDireccionRaw !== fiscalDireccion ? sedeDireccionRaw : '';
+    const sedeDireccion = direccionSedeParaImprimir(
+        formValues?.sede?.direccion || sedeActiva?.direccion,
+        company?.empresa?.direccion,
+    );
 
     const localComponentRef = useRef(null);
 
