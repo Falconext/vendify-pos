@@ -16,6 +16,42 @@ import { useInvoiceStore } from '@/zustand/invoices';
 import { useAuthStore } from '@/zustand/auth';
 import ComprobantePrintPage from "./comprobanteImprimir";
 import { buildComprobantePrintPageStyle } from "@/utils/printStyles";
+import { vencimientoCobro, type SituacionCobro, type VencimientoCobro } from "@/utils/vencimientoCobro";
+
+/** Cómo se ve el vencimiento en la tabla: atraso en rojo, lo próximo en ámbar. */
+const BadgeVencimiento = ({ v }: { v: VencimientoCobro }) => {
+    const fecha = moment(v.fecha).format('DD/MM/YYYY');
+    const texto =
+        v.situacion === 'VENCIDO'
+            ? `Vencida hace ${-v.dias} d`
+            : v.dias === 0
+              ? 'Vence hoy'
+              : v.situacion === 'POR_VENCER'
+                ? `Vence en ${v.dias} d`
+                : `En ${v.dias} d`;
+    const color =
+        v.situacion === 'VENCIDO'
+            ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'
+            : v.situacion === 'POR_VENCER'
+              ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400';
+    return (
+        <div className="flex flex-col items-start gap-0.5 whitespace-nowrap">
+            <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold ${color}`}>{texto}</span>
+            <span className="text-[11px] text-slate-400">
+                {fecha}
+                {v.cuota && v.totalCuotas && v.totalCuotas > 1 ? ` · cuota ${v.cuota}/${v.totalCuotas}` : ''}
+                {v.origen === 'SIN_CREDITO' ? ' · contado' : ''}
+            </span>
+        </div>
+    );
+};
+
+const ETIQUETA_VENCIMIENTO: Record<SituacionCobro, string> = {
+    VENCIDO: 'Vencidas',
+    POR_VENCER: 'Por vencer (7 días)',
+    AL_DIA: 'Al día',
+};
 
 const ACCENT = 'var(--accent, #7551FF)';
 
@@ -40,6 +76,7 @@ const CuentasPorCobrar = () => {
     const [fechaFin, setFechaFin] = useState('');
     const [estadoPago, setEstadoPago] = useState('');
     const [clienteFilter, setClienteFilter] = useState('');
+    const [vencimientoFilter, setVencimientoFilter] = useState<SituacionCobro | ''>('');
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [selectedComprobante, setSelectedComprobante] = useState<any>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -88,17 +125,33 @@ const CuentasPorCobrar = () => {
         getCuentasPorCobrar(params);
     }, [debounce, currentPage, itemsPerPage, fechaInicio, fechaFin, estadoPago]);
 
-    // Ya vienen filtrados del store
-    const pendientes = cuentasPorCobrar;
+    // Ya vienen filtrados del store. El vencimiento lo calcula el backend por
+    // la fecha de la cuota o del crédito; si aún no lo manda, se calcula acá.
+    const pendientes = useMemo(
+        () =>
+            (cuentasPorCobrar || []).map((inv: any) => ({
+                ...inv,
+                vencimiento: (inv.vencimiento ?? vencimientoCobro(inv)) as VencimientoCobro,
+            })),
+        [cuentasPorCobrar],
+    );
+    const vencidas = pendientes.filter((inv: any) => inv.vencimiento.situacion === 'VENCIDO');
+    const porVencer = pendientes.filter((inv: any) => inv.vencimiento.situacion === 'POR_VENCER');
+    const sumaSaldo = (lista: any[]) => lista.reduce((sum, inv) => sum + Number(inv.saldo || 0), 0);
 
-    const calcularDiasVencidos = (fechaEmision: string) => {
-        const emision = moment(fechaEmision);
-        const hoy = moment();
-        return hoy.diff(emision, 'days');
-    };
+    // Cliente y vencimiento se filtran acá: el backend no los conoce. Antes el
+    // filtro de cliente se calculaba pero la tabla no lo usaba.
+    const pendientesFiltrados = useMemo(
+        () =>
+            pendientes.filter(
+                (inv: any) =>
+                    (!clienteFilter || inv.cliente?.id === Number(clienteFilter)) &&
+                    (!vencimientoFilter || inv.vencimiento.situacion === vencimientoFilter),
+            ),
+        [pendientes, clienteFilter, vencimientoFilter],
+    );
 
-    const tableData = pendientes?.map((inv: any) => {
-        const diasVencidos = calcularDiasVencidos(inv.fechaEmision);
+    const tableData = pendientesFiltrados.map((inv: any) => {
         const tipoLabel = inv.tipoDoc === 'NP' ? 'NOTA PEDIDO' : inv.tipoDoc === 'OT' ? 'ORDEN TRABAJO' : inv.comprobante || inv.tipoDoc;
 
         // Mapear estado de pago a etiqueta clara
@@ -116,12 +169,12 @@ const CuentasPorCobrar = () => {
             rucDni: inv.cliente?.nroDoc || '-',
             total: `S/ ${Number(inv.mtoImpVenta || 0).toFixed(2)}`,
             saldo: `S/ ${Number(inv.saldo || 0).toFixed(2)}`,
-            dias: diasVencidos,
+            vencimiento: inv.vencimiento as VencimientoCobro,
             estadoCobro: estadoLabel,
             celular: inv.cliente?.telefono || '-',
             _raw: inv,
         };
-    }) || [];
+    });
 
     const handleCloseMenu = () => {
         setMenuAnchor(null);
@@ -204,12 +257,6 @@ const CuentasPorCobrar = () => {
         return [{ id: '', value: 'Todos los clientes' }, ...Array.from(clientes.values())];
     }, [cuentasPorCobrar]);
 
-    // Filtrar por cliente si está seleccionado
-    const pendientesFiltrados = useMemo(() => {
-        if (!clienteFilter) return pendientes;
-        return pendientes?.filter((inv: any) => inv.cliente?.id === Number(clienteFilter));
-    }, [pendientes, clienteFilter]);
-
     const handleDate = (date: string, name: string) => {
         if (!moment(date, 'DD/MM/YYYY', true).isValid()) return;
         if (name === 'fechaInicio') {
@@ -225,14 +272,14 @@ const CuentasPorCobrar = () => {
         fechaInicio,
         fechaFin,
         estadoPago,
+        vencimientoFilter,
     ].filter(Boolean).length;
 
     // ── Métricas ─────────────────────────────────────────────────────
-    const totalPorCobrar = pendientes?.reduce((sum: number, inv: any) => sum + (inv.saldo || 0), 0) || 0;
-    const vencidos30 = pendientes?.filter((inv: any) => calcularDiasVencidos(inv.fechaEmision) > 30).length || 0;
+    const totalPorCobrar = sumaSaldo(pendientes);
 
     // ── Paginación ───────────────────────────────────────────────────
-    const totalItems = pendientes?.length || 0;
+    const totalItems = pendientesFiltrados.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
     const fromRow = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const toRow = Math.min(currentPage * itemsPerPage, totalItems);
@@ -301,12 +348,12 @@ const CuentasPorCobrar = () => {
             </div>
 
             {/* KPI Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
                 {/* KPI 1 */}
                 <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 flex items-center justify-between">
                     <div>
                         <p className="text-slate-400 uppercase tracking-wide text-xs font-bold">Comprobantes Pendientes</p>
-                        <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mt-2">{totalItems}</h2>
+                        <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mt-2">{pendientes.length}</h2>
                     </div>
                     <div className="h-12 w-12 rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
                         <Icon icon="solar:bill-list-bold-duotone" className="text-2xl" />
@@ -322,16 +369,32 @@ const CuentasPorCobrar = () => {
                         <Icon icon="solar:money-bag-bold-duotone" className="text-2xl" />
                     </div>
                 </div>
-                {/* KPI 3 */}
-                <div className="bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 flex items-center justify-between">
-                    <div>
-                        <p className="text-slate-400 uppercase tracking-wide text-xs font-bold">Vencidos (+30 días)</p>
-                        <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mt-2">{vencidos30}</h2>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
-                        <Icon icon="solar:calendar-bold-duotone" className="text-2xl" />
-                    </div>
-                </div>
+                {/* KPI 3 y 4: por la fecha real de vencimiento; un clic filtra la tabla. */}
+                {([
+                    ['VENCIDO', 'Vencidas', vencidas, 'rose', 'solar:danger-triangle-bold-duotone'],
+                    ['POR_VENCER', 'Por vencer (7 días)', porVencer, 'amber', 'solar:calendar-bold-duotone'],
+                ] as const).map(([situacion, titulo, lista, color, icono]) => {
+                    const activo = vencimientoFilter === situacion;
+                    return (
+                        <button
+                            key={situacion}
+                            type="button"
+                            onClick={() => { setVencimientoFilter(activo ? '' : situacion); setCurrentPage(1); }}
+                            className={`bg-white dark:bg-[#111827] rounded-3xl shadow-[0_2px_20px_rgba(15,23,42,0.05)] p-5 flex items-center justify-between text-left transition-shadow hover:shadow-md ${activo ? (color === 'rose' ? 'ring-2 ring-rose-300 dark:ring-rose-900/50' : 'ring-2 ring-amber-300 dark:ring-amber-900/50') : ''}`}
+                        >
+                            <div>
+                                <p className="text-slate-400 uppercase tracking-wide text-xs font-bold">{titulo}</p>
+                                <h2 className="text-[28px] leading-none font-extrabold text-slate-800 dark:text-white mt-2">{lista.length}</h2>
+                                <p className="text-xs font-medium text-slate-400 mt-1.5">
+                                    S/ {sumaSaldo(lista).toFixed(2)} · {activo ? 'mostrando solo estas' : 'ver solo estas'}
+                                </p>
+                            </div>
+                            <div className={`h-12 w-12 rounded-2xl grid place-items-center shrink-0 ${color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'}`}>
+                                <Icon icon={icono} className="text-2xl" />
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Card contenedora */}
@@ -358,7 +421,7 @@ const CuentasPorCobrar = () => {
                             <Icon icon={isMobileFiltersOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'} className="text-base" />
                         </button>
                     </div>
-                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-4`}>
+                    <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-5`}>
                         <div>
                             <Select
                                 error=""
@@ -387,6 +450,21 @@ const CuentasPorCobrar = () => {
                                 ]}
                             />
                         </div>
+                        <div>
+                            <Select
+                                error=""
+                                label="Vencimiento"
+                                name="vencimientoFilter"
+                                value={vencimientoFilter ? ETIQUETA_VENCIMIENTO[vencimientoFilter] : 'Todos'}
+                                onChange={(id: any, value: string) => { setVencimientoFilter(value === 'TODOS' ? '' : (value as SituacionCobro)); setCurrentPage(1); }}
+                                options={[
+                                    { value: 'TODOS', label: 'Todos' },
+                                    { value: 'VENCIDO', label: 'Vencidas' },
+                                    { value: 'POR_VENCER', label: 'Por vencer (7 días)' },
+                                    { value: 'AL_DIA', label: 'Al día' },
+                                ]}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -403,7 +481,7 @@ const CuentasPorCobrar = () => {
                                 <th className="py-3 px-3">Celular</th>
                                 <th className="py-3 px-3">Total</th>
                                 <th className="py-3 px-3">Saldo</th>
-                                <th className="py-3 px-3">Días</th>
+                                <th className="py-3 px-3">Vence</th>
                                 <th className="py-3 px-3">Estado</th>
                                 <th className="py-3 px-3 pr-5 text-right">Acciones</th>
                             </tr>
@@ -427,11 +505,6 @@ const CuentasPorCobrar = () => {
                                 </tr>
                             ) : tableData.map((row: any) => {
                                 const pill = estadoPill(row.estadoCobro);
-                                const diasClass = row.dias > 30
-                                    ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'
-                                    : row.dias > 0
-                                        ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
                                 return (
                                     <tr key={row.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
                                         <td className="py-3 pl-5 pr-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{row.fecha}</td>
@@ -454,7 +527,7 @@ const CuentasPorCobrar = () => {
                                         <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{row.total}</td>
                                         <td className="py-3 px-3 font-bold text-slate-800 dark:text-white text-sm whitespace-nowrap">{row.saldo}</td>
                                         <td className="py-3 px-3">
-                                            <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold ${diasClass}`}>{row.dias}</span>
+                                            <BadgeVencimiento v={row.vencimiento} />
                                         </td>
                                         <td className="py-3 px-3">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${pill.bg} ${pill.text}`}>
