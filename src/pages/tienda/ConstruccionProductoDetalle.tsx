@@ -288,7 +288,7 @@ export function ConstruccionProductoDetalleView({
               {[
                 ['solar:shield-check-bold', editable(tienda?.diseno?.construccionProductTrustOne, '100% original')],
                 ['solar:coins-bold', editable(tienda?.diseno?.construccionProductTrustTwo, 'Mejor precio')],
-                ['solar:delivery-bold', editable(tienda?.diseno?.construccionProductTrustThree, 'Envío gratis')],
+                ['solar:delivery-bold', editable(tienda?.diseno?.construccionProductTrustThree, tienda?.envioACoordinar ? 'Envío a coordinar' : 'Envío gratis')],
               ].map(([icon, label]) => (
                 <div key={label} className="flex items-center justify-center gap-3 border-b border-[#dfe4f4] px-4 py-4 text-base font-black last:border-b-0 sm:border-b-0 sm:border-r sm:py-5 sm:text-lg sm:last:border-r-0">
                   <Icon icon={icon} width={26} />
@@ -345,7 +345,7 @@ export function ConstruccionProductoDetalleView({
             <div className="mt-6 space-y-4 text-[13px] font-semibold text-gray-500">
               <p className="flex items-center gap-3 text-[13px] text-[#222]"><Icon icon="solar:eye-linear" width={24} className="text-gray-400" /> {20 + Math.max(1, Number(producto.id || 1) % 10)} personas están viendo este producto ahora</p>
               <p className="flex items-center gap-3"><Icon icon="solar:shield-check-bold" width={20} /> Entrega estimada: hasta 4 días hábiles</p>
-              <p className="flex items-center gap-3"><Icon icon="solar:shield-check-bold" width={20} /> Envío y devoluciones gratis en compras mayores a S/ 200</p>
+              <p className="flex items-center gap-3"><Icon icon="solar:shield-check-bold" width={20} /> {tienda?.envioACoordinar ? 'Coordinamos el envío contigo' : 'Envío y devoluciones gratis en compras mayores a S/ 200'}</p>
             </div>
             <div className="mt-8 rounded-md bg-gray-50 px-6 py-5 text-center">
               <p className="text-[13px] font-black uppercase tracking-widest text-[#222]">{editable(tienda?.diseno?.construccionProductSecureTitle, 'Pago seguro garantizado')}</p>

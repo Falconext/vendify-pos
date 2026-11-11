@@ -28,6 +28,7 @@ import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
 import { direccionDeSede, sedePorId, sedeParaPedido, useSedeTiendaStore } from '@/features/tiendaSede/sedeTienda';
 import { leerCarrito } from '@/features/tiendaSede/carritoSede';
 import { accionParaErrorDePedido } from '@/features/tiendaSede/erroresPedido';
+import { textoEnvioSinCosto } from '@/utils/envioTienda';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 
 const CLIENTE_STORAGE_KEY = (slug: string) => `tienda:${slug}:cliente`;
@@ -270,6 +271,7 @@ export default function Checkout() {
                 direccionRecojo: raw.direccionRecojo || raw.direccion || '',
                 costoEnvio: Number(raw.costoEnvioFijo ?? raw.costoEnvio ?? 0),
                 envioGratisDesdeSoles: Number(raw.envioGratisDesdeSoles ?? 0),
+                envioACoordinar: !!raw.envioACoordinar,
                 minimoCompra: Number(raw.minimoCompra ?? 0),
                 couriers: (Array.isArray(raw.couriersTienda) ? raw.couriersTienda : []).filter(
                     (c: string): c is CourierTienda => c === 'SHALOM' || c === 'OLVA',
@@ -848,7 +850,7 @@ export default function Checkout() {
                                 <div className="flex justify-between text-sm text-gray-500">
                                     <span>Envío</span>
                                     <span className="font-bold text-[#1A1A1A]">
-                                        {calcularCostoEnvio() === 0 ? <span className="text-[#22C55E]">Gratis</span> : `S/ ${calcularCostoEnvio().toFixed(2)}`}
+                                        {calcularCostoEnvio() === 0 ? <span className="text-[#22C55E]">{textoEnvioSinCosto(configEnvio?.envioACoordinar, formData?.tipoEntrega, configEnvio?.aceptaRecojo)}</span> : `S/ ${calcularCostoEnvio().toFixed(2)}`}
                                     </span>
                                 </div>
 

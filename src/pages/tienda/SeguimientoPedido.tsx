@@ -12,6 +12,7 @@ import { useStorePreviewNavigation } from '@/utils/useStorePreviewNavigation';
 
 import CargandoTienda from '@/components/tienda/CargandoTienda';
 import { recordarVentaSinStock } from '@/templates/shared/ventaSinStock';
+import { textoEnvioSinCosto } from '@/utils/envioTienda';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
 const TERMINAL_STATES = ['ENTREGADO', 'ENTREGADO_COMPLETADO', 'CANCELADO', 'CANCELADO_INTERNO', 'CANCELADO_CLIENTE'];
 const POLLING_INTERVAL_MS = 30_000;
@@ -423,7 +424,7 @@ export default function SeguimientoPedido() {
                                         </div>
                                         <div className="flex justify-between text-gray-600">
                                             <span>Delivery</span>
-                                            <span>{pedido.costoEnvio > 0 ? `S/ ${pedido.costoEnvio.toFixed(2)}` : 'Gratis'}</span>
+                                            <span>{pedido.costoEnvio > 0 ? `S/ ${pedido.costoEnvio.toFixed(2)}` : textoEnvioSinCosto(pedido.empresa?.envioACoordinar, pedido.tipoEntrega)}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
                                             <span>Tiempo entrega</span>
