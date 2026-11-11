@@ -1,3 +1,4 @@
+import apiClient from '@/utils/apiClient';
 import { useState, useEffect, useCallback } from 'react';
 import { get, post, patch, del } from '@/utils/fetch';
 import useAlertStore from '@/zustand/alert';
@@ -159,6 +160,26 @@ export function useRentabilidadViewModel(sedeId?: number | null) {
             setState(prev => ({ ...prev, valorInventario: resp.data!.resumen?.valorTotalInventario ?? 0 }));
         }
     }, []);
+
+    // Excel de utilidad por día: mismo período y sede que la pantalla.
+    const exportarUtilidadDiaria = useCallback(async () => {
+        try {
+            const resp = await apiClient.get(
+                `analisis-financiero/utilidad-diaria/exportar?${pnlQuery}${qSede}`,
+                { responseType: 'blob', timeout: 120_000 },
+            );
+            const url = window.URL.createObjectURL(new Blob([resp.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `utilidad_diaria_${rango.fi}_a_${rango.ff}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('No se pudo descargar el Excel de utilidad por día', 'error');
+        }
+    }, [pnlQuery, qSede, rango.fi, rango.ff, alert]);
 
     // ─── Load on mount and on period change ──────────────────────────────────
     useEffect(() => {
@@ -408,5 +429,6 @@ export function useRentabilidadViewModel(sedeId?: number | null) {
         abrirModalEditarIngreso,
         cerrarModalIngreso,
         cerrarModal,
+        exportarUtilidadDiaria,
     };
 }

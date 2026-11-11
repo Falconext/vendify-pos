@@ -26,6 +26,7 @@ import EmpresasIndex from './pages/admin/empresa/Index'
 import PerfilIndex from './pages/admin/perfil/Index'
 import KardexIndex from './pages/admin/kardex/Index'
 import InventarioDashboard from './pages/admin/kardex/Dashboard'
+import InventarioValorizado from './pages/admin/kardex/InventarioValorizado'
 import KardexProductos from './pages/admin/kardex/Productos'
 import KardexMermas from './pages/admin/kardex/mermas'
 import KardexEntradasSalidas from './pages/admin/kardex/entradasSalidas'
@@ -202,6 +203,7 @@ function App() {
           <Route path="reservas" element={<ReservasPage />} />
           <Route path="kardex/combos" element={<CombosTienda />} />
           <Route path="kardex/dashboard" element={<InventarioDashboard />} />
+          <Route path="kardex/inventario-valorizado" element={<InventarioValorizado />} />
           <Route
             path="produccion/recetas"
             element={

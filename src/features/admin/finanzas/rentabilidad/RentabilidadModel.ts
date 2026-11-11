@@ -85,11 +85,45 @@ export interface PnlResponse {
     gananciaNeta: number;
     margenNeto: number;
     resumenDiario: RentabilidadDia[];
+    /** Todos los días del período hasta hoy. Opcional: backend anterior no lo trae. */
+    utilidadDiaria?: DiaUtilidad[];
+    utilidadDiariaTotal?: TotalUtilidad;
     comparacion: {
         mesAnterior: { gananciaNeta: number; margenNeto: number; otrosIngresos: number } | null;
         variacionMonto: number | null;
         variacionPorcentaje: number | null;
     };
+}
+
+/** Un día del reporte de utilidad diaria (incluye días sin venta, en cero). */
+export interface DiaUtilidad {
+    fecha: string;
+    ventasNetas: number;
+    costoMercaderia: number;
+    gananciaBruta: number;
+    margenBruto: number;
+    publicidad: number;
+    otrosGastos: number;
+    gastosOperativos: number;
+    gananciaNeta: number;
+    margenNeto: number;
+    pedidos: number;
+}
+
+export interface TotalUtilidad {
+    ventasNetas: number;
+    costoMercaderia: number;
+    gananciaBruta: number;
+    margenBruto: number;
+    gastosOperativos: number;
+    gananciaNeta: number;
+    margenNeto: number;
+    pedidos: number;
+    diasConVenta: number;
+    diasSinVenta: number;
+    /** Ganancia neta del período − suma de los días (otros ingresos, gastos sin día). */
+    ajustesSinDia: number;
+    gananciaNetaPeriodo: number;
 }
 
 export interface RentabilidadDia {

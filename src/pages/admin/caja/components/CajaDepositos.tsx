@@ -56,6 +56,8 @@ const CajaDepositos: React.FC = () => {
     obtenerDepositosRealizados();
   };
 
+  const cierreDesmarcar = depositosRealizados.find((c) => c.id === cierreDesmarcarId);
+
   const handleDesmarcar = async () => {
     if (!cierreDesmarcarId) return;
     setLoadingDesmarcar(true);
@@ -118,9 +120,26 @@ const CajaDepositos: React.FC = () => {
         {formatCurrency(Number(c.montoEfectivo || 0))}
       </span>
     ),
-    Cuenta: c.cuentaBancaria ? `${c.cuentaBancaria.banco} · ${c.cuentaBancaria.numeroCuenta}` : '—',
+    Cuenta: c.repartos?.length ? (
+      <div className="space-y-0.5 text-left">
+        {(c.cierresEnDeposito ?? 1) > 1 && (
+          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+            Depósito de {c.cierresEnDeposito} cierres por{' '}
+            {formatCurrency(c.repartos.reduce((s, r) => s + r.monto, 0))}:
+          </p>
+        )}
+        {c.repartos.map((r) => (
+          <p key={r.id} className="whitespace-nowrap">
+            {r.cuentaBancaria.alias || `${r.cuentaBancaria.banco} · ${r.cuentaBancaria.numeroCuenta}`}
+            <span className="ml-1.5 font-semibold text-gray-800 dark:text-white">{formatCurrency(r.monto)}</span>
+          </p>
+        ))}
+      </div>
+    ) : c.cuentaBancaria ? `${c.cuentaBancaria.banco} · ${c.cuentaBancaria.numeroCuenta}` : '—',
     'Fecha depósito': c.fechaDeposito ? new Date(c.fechaDeposito).toLocaleDateString('es-PE') : '—',
-    'N° operación': c.numeroOperacionDeposito || '—',
+    'N° operación': c.repartos?.length
+      ? c.repartos.map((r) => r.numeroOperacion).filter(Boolean).join(' · ') || '—'
+      : c.numeroOperacionDeposito || '—',
     Acciones: (
       <button
         onClick={() => setCierreDesmarcarId(c.id)}
@@ -262,7 +281,11 @@ const CajaDepositos: React.FC = () => {
         isOpenModal={!!cierreDesmarcarId}
         setIsOpenModal={(v) => { if (!v) setCierreDesmarcarId(null); }}
         title="Deshacer depósito"
-        information="¿Seguro que quieres marcar este cierre como pendiente de depositar otra vez?"
+        information={
+          (cierreDesmarcar?.cierresEnDeposito ?? 1) > 1
+            ? `Este depósito se repartió entre cuentas junto con otros cierres. Se deshace el depósito entero: los ${cierreDesmarcar?.cierresEnDeposito} cierres vuelven a quedar pendientes.`
+            : '¿Seguro que quieres marcar este cierre como pendiente de depositar otra vez?'
+        }
         confirmText="Deshacer"
         confirmLoading={loadingDesmarcar}
         confirmSubmit={handleDesmarcar}

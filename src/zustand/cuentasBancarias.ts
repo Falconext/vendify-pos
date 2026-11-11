@@ -37,6 +37,9 @@ export interface ICuentaBancaria {
   // 'YAPE' | 'PLIN' | null — los pagos con ese medio abonan automáticamente
   // a esta cuenta (máx. una cuenta activa por medio).
   medioPagoVinculado?: string | null;
+  // Lo que había en la cuenta al empezar `saldoInicialFecha`.
+  saldoInicial?: number | string | null;
+  saldoInicialFecha?: string | null;
   creadoEn: string;
 }
 
@@ -50,6 +53,8 @@ export interface ICreateCuentaBancaria {
   alias?: string;
   mostrarEnCotizacion?: boolean;
   medioPagoVinculado?: string | null;
+  saldoInicial?: number | null;
+  saldoInicialFecha?: string | null;
 }
 
 export interface IUpdateCuentaBancaria extends Partial<ICreateCuentaBancaria> {
@@ -77,6 +82,7 @@ export interface IMovimientosResp {
   ingresos: number;
   egresos: number;
   saldo: number;
+  saldoInicial?: number;
   movimientos: IMovimientoBanco[];
 }
 
@@ -155,6 +161,7 @@ export const useCuentasBancariasStore = create<CuentasBancariasState>()(
           if (res.code === 1) {
             set((state) => ({ cuentas: [...state.cuentas, res.data] }));
             sincronizarAuth(getState().cuentas);
+            getState().cargarSaldos();
             useAlertStore.getState().alert('Cuenta bancaria creada', 'success');
           } else {
             useAlertStore.getState().alert(res.message || 'Error al crear cuenta', 'error');
@@ -173,6 +180,7 @@ export const useCuentasBancariasStore = create<CuentasBancariasState>()(
               cuentas: state.cuentas.map((c) => (c.id === id ? res.data : c)),
             }));
             sincronizarAuth(getState().cuentas);
+            getState().cargarSaldos();
             useAlertStore.getState().alert('Cuenta bancaria actualizada', 'success');
           } else {
             useAlertStore.getState().alert(res.message || 'Error al actualizar', 'error');

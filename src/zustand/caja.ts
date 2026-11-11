@@ -35,9 +35,18 @@ export interface TransferenciaCajaData {
   observaciones?: string;
 }
 
+export interface ParteDeposito {
+  cuentaBancariaId: number;
+  monto: number;
+  numeroOperacion?: string;
+}
+
 export interface MarcarDepositadosData {
   cierreIds: number[];
-  cuentaBancariaId: number;
+  /** Una sola cuenta. Con `repartos` no se manda. */
+  cuentaBancariaId?: number;
+  /** El efectivo repartido entre 2 o más cuentas. */
+  repartos?: ParteDeposito[];
   fecha?: string;
   numeroOperacion?: string;
 }
@@ -97,6 +106,16 @@ export interface MovimientoCaja {
   fechaDeposito?: string;
   numeroOperacionDeposito?: string;
   depositadoPor?: { nombre: string; email: string };
+  // Depósito repartido entre cuentas: cuánto fue a cada una y con cuántos
+  // cierres se depositó junto.
+  depositoLote?: string | null;
+  cierresEnDeposito?: number;
+  repartos?: {
+    id: number;
+    monto: number;
+    numeroOperacion?: string | null;
+    cuentaBancaria: { banco: string; numeroCuenta: string; alias?: string | null };
+  }[];
   sede?: { nombre: string };
   usuario?: {
     nombre: string;
@@ -455,7 +474,8 @@ export const useCajaStore = create<CajaState>()(
           if (resp?.code === 1) {
             await get().obtenerCierresPendientesDeposito();
             set({ loading: false });
-            return { success: true, message: resp.message || 'Depósito registrado' };
+            // El interceptor pone "OK" arriba; el detalle viene en data.message.
+            return { success: true, message: resp.data?.message || resp.message || 'Depósito registrado' };
           }
           set({ loading: false, error: 'Error al registrar el depósito' });
           return { success: false, message: resp?.message || 'Error al registrar el depósito' };
@@ -478,7 +498,7 @@ export const useCajaStore = create<CajaState>()(
               get().obtenerDepositosRealizados(),
             ]);
             set({ loading: false });
-            return { success: true, message: resp.message || 'Depósito revertido' };
+            return { success: true, message: resp.data?.message || resp.message || 'Depósito revertido' };
           }
           set({ loading: false, error: 'Error al revertir el depósito' });
           return { success: false, message: resp?.message || 'Error al revertir el depósito' };
