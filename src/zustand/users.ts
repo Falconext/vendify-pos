@@ -52,6 +52,7 @@ export interface IUsuario {
   // Sede por defecto al loguear (Usuario.sedeId reutilizado).
   sedeId?: number | null;
   puedeAnularComprobantes?: boolean;
+  bloquearDescuentos?: boolean;
   soloImagenesProductos?: boolean;
 }
 
@@ -72,6 +73,7 @@ export interface IFormUsuario {
   comisionGlobalFija?: number;
   comisionGlobalVenta?: number;
   puedeAnularComprobantes?: boolean;
+  bloquearDescuentos?: boolean;
   soloImagenesProductos?: boolean;
 }
 

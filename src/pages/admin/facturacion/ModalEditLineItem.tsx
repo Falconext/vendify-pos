@@ -4,6 +4,7 @@ import InputPro from "@/components/InputPro";
 import Button from "@/components/Button";
 import { Icon } from "@iconify/react";
 import { precioPorCantidad, precioUnitarioDeEscala } from "@/features/admin/facturacion/mayoristaMezcla";
+import { useAuthStore } from "@/zustand/auth";
 
 interface IProps {
     isOpen: boolean;
@@ -26,6 +27,8 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
     const otrasEnMezcla = Math.max(0, Number(cantidadOtrasEnMezcla) || 0);
     // El precio que el sistema pone solo según la cantidad (y la mezcla).
     const cantidadParaEscala = (qty: number) => qty + otrasEnMezcla;
+    // Restricción por usuario: no da descuentos (el backend también lo rechaza).
+    const bloquearDescuento = !!useAuthStore((s) => s.auth?.bloquearDescuentos);
     const [formValues, setFormValues] = useState<any>({
         precioUnitario: 0,
         cantidad: 0,
@@ -154,6 +157,9 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                             onChange={handleChange}
                         />
                     </div>
+                    {bloquearDescuento ? (
+                        <p className="col-span-2 text-xs text-gray-400">No tienes permiso para dar descuentos.</p>
+                    ) : (
                     <div className="col-span-2">
                         <div className="mb-1 flex items-center justify-between gap-2">
                             <label className="block text-sm font-bold text-gray-600">
@@ -197,6 +203,7 @@ const ModalEditLineItem = ({ isOpen, onClose, item, onSave, monedaSimbolo = "S/"
                             <p className="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{errorDescuento}</p>
                         )}
                     </div>
+                    )}
                 </div>
 
                 {hasWholesaleRules && (
