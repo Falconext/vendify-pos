@@ -198,6 +198,7 @@ export default function FinanzasTabs() {
                         abrirModalCrearIngreso={vm.abrirModalCrearIngreso}
                         abrirModalEditarIngreso={vm.abrirModalEditarIngreso}
                         cerrarModalIngreso={vm.cerrarModalIngreso}
+                        exportarUtilidadDiaria={vm.exportarUtilidadDiaria}
                         marcarCompraSoloIgv={vm.marcarCompraSoloIgv}
                     />
                 </div>
