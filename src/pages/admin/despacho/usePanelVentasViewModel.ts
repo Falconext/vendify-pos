@@ -28,7 +28,7 @@ export type TipoVenta =
 
 export type EstadoPago = 'PAGADO' | 'PENDIENTE' | 'PARCIAL';
 export type EstadoSunat = 'ACEPTADO' | 'PENDIENTE' | 'RECHAZADO' | 'NO_APLICA' | 'ANULADO';
-export type EstadoDespacho = 'PREPARANDO' | 'CONFIRMADO' | 'EN_CAMINO' | 'EN_DESTINO' | 'ENTREGADO' | 'DEVUELTO' | 'NO_APLICA';
+export type EstadoDespacho = 'PREPARANDO' | 'CONFIRMADO' | 'EN_CAMINO' | 'EN_AGENCIA' | 'EN_DESTINO' | 'ENTREGADO' | 'DEVUELTO' | 'NO_APLICA';
 
 export interface VentaPanelItem {
     id: number;
@@ -102,6 +102,7 @@ const DESPACHO_TO_PEDIDO: Record<string, { estadoEntrega: string; estadoEnvio: s
     PREPARANDO: { estadoEntrega: 'CONFIRMADO',           estadoEnvio: 'POR_COORDINAR' },
     CONFIRMADO: { estadoEntrega: 'CONFIRMADO',           estadoEnvio: 'POR_COORDINAR' },
     EN_CAMINO:  { estadoEntrega: 'EN_TRANSITO',          estadoEnvio: 'EN_REPARTO' },
+    EN_AGENCIA: { estadoEntrega: 'EN_AGENCIA',           estadoEnvio: 'ENVIADO' },
     EN_DESTINO: { estadoEntrega: 'EN_TRANSITO',          estadoEnvio: 'EN_REPARTO' },
     ENTREGADO:  { estadoEntrega: 'ENTREGADO_COMPLETADO', estadoEnvio: 'ENTREGADO' },
     DEVUELTO:   { estadoEntrega: 'PENDIENTE',            estadoEnvio: 'INCIDENCIA' },

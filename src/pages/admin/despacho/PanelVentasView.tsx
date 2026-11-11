@@ -141,6 +141,10 @@ const ESTADOS_DESPACHO: { value: EstadoDespacho; label: string }[] = [
     // Interno: rótulo impreso, lo están alistando. No le avisa al cliente.
     { value: 'CONFIRMADO', label: 'Confirmado' },
     { value: 'EN_CAMINO',  label: 'En camino' },
+    // Lo pone el rastreo automático (Shalom/Olva) al llegar a la agencia de
+    // destino. Sin la opción, el select caía en "Preparando" y parecía que no
+    // se había actualizado.
+    { value: 'EN_AGENCIA', label: 'En agencia' },
     { value: 'EN_DESTINO', label: 'En destino' },
     { value: 'ENTREGADO',  label: 'Entregado' },
     { value: 'DEVUELTO',   label: 'Devuelto' },
@@ -150,6 +154,7 @@ const DESPACHO_CLS: Record<EstadoDespacho, string> = {
     PREPARANDO: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
     CONFIRMADO: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
     EN_CAMINO:  'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
+    EN_AGENCIA: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300',
     EN_DESTINO: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300',
     ENTREGADO:  'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
     DEVUELTO:   'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
