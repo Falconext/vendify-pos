@@ -29,8 +29,8 @@ export function mensajeAlCliente(
         `Hola, su pedido ${referencia ?? ''} está en estado: ${d.estadoLabel}.`,
     ];
     if (d.codigoGuia) partes.push(` Guía: ${d.codigoGuia}.`);
-    // La clave de retiro es de Shalom: mandarla con otro courier confunde.
-    if (d.claveEnvio && /SHALOM/i.test(String(d.transportista ?? ''))) {
+    // La clave de retiro es de Shalom y Olva: mandarla con otro courier confunde.
+    if (d.claveEnvio && /SHALOM|OLVA/i.test(String(d.transportista ?? ''))) {
         partes.push(` Clave de retiro: ${d.claveEnvio}.`);
     }
     if (d.shalomFleteCotizado != null && Number(d.shalomFleteCotizado) > 0) {
