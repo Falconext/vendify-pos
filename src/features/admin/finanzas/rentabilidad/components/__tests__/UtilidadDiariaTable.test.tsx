@@ -37,6 +37,11 @@ describe('UtilidadDiariaTable', () => {
         expect(screen.queryByText('02/11/2026')).not.toBeInTheDocument();
         expect(screen.getByText('01/11/2026')).toBeInTheDocument();
     });
+    it('un céntimo de redondeo no aparece como ajuste', () => {
+        const redondeo = { ...pnl, gananciaNeta: 129.99, utilidadDiariaTotal: { ...pnl.utilidadDiariaTotal, ajustesSinDia: -0.01, gananciaNetaPeriodo: 129.99 } };
+        render(<UtilidadDiariaTable pnl={redondeo} />);
+        expect(screen.queryByText('Otros ingresos y gastos del período sin día')).not.toBeInTheDocument();
+    });
     it('el botón Excel llama a exportar', () => {
         const onExportar = jest.fn();
         render(<UtilidadDiariaTable pnl={pnl} onExportar={onExportar} />);

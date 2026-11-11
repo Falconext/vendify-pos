@@ -66,7 +66,9 @@ export default function UtilidadDiariaTable({ pnl, onExportar }: Props) {
     const [exportando, setExportando] = useState(false);
     const visibles = soloConVenta ? dias.filter((d) => d.pedidos > 0 || d.gastosOperativos > 0) : dias;
     const mejor = dias.reduce<DiaUtilidad | null>((m, d) => (d.pedidos > 0 && (!m || d.gananciaNeta > m.gananciaNeta) ? d : m), null);
-    const hayAjuste = Math.abs(total.ajustesSinDia) >= 0.01;
+    // Un par de céntimos es redondeo de sumar los días, no un ingreso o gasto:
+    // mostrarlo como fila confunde más de lo que explica.
+    const hayAjuste = Math.abs(total.ajustesSinDia) >= 0.05;
 
     const exportar = async () => {
         if (!onExportar) return;
