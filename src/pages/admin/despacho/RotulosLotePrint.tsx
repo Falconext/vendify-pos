@@ -5,6 +5,7 @@ import useAlertStore from '@/zustand/alert';
 import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
 import RotuloEnvio100x150 from './RotuloEnvio100x150';
+import RotuloTicketEnvio from './RotuloTicketEnvio';
 import { altoTicketMm, COURIER_LABEL, FUERA_DE_PANTALLA, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
 import RotuloTicket, { quienLleva, tieneDestino, type DatosRotulo } from './RotuloTicket';
 
@@ -113,6 +114,24 @@ export default function RotulosLotePrint({
         setPagina(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pagina]);
+
+    if (formato === 'TICKET_ENVIO') {
+        return (
+            <div aria-hidden style={FUERA_DE_PANTALLA}>
+                <div ref={componentRef}>
+                    {(datos ?? []).map((d, idx) => (
+                        <RotuloTicketEnvio
+                            key={d.comprobanteId}
+                            saltoDePagina={idx < (datos?.length ?? 0) - 1}
+                            logo={logo}
+                            courier={(d.rotulo && quienLleva(d.rotulo)) || (COURIER_LABEL[d.courier] ?? d.courier)}
+                            d={{ ...(d.rotulo as DatosRotulo), referencia: d.rotulo?.referencia || d.referencia, celular: d.celular || d.rotulo?.celular }}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (formato === 'ETIQUETA_100X150') {
         return (

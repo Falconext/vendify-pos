@@ -6,6 +6,7 @@ import { mensajeErrorShalom } from '@/services/shalom.service';
 import { useAuthStore } from '@/zustand/auth';
 import RotuloEtiqueta from './RotuloEtiqueta';
 import RotuloEnvio100x150 from './RotuloEnvio100x150';
+import RotuloTicketEnvio from './RotuloTicketEnvio';
 import { altoTicketMm, COURIER_LABEL, FUERA_DE_PANTALLA, rotuloPageStyle, type RotuloFormato } from './rotuloFormato';
 import RotuloTicket, { quienLleva, type DatosRotulo } from './RotuloTicket';
 
@@ -79,6 +80,16 @@ export default function RotuloPrint({
         setPagina(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pagina]);
+
+    if (formato === 'TICKET_ENVIO') {
+        return (
+            <div aria-hidden style={FUERA_DE_PANTALLA}>
+                <div ref={componentRef}>
+                    {datos && <RotuloTicketEnvio d={datos} logo={logo} courier={quienLleva(datos)} />}
+                </div>
+            </div>
+        );
+    }
 
     if (formato === 'ETIQUETA_100X150') {
         return (
