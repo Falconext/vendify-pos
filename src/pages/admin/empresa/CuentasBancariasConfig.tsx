@@ -68,12 +68,26 @@ const EMPTY_FORM: ICreateCuentaBancaria = {
   medioPagoVinculado: null,
 };
 
+const hoyEnLima = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+
+/** La fecha guardada es el inicio del día en Lima; el campo de fecha pide AAAA-MM-DD. */
+export const fechaSaldoParaCampo = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Lima' }) : '';
+
+/** Campo vacío en una cuenta nueva: no se envía. Vacío al editar: quita el saldo inicial. */
+export const payloadSaldoInicial = (monto: string, fecha: string, editando: boolean) => {
+  if (monto.trim() === '') return editando ? { saldoInicial: null } : {};
+  return { saldoInicial: Number(monto), saldoInicialFecha: fecha };
+};
+
 export default function CuentasBancariasConfig() {
   const { cuentas, loading, listar, crear, actualizar, eliminar } = useCuentasBancariasStore();
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState<ICuentaBancaria | null>(null);
   const [form, setForm] = useState<ICreateCuentaBancaria>(EMPTY_FORM);
   const [mostrarInactivas, setMostrarInactivas] = useState(false);
+  const [saldoInicial, setSaldoInicial] = useState('');
+  const [saldoInicialFecha, setSaldoInicialFecha] = useState(hoyEnLima());
 
   // Cuenta de detracciones (Banco de la Nación) — dato de la empresa, se pre-carga en el modal de detracción
   const cuentaDetraccionActual = ((useAuthStore.getState().auth as any)?.empresa?.cuentaDetraccionBN ?? '') as string;
@@ -104,7 +118,7 @@ export default function CuentasBancariasConfig() {
 
   const cuentasVisibles = mostrarInactivas ? cuentas : cuentas.filter((c) => c.activo);
 
-  const abrirNuevo = () => { setEditando(null); setForm(EMPTY_FORM); setShowForm(true); };
+  const abrirNuevo = () => { setEditando(null); setForm(EMPTY_FORM); setSaldoInicial(''); setSaldoInicialFecha(hoyEnLima()); setShowForm(true); };
 
   const abrirEditar = (cuenta: ICuentaBancaria) => {
     setEditando(cuenta);
@@ -119,6 +133,8 @@ export default function CuentasBancariasConfig() {
       mostrarEnCotizacion: cuenta.mostrarEnCotizacion ?? true,
       medioPagoVinculado: cuenta.medioPagoVinculado ?? null,
     });
+    setSaldoInicial(cuenta.saldoInicial != null ? String(Number(cuenta.saldoInicial)) : '');
+    setSaldoInicialFecha(fechaSaldoParaCampo(cuenta.saldoInicialFecha) || hoyEnLima());
     setShowForm(true);
   };
 
@@ -127,7 +143,7 @@ export default function CuentasBancariasConfig() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.numeroCuenta.trim()) return;
-    const payload = { ...form, cci: form.cci || undefined, alias: form.alias || undefined, titular: form.titular || undefined };
+    const payload = { ...form, cci: form.cci || undefined, alias: form.alias || undefined, titular: form.titular || undefined, ...payloadSaldoInicial(saldoInicial, saldoInicialFecha, !!editando) };
     if (editando) {
       await actualizar(editando.id, payload);
     } else {
@@ -432,6 +448,43 @@ export default function CuentasBancariasConfig() {
                     Los cobros con esa billetera se consideran abonados automáticamente en esta cuenta
                     (Yape/Plin depositan directo al banco), así que no entran al flujo de depósitos de caja.
                     Solo una cuenta activa por billetera.
+                  </p>
+                </div>
+
+                <div className="col-span-2 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/40 dark:bg-blue-900/10 p-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Saldo inicial
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        data-testid="cuenta-saldo-inicial"
+                        value={saldoInicial}
+                        onChange={(e) => setSaldoInicial(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Al empezar el día
+                      </label>
+                      <input
+                        type="date"
+                        max={hoyEnLima()}
+                        required={saldoInicial.trim() !== ''}
+                        data-testid="cuenta-saldo-inicial-fecha"
+                        value={saldoInicialFecha}
+                        onChange={(e) => setSaldoInicialFecha(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
+                    Lo que tenía tu cuenta en el banco al empezar ese día. El saldo parte de este monto y solo suma los movimientos de esa fecha en adelante. Déjalo vacío para no usarlo.
                   </p>
                 </div>
 

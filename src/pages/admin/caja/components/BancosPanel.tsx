@@ -35,6 +35,8 @@ const MovimientosModal: React.FC<{ cuentaId: number; onClose: () => void }> = ({
         })();
     }, [cuentaId]);
 
+    const tieneSaldoInicial = data?.saldoInicial != null && !!data.cuenta?.saldoInicialFecha;
+
     const titulo = data?.cuenta
         ? data.cuenta.alias || `${data.cuenta.banco} · ${data.cuenta.numeroCuenta}`
         : 'Movimientos';
@@ -63,7 +65,7 @@ const MovimientosModal: React.FC<{ cuentaId: number; onClose: () => void }> = ({
                             </div>
                         </div>
 
-                        {data.movimientos.length === 0 ? (
+                        {data.movimientos.length === 0 && !tieneSaldoInicial ? (
                             <p className="text-center text-gray-500 py-8">Esta cuenta aún no tiene movimientos.</p>
                         ) : (
                             <div className="max-h-[50vh] overflow-y-auto divide-y divide-gray-100 dark:divide-slate-800">
@@ -85,6 +87,16 @@ const MovimientosModal: React.FC<{ cuentaId: number; onClose: () => void }> = ({
                                         </div>
                                     );
                                 })}
+                                {tieneSaldoInicial && (
+                                    <div className="flex items-center gap-3 py-2.5" data-testid="movimiento-saldo-inicial">
+                                        <Icon icon="solar:safe-square-bold-duotone" className="text-xl shrink-0 text-violet-600" />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-gray-800 dark:text-white truncate">Saldo inicial</p>
+                                            <p className="text-xs text-gray-400">{fechaCorta(data.cuenta.saldoInicialFecha as string)}</p>
+                                        </div>
+                                        <span className="text-sm font-bold shrink-0 text-violet-700 dark:text-violet-300">{soles(data.saldoInicial as number)}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>
@@ -120,6 +132,11 @@ const SaldoCard: React.FC<{ cuenta: ICuentaSaldo; onClick: () => void }> = ({ cu
             <span className="text-emerald-600 font-semibold">+ {soles(cuenta.ingresos)}</span>
             <span className="text-red-600 font-semibold">− {soles(cuenta.egresos)}</span>
         </div>
+        {cuenta.saldoInicial != null && cuenta.saldoInicialFecha && (
+            <p className="mt-2 text-xs text-gray-400" data-testid="saldo-inicial-tarjeta">
+                Saldo inicial {soles(Number(cuenta.saldoInicial))} · {fechaCorta(cuenta.saldoInicialFecha)}
+            </p>
+        )}
     </button>
 );
 
