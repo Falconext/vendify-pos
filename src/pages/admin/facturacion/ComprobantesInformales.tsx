@@ -43,6 +43,8 @@ import BarraSeleccionNotas from "@/features/admin/facturacion/seleccion/BarraSel
 import ModalCobrarVarias from "@/features/admin/facturacion/seleccion/ModalCobrarVarias";
 import { clienteConRuc, motivoNoFacturar, notaDeVentaDataConjunta } from "@/features/admin/facturacion/seleccion/facturarJuntas";
 import ModalEstadoCuentaWhatsApp from "@/features/admin/facturacion/seleccion/ModalEstadoCuentaWhatsApp";
+import EstadoFabricacionOT from "@/features/admin/facturacion/ordenTrabajo/EstadoFabricacionOT";
+import { ESTADOS_FABRICACION } from "@/features/admin/facturacion/ordenTrabajo/estadoFabricacion";
 import { documentoCorto, envioConjunto, motivoNoCobrar, notaElegidaDe, resumirSeleccion, type NotaElegida } from "@/features/admin/facturacion/seleccion/seleccionNotas";
 import { notaPorSaldo, totalDelSaldo } from "@/features/admin/facturacion/utils/notaPorSaldo";
 
@@ -121,6 +123,8 @@ const ComprobantesInformales = () => {
     const [fechaInicio, setFechaInicio] = useState<string>(moment().startOf('month').format("YYYY-MM-DD"));
     const [fechaFin, setFechaFin] = useState<string>(moment().endOf('month').format("YYYY-MM-DD"));
     const [stateInvoice, setStateInvoice] = useState<string>("TODOS");
+    // Estado de fabricación de las órdenes de trabajo (TODOS = sin filtro).
+    const [estadoFabricacion, setEstadoFabricacion] = useState<string>("TODOS");
     const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
     const [selectedUsuarioId, setSelectedUsuarioId] = useState<number | null>(null);
     const [isOpenModalImportarNV, setIsOpenModalImportarNV] = useState(false);
@@ -297,6 +301,14 @@ const ComprobantesInformales = () => {
         const monedaSimboloFila = String(item.tipoMoneda).toUpperCase() === 'USD' ? 'US$' : 'S/';
         const saldoStr = `${monedaSimboloFila} ${item?.saldo?.toFixed(2) || (0).toFixed(2)}`;
         const estadoPillCfg = estadoPill(estadoValue);
+        const fabricacion = item.tipoDoc === 'OT' ? (
+            <EstadoFabricacionOT
+                comprobanteId={item.id}
+                estado={(item as any).estadoOT}
+                bloqueado={item.estadoPago === 'ANULADO'}
+                onCambio={() => { if (estadoFabricacion !== 'TODOS') recargarLista(); }}
+            />
+        ) : <span className="text-slate-300 dark:text-slate-600">—</span>;
         const rowBase: any = {
             id: item?.id,
             fechaEmisión: moment(item?.fechaEmision).format('DD/MM/YYYY HH:mm:ss'),
@@ -333,6 +345,8 @@ const ComprobantesInformales = () => {
             estadoEnvioSunat: item.estadoEnvioSunat,
             despachoCompleto,
             despachoFecha,
+            fabricacion,
+            esOT: item.tipoDoc === 'OT',
             _item: item,
         };
 
@@ -529,8 +543,11 @@ const ComprobantesInformales = () => {
         if (stateInvoice !== "TODOS") {
             params.estadoPago = stateInvoice;
         }
+        if (estadoFabricacion !== "TODOS") {
+            params.estadoOT = estadoFabricacion;
+        }
         getAllInvoices(params);
-    }, [debounce, currentPage, itemsPerPage, fechaInicio, fechaFin, stateInvoice, effectiveSedeId, selectedUsuarioId, canFilterByUsuario, getAllInvoices]);
+    }, [debounce, currentPage, itemsPerPage, fechaInicio, fechaFin, stateInvoice, estadoFabricacion, effectiveSedeId, selectedUsuarioId, canFilterByUsuario, getAllInvoices]);
 
     useEffect(() => {
         recargarLista();
@@ -725,6 +742,13 @@ const ComprobantesInformales = () => {
     ]
     // Etiqueta amigable del estado actualmente seleccionado (para mostrar en el Select).
     const estadoLabelActual = estadosInvoice.find((o) => o.id === stateInvoice)?.value ?? "Todos"
+    const fabricacionOptions = [
+        { id: "TODOS", value: "Fabricación: todas" },
+        ...ESTADOS_FABRICACION.map((e) => ({ id: e.id, value: e.label })),
+    ]
+    const fabricacionSeleccionada = fabricacionOptions.find((o) => o.id === estadoFabricacion)?.value ?? 'Fabricación: todas'
+    // Columna y filtro solo para quien trabaja con órdenes de trabajo.
+    const hayOT = estadoFabricacion !== 'TODOS' || (invoices ?? []).some((it: any) => it?.tipoDoc === 'OT')
     const sedesOptions = [
         { id: 0, value: 'Todas las sedes' },
         ...sedes.map((s: any) => ({ id: s.id, value: s.nombre }))
@@ -946,6 +970,20 @@ const ComprobantesInformales = () => {
                             <div className="w-full sm:w-56">
                                 <Select onChange={handleSelectState} withLabel={false} label="" name="" options={estadosInvoice} defaultValue={estadoLabelActual} value={estadoLabelActual} error="" />
                             </div>
+                            {hayOT && (
+                                <div className="w-full sm:w-52">
+                                    <Select
+                                        onChange={(id: any) => { setcurrentPage(1); setEstadoFabricacion(id || 'TODOS'); }}
+                                        withLabel={false}
+                                        label=""
+                                        name="fabricacion"
+                                        options={fabricacionOptions}
+                                        defaultValue={fabricacionSeleccionada}
+                                        value={fabricacionSeleccionada}
+                                        error=""
+                                    />
+                                </div>
+                            )}
                             {canFilterBySede && (
                                 <div className="w-full sm:w-44">
                                     <Select
@@ -1049,6 +1087,12 @@ const ComprobantesInformales = () => {
                                                 </span>
                                             </div>
                                         </div>
+                                        {row.esOT && (
+                                            <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
+                                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Fabricación</p>
+                                                {row.fabricacion}
+                                            </div>
+                                        )}
                                     </article>
                                 );
                             })}
@@ -1065,6 +1109,8 @@ const ComprobantesInformales = () => {
                                     'Nro.',
                                     { label: 'Comprobante', key: 'comprobanteBadge' },
                                     { label: 'Cliente', key: 'clientBadge' },
+                                    // Junto al cliente: la tabla es ancha y al final quedaba fuera de vista.
+                                    ...(hayOT ? [{ label: 'Fabricación', key: 'fabricacion' }] : []),
                                     'Importe',
                                     { label: 'Saldo', key: 'saldoBadge' },
                                     'Num doc',
