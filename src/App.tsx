@@ -259,7 +259,14 @@ function App() {
               </RoleRoute>
             }
           />
-          <Route path="sistema/catalogo-global" element={<CatalogoGlobal />} />
+          <Route
+            path="sistema/catalogo-global"
+            element={
+              <RoleRoute allowedRoles={["ADMIN_SISTEMA"]} fallbackPath="/administrador">
+                <CatalogoGlobal />
+              </RoleRoute>
+            }
+          />
           <Route path="sistema/planes" element={<Planes />} />
           <Route
             path="sistema/disenos-tienda"
@@ -297,7 +304,7 @@ function App() {
           <Route
             path="sistema/finanzas"
             element={
-              <RoleRoute allowedRoles={["ADMIN_SISTEMA", "ADMIN_EMPRESA"]} fallbackPath="/administrador">
+              <RoleRoute allowedRoles={["ADMIN_SISTEMA"]} fallbackPath="/administrador">
                 <SistemaFinanzas />
               </RoleRoute>
             }
