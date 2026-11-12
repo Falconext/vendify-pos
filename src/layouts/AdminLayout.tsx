@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore, type IAuthState } from '@/zustand/auth'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
+import AvisoVencimientoPlan from '@/components/AvisoVencimientoPlan'
 import { hasPermission, hasPlanFeature, hasSubPermission, getRedirectPath } from '@/utils/permissions'
 import { useThemeStore, SIDEBAR_COLOR_HEX, ZOOM_OPTIONS, type ZoomLevel } from '@/zustand/theme'
 import Configurator from '@/components/ui/Configurator'
@@ -990,6 +991,7 @@ export default function AdminLayout() {
           className={`flex-1 ${theme.mainPadding} transition-all duration-300`}
           style={{ zoom: String(ZOOM_OPTIONS[zoomLevel]?.zoom ?? 1) }}
         >
+          <AvisoVencimientoPlan />
           <Outlet />
         </div>
       </main>
